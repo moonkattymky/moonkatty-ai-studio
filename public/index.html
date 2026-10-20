@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0f14">
+<title>MOONKATTY AI STUDIO</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stars" aria-hidden="true"></div>
+<div id="auth" class="auth hidden"></div>
+<div id="app" class="hidden">
+  <aside id="sidebar">
+    <div class="brand"><img src="img/cat-logo.jpg" alt=""><div><b>MOONKATTY</b><b>AI STUDIO</b><span>9 Lives. One Moon.</span></div></div>
+    <nav id="nav"></nav>
+    <div class="hero-card"><img src="img/hero.jpg" alt="MOONKATTY — 9 Lives. One Moon."></div>
+    <div class="side-foot"><span id="modeBadge" class="badge"></span><button id="logoutSide" class="btn ghost sm">Выйти</button></div>
+  </aside>
+  <div id="main">
+    <header id="topbar">
+      <button id="menuBtn" class="icon-btn" aria-label="Меню">☰</button>
+      <h1 id="pageTitle"></h1>
+      <div id="pills" class="pills"></div>
+      <div class="top-actions">
+        <button id="bellBtn" class="icon-btn" title="Уведомления об ошибках">🔔<span id="bellCount" class="dot hidden"></span></button>
+        <button id="chatBtn" class="btn primary sm">💬 Director</button>
+        <button id="setBtn" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+    </header>
+    <section id="view"></section>
+  </div>
+  <div id="chatDrawer" class="drawer hidden"></div>
+  <div id="notifPanel" class="notif hidden"></div>
+  <div id="modal" class="modal hidden"></div>
+  <div id="toast"></div>
+</div>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "moonkatty-ai-studio",
+  "version": "1.0.0",
+  "description": "MOONKATTY AI STUDIO — web control panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.3.0"
+  },
+  "private": true
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Установка: замените USERNAME, скопируйте в ~/Library/LaunchAgents/ и выполните
+     launchctl load ~/Library/LaunchAgents/com.moonkatty.aistudio.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.moonkatty.aistudio</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/USERNAME/moonkatty-ai-studio/server.js</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/USERNAME/moonkatty-ai-studio</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOST</key><string>127.0.0.1</string>
+    <key>PORT</key><string>8787</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/USERNAME/moonkatty-ai-studio/data/studio.log</string>
+  <key>StandardErrorPath</key><string>/Users/USERNAME/moonkatty-ai-studio/data/studio.err.log</string>
+</dict>
+</plist>

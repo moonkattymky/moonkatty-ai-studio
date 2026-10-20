@@ -1,0 +1,236 @@
+// MOONKATTY AI STUDIO — backend (Express + SQLite)
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const Database = require('better-sqlite3');
+const os = require('os');
+const core = require('./public/core.js');
+const crypto = require('crypto');
+
+const PORT = +process.env.PORT || 8787;
+const HOST = process.env.HOST || '127.0.0.1';
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'studio.db');
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.exec(`CREATE TABLE IF NOT EXISTS items (col TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (col, id));
+         CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);`);
+
+const q = {
+  list: db.prepare('SELECT data FROM items WHERE col = ? ORDER BY rowid'),
+  get: db.prepare('SELECT data FROM items WHERE col = ? AND id = ?'),
+  put: db.prepare('INSERT INTO items (col, id, data) VALUES (?, ?, ?) ON CONFLICT(col, id) DO UPDATE SET data = excluded.data'),
+  del: db.prepare('DELETE FROM items WHERE col = ? AND id = ?'),
+  meta: db.prepare('SELECT v FROM meta WHERE k = ?'),
+  setMeta: db.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)')
+};
+const list = col => q.list.all(col).map(r => JSON.parse(r.data));
+const get = (col, id) => { const r = q.get.get(col, id); return r ? JSON.parse(r.data) : null; };
+const put = (col, obj) => { q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
+function log(level, source, message, user) {
+  put('logs', { id: core.uid(), at: core.now(), level, source, message, user: user || null });
+  const logs = list('logs'); if (logs.length > 2000) { logs.sort((a, b) => a.at.localeCompare(b.at)); for (const l of logs.slice(0, logs.length - 2000)) q.del.run('logs', l.id); }
+}
+
+if (!q.meta.get('seeded')) {
+  db.transaction(() => { const s = core.seed(); for (const col of Object.keys(s)) for (const o of s[col]) put(col, o); q.setMeta.run('seeded', core.now()); })();
+  log('info', 'system', 'База данных создана, начальные данные загружены');
+}
+
+const app = express();
+app.use(express.json({ limit: '50mb' }));
+const STARTED = Date.now();
+
+
+const FILES_DIR = path.join(path.dirname(DB_PATH), 'files');
+const BACKUP_DIR = path.join(path.dirname(DB_PATH), 'backups');
+fs.mkdirSync(FILES_DIR, { recursive: true }); fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+// ---- Auth (scrypt hashed password, random session tokens) ----
+const hashPw = (pw, salt = crypto.randomBytes(16).toString('hex')) => salt + ':' + crypto.scryptSync(pw, salt, 64).toString('hex');
+const checkPw = (pw, stored) => { const [salt, h] = stored.split(':'); const a = Buffer.from(h, 'hex'), b = crypto.scryptSync(pw, salt, 64); return crypto.timingSafeEqual(a, b); };
+const getUsers = () => JSON.parse(q.meta.get('users')?.v || '{}');
+const setUsers = u => q.setMeta.run('users', JSON.stringify(u));
+if (process.env.STUDIO_ADMIN_PASSWORD && !Object.keys(getUsers()).length) setUsers({ [process.env.STUDIO_ADMIN_USER || 'igor']: hashPw(process.env.STUDIO_ADMIN_PASSWORD) });
+const sessions = new Map(JSON.parse(q.meta.get('sessions')?.v || '[]'));
+const saveSessions = () => q.setMeta.run('sessions', JSON.stringify([...sessions]));
+const SESSION_TTL = 30 * 86400000;
+function tokenOf(req) { const m = /(?:^|;\s*)mk_session=([a-f0-9]+)/.exec(req.headers.cookie || ''); return m ? m[1] : (req.headers.authorization || '').replace(/^Bearer /, ''); }
+function newSession(res, user) {
+  const tok = crypto.randomBytes(32).toString('hex'); sessions.set(tok, { user, exp: Date.now() + SESSION_TTL }); saveSessions();
+  res.setHeader('Set-Cookie', `mk_session=${tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL / 1000}`);
+}
+app.get('/api/auth/status', (req, res) => { const s = sessions.get(tokenOf(req)); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : null }); });
+app.post('/api/auth/setup', (req, res) => {
+  if (Object.keys(getUsers()).length) return res.status(403).json({ error: 'Пользователь уже создан' });
+  const { username, password } = req.body || {};
+  if (!username || !password || password.length < 8) return res.status(400).json({ error: 'Логин и пароль (мин. 8 символов) обязательны' });
+  setUsers({ [username]: hashPw(password) }); newSession(res, username); log('info', 'auth', 'Создан администратор ' + username, username); res.json({ ok: true, user: username });
+});
+const fails = new Map();
+app.post('/api/auth/login', (req, res) => {
+  const ip = req.ip, f = fails.get(ip) || { n: 0, until: 0 };
+  if (f.until > Date.now()) return res.status(429).json({ error: 'Слишком много попыток, подождите минуту' });
+  const { username, password } = req.body || {}; const u = getUsers();
+  if (u[username] && checkPw(String(password || ''), u[username])) { fails.delete(ip); newSession(res, username); log('info', 'auth', 'Вход: ' + username, username); return res.json({ ok: true, user: username }); }
+  f.n++; if (f.n >= 5) { f.until = Date.now() + 60000; f.n = 0; } fails.set(ip, f);
+  log('warn', 'auth', 'Неудачный вход: ' + String(username).slice(0, 40)); res.status(401).json({ error: 'Неверный логин или пароль' });
+});
+app.post('/api/auth/logout', (req, res) => { sessions.delete(tokenOf(req)); saveSessions(); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
+  const s = sessions.get(tokenOf(req)); if (!s || s.exp < Date.now()) return res.status(401).json({ error: 'auth required' });
+  req.user = s.user; next();
+});
+app.post('/api/auth/password', (req, res) => {
+  const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
+  if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });
+  if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Новый пароль: мин. 8 символов' });
+  u[req.user] = hashPw(newPassword); setUsers(u); log('info', 'auth', 'Пароль изменён', req.user); res.json({ ok: true });
+});
+
+// ---- Backup / restore ----
+const dump = () => ({ app: 'moonkatty-ai-studio', version: 1, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])) });
+function scheduledBackup() {
+  const f = path.join(BACKUP_DIR, 'backup-' + core.now().replace(/[:.]/g, '-') + '.json'); fs.writeFileSync(f, JSON.stringify(dump()));
+  const all = fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort(); for (const x of all.slice(0, Math.max(0, all.length - 14))) fs.unlinkSync(path.join(BACKUP_DIR, x));
+  q.setMeta.run('lastBackup', core.now()); log('info', 'backup', 'Резервная копия: ' + path.basename(f));
+}
+app.get('/api/backup', (req, res) => { log('info', 'backup', 'Экспорт резервной копии', req.user); res.setHeader('Content-Disposition', 'attachment; filename="moonkatty-studio-backup.json"'); res.json(dump()); });
+app.get('/api/backups', (req, res) => res.json(fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort().reverse()));
+app.post('/api/backups/run', (req, res) => { scheduledBackup(); res.json({ ok: true }); });
+app.post('/api/restore', express.json({ limit: '50mb' }), (req, res) => {
+  const d = req.body?.data; if (!d || typeof d !== 'object') return res.status(400).json({ error: 'Неверный файл резервной копии' });
+  db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o of d[c]) if (o && o.id) put(c, o); } })();
+  log('info', 'backup', 'Данные восстановлены из резервной копии', req.user); res.json({ ok: true });
+});
+
+// ---- Files (uploads for episodes/video) ----
+app.post('/api/files/upload', express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
+  const name = String(req.query.name || 'file').replace(/[^\w.\-]+/g, '_').slice(0, 120); const id = core.uid();
+  fs.writeFileSync(path.join(FILES_DIR, id + '-' + name), req.body);
+  const o = put('files', { id, name, size: req.body.length, mime: req.headers['content-type'] || '', url: `/files/${id}-${name}`, project: req.query.project || 'main', createdAt: core.now() });
+  log('info', 'files', 'Загружен файл ' + name, req.user); res.status(201).json(o);
+});
+app.use('/files', (req, res, next) => { const s = sessions.get(tokenOf(req)); if (!s) return res.status(401).end(); next(); }, express.static(FILES_DIR));
+
+// ---- Director chat ----
+async function llmPlan(text) {
+  const it = get('integrations', 'ollama'); const model = (it && it.model) || 'qwen3:8b';
+  const agents = list('agents').filter(a => a.enabled).map(a => `${a.id}: ${a.role}`).join('\n');
+  const prompt = `Ты Director студии MOONKATTY. Разбей запрос на задачи для агентов. Агенты:\n${agents}\nОтветь ТОЛЬКО JSON: {"summary":"...","tasks":[{"title":"...","agentId":"...","priority":"low|normal|high|urgent","description":"..."}]}\nЗапрос: ${text}`;
+  const r = await fetch(it.url.replace(/\/$/, '') + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(120000),
+    body: JSON.stringify({ model, stream: false, format: 'json', messages: [{ role: 'user', content: prompt }] }) });
+  if (!r.ok) throw new Error('Ollama HTTP ' + r.status);
+  const j = JSON.parse((await r.json()).message.content); const ids = new Set(list('agents').map(a => a.id));
+  return { planner: 'llm:' + model, summary: j.summary || '', tasks: (j.tasks || []).map(t => ({ ...t, agentId: ids.has(t.agentId) ? t.agentId : 'director' })) };
+}
+app.post('/api/director/chat', async (req, res) => {
+  const text = String(req.body?.text || '').trim(); if (!text) return res.status(400).json({ error: 'empty' });
+  put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
+  let plan, llmError = null;
+  try { plan = await llmPlan(text); } catch (e) { llmError = String(e.cause?.code || e.message); plan = core.rulePlan(text); }
+  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
+    status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
+  const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
+  log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, req.user); res.json({ message: msg, tasks: created });
+});
+
+app.get('/api/health', (req, res) => res.json({ ok: true, mode: 'server', version: require('./package.json').version }));
+
+let cpuPrev = os.cpus(), cpuPct = null;
+setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i]?.times || x.times; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round(100 * (1 - idle / tot)) : null; cpuPrev = c; }, 5000).unref();
+app.get('/api/system', (req, res) => {
+  const m = process.memoryUsage(); let disk = null;
+  try { const st = fs.statfsSync(path.dirname(DB_PATH)); disk = { total: st.blocks * st.bsize, free: st.bavail * st.bsize }; } catch {}
+  res.json({
+    uptimeSec: Math.round((Date.now() - STARTED) / 1000), node: process.version, platform: `${os.platform()} ${os.arch()}`,
+    cpuPct, cpus: os.cpus().length, disk, hostname: os.hostname(), loadavg: os.loadavg(), memTotal: os.totalmem(), memFree: os.freemem(), rss: m.rss,
+    dbPath: DB_PATH, dbSize: fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0,
+    counts: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c).length])),
+    lastSchedulerTick: q.meta.get('lastTick')?.v || null, lastBackup: q.meta.get('lastBackup')?.v || null
+  });
+});
+
+// Integration test — real HTTP request from the server.
+app.post('/api/integrations/:id/test', async (req, res) => {
+  const it = get('integrations', req.params.id);
+  if (!it) return res.status(404).json({ error: 'not found' });
+  const url = it.url.replace(/\/$/, '') + (it.testPath || '/');
+  const t0 = Date.now(); let result;
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const text = await r.text();
+    let detail = text.slice(0, 300);
+    if (it.id === 'ollama' && r.ok) { try { detail = 'Модели: ' + (JSON.parse(text).models || []).map(m => m.name).join(', ') || 'нет моделей'; } catch {} }
+    result = { ok: r.ok, status: r.status, ms: Date.now() - t0, url, detail, at: core.now(), via: 'server' };
+  } catch (e) {
+    result = { ok: false, status: null, ms: Date.now() - t0, url, detail: String(e.cause?.code || e.name || e.message), at: core.now(), via: 'server' };
+  }
+  it.lastTest = result; put('integrations', it);
+  log(result.ok ? 'info' : 'error', 'integration:' + it.id, `Проверка ${it.name} (${url}): ${result.ok ? 'OK' : 'ошибка — ' + result.detail}`);
+  res.json(result);
+});
+
+app.post('/api/reports/generate', (req, res) => {
+  const data = Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)]));
+  const rep = core.buildReport(data, +(req.body?.periodDays) || 3); rep.trigger = 'manual';
+  put('reports', rep); log('info', 'analytics', 'Сформирован отчёт за ' + rep.periodDays + ' дн.');
+  res.json(rep);
+});
+
+app.post('/api/reset', (req, res) => {
+  if (req.body?.confirm !== 'RESET') return res.status(400).json({ error: 'confirm required' });
+  db.transaction(() => { db.exec('DELETE FROM items'); const s = core.seed(); for (const c of Object.keys(s)) for (const o of s[c]) put(c, o); })();
+  log('info', 'system', 'Данные сброшены к начальным', req.user); res.json({ ok: true });
+});
+
+// Generic CRUD
+const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
+app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
+app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
+app.post('/api/:col', okCol, (req, res) => {
+  const o = Object.assign({}, req.body, { id: req.body.id || core.uid(), createdAt: core.now() });
+  if (req.params.col === 'tasks' && o.schedule && o.schedule.type !== 'none') o.nextRunAt = core.nextRun(o.schedule);
+  put(req.params.col, o); if (req.params.col !== 'logs') log('info', req.params.col, `Создано: ${o.title || o.name || o.id}`, req.user);
+  res.status(201).json(o);
+});
+app.put('/api/:col/:id', okCol, (req, res) => {
+  const cur = get(req.params.col, req.params.id); if (!cur) return res.status(404).json({ error: 'not found' });
+  const o = Object.assign(cur, req.body, { id: cur.id, updatedAt: core.now() });
+  if (req.params.col === 'tasks') {
+    if (req.body.status === 'done' && !o.completedAt) o.completedAt = core.now();
+    if ('schedule' in req.body) o.nextRunAt = core.nextRun(o.schedule);
+  }
+  put(req.params.col, o); if (req.params.col !== 'logs') log('info', req.params.col, `Изменено: ${o.title || o.name || o.id} (${Object.keys(req.body).join(', ')})`, req.user); res.json(o);
+});
+app.delete('/api/:col/:id', okCol, (req, res) => {
+  const r = q.del.run(req.params.col, req.params.id);
+  if (r.changes && req.params.col !== 'logs') log('info', req.params.col, `Удалено: ${req.params.id}`, req.user);
+  res.json({ ok: r.changes > 0 });
+});
+
+app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use((err, req, res, next) => { log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: err.message }); });
+
+// Scheduler: every 30s; auto-report every 3 days.
+function tick() {
+  try {
+    for (const ch of core.schedulerTick(list('tasks'))) {
+      const t = get('tasks', ch.id); Object.assign(t, ch.changes); put('tasks', t); if (ch.log) log(ch.log.level, ch.log.source, ch.log.message);
+    }
+    const last = q.meta.get('lastAutoReport')?.v;
+    if (!last || Date.now() - new Date(last) >= 3 * 86400000) {
+      const data = Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)]));
+      const rep = core.buildReport(data, 3); rep.trigger = 'auto'; put('reports', rep);
+      q.setMeta.run('lastAutoReport', rep.createdAt); log('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован');
+    }
+    const lb = q.meta.get('lastBackup')?.v; if (!lb || Date.now() - new Date(lb) >= 86400000) scheduledBackup();
+    q.setMeta.run('lastTick', core.now());
+  } catch (e) { log('error', 'scheduler', e.message); }
+}
+setInterval(tick, 30000); tick();
+
+process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
+app.listen(PORT, HOST, () => console.log(`MOONKATTY AI STUDIO: http://${HOST}:${PORT}`));

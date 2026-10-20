@@ -1,0 +1,13 @@
+services:
+  studio:
+    build: .
+    container_name: moonkatty-ai-studio
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"   # только localhost; доступ извне — через Tailscale
+    volumes:
+      - ./data:/data
+    environment:
+      # Ollama/OpenCode на хосте Mac доступны из контейнера по host.docker.internal
+      # (в Settings укажите http://host.docker.internal:11434)
+      - TZ=Asia/Jerusalem
