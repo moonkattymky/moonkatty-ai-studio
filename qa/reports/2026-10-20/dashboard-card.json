@@ -1,0 +1,71 @@
+{
+  "source": "qa",
+  "kind": "horizons-playtest",
+  "generatedAt": "2026-10-20T22:51:18.995Z",
+  "game": {
+    "repo": "moonkattymky/moonkatty-horizons-play",
+    "requestedRepo": "moonkattymky/moonkatty-horizons",
+    "branch": "main",
+    "sha": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+    "subject": "build 20261017-98a: leaderboard shows total players",
+    "build": "no package.json — serving the checkout as a static build",
+    "fallback": true,
+    "notes": [
+      "moonkatty-horizons: Cloning into '/workspace/qa/.cache/moonkatty-horizons'...",
+      "moonkatty-horizons-play@2df1c76f8a11 (main)"
+    ],
+    "url": "http://127.0.0.1:43495/"
+  },
+  "seed": 20261020,
+  "counts": {
+    "pass": 52,
+    "fail": 1,
+    "not_tested": 3
+  },
+  "openBugCount": 1,
+  "openBugs": [
+    {
+      "id": "QA-HZ-001",
+      "title": "window.MoonBuild does not match the asset build id",
+      "severity": "minor",
+      "viewport": "desktop",
+      "checkId": "desktop.build-id"
+    }
+  ],
+  "metrics": {
+    "loadMs": {
+      "desktop": 11870,
+      "iphone-14": 5782,
+      "pixel-7": 5814,
+      "small-phone": 5646
+    },
+    "fps": {
+      "frames": 1,
+      "budgetMs": 4000,
+      "elapsedMs": 5562.4,
+      "avgFrameMs": 2866.5,
+      "fps": 0.349,
+      "maxFrameMs": 2866.5,
+      "p95FrameMs": 2866.5,
+      "method": "requestAnimationFrame for a fixed wall-clock budget while the page is in the foreground"
+    },
+    "heap": {
+      "available": true,
+      "usedJSHeapSize": 168561486,
+      "totalJSHeapSize": 243779738,
+      "jsHeapSizeLimit": 4395630592
+    },
+    "inputLatencyMs": {
+      "samplesMs": [
+        1608.9,
+        2676.5,
+        2660.3
+      ],
+      "medianMs": 2660.3
+    },
+    "network": {
+      "throttledLoadMs": 8760
+    }
+  },
+  "note": "Counts are check results from this run. There is no quality score."
+}

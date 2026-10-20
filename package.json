@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "qa": "node qa/interfaces/self-check.mjs && node --test qa/content/test/content.test.mjs && node qa/game-tester/run.mjs",
+    "qa:interfaces": "node qa/interfaces/self-check.mjs",
+    "qa:content": "node --test qa/content/test/content.test.mjs",
+    "qa:horizons": "node qa/game-tester/run.mjs"
   },
   "keywords": [],
   "author": "",
