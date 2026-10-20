@@ -96,14 +96,17 @@ module.exports = function createRunner(ctx) {
       if (cur) { Object.assign(cur, e.blocked ? { status: 'blocked', blockedReason: e.message } : { status: 'failed', error: e.message }); put('tasks', cur); }
       Object.assign(ag, { lastError: e.message }); addLog(ag, e.blocked ? 'warn' : 'error', (e.blocked ? 'Заблокировано: ' : 'Ошибка: ') + e.message); put('agents', ag);
     } finally {
-      busy.delete(a.id); const ag = get('agents', a.id); if (ag && ag.currentTaskId === t.id) { ag.currentTaskId = null; put('agents', ag); }
+      busy.delete(a.id); if (ctx.release) ctx.release(t); const ag = get('agents', a.id); if (ag && ag.currentTaskId === t.id) { ag.currentTaskId = null; put('agents', ag); }
     }
   }
   function tick() {
     for (const a of list('agents')) {
       if (a.status !== 'working' || busy.has(a.id) || !a.enabled) continue;
       const q = list('tasks').filter(t => t.agentId === a.id && t.status === 'queued').sort((x, y) => (ORDER[x.priority] ?? 2) - (ORDER[y.priority] ?? 2));
-      if (q.length) runTask(a, q[0]).catch(e => log('error', 'runner', e.message));
+      // Resource Manager admission (optional; STUDIO_OPS_RESOURCES=1): first queued task that fits RAM/concurrency limits
+      const pick = q.length && ctx.admit ? q.find(t => ctx.admit(t).ok) : q[0];
+      if (pick) runTask(a, pick).catch(e => log('error', 'runner', e.message));
+      else if (q.length) { /* waiting for resources */ }
       else if (a.currentTaskId) { a.currentTaskId = null; put('agents', a); }
     }
   }

@@ -76,7 +76,9 @@ function newSession(res, user) {
 const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BRAND || 'MOONKATTY';
 const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
 const meta = require('./meta.js')(app, metaCtx);
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND });
+// ---- Studio Operations (feature flags, off by default; see docs/ops/) ----
+const ops = require('./lib/ops/index.js')({ env: process.env, dataDir: path.dirname(DB_PATH), log });
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, admit: ops.admit, release: ops.release });
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
 const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -101,11 +103,14 @@ app.post('/api/auth/login', (req, res) => {
 });
 app.post('/api/auth/logout', (req, res) => { sessions.delete(hashTok(tokenOf(req))); saveSessions(); q.setMeta.run('appTokenDisabled', '1'); // «Выйти» also stops the desktop auto-login until the next password login
   log('info', 'auth', 'Выход', getSession(req)?.user || null); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
+const mobile = ops.mountMobile(app, { q, get, put, list, log, sec, core, S, runner, filesDir: FILES_DIR, ownerUser: req => getSession(req)?.user || appTokenUser(req) }); // before main auth: own scoped token
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
   const s = getSession(req); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
   req.user = s.user; next();
 });
+if (mobile) mobile.mountAdmin();
+app.get('/api/ops/status', (req, res) => res.json(ops.status()));
 app.post('/api/auth/password', (req, res) => {
   const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
   if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });
@@ -316,7 +321,7 @@ function tick() {
     q.setMeta.run('lastTick', core.now());
   } catch (e) { log('error', 'scheduler', e.message); }
 }
-function startBackground() { runner.recover(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
+function startBackground() { ops.start(); runner.recover(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
 
 process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
 // Single instance: if the port is taken by our own server, exit cleanly (launchd will not restart on success).
