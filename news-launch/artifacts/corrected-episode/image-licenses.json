@@ -1,0 +1,68 @@
+{
+  "images": [
+    {
+      "id": "generated-color-cards",
+      "origin": "generated",
+      "generator": "ffmpeg lavfi color + drawtext via Video Factory v0",
+      "license": "Original graphics produced for this edition. No third-party photograph or footage.",
+      "commercialUse": true,
+      "attribution": "None required for the cards. DejaVu Sans is named below.",
+      "frames": [
+        {
+          "scene": "intro",
+          "heading": "MOONKATTY NEWS",
+          "background": "solid brand color, generated",
+          "color": "0x1a3a5c",
+          "thirdPartyImage": null
+        },
+        {
+          "scene": "alberta",
+          "heading": "Alberta",
+          "background": "solid brand color, generated",
+          "color": "0x1a4d3e",
+          "thirdPartyImage": null
+        },
+        {
+          "scene": "ebola",
+          "heading": "Abuja",
+          "background": "solid brand color, generated",
+          "color": "0x3a2f6b",
+          "thirdPartyImage": null
+        },
+        {
+          "scene": "jets",
+          "heading": "Saudi Arabia",
+          "background": "solid brand color, generated",
+          "color": "0x1a3a5c",
+          "thirdPartyImage": null
+        },
+        {
+          "scene": "outro",
+          "heading": "Sources",
+          "background": "solid brand color, generated",
+          "color": "0x1a4d3e",
+          "thirdPartyImage": null
+        }
+      ],
+      "thirdPartyAssets": [
+        {
+          "name": "DejaVu Sans Bold",
+          "license": "Bitstream Vera / DejaVu, free for commercial use",
+          "attributionRequired": false
+        }
+      ]
+    }
+  ],
+  "music": null,
+  "excluded": [
+    "GOV.UK Ministry of Defence building photograph on the primary page was not used. Rights were not cleared."
+  ],
+  "tts": {
+    "engine": "kokoro",
+    "voice": "am_michael",
+    "license": "Apache-2.0 (Kokoro-82M v1.0 weights and ONNX export). Training card also names CC BY audio; see news-launch/VOICE_REPORT.md.",
+    "commercialUse": true,
+    "provisional": true,
+    "locked": false
+  }
+}

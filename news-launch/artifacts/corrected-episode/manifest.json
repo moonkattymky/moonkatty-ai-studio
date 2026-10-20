@@ -1,0 +1,276 @@
+{
+  "episodeId": "corr-2026-10-20",
+  "profile": "corrected-editorial",
+  "outDir": "/workspace/news-launch/artifacts/corrected-episode",
+  "script": {
+    "title": "MOONKATTY NEWS",
+    "lang": "en",
+    "llm": {
+      "mode": "editor",
+      "model": null,
+      "adapter": null,
+      "reason": "Written by the news-launch editor from the primary statements in news-launch/artifacts/test-episode/FACTCHECK.md. Ollama was not used. This is not TEMPORARY_ADAPTER:extractive-headlines."
+    },
+    "scenes": [
+      {
+        "id": "intro",
+        "kind": "intro",
+        "heading": "MOONKATTY NEWS",
+        "text": "This is MOONKATTY NEWS."
+      },
+      {
+        "id": "alberta",
+        "kind": "story",
+        "storyId": "alberta-referendum-2026-10-19",
+        "heading": "Alberta",
+        "text": "On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called."
+      },
+      {
+        "id": "ebola",
+        "kind": "story",
+        "storyId": "nigeria-ebola-2026-10-20",
+        "heading": "Abuja",
+        "text": "Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement."
+      },
+      {
+        "id": "jets",
+        "kind": "story",
+        "storyId": "uk-saudi-typhoon-2026-10-20",
+        "heading": "Saudi Arabia",
+        "text": "Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth."
+      },
+      {
+        "id": "outro",
+        "kind": "outro",
+        "heading": "Sources",
+        "text": "Sources are official statements. This edition awaits approval and is not published."
+      }
+    ]
+  },
+  "voiceover": {
+    "engine": "kokoro",
+    "voice": "am_michael",
+    "license": "Apache-2.0 (Kokoro-82M v1.0 weights and ONNX export). Training card also names CC BY audio; see news-launch/VOICE_REPORT.md.",
+    "commercialUse": true,
+    "provisional": true,
+    "locked": false,
+    "segments": [
+      {
+        "text": "This is MOONKATTY NEWS.",
+        "file": "/workspace/news-launch/artifacts/corrected-episode/voiceover/scene-0.wav",
+        "durationSec": 1.6
+      },
+      {
+        "text": "On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called.",
+        "file": "/workspace/news-launch/artifacts/corrected-episode/voiceover/scene-1.wav",
+        "durationSec": 15.530667
+      },
+      {
+        "text": "Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement.",
+        "file": "/workspace/news-launch/artifacts/corrected-episode/voiceover/scene-2.wav",
+        "durationSec": 17.109333
+      },
+      {
+        "text": "Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth.",
+        "file": "/workspace/news-launch/artifacts/corrected-episode/voiceover/scene-3.wav",
+        "durationSec": 12.053333
+      },
+      {
+        "text": "Sources are official statements. This edition awaits approval and is not published.",
+        "file": "/workspace/news-launch/artifacts/corrected-episode/voiceover/scene-4.wav",
+        "durationSec": 5.312
+      }
+    ]
+  },
+  "jobs": [
+    {
+      "id": "news-horizontal",
+      "preset": "youtube",
+      "status": "done",
+      "scriptTitle": "MOONKATTY NEWS",
+      "width": 1920,
+      "height": 1080,
+      "character3d": "stub-3d",
+      "music": null,
+      "video": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
+      "subtitles": "/workspace/news-launch/artifacts/corrected-episode/horizontal.srt"
+    },
+    {
+      "id": "news-vertical",
+      "preset": "shorts",
+      "status": "done",
+      "scriptTitle": "MOONKATTY NEWS",
+      "width": 1080,
+      "height": 1920,
+      "character3d": "stub-3d",
+      "music": null,
+      "video": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
+      "subtitles": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt"
+    }
+  ],
+  "qc": [
+    {
+      "file": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "durationSec": 53.2,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioPresent": true,
+      "loudnessLUFS": -14.5,
+      "truePeakDb": -2.7,
+      "clipping": false,
+      "blackFrames": [],
+      "subtitleFile": "/workspace/news-launch/artifacts/corrected-episode/horizontal.srt",
+      "subtitleCues": 20,
+      "failures": [],
+      "checkedAt": "2026-10-20T23:02:22.875Z"
+    },
+    {
+      "file": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
+      "ok": true,
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 53.2,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioPresent": true,
+      "loudnessLUFS": -14.5,
+      "truePeakDb": -2.7,
+      "clipping": false,
+      "blackFrames": [],
+      "subtitleFile": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
+      "subtitleCues": 34,
+      "failures": [],
+      "checkedAt": "2026-10-20T23:02:22.875Z"
+    }
+  ],
+  "sources": [
+    {
+      "storyId": "alberta-referendum-2026-10-19",
+      "claim": "Elections Alberta held a referendum on 19 October 2026. Question 10 asked whether Alberta should remain in Canada or start the legal process for a binding separation referendum. Official results are published on 29 October 2026. This edition does not call a winner.",
+      "publisher": "Elections Alberta",
+      "org": "elections-alberta",
+      "url": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
+      "title": "Unofficial Referendum Results Reporting Process",
+      "published": "2026-10-19",
+      "role": "primary"
+    },
+    {
+      "storyId": "alberta-referendum-2026-10-19",
+      "claim": "Question 10, set by O.C. 160/2026, is not binding. Option 1 is remain. Option 2 is to commence the legal process for a binding provincial referendum on separation.",
+      "publisher": "Elections Alberta",
+      "org": "elections-alberta",
+      "url": "https://www.elections.ab.ca/elections/referendum/",
+      "title": "Referendum",
+      "published": "2026-10-19",
+      "role": "primary"
+    },
+    {
+      "storyId": "nigeria-ebola-2026-10-20",
+      "claim": "Nigeria confirmed one Ebola disease case in the FCT on 20 October 2026. The patient is a woman who arrived on a flight from Uganda and is in isolation. Forty-four close contacts were identified. Coordinating Minister Muhammad Ali Pate issued the statement.",
+      "publisher": "Federal Ministry of Health and Social Welfare of Nigeria",
+      "org": "health.gov.ng",
+      "url": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf",
+      "title": "FG CONFIRMS EBOLA DISEASE CASE IN FCT, ACTIVATES PUBLIC HEALTH RESPONSE",
+      "published": "2026-10-20",
+      "role": "primary"
+    },
+    {
+      "storyId": "uk-saudi-typhoon-2026-10-20",
+      "claim": "The UK Ministry of Defence said on 20 October 2026 that RAF Typhoon jets will fly defensive missions to protect Saudi cities and infrastructure and will not conduct offensive strikes against the Houthis. Defence Secretary Wes Streeting approved the support.",
+      "publisher": "UK Ministry of Defence",
+      "org": "gov.uk",
+      "url": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia",
+      "title": "Operational update 20 October – UK military support to the Kingdom of Saudi Arabia",
+      "published": "2026-10-20",
+      "role": "primary"
+    }
+  ],
+  "imageLicenses": {
+    "images": [
+      {
+        "id": "generated-color-cards",
+        "origin": "generated",
+        "generator": "ffmpeg lavfi color + drawtext via Video Factory v0",
+        "license": "Original graphics produced for this edition. No third-party photograph or footage.",
+        "commercialUse": true,
+        "attribution": "None required for the cards. DejaVu Sans is named below.",
+        "frames": [
+          {
+            "scene": "intro",
+            "heading": "MOONKATTY NEWS",
+            "background": "solid brand color, generated",
+            "color": "0x1a3a5c",
+            "thirdPartyImage": null
+          },
+          {
+            "scene": "alberta",
+            "heading": "Alberta",
+            "background": "solid brand color, generated",
+            "color": "0x1a4d3e",
+            "thirdPartyImage": null
+          },
+          {
+            "scene": "ebola",
+            "heading": "Abuja",
+            "background": "solid brand color, generated",
+            "color": "0x3a2f6b",
+            "thirdPartyImage": null
+          },
+          {
+            "scene": "jets",
+            "heading": "Saudi Arabia",
+            "background": "solid brand color, generated",
+            "color": "0x1a3a5c",
+            "thirdPartyImage": null
+          },
+          {
+            "scene": "outro",
+            "heading": "Sources",
+            "background": "solid brand color, generated",
+            "color": "0x1a4d3e",
+            "thirdPartyImage": null
+          }
+        ],
+        "thirdPartyAssets": [
+          {
+            "name": "DejaVu Sans Bold",
+            "license": "Bitstream Vera / DejaVu, free for commercial use",
+            "attributionRequired": false
+          }
+        ]
+      }
+    ],
+    "music": null,
+    "excluded": [
+      "GOV.UK Ministry of Defence building photograph on the primary page was not used. Rights were not cleared."
+    ],
+    "tts": {
+      "engine": "kokoro",
+      "voice": "am_michael",
+      "license": "Apache-2.0 (Kokoro-82M v1.0 weights and ONNX export). Training card also names CC BY audio; see news-launch/VOICE_REPORT.md.",
+      "commercialUse": true,
+      "provisional": true,
+      "locked": false
+    }
+  },
+  "character3d": "stub-3d",
+  "hostUsed": false,
+  "publish": false,
+  "provisionalVoice": {
+    "voice": "am_michael",
+    "locked": false
+  },
+  "producedBy": "news-launch editor",
+  "studioJobs": {
+    "mode": "TEMPORARY_ADAPTER:studio-job-queue-not-connected",
+    "connected": false,
+    "error": "feat/v1.2.0 is not on origin. server/jobs and server/blender were not created or written."
+  },
+  "blender": {
+    "invoked": false,
+    "pathWritten": false
+  }
+}

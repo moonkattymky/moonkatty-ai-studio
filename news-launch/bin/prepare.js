@@ -3,6 +3,7 @@
 const path = require('path');
 const { runLaunch } = require('../src/pipeline');
 const { saveToStudio, openStudio } = require('../src/studio-save');
+const { KokoroTTS, PROVISIONAL } = require('../src/kokoro');
 
 function arg(name) {
   const i = process.argv.indexOf(name);
@@ -14,9 +15,19 @@ const outDir = path.resolve(arg('--out') || path.join(__dirname, '..', 'artifact
 const stopAfter = process.argv.includes('--dry-run') ? 'factcheck' : (arg('--stop-after') || null);
 
 (async () => {
+  const ttsName = arg('--tts');
+  let tts;
+  if (ttsName === 'kokoro') {
+    const voice = arg('--voice') || PROVISIONAL.defaultVoice;
+    if (!PROVISIONAL.candidates.includes(voice)) throw new Error(`Voice ${voice} is not a provisional Kokoro candidate`);
+    tts = new KokoroTTS({ voice });
+  } else if (ttsName) {
+    throw new Error('Supported --tts values: kokoro. Omit --tts to use Piper en_US-ljspeech-high.');
+  }
   const manifest = await runLaunch({
     prompt, outDir, stopAfter, profile: arg('--profile') || 'episode',
     skipOllama: process.argv.includes('--skip-ollama'),
+    tts,
   });
   if (stopAfter) {
     const stories = (manifest.selected && manifest.selected.stories) || [];

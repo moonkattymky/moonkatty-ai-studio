@@ -1,0 +1,18 @@
+{
+  "title": "MOONKATTY NEWS",
+  "preset": "shorts",
+  "platform": "YouTube Shorts",
+  "width": 1080,
+  "height": 1920,
+  "aspect": "9:16",
+  "durationSec": 53.1,
+  "files": {
+    "video": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
+    "subtitles": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
+    "thumbnail": "/workspace/news-launch/artifacts/corrected-episode/vertical.jpg"
+  },
+  "tts": "kokoro",
+  "character3d": "stub-3d",
+  "music": null,
+  "createdAt": "2026-10-20T23:01:14.382Z"
+}

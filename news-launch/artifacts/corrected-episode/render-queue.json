@@ -1,0 +1,66 @@
+{
+  "jobs": [
+    {
+      "id": "news-horizontal",
+      "payload": {
+        "preset": "youtube",
+        "basename": "horizontal"
+      },
+      "status": "done",
+      "attempts": 1,
+      "createdAt": "2026-10-20T23:00:45.587Z",
+      "startedAt": "2026-10-20T23:00:45.589Z",
+      "result": {
+        "title": "MOONKATTY NEWS",
+        "preset": "youtube",
+        "platform": "YouTube",
+        "width": 1920,
+        "height": 1080,
+        "aspect": "16:9",
+        "durationSec": 53.1,
+        "files": {
+          "video": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
+          "subtitles": "/workspace/news-launch/artifacts/corrected-episode/horizontal.srt",
+          "thumbnail": "/workspace/news-launch/artifacts/corrected-episode/horizontal.jpg"
+        },
+        "tts": "kokoro",
+        "character3d": "stub-3d",
+        "music": null,
+        "createdAt": "2026-10-20T23:01:00.240Z"
+      },
+      "finishedAt": "2026-10-20T23:01:00.243Z",
+      "error": null
+    },
+    {
+      "id": "news-vertical",
+      "payload": {
+        "preset": "shorts",
+        "basename": "vertical"
+      },
+      "status": "done",
+      "attempts": 1,
+      "createdAt": "2026-10-20T23:00:45.587Z",
+      "startedAt": "2026-10-20T23:01:00.245Z",
+      "result": {
+        "title": "MOONKATTY NEWS",
+        "preset": "shorts",
+        "platform": "YouTube Shorts",
+        "width": 1080,
+        "height": 1920,
+        "aspect": "9:16",
+        "durationSec": 53.1,
+        "files": {
+          "video": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
+          "subtitles": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
+          "thumbnail": "/workspace/news-launch/artifacts/corrected-episode/vertical.jpg"
+        },
+        "tts": "kokoro",
+        "character3d": "stub-3d",
+        "music": null,
+        "createdAt": "2026-10-20T23:01:14.382Z"
+      },
+      "finishedAt": "2026-10-20T23:01:14.384Z",
+      "error": null
+    }
+  ]
+}

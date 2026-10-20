@@ -28,7 +28,7 @@
       "type": "object",
       "required": ["mode"],
       "properties": {
-        "mode": { "enum": ["ollama", "temporary-adapter"] },
+        "mode": { "enum": ["ollama", "temporary-adapter", "editor"] },
         "model": { "type": ["string", "null"] },
         "adapter": { "type": ["string", "null"] },
         "reason": { "type": ["string", "null"] }

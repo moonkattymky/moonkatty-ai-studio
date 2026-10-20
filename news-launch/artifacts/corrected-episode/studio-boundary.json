@@ -1,0 +1,5 @@
+{
+  "mode": "TEMPORARY_ADAPTER:studio-job-queue-not-connected",
+  "connected": false,
+  "error": "feat/v1.2.0 is not on origin. server/jobs and server/blender were not created or written."
+}
