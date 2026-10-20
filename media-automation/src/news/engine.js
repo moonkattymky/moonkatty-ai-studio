@@ -93,7 +93,6 @@ class NewsEngine {
     // Editorial review: never downgrade a human decision.
     const needs = s.breaking || s.controversial || s.corroboration !== 'confirmed';
     if (s.reviewStatus !== REVIEW.APPROVED && s.reviewStatus !== REVIEW.REJECTED) s.reviewStatus = needs ? REVIEW.PENDING : REVIEW.AUTO;
-    if (s.reviewStatus === REVIEW.APPROVED && (s.breaking || s.controversial) && !s.review?.by) s.reviewStatus = REVIEW.PENDING;
     s.reviewReasons = [s.breaking && 'breaking', s.controversial && 'controversial', s.corroboration !== 'confirmed' && 'unconfirmed'].filter(Boolean);
     s.updatedAt = this.now();
   }
