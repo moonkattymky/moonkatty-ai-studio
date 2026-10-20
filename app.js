@@ -6,7 +6,7 @@ const C = window.MKCore;
 let MODE = 'browser', USER = null, DB = {}, SYS = null;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = d => d ? new Date(d).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+const fmt = d => d ? new Date(d).toLocaleString(i18n.locale(), { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 const fmtSize = n => n > 1e9 ? (n / 1e9).toFixed(1) + ' ГБ' : n > 1e6 ? (n / 1e6).toFixed(1) + ' МБ' : (n / 1e3).toFixed(0) + ' КБ';
 const DEV = (t = 'в разработке') => `<span class="badge b-dev b-none">${t}</span>`;
 
@@ -94,7 +94,7 @@ async function api(method, path, body) {
 }
 async function loadAll() { const cols = C.COLLECTIONS; const res = await Promise.all([...cols.map(c => api('GET', '/api/' + c)), api('GET', '/api/system').catch(() => null)]); cols.forEach((c, i) => DB[c] = res[i]); SYS = res[cols.length]; }
 async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); } }
-function toast(m, err) { const d = document.createElement('div'); d.textContent = m; if (err) d.style.borderColor = '#ef4444'; $('#toast').append(d); setTimeout(() => d.remove(), 3500); }
+function toast(m, err) { const d = document.createElement('div'); d.textContent = i18n.tr(m); if (err) d.style.borderColor = '#ef4444'; $('#toast').append(d); setTimeout(() => d.remove(), 3500); }
 
 // ================= Helpers =================
 const agentName = id => (DB.agents.find(a => a.id === id) || {}).name || 'не назначен';
@@ -394,7 +394,7 @@ VIEWS.calendar = () => {
     ...DB.tasks.filter(t => t.dueAt || t.nextRunAt).map(t => ({ d: new Date(t.dueAt || t.nextRunAt), t: t.title, c: 'task' })),
     ...DB.projects.flatMap(p => (p.plan || []).filter(i => i.date).map(i => ({ d: new Date(i.date + 'T12:00'), t: '📋 ' + i.title, c: '' })))];
   for (let i = 0; i < 42; i++) { const d = new Date(start); d.setDate(start.getDate() + i); days.push(d); }
-  return `<div class="row" style="margin-bottom:12px"><button class="btn sm" id="calPrev">‹</button><b style="min-width:150px;text-align:center">${base.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</b><button class="btn sm" id="calNext">›</button><span class="sp"></span>
+  return `<div class="row" style="margin-bottom:12px"><button class="btn sm" id="calPrev">‹</button><b style="min-width:150px;text-align:center">${base.toLocaleDateString(i18n.locale(), { month: 'long', year: 'numeric' })}</b><button class="btn sm" id="calNext">›</button><span class="sp"></span>
     <span class="small mut"><span class="badge b-pur b-none">публикации / план</span> <span class="badge b-blue b-none">задачи (срок / след. запуск)</span></span></div>
   <div class="cal">${['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => `<div class="small mut" style="text-align:center">${d}</div>`).join('')}
   ${days.map(d => `<div class="d ${d.getMonth() !== m ? 'other' : ''} ${d.toDateString() === today ? 'today' : ''}"><b>${d.getDate()}</b>${evs.filter(e => e.d.toDateString() === d.toDateString()).map(e => `<div class="ev ${e.c}" title="${esc(e.t)}">${esc(e.t)}</div>`).join('')}</div>`).join('')}</div>
@@ -494,7 +494,8 @@ async function showAuth() {
   const st = await api('GET', '/api/auth/status'); $('#app').classList.add('hidden'); const a = $('#auth'); a.classList.remove('hidden');
   a.innerHTML = `<form class="box"><img src="logo.svg" alt=""><h2 style="text-align:center;margin:0;letter-spacing:.06em">MOONKATTY AI STUDIO</h2><p class="small mut" style="text-align:center">${st.needsSetup ? 'Первый запуск: создайте администратора' : 'Вход'}${MODE === 'browser' ? '<br><span class="gold">Браузерный демо-режим: данные и пароль хранятся только в этом браузере</span>' : ''}</p>
     <label>Логин</label><input name="username" required autocomplete="username" value="${st.needsSetup ? 'igor' : ''}"><label>Пароль${st.needsSetup ? ' (мин. 8 символов)' : ''}</label><input name="password" type="password" required minlength="${st.needsSetup ? 8 : 1}" autocomplete="${st.needsSetup ? 'new-password' : 'current-password'}">
-    <button class="btn primary" style="width:100%;margin-top:16px">${st.needsSetup ? 'Создать и войти' : 'Войти'}</button><div id="authErr" class="small" style="color:var(--err);margin-top:8px"></div></form>`;
+    <div class="row" style="margin-top:12px"><span class="small mut sp">Язык / Language</span><select id="langAuth" style="width:auto">${opts([['ru', 'RU'], ['en', 'EN'], ['uk', 'UK']], i18n.lang)}</select></div><button class="btn primary" style="width:100%;margin-top:16px">${st.needsSetup ? 'Создать и войти' : 'Войти'}</button><div id="authErr" class="small" style="color:var(--err);margin-top:8px"></div></form>`;
+  a.querySelector('#langAuth').onchange = e => i18n.set(e.target.value);
   a.querySelector('form').onsubmit = async e => { e.preventDefault(); try { const r = await api('POST', st.needsSetup ? '/api/auth/setup' : '/api/auth/login', Object.fromEntries(new FormData(e.target))); USER = r.user; await start(); } catch (er) { a.querySelector('#authErr').textContent = er.message; } };
 }
 let started = false;
@@ -507,6 +508,7 @@ async function start() {
     try { await loadAll(); if (!document.activeElement || !document.activeElement.matches('input,textarea,select')) render(); } catch {} }, 30000);
 }
 (async function boot() {
+  i18n.start(); const ls = $('#langSel'); ls.value = i18n.lang; ls.onchange = () => i18n.set(ls.value);
   $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
   $('#chatBtn').onclick = () => $('#chatDrawer').classList.contains('hidden') ? openChat() : $('#chatDrawer').classList.add('hidden');
   $('#logoutSide').onclick = async () => { await api('POST', '/api/auth/logout'); location.reload(); }; $('#setBtn').onclick = () => navTo('settings');
@@ -544,7 +546,7 @@ VIEWS.dashboard = () => {
   const metric = (n, v, label) => `<div class="metric"><span class="mut">${n}</span>${v == null ? '<span class="small mut">Не подключено</span><span></span>' : `<div class="bar"><i style="width:${v}%"></i></div><b class="small">${label || v + '%'}</b>`}</div>`;
   const acts = [...DB.logs].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 7);
   return `<div class="agent-row">${['director', 'news', 'video', 'social', 'games'].map(id => DB.agents.find(a => a.id === id)).filter(Boolean).map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId);
-    return `<div class="agent-mini" data-go="agents">${avatar(a)}<div style="min-width:0"><b>${esc(a.name)} Agent</b><div class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ct ? esc(ct.title) : esc(a.role.split(':')[0].slice(0, 40))}</div>${agentStatus(a)}</div></div>`; }).join('')}</div>
+    return `<div class="agent-mini" data-go="agents">${avatar(a)}<div style="min-width:0"><b>${esc(a.name)} Agent</b><div class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ct ? esc(ct.title) : esc(a.role.split(':')[0])}</div>${agentStatus(a)}</div></div>`; }).join('')}</div>
   <div class="dash"><div class="col">
     <div class="card"><h3>Tasks <button class="btn sm primary" data-task-new="">+ New Task</button></h3>
       ${list.length ? list.map(t => `<label class="task-li ${t.status === 'done' ? 'done' : ''}"><input type="checkbox" data-done="${t.id}" ${t.status === 'done' ? 'checked' : ''}><span class="sp">${esc(t.title)}<div class="small mut">${esc(agentName(t.agentId))} · ${(STATUS[t.status] || [t.status])[0]}</div></span><span class="small mut">${t.dueAt ? fmt(t.dueAt).slice(-5) : ''}</span></label>`).join('') : '<div class="empty">Задач нет. Создайте задачу или напишите Director.</div>'}
@@ -561,7 +563,7 @@ VIEWS.dashboard = () => {
     <div class="card"><h3>Upcoming Publications <button class="btn sm ghost" data-go="social">View all</button></h3>
       ${upcoming.length ? upcoming.map(p => `<div class="list-item"><span class="sp">${esc(p.title)}<div class="small mut">${esc(chName(p.channelId))} · ${fmt(p.scheduledAt)}</div></span>${postBadge(p.status)}</div>`).join('') : '<div class="empty">Запланированных публикаций нет</div>'}</div>
     <div class="card"><h3>Calendar <span class="seg"><button data-dcal="week" class="${calMode === 'week' ? 'on' : ''}">Week</button><button data-dcal="month" class="${calMode === 'month' ? 'on' : ''}">Month</button></span></h3>
-      <div class="small mut" style="margin-bottom:6px">${today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</div>
+      <div class="small mut" style="margin-bottom:6px">${today.toLocaleDateString(i18n.locale(), { month: 'long', year: 'numeric' })}</div>
       <div class="mini-cal">${['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => `<span class="mut">${d}</span>`).join('')}${days.map(d => `<div class="${d.toDateString() === today.toDateString() ? 't' : ''} ${evDates.includes(d.toDateString()) ? 'has' : ''}" style="${d.getMonth() !== today.getMonth() ? 'opacity:.4' : ''}">${d.getDate()}</div>`).join('')}</div>
       <button class="btn sm ghost" data-go="calendar" style="margin-top:8px">Открыть календарь →</button></div>
   </div></div>
@@ -573,7 +575,7 @@ VIEWS.dashboard = () => {
       ${MODE === 'server' ? metric('CPU', S.cpuPct ?? null) + metric('RAM', memUsed != null ? pct(memUsed, S.memTotal) : null) + metric('GPU', null) + metric('Disk', S.disk ? pct(S.disk.total - S.disk.free, S.disk.total) : null) + metric('Network', null)
         : ['CPU', 'RAM', 'GPU', 'Disk', 'Network'].map(n => metric(n, null)).join('')}</div>
     <div class="card"><h3>Recent Activity <button class="btn sm ghost" data-go="logs">View all</button></h3>
-      ${acts.length ? acts.map(l => `<div class="list-item small" style="padding:5px 0"><span class="mut">${new Date(l.at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span><span class="badge b-none ${l.level === 'error' ? 'b-err' : l.level === 'warn' ? 'b-warn' : 'b-ok'}">●</span><span class="sp" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message)}</span></div>`).join('') : '<div class="empty">Активности нет</div>'}</div>
+      ${acts.length ? acts.map(l => `<div class="list-item small" style="padding:5px 0"><span class="mut">${new Date(l.at).toLocaleTimeString(i18n.locale(), { hour: '2-digit', minute: '2-digit' })}</span><span class="badge b-none ${l.level === 'error' ? 'b-err' : l.level === 'warn' ? 'b-warn' : 'b-ok'}">●</span><span class="sp" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message)}</span></div>`).join('') : '<div class="empty">Активности нет</div>'}</div>
     <div class="card"><h3>Analytics</h3>${DB.channels.map(c => `<div class="list-item small"><span class="sp">${esc(c.name)}</span><span class="badge">Не подключено</span></div>`).join('')}
       <p class="small mut" style="margin-bottom:0">Без подключения API — никаких цифр (${DEV()}).</p></div>
   </div>`;
