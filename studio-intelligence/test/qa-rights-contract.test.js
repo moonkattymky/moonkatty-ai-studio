@@ -107,7 +107,7 @@ test('перед выпуском права читаются из памяти 
   const model = si.brand.register({
     principal: owner,
     asset: {
-      id: 'master_model', kind: 'master_model', namespace: 'moonkatty_project', version: 1,
+      id: 'MOONKATTY_MASTER_CHARACTER', kind: 'master_model', namespace: 'moonkatty_shared', version: 1,
       filePath: 'brand/moonkatty-cat.blend', approvedBy: 'igor',
       substitutionPolicy: 'owner_approval_required', autoExecute: false
     }

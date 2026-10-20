@@ -32,7 +32,7 @@ test('сценарии описаны, шаги владельца не авто
 test('бренд сохраняет оригинал, проверка и решение ничего не исполняют', () => {
   const { si, owner, agent } = setup();
   const asset = si.brand.validateAsset({
-    id: 'cat_original', kind: 'cat_image', namespace: 'moonkatty_project', version: 1,
+    id: 'cat_original', kind: 'cat_image', namespace: 'moonkatty_shared', version: 1,
     filePath: 'brand/cat-original.png', approvedBy: 'igor',
     substitutionPolicy: 'owner_approval_required', autoExecute: false, locked: true
   });

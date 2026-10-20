@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/voice-profile.schema.json",
+  "title": "VoiceProfile",
+  "description": "Профиль голоса ведущего. Платный синтез отсюда не вызывается.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["voiceProfileId", "namespace", "label", "note", "sampleAssetId", "status", "sampleRate", "recognizer", "gain", "mouthScale"],
+  "properties": {
+    "voiceProfileId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "namespace": { "const": "moonkatty_news" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "note": { "type": ["string", "null"], "maxLength": 2000 },
+    "sampleAssetId": { "type": ["string", "null"], "maxLength": 64 },
+    "status": { "enum": ["draft", "approved"] },
+    "sampleRate": { "type": ["integer", "null"], "minimum": 16000, "maximum": 48000 },
+    "recognizer": { "type": ["string", "null"], "maxLength": 32 },
+    "gain": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "mouthScale": { "type": ["number", "null"], "minimum": 0, "maximum": 4 }
+  }
+}

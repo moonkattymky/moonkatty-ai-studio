@@ -1,7 +1,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { DEFAULT_GRANTS, SCHEMA_VERSION } = require('./constants');
+const { DEFAULT_GRANTS, SCHEMA_VERSION, PROJECT_SEEDS } = require('./constants');
+const { upgradeToV3 } = require('./migrate-v3');
 
 function applyPragmas(db) {
   const statements = ['PRAGMA journal_mode = WAL', 'PRAGMA busy_timeout = 5000', 'PRAGMA foreign_keys = ON'];
@@ -72,7 +73,7 @@ function migrate(db) {
     );
     CREATE TABLE IF NOT EXISTS si_records (
       id TEXT PRIMARY KEY,
-      namespace TEXT NOT NULL CHECK (namespace IN ('moonkatty_news', 'moonkatty_project')),
+      namespace TEXT NOT NULL CHECK (namespace IN ('moonkatty_news', 'moonkatty_project', 'moonkatty_shared')),
       kind TEXT NOT NULL CHECK (kind IN ('decision','task','result','file','model_version','publication_version','document')),
       title TEXT NOT NULL,
       body TEXT NOT NULL DEFAULT '',
@@ -138,7 +139,7 @@ function migrate(db) {
     END;
     CREATE TABLE IF NOT EXISTS si_assets (
       id TEXT PRIMARY KEY,
-      namespace TEXT NOT NULL CHECK (namespace IN ('moonkatty_news', 'moonkatty_project')),
+      namespace TEXT NOT NULL CHECK (namespace IN ('moonkatty_news', 'moonkatty_project', 'moonkatty_shared')),
       kind TEXT NOT NULL CHECK (kind IN ('image','video','audio','music','model','texture','animation','logo','subtitle','other')),
       brand_role TEXT,
       title TEXT NOT NULL,
@@ -147,7 +148,7 @@ function migrate(db) {
       storage_path TEXT,
       content_hash TEXT,
       dedup_key TEXT NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('draft','approved','rejected','superseded')),
+      status TEXT NOT NULL CHECK (status IN ('draft','approved','rejected','superseded','deleted')),
       version INTEGER NOT NULL CHECK (version >= 1),
       created_by TEXT NOT NULL,
       created_at TEXT NOT NULL,
@@ -193,7 +194,7 @@ function migrate(db) {
       subject_type TEXT NOT NULL,
       subject_id TEXT NOT NULL,
       required_role TEXT NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('pending','approved','rejected')),
+      status TEXT NOT NULL CHECK (status IN ('pending','recommended','rework','approved','rejected')),
       auto_execute INTEGER NOT NULL DEFAULT 0 CHECK (auto_execute = 0),
       requested_by TEXT NOT NULL,
       requested_at TEXT NOT NULL,
@@ -205,7 +206,7 @@ function migrate(db) {
       id TEXT PRIMARY KEY,
       approval_id TEXT NOT NULL,
       at TEXT NOT NULL,
-      action TEXT NOT NULL CHECK (action IN ('requested','approved','rejected')),
+      action TEXT NOT NULL CHECK (action IN ('requested','recommended','rework','resubmitted','approved','rejected')),
       actor_id TEXT NOT NULL,
       actor_role TEXT NOT NULL,
       comment TEXT,
@@ -221,7 +222,9 @@ function migrate(db) {
       amount_usd REAL NOT NULL,
       note TEXT,
       actor_id TEXT NOT NULL,
-      idempotency_key TEXT NOT NULL
+      idempotency_key TEXT NOT NULL,
+      direction TEXT NOT NULL DEFAULT 'expense' CHECK (direction IN ('expense', 'revenue')),
+      project_id TEXT
     );
     CREATE UNIQUE INDEX IF NOT EXISTS si_cost_idem ON si_cost_entries(namespace, idempotency_key);
     CREATE TABLE IF NOT EXISTS si_health_samples (
@@ -243,11 +246,141 @@ function migrate(db) {
       at TEXT NOT NULL,
       actor_id TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS si_asset_events (
+      id TEXT PRIMARY KEY,
+      asset_id TEXT NOT NULL,
+      at TEXT NOT NULL,
+      action TEXT NOT NULL,
+      actor_id TEXT NOT NULL,
+      version INTEGER,
+      detail_json TEXT NOT NULL DEFAULT '{}'
+    );
+    CREATE INDEX IF NOT EXISTS si_asset_events_asset ON si_asset_events(asset_id, at, id);
+    CREATE TABLE IF NOT EXISTS si_asset_tasks (
+      asset_id TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      namespace TEXT NOT NULL,
+      linked_at TEXT NOT NULL,
+      actor_id TEXT NOT NULL,
+      PRIMARY KEY (asset_id, task_id)
+    );
+    CREATE TABLE IF NOT EXISTS si_asset_files (
+      id TEXT PRIMARY KEY,
+      asset_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      path TEXT NOT NULL,
+      checksum TEXT,
+      recorded_at TEXT NOT NULL,
+      actor_id TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS si_asset_files_asset ON si_asset_files(asset_id, role);
+    CREATE TABLE IF NOT EXISTS si_voice_profiles (
+      voice_profile_id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL CHECK (namespace = 'moonkatty_news'),
+      label TEXT NOT NULL,
+      note TEXT,
+      sample_asset_id TEXT,
+      status TEXT NOT NULL CHECK (status IN ('draft', 'approved', 'superseded')),
+      defined_by TEXT NOT NULL,
+      defined_at TEXT NOT NULL,
+      approved_by TEXT,
+      approved_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS si_source_history (
+      id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL,
+      source_url TEXT,
+      source_name TEXT,
+      action TEXT NOT NULL CHECK (action IN ('added', 'updated', 'retired')),
+      note TEXT,
+      actor_id TEXT NOT NULL,
+      at TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS si_source_history_idem ON si_source_history(namespace, idempotency_key);
+    CREATE TABLE IF NOT EXISTS si_editorial_decisions (
+      id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL,
+      subject_type TEXT NOT NULL,
+      subject_id TEXT NOT NULL,
+      action TEXT NOT NULL CHECK (action IN ('noted', 'recommended', 'approved', 'rejected')),
+      summary TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('draft', 'approved')),
+      actor_id TEXT NOT NULL,
+      at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS si_editorial_subject ON si_editorial_decisions(namespace, subject_id, at);
+    CREATE TABLE IF NOT EXISTS si_content_versions (
+      id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL,
+      content_type TEXT NOT NULL CHECK (content_type IN ('script', 'video')),
+      content_key TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      storage_path TEXT,
+      checksum TEXT,
+      status TEXT NOT NULL CHECK (status IN ('draft', 'approved', 'superseded')),
+      supersedes TEXT,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS si_content_versions_key ON si_content_versions(namespace, content_type, content_key, version);
+    CREATE TABLE IF NOT EXISTS si_publication_notices (
+      id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL,
+      kind TEXT NOT NULL CHECK (kind IN ('correction', 'retraction')),
+      publication_id TEXT NOT NULL,
+      publication_version INTEGER,
+      text TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('draft', 'approved')),
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      approved_by TEXT,
+      approved_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS si_projects (
+      project_id TEXT PRIMARY KEY,
+      namespace TEXT NOT NULL,
+      slug TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS si_character_versions (
+      id TEXT PRIMARY KEY,
+      character_id TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      file TEXT NOT NULL,
+      sha256 TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('draft', 'approved', 'superseded')),
+      locked INTEGER NOT NULL DEFAULT 0 CHECK (locked IN (0, 1)),
+      voice_profile_id TEXT,
+      source_refs_json TEXT NOT NULL DEFAULT '[]',
+      approved_by TEXT,
+      approved_at TEXT,
+      created_by TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS si_character_versions_num ON si_character_versions(character_id, version);
   `);
+  const voiceCols = db.prepare('PRAGMA table_info(si_voice_profiles)').all();
+  if (voiceCols.length && !voiceCols.some(col => col.name === 'sample_rate')) {
+    db.exec('ALTER TABLE si_voice_profiles ADD COLUMN sample_rate INTEGER');
+    db.exec('ALTER TABLE si_voice_profiles ADD COLUMN recognizer TEXT');
+    db.exec('ALTER TABLE si_voice_profiles ADD COLUMN gain REAL');
+    db.exec('ALTER TABLE si_voice_profiles ADD COLUMN mouth_scale REAL');
+  }
+  const costCols = db.prepare('PRAGMA table_info(si_cost_entries)').all();
+  if (costCols.length && !costCols.some(col => col.name === 'direction')) {
+    db.exec("ALTER TABLE si_cost_entries ADD COLUMN direction TEXT NOT NULL DEFAULT 'expense'");
+    db.exec('ALTER TABLE si_cost_entries ADD COLUMN project_id TEXT');
+  }
+  transaction(db, () => upgradeToV3(db));
   const insertGrant = db.prepare('INSERT OR IGNORE INTO si_grants (agent_id, namespace, action) VALUES (?, ?, ?)');
   const setMeta = db.prepare('INSERT INTO si_meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v');
   transaction(db, () => {
     for (const row of DEFAULT_GRANTS) insertGrant.run(row[0], row[1], row[2]);
+    const insertProject = db.prepare('INSERT OR IGNORE INTO si_projects (project_id, namespace, slug, title) VALUES (?, ?, ?, ?)');
+    for (const row of PROJECT_SEEDS) insertProject.run(row[0], row[1], row[2], row[3]);
     setMeta.run('schema_version', String(SCHEMA_VERSION));
   });
 }

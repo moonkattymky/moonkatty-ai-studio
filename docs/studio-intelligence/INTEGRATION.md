@@ -34,20 +34,21 @@ const newsAgent = si.auth.principalFromSession(session, { agentId: 'news' });
 
 Пароль и токен в этот вызов передавать нельзя: будет `SECRET_REJECTED`. Функция не проверяет пароль и не заводит пользователей.
 
-Пространства имён только два: `moonkatty_news` и `moonkatty_project`. Они соответствуют проектам панели `news` и `main`.
+Пространств три: `moonkatty_news`, `moonkatty_project`, `moonkatty_shared`. Первые два соответствуют проектам панели `news` и `main`. Общее пространство не ставится в очередь панели: задачи остаются в `news` или `main`.
 
 Права по умолчанию (таблица `si_grants`):
 
-| Агент | NEWS | PROJECT |
-|---|---|---|
-| news, video | чтение и запись черновиков | нет |
-| content | чтение | нет |
-| games, pr, design3d | нет | чтение и запись черновиков |
-| mkty, marketing, community | нет | чтение |
-| social, publishing, analytics | чтение | чтение |
-| director | чтение и черновики | чтение и черновики |
+| Агент | NEWS | PROJECT | SHARED |
+|---|---|---|---|
+| news, video | чтение и запись черновиков | нет | чтение |
+| content | чтение | нет | чтение |
+| games, pr | нет | чтение и запись черновиков | чтение |
+| design3d | нет | чтение и запись черновиков | чтение и черновики |
+| mkty, marketing, community | нет | чтение | чтение |
+| social, publishing, analytics | чтение | чтение | чтение |
+| director | чтение и черновики | чтение и черновики | чтение и черновики |
 
-Владелец (`role: 'owner'`) читает оба пространства и только он ставит `status: 'approved'`. Виды `decision`, `model_version`, `publication_version` агенту недоступны. Агент не утверждает свои черновики.
+Владелец (`role: 'owner'`) читает все три пространства и только он ставит итог: публикация, мастер-модель, изменение рабочего проекта, расход, голос ведущего. Роль `editor` есть в схеме и выключена (`EDITORS_ENABLED = false`). Виды `decision`, `model_version`, `publication_version` агенту недоступны. Агент может рекомендовать утверждение и вернуть на доработку. `executed` при этом остаётся `false`.
 
 Чужая запись для агента выглядит как `NOT_FOUND`, а не как чужое тело. Запрос чужого пространства по имени — `PERMISSION_DENIED`.
 
@@ -382,3 +383,25 @@ node --disable-warning=ExperimentalWarning --test studio-intelligence/test/*.tes
 ```
 
 Предупреждение `ExperimentalWarning` относится к `node:sqlite`, если в окружении нет `better-sqlite3`. На машине с `npm ci` откроется `better-sqlite3`, предупреждения не будет.
+
+## Журнал панели и таблицы si_
+
+В `server.js` уже есть журнал коллекции `logs`: строка `{id, at, level, source, message, user}`, не больше 2000 записей, старые удаляются. Рядом на ветке безопасности текст ещё раз чистится от секретов. Этот модуль второй журнал не заводит.
+
+Долгая история лежит в `si_approval_events`, `si_asset_events`, `si_source_history`, `si_editorial_decisions`, `si_content_versions`, `si_publication_notices`, `si_character_versions`. Короткая строка уходит в существующий журнал, если хост передал свою функцию:
+
+```js
+const si = openStudioIntelligence({ db, auditLog: log });
+```
+
+`log` — та же функция, что в `server.js`: `log(level, source, message, user)`. Потолок 2000 остаётся у хоста. В текст строки не кладутся хеши SHA-256: на ветке безопасности шаблон из 64 hex вычищается целиком. Секрет в комментарии отклоняется до записи (`SECRET_REJECTED`).
+
+JSON-копия панели (`data/backups/backup-*.json`) собирает только коллекции `items` и в таблицы `si_*` не заглядывает. Долгая история переживёт обрезку журнала, только если копируется сам файл `data/studio.db`. Скрипт копии и отката — в отдельном черновике подключения, `server.js` здесь не меняется.
+
+## Деньги
+
+Источник правды — журнал Studio 3: `listEntries({ kind, direction, projectId, from, to })` в `lib/ops/ledger` и `GET /api/ops/ledger`. Код ещё не запушен, адаптер вызывает переданную функцию с этой сигнатурой. `recordCost` больше не пишет в `si_cost_entries`. Факт, оценка и прогноз в отчёте лежат в разных полях. Неизвестный `projectId` становится `unassigned`, исходная строка не выбрасывается. Формат id: `docs/studio-intelligence/contracts/PROJECT-ATTRIBUTION.md`.
+
+## Реестр мастер-модели
+
+Основная студия владеет моделью, ригом, анимацией и файлом `.blend` (ветка `feat/v1.2.0`, `docs/ROADMAP_3D_CHARACTER.md`). Здесь хранятся только SHA-256, статус утверждения, права на референсы и ссылка `voiceProfileId`. Файл не создаётся и не копируется. Профиль голоса задаёт студия 2, для мимики его читает основная студия. Поля профиля для студии: `{id, approved, sampleRate, recognizer, gain, mouthScale}`.

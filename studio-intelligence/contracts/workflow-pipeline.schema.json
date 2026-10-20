@@ -7,7 +7,7 @@
   "required": ["id", "namespace", "title", "steps"],
   "properties": {
     "id": { "enum": ["news", "studio3d", "games"] },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "title": { "type": "string", "minLength": 1, "maxLength": 300 },
     "steps": {
       "type": "array",

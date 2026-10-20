@@ -7,8 +7,8 @@
   "required": ["id", "namespace", "subjectType", "subjectId", "requiredRole", "status", "autoExecute", "requestedBy", "requestedAt"],
   "properties": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
-    "subjectType": { "enum": ["task", "publication", "brand_substitution", "workflow_step", "opencode", "asset"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "subjectType": { "enum": ["task", "publication", "brand_substitution", "workflow_step", "opencode", "asset", "model", "project_change", "expense"] },
     "subjectId": { "type": "string", "minLength": 1, "maxLength": 64 },
     "requiredRole": { "const": "owner" },
     "status": { "const": "pending" },

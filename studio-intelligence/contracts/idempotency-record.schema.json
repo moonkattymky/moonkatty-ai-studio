@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["namespace", "key", "requestHash", "recordId", "createdAt"],
   "properties": {
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "key": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
     "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "recordId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },

@@ -10,7 +10,7 @@
     "namespaces": {
       "type": "array",
       "minItems": 1,
-      "items": { "enum": ["moonkatty_news", "moonkatty_project"] }
+      "items": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] }
     },
     "answer": { "type": "string", "minLength": 1 },
     "citations": {
@@ -23,7 +23,7 @@
           "recordId": { "type": "string", "minLength": 1 },
           "filePath": { "type": ["string", "null"], "maxLength": 500 },
           "version": { "type": "integer", "minimum": 1 },
-          "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+          "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
           "title": { "type": "string", "minLength": 1 },
           "snippet": { "type": "string", "minLength": 1 }
         }

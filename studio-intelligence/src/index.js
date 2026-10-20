@@ -14,6 +14,14 @@ const { createAssets } = require('./assets');
 const { createBrand } = require('./brand');
 const { createReports } = require('./reports');
 const { createQaMemory } = require('./qa-memory');
+const { createVoices } = require('./voices');
+const { createEditorial } = require('./editorial');
+const { createVersions } = require('./versions');
+const { createNotices } = require('./notices');
+const { createAuditFeed } = require('./audit-feed');
+const { createProjects } = require('./projects');
+const { createLedgerAdapter } = require('./ledger-adapter');
+const { createCharacterRegistry } = require('./character-registry');
 const { schemas, validate, schemaNames } = require('./validate');
 
 function envelope({ type, principal, namespace, payload, at, id }) {
@@ -52,11 +60,22 @@ function openStudioIntelligence(options = {}) {
   const retrieval = createRetrieval(db, { memory, permissions, transaction: tx, now });
   const progress = createProgress(db, { now, permissions });
   const runtime = createRuntimeAdapter({ permissions });
-  const approval = createApproval(db, { now, permissions, transaction: tx });
-  const assets = createAssets(db, { now, permissions, transaction: tx, approval });
+  const audit = createAuditFeed({ log: options.auditLog, now });
+  const approval = createApproval(db, { now, permissions, transaction: tx, audit });
+  const voices = createVoices(db, { now, permissions, transaction: tx });
+  const projects = createProjects(db);
+  const ledger = createLedgerAdapter({
+    listEntries: options.ledger && options.ledger.listEntries,
+    projects
+  });
+  const character = createCharacterRegistry(db, { now, permissions, transaction: tx, voices });
+  const assets = createAssets(db, { now, permissions, transaction: tx, approval, voices, character });
   const brand = createBrand({ assets });
-  const reports = createReports(db, { now, permissions, transaction: tx });
+  const reports = createReports(db, { now, permissions, ledger });
   const qa = createQaMemory(db, { now, permissions, assets });
+  const editorial = createEditorial(db, { now, permissions, transaction: tx });
+  const versions = createVersions(db, { now, permissions, transaction: tx });
+  const notices = createNotices(db, { now, permissions });
   return {
     schemaVersion: SCHEMA_VERSION,
     driver: db.driver || 'injected',
@@ -73,6 +92,14 @@ function openStudioIntelligence(options = {}) {
     assets,
     reports,
     qa,
+    voices,
+    projects,
+    ledger,
+    character,
+    editorial,
+    versions,
+    notices,
+    audit,
     contracts: { schemas, validate, schemaNames, envelope },
     tableNames: () => tableNames(db),
     close() { if (owned) db.close(); }

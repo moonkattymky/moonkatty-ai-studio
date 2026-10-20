@@ -8,7 +8,7 @@
   "properties": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "agentId": { "enum": ["director", "news", "video", "social", "pr", "games", "mkty", "analytics", "marketing", "content", "publishing", "community", "design3d"] },
     "title": { "type": "string", "minLength": 1, "maxLength": 200 },
     "description": { "type": "string", "maxLength": 8000 },

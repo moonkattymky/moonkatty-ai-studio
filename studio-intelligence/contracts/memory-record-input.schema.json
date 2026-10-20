@@ -7,7 +7,7 @@
   "required": ["namespace", "kind", "title", "body", "status", "sourcePath", "sourceRecordId", "idempotencyKey", "payload"],
   "properties": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "kind": { "enum": ["decision", "task", "result", "file", "model_version", "publication_version", "document"] },
     "title": { "type": "string", "minLength": 1, "maxLength": 300 },
     "body": { "type": "string", "maxLength": 200000 },

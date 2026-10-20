@@ -12,7 +12,7 @@
       "required": ["id", "role"],
       "properties": {
         "id": { "type": "string", "minLength": 1, "maxLength": 64 },
-        "role": { "enum": ["owner", "agent"] },
+        "role": { "enum": ["owner", "agent", "editor"] },
         "agentId": { "type": "string", "minLength": 1, "maxLength": 64 },
         "user": { "type": "string", "minLength": 1, "maxLength": 64 }
       }
@@ -23,7 +23,7 @@
       "additionalProperties": false,
       "required": ["namespace"],
       "properties": {
-        "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+        "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
         "kind": { "type": "string", "minLength": 1, "maxLength": 64 },
         "recordId": { "type": "string", "minLength": 1, "maxLength": 64 },
         "agentId": { "type": "string", "minLength": 1, "maxLength": 64 }

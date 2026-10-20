@@ -11,10 +11,11 @@ function sqlList(values, allowed) {
   return values.map(value => `'${value}'`).join(', ');
 }
 
-function createReports(db, { now, permissions, transaction }) {
-  const insertCost = db.prepare(`INSERT INTO si_cost_entries (id, namespace, at, component, amount_usd, note, actor_id, idempotency_key)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-  const costByKey = db.prepare('SELECT * FROM si_cost_entries WHERE namespace = ? AND idempotency_key = ?');
+function emptyBucket() {
+  return { entries: 0, expenseUsd: 0, incomeUsd: 0 };
+}
+
+function createReports(db, { now, permissions, ledger }) {
   const insertHealth = db.prepare(`INSERT INTO si_health_samples (id, at, component, ok, detail, actor_id) VALUES (?, ?, ?, ?, ?, ?)`);
 
   function readable(principal) {
@@ -23,19 +24,8 @@ function createReports(db, { now, permissions, transaction }) {
     return NAMESPACES.filter(namespace => permissions.canReadNamespace(actor, namespace));
   }
 
-  function recordCost({ principal, entry }) {
-    const actor = permissions.normalize(principal);
-    if (actor.role !== 'owner') throw new StudioError('PERMISSION_DENIED', 'Стоимость записывает владелец', { retryable: false });
-    const errors = validate('cost-entry', entry);
-    if (errors.length) throw new StudioError('VALIDATION', errors[0], { retryable: false, details: { errors } });
-    permissions.assertPermission(actor, 'approve', { namespace: entry.namespace });
-    return transaction(() => {
-      const prev = costByKey.get(entry.namespace, entry.idempotencyKey);
-      if (prev) return { id: prev.id, namespace: prev.namespace, amountUsd: prev.amount_usd, component: prev.component, at: prev.at };
-      const rowId = crypto.randomBytes(12).toString('hex');
-      insertCost.run(rowId, entry.namespace, entry.at || now(), entry.component, entry.amountUsd, entry.note || null, actor.id, entry.idempotencyKey);
-      return { id: rowId, namespace: entry.namespace, amountUsd: entry.amountUsd, component: entry.component, at: entry.at || now() };
-    });
+  function recordCost() {
+    throw new StudioError('NOT_IMPLEMENTED', 'Деньги ведёт журнал студии 3: lib/ops/ledger.listEntries и GET /api/ops/ledger. Таблица si_cost_entries не пополняется.', { retryable: false });
   }
 
   function recordHealth({ principal, sample }) {
@@ -70,7 +60,43 @@ function createReports(db, { now, permissions, transaction }) {
     const pending = count(`SELECT COUNT(*) AS n FROM si_approvals WHERE namespace IN (${ns}) AND status = 'pending' AND requested_at >= ? AND requested_at < ?`, [from, to]);
     const approved = count(`SELECT COUNT(*) AS n FROM si_approvals WHERE namespace IN (${ns}) AND status = 'approved' AND requested_at >= ? AND requested_at < ?`, [from, to]);
     const rejected = count(`SELECT COUNT(*) AS n FROM si_approvals WHERE namespace IN (${ns}) AND status = 'rejected' AND requested_at >= ? AND requested_at < ?`, [from, to]);
-    const costRow = db.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(amount_usd), 0) AS total FROM si_cost_entries WHERE namespace IN (${ns}) AND at >= ? AND at < ?`).get(from, to);
+    const money = { actual: emptyBucket(), estimate: emptyBucket(), forecast: emptyBucket() };
+    const otherCurrencies = [];
+    const groups = new Map();
+    let unassignedEntries = 0;
+    if (ledger && ledger.connected) {
+      for (const row of ledger.read({ from, to })) {
+        const ns = row.project.namespace;
+        if (ns && !namespaces.includes(ns)) continue;
+        if (!ns && actor.role !== 'owner') continue;
+        const bucket = money[row.kind];
+        bucket.entries += 1;
+        if (row.project.projectId === 'unassigned') unassignedEntries += 1;
+        if (!groups.has(row.project.projectId)) {
+          groups.set(row.project.projectId, {
+            projectId: row.project.projectId,
+            known: row.project.known && row.project.projectId !== 'unassigned',
+            rawProjectIds: [],
+            actualExpenseUsd: 0, actualIncomeUsd: 0,
+            estimateExpenseUsd: 0, estimateIncomeUsd: 0,
+            forecastExpenseUsd: 0, forecastIncomeUsd: 0
+          });
+        }
+        const group = groups.get(row.project.projectId);
+        if (row.project.rawProjectId && !group.rawProjectIds.includes(row.project.rawProjectId)) group.rawProjectIds.push(row.project.rawProjectId);
+        if (row.currency === 'USD') {
+          const field = row.kind + (row.direction === 'income' ? 'IncomeUsd' : 'ExpenseUsd');
+          group[field] += row.amount;
+          if (row.direction === 'income') bucket.incomeUsd += row.amount;
+          else bucket.expenseUsd += row.amount;
+        } else {
+          otherCurrencies.push({
+            kind: row.kind, direction: row.direction, currency: row.currency, amount: row.amount, projectId: row.project.projectId
+          });
+        }
+      }
+    }
+    const attribution = [...groups.values()].sort((a, b) => a.projectId.localeCompare(b.projectId));
     const healthRows = db.prepare(`SELECT component, ok, detail, at FROM si_health_samples WHERE at >= ? AND at < ? ORDER BY at`).all(from, to);
     const latest = new Map();
     for (const row of healthRows) latest.set(row.component, row);
@@ -89,7 +115,17 @@ function createReports(db, { now, permissions, transaction }) {
       work: { tasks, progressEvents },
       publications: { versions, usages },
       errors: { failedProgress, qaFailed },
-      costs: { entries: Number(costRow.n), totalUsd: Number(costRow.total) || 0, available: Number(costRow.n) > 0 },
+      costs: { entries: money.actual.entries, totalUsd: money.actual.expenseUsd, available: money.actual.entries > 0, scope: 'actual' },
+      ledger: {
+        source: ledger && ledger.connected ? 'studio3' : 'none',
+        available: !!(ledger && ledger.connected),
+        actual: money.actual,
+        estimate: money.estimate,
+        forecast: money.forecast,
+        unassignedEntries,
+        otherCurrencies,
+        attribution
+      },
       health: { available: components.length > 0, components },
       approvals: { pending, approved, rejected },
       qa: { failed: qaFailed, passed: qaPassed },
@@ -100,7 +136,7 @@ function createReports(db, { now, permissions, transaction }) {
     return report;
   }
 
-  return { recordCost, recordHealth, daily };
+  return { recordCost, recordAttribution: recordCost, recordHealth, daily };
 }
 
 module.exports = { createReports };

@@ -7,7 +7,7 @@
   "required": ["taskId", "namespace", "requestedBy", "at", "reason"],
   "properties": {
     "taskId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "requestedBy": { "type": "string", "minLength": 1, "maxLength": 64 },
     "at": { "type": "string", "format": "date-time" },
     "reason": { "type": "string", "minLength": 1, "maxLength": 500 }

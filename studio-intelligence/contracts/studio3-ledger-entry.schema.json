@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/studio3-ledger-entry.schema.json",
+  "title": "Studio3LedgerEntry",
+  "description": "Строка журнала Studio 3. Источник правды — lib/ops/ledger.listEntries и GET /api/ops/ledger. Эта схема только для чтения.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "direction", "amount", "currency", "date", "source", "proof"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "kind": { "enum": ["actual", "estimate", "forecast"] },
+    "direction": { "enum": ["income", "expense"] },
+    "amount": { "type": "number", "minimum": 0 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "date": { "type": "string", "format": "date-time" },
+    "source": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "proof": { "type": ["string", "null"], "maxLength": 500 },
+    "projectId": { "type": "string", "minLength": 1, "maxLength": 80 }
+  }
+}

@@ -28,8 +28,14 @@ function principalFromSession(session, opts = {}) {
 }
 
 function normalizePrincipal(principal) {
-  if (!principal || (principal.role !== 'owner' && principal.role !== 'agent')) {
+  if (!principal || (principal.role !== 'owner' && principal.role !== 'agent' && principal.role !== 'editor')) {
     throw new StudioError('PERMISSION_DENIED', 'Нет участника или роль неизвестна', { retryable: false });
+  }
+  if (principal.role === 'editor') {
+    if (typeof principal.id !== 'string' || !principal.id.trim()) {
+      throw new StudioError('PERMISSION_DENIED', 'Редактор указан неверно', { retryable: false });
+    }
+    return principal;
   }
   if (principal.role === 'agent') {
     if (!principal.agentId || principal.agentId !== principal.id || !KNOWN.has(principal.agentId)) {

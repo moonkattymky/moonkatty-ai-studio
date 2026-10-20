@@ -173,7 +173,9 @@ Blender в коде нет. На ветке медиа есть заглушка
 
 Контракты, которые чужие ветки будут читать и писать:
 
-- №1 вызывает `approvedCharacterModel` и `prepareFacialUse`. Модель берётся из реестра бренда. Кадры не считаются.
-- №2 вызывает `register` / `findReusable` / `recordUsage` (`shorts`, `reels`, `episode`, `publication`). Повтор файла не создаёт второй ряд.
-- №3 читает `reports.daily` (`compact: true` для телефона). Цифры берутся из записанных строк. Пустая стоимость помечена `available: false`.
-- №4 вызывает `qa.rightsForPublication` и `qa.recordFinding` (`sound`, `subtitles`, `format`, `corrupted_frames`, `rights`). Ответ `blocking` не публикует ролик.
+- №1 вызывает `approvedCharacterModel` и `prepareFacialUse`. Модель берётся из реестра. Кадры не считаются. Файл `.blend` создаёт основная студия, здесь хранится хеш версии.
+- №2 вызывает `register` / `findReusable` / `recordUsage` (`shorts`, `reels`, `episode`, `publication`) и задаёт профиль голоса. Повтор файла не создаёт второй ряд. Синтез не вызывается.
+- №3 читает `reports.daily` (`compact: true` для телефона) и вызывает `resolveProject`. Деньги читаются из их `listEntries`. Факт и прогноз не смешиваются.
+- №4 вызывает `qa.rightsForPublication` и `qa.recordFinding` (`sound`, `subtitles`, `format`, `corrupted_frames`, `rights`). Журнал поправок хранится здесь, процедура выпуска остаётся у них. Ответ `blocking` не публикует ролик.
+
+Журнал панели (`logs`, 2000 строк) не заменяется. События `si_*` при переданном `auditLog` дописывают в него короткую строку без секретов и без хеша.

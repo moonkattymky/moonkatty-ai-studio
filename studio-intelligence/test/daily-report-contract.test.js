@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { setup } = require('./helpers');
+const { createLedgerStub } = require('../src/ledger-stub');
 
 const FROM = '2026-10-20T00:00:00.000Z';
 const TO = '2026-10-21T00:00:00.000Z';
@@ -18,7 +19,17 @@ function task(namespace, key, title) {
 }
 
 test('дневной отчёт считает только записанное и режется для телефона', () => {
-  const { si, owner, agent } = setup();
+  const ledger = createLedgerStub([
+    {
+      id: 'c1', kind: 'actual', direction: 'expense', amount: 1.5, currency: 'USD',
+      date: '2026-10-20T12:00:00.000Z', source: 'manual', proof: null, projectId: 'moonkatty_news:episodes'
+    },
+    {
+      id: 'f1', kind: 'forecast', direction: 'income', amount: 9, currency: 'USD',
+      date: '2026-10-20T12:00:00.000Z', source: 'sheet', proof: null, projectId: 'moonkatty_news:episodes'
+    }
+  ]);
+  const { si, owner, agent } = setup({ ledger });
   si.memory.put({ principal: owner, record: task('moonkatty_news', 'task/news/1', 'Смонтировать выпуск') });
   si.memory.put({ principal: owner, record: task('moonkatty_project', 'task/project/1', 'Проверить сборку игры') });
   si.memory.put({
@@ -63,19 +74,13 @@ test('дневной отчёт считает только записанное
       requestedAt: '2026-10-20T12:00:00.000Z'
     }
   });
-  const cost = si.reports.recordCost({
-    principal: owner,
-    entry: { namespace: 'moonkatty_news', component: 'ffmpeg', amountUsd: 1.5, idempotencyKey: 'cost/ffmpeg/1', note: 'рендер' }
-  });
-  const replay = si.reports.recordCost({
-    principal: owner,
-    entry: { namespace: 'moonkatty_news', component: 'ffmpeg', amountUsd: 9, idempotencyKey: 'cost/ffmpeg/1' }
-  });
-  assert.equal(replay.id, cost.id);
   assert.throws(() => si.reports.recordCost({
-    principal: agent('analytics'),
-    entry: { namespace: 'moonkatty_news', component: 'ffmpeg', amountUsd: 1, idempotencyKey: 'cost/no' }
-  }), err => err.code === 'PERMISSION_DENIED');
+    principal: owner,
+    entry: { namespace: 'moonkatty_news', component: 'ffmpeg', amountUsd: 1.5, idempotencyKey: 'cost/ffmpeg/1' }
+  }), err => err.code === 'NOT_IMPLEMENTED');
+  si.db.prepare(`INSERT INTO si_cost_entries (
+      id, namespace, at, component, amount_usd, note, actor_id, idempotency_key, direction, project_id
+    ) VALUES ('legacy', 'moonkatty_news', '2026-10-20T12:00:00.000Z', 'ffmpeg', 99, NULL, 'igor', 'legacy', 'expense', NULL)`).run();
   si.reports.recordHealth({ principal: owner, sample: { component: 'ollama', ok: true, detail: 'qwen3:8b' } });
   si.reports.recordHealth({ principal: owner, sample: { component: 'ollama', ok: false, detail: 'нет ответа' } });
   for (let i = 0; i < 9; i++) {
@@ -83,13 +88,19 @@ test('дневной отчёт считает только записанное
   }
 
   const full = si.reports.daily({ principal: agent('analytics'), from: FROM, to: TO, compact: false });
-  assert.deepEqual(full.namespaces, ['moonkatty_news', 'moonkatty_project']);
+  assert.deepEqual(full.namespaces, ['moonkatty_news', 'moonkatty_project', 'moonkatty_shared']);
   assert.deepEqual(full.work, { tasks: 2, progressEvents: 2 });
   assert.deepEqual(full.publications, { versions: 1, usages: 1 });
   assert.deepEqual(full.errors, { failedProgress: 1, qaFailed: 1 });
   assert.equal(full.costs.entries, 1);
   assert.equal(full.costs.totalUsd, 1.5);
+  assert.equal(full.costs.scope, 'actual');
   assert.equal(full.costs.available, true);
+  assert.equal(full.ledger.source, 'studio3');
+  assert.equal(full.ledger.actual.expenseUsd, 1.5);
+  assert.equal(full.ledger.actual.incomeUsd, 0);
+  assert.equal(full.ledger.forecast.incomeUsd, 9);
+  assert.equal(full.ledger.forecast.expenseUsd, 0);
   assert.equal(full.health.available, true);
   assert.equal(full.health.components.find(item => item.component === 'ollama').ok, false);
   assert.equal(full.health.components.find(item => item.component === 'ollama').detail, 'нет ответа');
@@ -105,7 +116,7 @@ test('дневной отчёт считает только записанное
   assert.equal(Object.prototype.hasOwnProperty.call(phone.health.components[0], 'detail'), false);
 
   const games = si.reports.daily({ principal: agent('games'), from: FROM, to: TO });
-  assert.deepEqual(games.namespaces, ['moonkatty_project']);
+  assert.deepEqual(games.namespaces, ['moonkatty_project', 'moonkatty_shared']);
   assert.equal(games.work.tasks, 1);
   assert.equal(games.errors.failedProgress, 0);
   assert.equal(games.publications.versions, 0);

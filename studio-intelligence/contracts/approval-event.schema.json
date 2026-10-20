@@ -10,9 +10,9 @@
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "approvalId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "at": { "type": "string", "format": "date-time" },
-    "action": { "enum": ["requested", "approved", "rejected"] },
+    "action": { "enum": ["requested", "recommended", "rework", "resubmitted", "approved", "rejected"] },
     "actorId": { "type": "string", "minLength": 1, "maxLength": 64 },
-    "actorRole": { "enum": ["owner", "agent"] },
+    "actorRole": { "enum": ["owner", "agent", "editor"] },
     "comment": { "type": "string", "maxLength": 2000 },
     "prevStatus": { "type": "string", "minLength": 1, "maxLength": 32 },
     "nextStatus": { "type": "string", "minLength": 1, "maxLength": 32 }

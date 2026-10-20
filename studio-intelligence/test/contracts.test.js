@@ -12,7 +12,10 @@ test('все контрактные схемы загружаются', () => {
     'memory-record-input', 'memory-record', 'retrieval-result', 'workflow-pipeline',
     'brand-asset', 'brand-check', 'approval-request', 'approval-event', 'event-envelope',
     'asset-record', 'asset-rights', 'asset-usage', 'rights-lookup', 'facial-animation-request',
-    'cost-entry', 'health-sample', 'qa-finding', 'studio-daily-report'
+    'cost-entry', 'health-sample', 'qa-finding', 'studio-daily-report',
+    'voice-profile', 'voice-profile-for-studio', 'character-version', 'studio3-ledger-entry',
+    'project-resolution', 'source-history-entry', 'editorial-decision', 'content-version',
+    'publication-notice', 'panel-log-entry'
   ]) assert.ok(names.includes(name), name);
 });
 

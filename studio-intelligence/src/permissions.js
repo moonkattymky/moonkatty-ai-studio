@@ -1,5 +1,5 @@
 'use strict';
-const { NAMESPACES, OWNER_ONLY_KINDS, AGENT_WRITE_KINDS } = require('./constants');
+const { NAMESPACES, OWNER_ONLY_KINDS, AGENT_WRITE_KINDS, EDITORS_ENABLED } = require('./constants');
 const { StudioError } = require('./errors');
 const { validate } = require('./validate');
 const { normalizePrincipal } = require('./auth');
@@ -33,6 +33,10 @@ function createPermissions(db) {
   }
 
   function decide(principal, action, resource) {
+    if (principal.role === 'editor') {
+      if (!EDITORS_ENABLED) return { allowed: false, reason: 'Роль редактора выключена' };
+      return { allowed: false, reason: 'Права редактора ещё не назначены' };
+    }
     const namespace = resource.namespace;
     if (!NAMESPACES.includes(namespace)) return { allowed: false, reason: 'Неизвестное пространство имён' };
     if (action === 'approve' || action === 'index') {

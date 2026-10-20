@@ -28,6 +28,9 @@ function createRuntimeAdapter({ permissions }) {
     if (!AGENTS.includes(handoff.agentId)) {
       throw new StudioError('VALIDATION', 'Неизвестный агент', { retryable: false });
     }
+    if (!RUNTIME_PROJECT[handoff.namespace]) {
+      throw new StudioError('VALIDATION', 'Пространство SHARED не ставится в очередь панели. Общие активы читаются по правам, задачи панели остаются в news или main.', { retryable: false });
+    }
     const task = {
       id: handoff.id,
       title: handoff.title,

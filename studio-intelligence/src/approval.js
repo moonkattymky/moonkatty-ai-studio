@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const { StudioError } = require('./errors');
 const { validate } = require('./validate');
+const { containsSecret } = require('./secrets');
 
 /**
  * Журнал утверждений пишется, но ничего не запускает.
@@ -61,7 +62,7 @@ function mapEvent(row) {
   return event;
 }
 
-function createApproval(db, { now, permissions, transaction }) {
+function createApproval(db, { now, permissions, transaction, audit }) {
   const getStmt = db.prepare('SELECT * FROM si_approvals WHERE id = ?');
   const insertStmt = db.prepare(`INSERT INTO si_approvals (
       id, namespace, subject_type, subject_id, required_role, status, auto_execute,
@@ -69,7 +70,7 @@ function createApproval(db, { now, permissions, transaction }) {
     ) VALUES (?, ?, ?, ?, 'owner', ?, 0, ?, ?, ?, ?, ?)`);
   const decideStmt = db.prepare(`UPDATE si_approvals
       SET status = ?, decided_by = ?, decided_at = ?, comment = ?
-      WHERE id = ? AND status = 'pending' AND auto_execute = 0`);
+      WHERE id = ? AND status = ? AND auto_execute = 0`);
   const insertEvent = db.prepare(`INSERT INTO si_approval_events (
       id, approval_id, at, action, actor_id, actor_role, comment, prev_status, next_status
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -88,7 +89,18 @@ function createApproval(db, { now, permissions, transaction }) {
     };
     if (comment) event.comment = comment;
     validateEvent(event);
+    if (containsSecret(event.comment || '')) throw new StudioError('SECRET_REJECTED', 'В комментарий утверждения нельзя записывать секреты', { retryable: false });
     insertEvent.run(event.id, event.approvalId, event.at, event.action, event.actorId, event.actorRole, event.comment || null, event.prevStatus, event.nextStatus);
+    if (audit && typeof audit.feed === 'function') {
+      audit.feed({
+        level: 'info',
+        source: 'approval',
+        message: 'Утверждение ' + action + ' ' + approvalId,
+        user: actor.user || actor.id,
+        at: event.at,
+        id: event.id
+      });
+    }
     return event;
   }
 
@@ -116,6 +128,42 @@ function createApproval(db, { now, permissions, transaction }) {
     });
   }
 
+  const ADVICE = {
+    recommended: ['pending'],
+    rework: ['pending', 'recommended'],
+    resubmitted: ['rework']
+  };
+
+  /**
+   * Агент рекомендует утверждение, возвращает на доработку или снова подаёт после доработки.
+   * Это не финальное решение: executed всегда false.
+   */
+  function advise({ principal, approvalId, action, comment }) {
+    const actor = permissions.normalize(principal);
+    const from = ADVICE[action];
+    if (!from) throw new StudioError('VALIDATION', 'Действие: recommended, rework или resubmitted', { retryable: false });
+    const row = getStmt.get(approvalId);
+    if (!row) throw new StudioError('NOT_FOUND', 'Утверждение не найдено', { retryable: false });
+    if (actor.role === 'owner') permissions.assertPermission(actor, 'approve', { namespace: row.namespace });
+    else permissions.assertPermission(actor, 'write', { namespace: row.namespace, agentId: actor.agentId });
+    return transaction(() => {
+      const current = getStmt.get(approvalId);
+      if (current.status === 'approved' || current.status === 'rejected') {
+        throw new StudioError('INVALID_STATE', 'Итоговое решение владельца уже записано', { retryable: false });
+      }
+      if (!from.includes(current.status)) {
+        throw new StudioError('INVALID_STATE', 'Из статуса ' + current.status + ' так перейти нельзя', { retryable: false });
+      }
+      const nextStatus = action === 'resubmitted' ? 'pending' : action;
+      const result = decideStmt.run(nextStatus, null, null, comment || current.comment, approvalId, current.status);
+      if (!result.changes) throw new StudioError('INVALID_STATE', 'Утверждение уже решено', { retryable: false });
+      const event = writeEvent(approvalId, action, actor, current.status, nextStatus, comment);
+      const saved = mapApproval(getStmt.get(approvalId));
+      if (saved.autoExecute !== false) throw new StudioError('INVALID_STATE', 'Утверждение не может исполняться само', { retryable: false });
+      return { approval: saved, event, executed: false };
+    });
+  }
+
   function decide({ principal, approvalId, action, comment }) {
     const actor = permissions.normalize(principal);
     if (action !== 'approved' && action !== 'rejected') {
@@ -125,21 +173,22 @@ function createApproval(db, { now, permissions, transaction }) {
     if (!row) throw new StudioError('NOT_FOUND', 'Утверждение не найдено', { retryable: false });
     permissions.assertPermission(actor, 'approve', { namespace: row.namespace });
     if (actor.role !== 'owner') {
-      throw new StudioError('PERMISSION_DENIED', 'Решение принимает только владелец', { retryable: false });
+      throw new StudioError('PERMISSION_DENIED', 'Итог по публикации, модели, проекту и расходу принимает только владелец', { retryable: false });
     }
+    const allowedFrom = action === 'approved' ? ['pending', 'recommended'] : ['pending', 'recommended', 'rework'];
     return transaction(() => {
       const current = getStmt.get(approvalId);
       if (current.status === action) {
         const events = eventsStmt.all(approvalId).map(mapEvent);
         return { approval: mapApproval(current), event: events[events.length - 1], executed: false };
       }
-      if (current.status !== 'pending') {
+      if (!allowedFrom.includes(current.status)) {
         throw new StudioError('INVALID_STATE', 'Утверждение уже решено', { retryable: false });
       }
       const at = now();
-      const result = decideStmt.run(action, actor.id, at, comment || current.comment, approvalId);
+      const result = decideStmt.run(action, actor.id, at, comment || current.comment, approvalId, current.status);
       if (!result.changes) throw new StudioError('INVALID_STATE', 'Утверждение уже решено', { retryable: false });
-      const event = writeEvent(approvalId, action, actor, 'pending', action, comment);
+      const event = writeEvent(approvalId, action, actor, current.status, action, comment);
       return { approval: mapApproval(getStmt.get(approvalId)), event, executed: false };
     });
   }
@@ -163,7 +212,7 @@ function createApproval(db, { now, permissions, transaction }) {
     return eventsStmt.all(approvalId).map(mapEvent);
   }
 
-  return { validateRequest, validateEvent, request, decide, recordGranted, history, mapApproval };
+  return { validateRequest, validateEvent, request, advise, decide, recordGranted, history, mapApproval };
 }
 
 module.exports = { createApproval, validateRequest, validateEvent };

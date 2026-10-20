@@ -5,11 +5,13 @@
   "description": "Запрос на использование утверждённой модели. Кадры здесь не считаются.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["namespace", "characterModelAssetId", "audioAssetId", "channels", "idempotencyKey"],
+  "required": ["namespace", "characterModelAssetId", "audioAssetId", "voiceProfileId", "channels", "idempotencyKey"],
   "properties": {
     "namespace": { "const": "moonkatty_news" },
     "characterModelAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },
     "audioAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "voiceProfileId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "masterAssetVersion": { "type": "integer", "minimum": 1 },
     "channels": {
       "type": "array",
       "minItems": 1,

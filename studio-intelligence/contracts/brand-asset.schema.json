@@ -8,7 +8,7 @@
   "properties": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "kind": { "enum": ["cat_image", "master_model", "texture", "animation", "logo", "color", "style_rule"] },
-    "namespace": { "const": "moonkatty_project" },
+    "namespace": { "const": "moonkatty_shared" },
     "version": { "type": "integer", "minimum": 1 },
     "filePath": { "type": "string", "minLength": 1, "maxLength": 500 },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },

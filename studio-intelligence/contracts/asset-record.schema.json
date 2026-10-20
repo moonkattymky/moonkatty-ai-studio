@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["namespace", "kind", "title", "sourceName", "sourceUrl", "storagePath", "contentHash", "status", "idempotencyKey"],
   "properties": {
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "kind": { "enum": ["image", "video", "audio", "music", "model", "texture", "animation", "logo", "subtitle", "other"] },
     "title": { "type": "string", "minLength": 1, "maxLength": 300 },
     "sourceName": { "type": ["string", "null"], "maxLength": 200 },

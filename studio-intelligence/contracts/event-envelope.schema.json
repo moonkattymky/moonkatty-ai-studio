@@ -18,7 +18,7 @@
       ]
     },
     "at": { "type": "string", "format": "date-time" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "actor": {
       "type": "object",
       "additionalProperties": false,

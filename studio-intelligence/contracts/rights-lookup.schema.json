@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["namespace", "publicationId", "blocking", "warning", "assets"],
   "properties": {
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "publicationId": { "type": ["string", "null"], "maxLength": 64 },
     "blocking": { "type": "boolean" },
     "warning": { "type": ["string", "null"], "enum": ["no_assets_recorded", null] },

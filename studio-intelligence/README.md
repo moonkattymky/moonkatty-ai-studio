@@ -9,6 +9,10 @@
 - [Нагрузка](../docs/studio-intelligence/LOAD.md)
 - [Риски](../docs/studio-intelligence/RISKS.md)
 - [Дорожная карта](../docs/studio-intelligence/ROADMAP.md)
+- [Раскладка персонажа](../docs/studio-intelligence/CHARACTER-LAYOUT.md)
+- [Миграции](../docs/studio-intelligence/MIGRATIONS.md)
+- [План подключения](../docs/studio-intelligence/INTEGRATION-PLAN.md)
+- [Контракт проектов](../docs/studio-intelligence/contracts/PROJECT-ATTRIBUTION.md)
 
 Контракты: `contracts/*.schema.json`. Код: `src/`.
 

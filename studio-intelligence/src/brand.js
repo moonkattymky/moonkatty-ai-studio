@@ -7,7 +7,7 @@ const { validate } = require('./validate');
  * Проверка сходства и подмена оригинала не исполняются.
  */
 const RULES = Object.freeze({
-  namespace: 'moonkatty_project',
+  namespace: 'moonkatty_shared',
   substitutionPolicy: 'owner_approval_required',
   autoExecute: false,
   kinds: Object.freeze(['cat_image', 'master_model', 'texture', 'animation', 'logo', 'color', 'style_rule']),

@@ -7,7 +7,7 @@
   "required": ["taskId", "namespace", "idempotencyKey", "files", "result"],
   "properties": {
     "taskId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
-    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
     "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
     "files": {
       "type": "array",
