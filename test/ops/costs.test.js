@@ -1,0 +1,20 @@
+'use strict';
+const test = require('node:test'); const assert = require('node:assert/strict');
+const fs = require('fs'), os = require('os'), path = require('path');
+const { createCostController } = require('../../lib/ops/costs.js');
+test('default budget 0 blocks any paid call unless confirmed; ledger + daily/monthly limits + warning', () => {
+  let t = Date.parse('2026-10-21T10:00:00Z'); const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cost-')); const logs = [];
+  const c = createCostController({ dir, now: () => t, log: (l, s, m) => logs.push(m) });
+  assert.equal(c.authorize('elevenlabs', 0.01).blocked, true); assert.equal(c.authorize('elevenlabs', 0).blocked, false);
+  c.setBudgets({ elevenlabs: { dailyUsd: 1, monthlyUsd: 10 } });
+  assert.equal(c.authorize('elevenlabs', 0.5).blocked, false); c.record('elevenlabs', 0.5);
+  const w = c.authorize('elevenlabs', 0.35); assert.equal(w.warn, true); c.record('elevenlabs', 0.35);
+  const over = c.authorize('elevenlabs', 0.5); assert.equal(over.blocked, true); assert.match(over.reason, /день/);
+  const ov = c.authorize('elevenlabs', 0.5, { confirmed: true }); assert.equal(ov.blocked, false); assert.equal(ov.override, true);
+  t += 86400000; assert.equal(c.authorize('elevenlabs', 0.5).blocked, false, 'new day');
+  for (let i = 0; i < 9; i++) c.record('elevenlabs', 1); assert.equal(c.authorize('elevenlabs', 0.5).blocked, true, 'monthly');
+  const s = c.summary(); assert.ok(s.paidServicesInUse); assert.equal(s.services.find(x => x.service === 'elevenlabs').month, 9.85);
+  assert.throws(() => c.setBudgets({ 'bad name': { dailyUsd: 1, monthlyUsd: 1 } })); assert.throws(() => c.setBudgets({ x: { dailyUsd: -1, monthlyUsd: 1 } })); assert.throws(() => c.record('x', -1));
+  fs.appendFileSync(path.join(dir, 'costs.jsonl'), 'garbage\n'); assert.ok(c.summary(), 'corrupt line tolerated'); assert.equal(fs.statSync(path.join(dir, 'costs.jsonl')).mode & 0o777, 0o600);
+  assert.ok(logs.some(m => /заблокировано/.test(m)));
+});

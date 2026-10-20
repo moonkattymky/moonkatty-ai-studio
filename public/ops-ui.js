@@ -1,0 +1,57 @@
+/* MOONKATTY AI STUDIO — Operations Dashboard (STUDIO_OPS_DASHBOARD=1). Real data only from /api/ops/*; the section
+   appears only when the server reports the flag. Extends NAV/VIEWS/BIND from app.js. */
+'use strict';
+(() => {
+  if (typeof MODE !== 'undefined' && MODE === 'browser') return;
+  const gb = b => b == null ? '—' : (b / 1024 ** 3).toFixed(1) + ' ГБ';
+  const dot = ok => `<span class="badge ${ok ? 'b-ok' : 'b-err'}">${ok ? 'OK' : 'ОШИБКА'}</span>`;
+  let D = null, ERR = null;
+  VIEWS.ops = () => {
+    if (ERR) return `<div class="card"><b>Операции недоступны:</b> ${esc(ERR)}</div>`;
+    if (!D) return '<div class="card">Загрузка данных…</div>';
+    const c = D.components, wd = c.watchdog;
+    return `<div class="grid g3">
+      <div class="card"><h3>Компоненты</h3>
+        <div>Сервер ${dot(c.server.ok)} <span class="small mut">pid ${c.server.pid}, ${Math.round(c.server.uptimeSec / 60)} мин</span></div>
+        <div>Планировщик <span class="small mut">${esc(c.scheduler.lastTick || '—')}</span></div>
+        <div>Ollama ${dot(c.ollama && c.ollama.ok)} <span class="small mut">${esc(c.ollama && (c.ollama.error || c.ollama.model) || '')}</span></div>
+        <div>OpenCode <span class="small mut">${c.opencode.enabled ? 'включён (sandbox)' : 'выключен'}</span></div>
+        <div>Watchdog ${wd ? `<span class="small mut">${esc(wd.lastCycleAt || '')}</span>${Object.entries(wd.checks || {}).map(([k, v]) => `<div class="small">${dot(v.ok)} ${esc(k)}: ${esc(v.detail)}</div>`).join('')}` : '<span class="small mut">не запущен</span>'}</div></div>
+      <div class="card"><h3>Нагрузка</h3><div class="small">load ${D.load.loadavg.map(x => x.toFixed(2)).join(' ')} · CPU ${D.load.cpus}</div>
+        ${(m => m && m.total ? `<div class="small">Память: занято ${gb(m.used)} из ${gb(m.total)} (${m.usedPct}%) · давление <span class="badge ${m.pressure === 'green' ? 'b-ok' : m.pressure === 'yellow' ? 'b-warn' : 'b-err'}">${esc(m.pressure)}</span></div><div class="small mut">App ${gb(m.app)} · Wired ${gb(m.wired)} · Compressed ${gb(m.compressed)} · Cached ${gb(m.cached)} · Swap ${gb(m.swapUsed)}</div>` : '<div class="small mut">Память: нет данных</div>')(D.load.memory)}
+        ${D.load.resources ? `<div class="small">Resource Manager: ${esc(D.load.resources.mode)} · тяжёлые: ${Object.entries(D.load.resources.footprints).map(([k, v]) => esc(k) + ' ' + (v === 'unmeasured' ? 'не замерено' : v.limitGB + ' ГБ')).join(', ')} · Ollama ${D.load.resources.ollama.totalGB} ГБ · задач ${D.load.resources.running.length}</div>` : '<div class="small mut">Resource Manager выключен</div>'}</div>
+      <div class="card"><h3>Задачи</h3><div class="small">Выполняются: ${D.tasks.current.length} · зависли (>60 мин): ${D.tasks.stuck.length} · ждут утверждения: ${D.tasks.waitingApproval} · заблокированы: ${D.tasks.blocked}</div>
+        ${D.tasks.current.map(t => `<div class="small">▶ ${esc(t.title)} <span class="mut">${esc(t.agentId)} · ${t.minutes ?? '?'} мин</span></div>`).join('')}
+        ${D.tasks.waitingPlan.length ? `<h4>План LLM ждёт проверки</h4>${D.tasks.waitingPlan.map(t => `<div class="row small">${esc(t.title)} <button class="btn sm" data-plan="${esc(t.id)}">Утвердить</button></div>`).join('')}` : ''}</div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>Последние ошибки</h3>${D.errors.map(e => `<div class="small"><span class="mut">${esc(e.at.slice(5, 16))}</span> <b>${esc(e.source)}</b> ${esc(e.message)}</div>`).join('') || '<div class="small mut">Нет</div>'}</div>
+      <div class="card"><h3>Уведомления</h3>${D.notifications.map(n => `<div class="small"><span class="badge ${n.level === 'info' ? 'b-ok' : 'b-warn'}">${esc(n.level)}</span> ${esc(n.source)}: ${esc(n.message)}</div>`).join('') || '<div class="small mut">Нет</div>'}</div>
+      <div class="card"><h3>Резервные копии</h3>${D.backups.ops ? D.backups.ops.map(b => `<div class="row small">${esc(b.id)} · ${(b.bytes / 1e6).toFixed(1)} МБ · ключ: ${esc(b.secretKey)} <span><button class="btn sm" data-bv="${esc(b.id)}">Проверить</button> <button class="btn sm" data-bt="${esc(b.id)}">Тест-восстановление</button></span></div>`).join('') || '<div class="small mut">Ops-бэкапов нет</div>' : '<div class="small mut">Backup & Recovery выключен</div>'}
+        <div class="small mut">Старый ежедневный JSON-бэкап: ${esc(D.backups.lastLegacy || '—')}</div>${D.backups.ops ? '<button class="btn sm primary" id="bkNow">Создать бэкап</button>' : ''}</div>
+      <div class="card"><h3>Расходы</h3>${D.costs ? (D.costs.paidServicesInUse ? D.costs.services.map(s => `<div class="small">${esc(s.service)}: день ${s.day}$ / ${s.budget.dailyUsd}$ · месяц ${s.month}$ / ${s.budget.monthlyUsd}$</div>`).join('') : '<div class="small">Платные сервисы не используются (расходов 0 $)</div>') : '<div class="small mut">Cost Controller выключен</div>'}</div>
+    </div>
+    <div class="card"><h3>Права агентов</h3>${D.permissions ? `<table class="tbl small"><tr><th>Агент</th><th>shell</th><th>publish</th><th>fs</th><th>network</th></tr>${Object.entries(D.permissions).map(([id, p]) => `<tr><td>${esc(id)}</td><td>${p.shell ? '✔' : '—'}</td><td>${p.publish ? '✔' : '—'}</td><td>${esc((p.fs || []).join(', ') || '—')}</td><td>${esc((p.network || []).join(', ') || '—')}</td></tr>`).join('')}</table>
+      <details><summary class="small">Изменить (JSON, требует пароль)</summary><textarea id="capsJson" rows="6" style="width:100%"></textarea><button class="btn sm" id="capsSave">Сохранить</button></details>
+      <div class="small mut">Журнал действий: ${D.audit.ok ? 'цепочка цела' : 'НАРУШЕНА'}, записей ${D.audit.entries ?? '—'}</div>` : '<div class="small mut">Security Center выключен</div>'}</div>
+    <div class="small mut">Данные: ${esc(D.at)} · v${esc(D.version)} · флаги: ${esc(Object.entries(D.flags).filter(([, v]) => v).map(([k]) => k).join(', '))}</div>`;
+  };
+  async function load() { try { D = await api('GET', '/api/ops/dashboard'); ERR = null; } catch (e) { ERR = e.message; } if (ROUTE === 'ops') render(); }
+  BIND.ops = v => {
+    if (!D && !ERR) load();
+    const act = async fn => { try { const r = await fn(); if (r) toast ? toast(JSON.stringify(r).slice(0, 200)) : alert(JSON.stringify(r)); } catch (e) { alert(e.message); } load(); };
+    v.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/tasks/${encodeURIComponent(b.dataset.plan)}/approve-plan`, {})));
+    v.querySelectorAll('[data-bv]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/backups/${encodeURIComponent(b.dataset.bv)}/verify`, {})));
+    v.querySelectorAll('[data-bt]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/backups/${encodeURIComponent(b.dataset.bt)}/test-restore`, {})));
+    const bk = v.querySelector('#bkNow'); if (bk) bk.onclick = () => act(() => api('POST', '/api/ops/backups', { note: 'manual' }));
+    const cj = v.querySelector('#capsJson'); if (cj) { api('GET', '/api/ops/permissions').then(p => { cj.value = JSON.stringify(p.stored, null, 1); }).catch(() => {});
+      v.querySelector('#capsSave').onclick = () => act(() => api('PUT', '/api/ops/permissions', JSON.parse(cj.value))); }
+  };
+  const toast = typeof window.toast === 'function' ? window.toast : null;
+  // show the section only when the server has the dashboard flag
+  let tries = 0; const probe = () => fetch('/api/ops/status', { credentials: 'same-origin' }).then(r => r.status === 401 ? 'retry' : r.ok ? r.json() : null).then(s => {
+    if (s === 'retry') { if (++tries < 120) setTimeout(probe, 5000); return; } // not logged in yet
+    if (s && s.flags && s.flags.dashboard && !NAV.some(n => n[0] === 'ops')) { NAV.splice(NAV.length - 1, 0, ['ops', '⛨', 'Операции']); if (DB.agents) render(); setInterval(() => { if (ROUTE === 'ops' && !document.hidden) load(); }, 30000); }
+  }).catch(() => {});
+  probe();
+})();
