@@ -73,14 +73,30 @@ class PiperTTS {
   }
 }
 
+/** Kokoro-82M via kokoro-onnx (python bridge tools/kokoro_tts.py). Apache-2.0 model; runs on Apple Silicon CPU. */
+class KokoroTTS {
+  constructor({ python = process.env.MA_KOKORO_PYTHON || 'python3', model = process.env.MA_KOKORO_MODEL, voices = process.env.MA_KOKORO_VOICES, voice = process.env.MA_KOKORO_VOICE || 'af_heart', speed = +(process.env.MA_TTS_RATE || 1.0), lang = 'en-us', runFn = run, spawnFn = spawn } = {}) {
+    if (!model || !voices) throw new Error('kokoro model and voices paths required'); Object.assign(this, { python, model, voices, voice, speed, lang, runFn, spawnFn }); this.name = `kokoro:${voice}`;
+  }
+  async listVoices() { return ['af_heart', 'af_bella', 'af_nicole', 'af_sarah', 'am_michael', 'am_adam', 'bf_emma', 'bm_george', 'bm_daniel'].map(id => ({ id, lang: id[0] === 'b' ? 'en-GB' : 'en-US' })); }
+  async synthesize(text, outWav) {
+    assertText(text); const raw = outWav + '.raw.wav'; const script = path.join(__dirname, '..', '..', 'tools', 'kokoro_tts.py');
+    await new Promise((res, rej) => { const p = this.spawnFn(this.python, [script]); let err = ''; p.stderr?.on('data', d => { err += d; }); p.on('error', rej);
+      p.on('close', c => c ? rej(new Error(`kokoro exit ${c}: ${err.slice(-400)}`)) : res()); p.stdin.end(JSON.stringify({ text: String(text), voice: this.voice, speed: this.speed, lang: this.lang, out: raw, model: this.model, voices: this.voices })); });
+    await toWav(raw, outWav, this.runFn); fs.rmSync(raw, { force: true });
+    return { file: outWav, durationSec: await probeDuration(outWav, this.runFn) };
+  }
+}
+
 /**
- * Pick a real engine: MA_TTS=say|piper|espeak forces one. Otherwise order: say (macOS) -> piper (if MA_PIPER_MODEL) -> espeak-ng.
+ * Pick a real engine: MA_TTS=say|piper|espeak forces one. Otherwise order: kokoro (if MA_KOKORO_MODEL) -> say (macOS) -> piper (if MA_PIPER_MODEL) -> espeak-ng.
  * Throws loudly when nothing is available — there is NO silent/tone fallback in the pipeline.
  */
 async function detectTTS({ env = process.env, has = hasBinary } = {}) {
   const want = env.MA_TTS;
   const piperBin = env.MA_PIPER_BIN || 'piper'; const piperModel = env.MA_PIPER_MODEL;
   const cands = [
+    ['kokoro', async () => env.MA_KOKORO_MODEL && fs.existsSync(env.MA_KOKORO_MODEL) && env.MA_KOKORO_VOICES && new KokoroTTS({ python: env.MA_KOKORO_PYTHON || 'python3', model: env.MA_KOKORO_MODEL, voices: env.MA_KOKORO_VOICES, voice: env.MA_KOKORO_VOICE || 'af_heart', speed: +(env.MA_TTS_RATE || 1) })],
     ['say', async () => process.platform === 'darwin' && await has('say') && new MacSayTTS({ voice: env.MA_SAY_VOICE || 'Samantha', rate: env.MA_SAY_RATE || null })],
     ['piper', async () => piperModel && fs.existsSync(piperModel) && await has(piperBin) && new PiperTTS({ model: piperModel, bin: piperBin })],
     ['espeak', async () => await has('espeak-ng') && new EspeakTTS({ voice: env.MA_ESPEAK_VOICE || 'en-us' })],
@@ -88,4 +104,4 @@ async function detectTTS({ env = process.env, has = hasBinary } = {}) {
   for (const [n, f] of cands) { if (want && want !== n) continue; const t = await f(); if (t) return t; }
   throw new Error(`No TTS engine available${want ? ` (MA_TTS=${want})` : ''}. Install macOS say, piper (+MA_PIPER_MODEL) or espeak-ng.`);
 }
-module.exports = { MacSayTTS, EspeakTTS, PiperTTS, detectTTS };
+module.exports = { MacSayTTS, EspeakTTS, PiperTTS, KokoroTTS, detectTTS };

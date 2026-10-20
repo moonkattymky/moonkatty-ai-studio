@@ -1,0 +1,19 @@
+{
+  "_comment": "Pronunciation respellings applied before TTS (whole words, case-sensitive). Extend per episode.",
+  "ESA": "E.S.A.",
+  "JPL": "J.P.L.",
+  "Amarillo": "Amma-rillo",
+  "Qatar": "Kuttar",
+  "Kyiv": "Keev",
+  "Gaza": "Gahza",
+  "Tehran": "Teh-rahn",
+  "Beijing": "Bay-jing",
+  "Xi": "Shee",
+  "Netanyahu": "Netan-yahoo",
+  "Zelensky": "Zeh-lensky",
+  "Europa": "Yoo-roh-pah",
+  "MOONKATTY": "Moon Katty",
+  "km": "kilometers",
+  "Oct.": "October",
+  "Nov.": "November"
+}
