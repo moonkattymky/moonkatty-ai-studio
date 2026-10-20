@@ -1,22 +1,86 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.0.0",
-  "description": "MOONKATTY AI STUDIO — web control panel",
-  "main": "server.js",
+  "version": "1.1.0",
+  "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
+  "main": "desktop/main.js",
   "scripts": {
     "start": "node server.js",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "desktop": "electron .",
+    "dist:mac": "electron-builder --mac zip --arm64"
   },
   "keywords": [],
-  "author": "",
+  "author": "MOONKATTY",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3",
     "playwright-core": "^1.64.1"
   },
   "dependencies": {
-    "better-sqlite3": "^11.10.0",
     "express": "^5.3.0"
   },
-  "private": true
+  "private": true,
+  "productName": "MOONKATTY AI STUDIO",
+  "optionalDependencies": {
+    "better-sqlite3": "^11.10.0"
+  },
+  "build": {
+    "appId": "com.moonkatty.aistudio",
+    "productName": "MOONKATTY AI STUDIO",
+    "copyright": "MOONKATTY",
+    "asar": false,
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "server.js",
+      "meta.js",
+      "runner.js",
+      "lib/**",
+      "public/**",
+      "desktop/**",
+      "build/icon.png",
+      "!node_modules/better-sqlite3/**",
+      "!node_modules/bindings/**",
+      "!node_modules/prebuild-install/**",
+      "!**/*.map"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "minimumSystemVersion": "12.0",
+      "extendInfo": {
+        "LSApplicationCategoryType": "public.app-category.productivity",
+        "CFBundleDevelopmentRegion": "ru",
+        "NSHumanReadableCopyright": "MOONKATTY"
+      }
+    },
+    "dmg": {
+      "title": "MOONKATTY AI STUDIO ${version}"
+    },
+    "publish": null
+  }
 }

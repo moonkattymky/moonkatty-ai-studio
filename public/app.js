@@ -106,7 +106,7 @@ function toast(m, err) { const d = document.createElement('div'); d.textContent 
 
 // ================= Helpers =================
 const agentName = id => (DB.agents.find(a => a.id === id) || {}).name || 'не назначен';
-const STATUS = { queued: ['В очереди', 'b-blue'], in_progress: ['Выполняется', 'b-pur'], waiting_approval: ['Ждёт утверждения', 'b-warn'], done: ['Готово', 'b-ok'], failed: ['Ошибка', 'b-err'], cancelled: ['Отменено', ''] };
+const STATUS = { queued: ['В очереди', 'b-blue'], in_progress: ['Выполняется', 'b-pur'], waiting_approval: ['Ждёт утверждения', 'b-warn'], done: ['Готово', 'b-ok'], failed: ['Ошибка', 'b-err'], blocked: ['Заблокировано', 'b-warn'], cancelled: ['Отменено', ''] };
 const PRIO = { low: ['Низкий', ''], normal: ['Обычный', 'b-blue'], high: ['Высокий', 'b-warn'], urgent: ['Срочно', 'b-err'] };
 const stBadge = s => `<span class="badge ${(STATUS[s] || ['', ''])[1]}">${(STATUS[s] || [s])[0]}</span>`;
 const prBadge = p => `<span class="badge b-none ${(PRIO[p] || ['', ''])[1]}">${(PRIO[p] || [p])[0]}</span>`;
@@ -152,6 +152,7 @@ function bindCommon(root) {
   root.querySelectorAll('[data-task-new]').forEach(b => b.onclick = () => taskForm(null, { agentId: b.dataset.taskNew || '', project: b.dataset.project || 'main' }));
   root.querySelectorAll('[data-task-del]').forEach(b => b.onclick = () => confirmDo('Удалить задачу?', () => act(() => api('DELETE', '/api/tasks/' + b.dataset.taskDel), 'Задача удалена')));
   root.querySelectorAll('[data-task-status]').forEach(s => s.onchange = () => setTaskStatus(s.dataset.taskStatus, s.value));
+  root.querySelectorAll('[data-code-ok]').forEach(b => b.onclick = () => MODE !== 'server' ? toast('Требуется сервер на Mac', true) : confirmDo('Разрешить OpenCode выполнить эту задачу? Он работает только в отдельной папке-песочнице (data/opencode-sandbox), без доступа к shell и вебу.', () => act(() => api('POST', `/api/tasks/${b.dataset.codeOk}/approve-code`), 'Запуск OpenCode разрешён')));
   root.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { SUB[ROUTE] = b.dataset.tab; render(); });
   root.querySelectorAll('[data-test]').forEach(b => b.onclick = () => testIntegration(b.dataset.test, b));
 }
@@ -180,11 +181,12 @@ function taskForm(t, defaults = {}) {
     <div><label>Расписание</label><select name="stype">${opts([['none', 'Без повтора'], ['every_days', 'Каждые N дней'], ['cron', 'Cron (m h dom mon dow)']], s.type)}</select></div></div>
     <div id="sxD"><label>Каждые N дней</label><input name="days" type="number" min="1" value="${s.days || 3}"></div>
     <div id="sxC"><label>Cron</label><input name="cron" placeholder="0 9 * * 1" value="${esc(s.cron || '')}"></div>
-    <p class="small mut">Расписание ставит задачу в очередь в нужное время. Автоматическое выполнение задач агентами — ${DEV()}</p>`,
+    <label class="row small" style="gap:8px"><input type="checkbox" name="kind" value="code" ${t.kind === 'code' ? 'checked' : ''} style="width:auto"> Задача для OpenCode (код) — запуск только после отдельного подтверждения, в песочнице</label>
+    <p class="small mut">${MODE === 'server' ? 'Расписание ставит задачу в очередь; запущенный агент берёт задачи из очереди в фоне (сервер работает и при закрытом окне).' : 'Браузерный режим: фоновое выполнение задач агентами требует сервер на Mac.'}</p>`,
     async fd => {
       const schedule = fd.stype === 'every_days' ? { type: 'every_days', days: +fd.days || 1 } : fd.stype === 'cron' ? { type: 'cron', cron: fd.cron.trim() } : { type: 'none' };
       if (schedule.type === 'cron' && !C.validCron(schedule.cron)) { toast('Неверное cron-выражение', true); return false; }
-      const body = { title: fd.title, description: fd.description, agentId: fd.agentId || null, project: fd.project, priority: fd.priority, status: fd.status, dueAt: fd.dueAt ? new Date(fd.dueAt).toISOString() : null };
+      const body = { title: fd.title, description: fd.description, agentId: fd.agentId || null, project: fd.project, priority: fd.priority, status: fd.status, kind: fd.kind === 'code' ? 'code' : null, dueAt: fd.dueAt ? new Date(fd.dueAt).toISOString() : null };
       if (!t.id || JSON.stringify(schedule) !== JSON.stringify(t.schedule || { type: 'none' })) body.schedule = schedule;
       await act(() => t.id ? api('PUT', '/api/tasks/' + t.id, body) : api('POST', '/api/tasks', body), t.id ? 'Задача сохранена' : 'Задача создана');
     });
@@ -196,7 +198,7 @@ function taskTable(tasks, empty = 'Задач нет') {
   const order = { urgent: 0, high: 1, normal: 2, low: 3 };
   tasks = [...tasks].sort((a, b) => ((order[a.priority] ?? 2) - (order[b.priority] ?? 2)) || (b.createdAt || '').localeCompare(a.createdAt || ''));
   return `<div class="tbl-wrap"><table><tr><th>Задача</th><th>Агент</th><th>Приоритет</th><th>Статус</th><th>Расписание</th><th></th></tr>${tasks.map(t => `<tr>
-    <td><b>${esc(t.title)}</b>${t.source === 'director' ? ' <span class="badge b-gold b-none">Director</span>' : ''}<div class="small mut">${esc((t.description || '').slice(0, 120))}</div>${t.dueAt ? `<div class="small mut">Срок: ${fmt(t.dueAt)}</div>` : ''}</td>
+    <td><b>${esc(t.title)}</b>${t.source === 'director' ? ' <span class="badge b-gold b-none">Director</span>' : ''}<div class="small mut">${esc((t.description || '').slice(0, 120))}</div>${t.kind === 'code' ? `<div class="small"><span class="badge b-pur b-none">OpenCode</span> ${t.codeApproved ? 'запуск разрешён' : `<button class="btn sm" data-code-ok="${t.id}">Разрешить OpenCode</button>`}</div>` : ''}${t.blockedReason && t.status === 'blocked' ? `<div class="small" style="color:#fbbf24">⚠ ${esc(t.blockedReason)}</div>` : ''}${t.error && t.status === 'failed' ? `<div class="small" style="color:var(--err)">${esc(t.error)}</div>` : ''}${t.result ? `<details class="small"><summary>Результат${t.model ? ' · ' + esc(t.model) : ''}</summary><pre class="box" data-notr style="white-space:pre-wrap">${esc(t.result)}</pre></details>` : ''}${t.dueAt ? `<div class="small mut">Срок: ${fmt(t.dueAt)}</div>` : ''}</td>
     <td>${esc(agentName(t.agentId))}</td><td>${prBadge(t.priority)}</td>
     <td><select data-task-status="${t.id}" style="width:auto">${opts(Object.entries(STATUS).map(([k, v]) => [k, v[0]]), t.status)}</select></td>
     <td class="small">${schedText(t.schedule)}${t.nextRunAt ? `<div class="mut">след.: ${fmt(t.nextRunAt)}</div>` : ''}</td>
@@ -242,13 +244,16 @@ VIEWS.agents = () => {
   return `<div class="tabs"><button data-tab="cards" class="${tab === 'cards' ? 'active' : ''}">Агенты</button><button data-tab="queue" class="${tab === 'queue' ? 'active' : ''}">Очередь задач (${DB.tasks.length})</button></div>
   ${tab === 'queue' ? `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-task-new="">+ Новая задача</button><span class="sp"></span><select id="qf" style="width:auto">${opts([['', 'Все статусы'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])], SUB.qf || '')}</select></div>
     <div class="card">${taskTable(DB.tasks.filter(t => !SUB.qf || t.status === SUB.qf))}</div>` :
-  `<div class="devbox" style="margin-bottom:16px">Статусы агентов отражают реальные действия в системе (назначение, старт, стоп). Автономное выполнение задач агентами через LLM — <b>в разработке</b>; Director уже разбирает запросы и раздаёт задачи (чат 💬 Director).</div>
+  `<div class="devbox" style="margin-bottom:16px">${MODE === 'server' ? '«Старт» включает фоновый исполнитель на сервере: агент берёт задачи из очереди и выполняет реальные действия (отчёты, проверка очереди публикаций, черновики ответов, черновики через Ollama qwen3:8b, OpenCode — с подтверждением). Если действие невозможно (например, Ollama недоступна), задача получает статус «Заблокировано» с причиной. Сервер продолжает работу при закрытом окне.' : 'Браузерный режим: фоновое выполнение задач агентами требует сервер на Mac; «Старт» только отмечает взятую задачу.'}</div>
   <div class="grid g3">${DB.agents.map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId); const mine = DB.tasks.filter(t => t.agentId === a.id);
     const hist = mine.filter(t => t.status === 'done').sort((x, y) => (y.completedAt || '').localeCompare(x.completedAt || '')).slice(0, 3);
     return `<div class="card"><div class="agent-head">${avatar(a)}<div class="sp"><b>${esc(a.name)}</b><div class="small mut">${esc(a.role)}</div></div>${agentStatus(a)}</div>
       <div class="small"><span class="mut">Текущая задача:</span> ${ct ? esc(ct.title) : '—'}</div>
       <div class="small"><span class="mut">Назначено:</span> ${mine.filter(t => !['done', 'cancelled'].includes(t.status)).length} · <span class="mut">выполнено:</span> ${mine.filter(t => t.status === 'done').length}</div>
       <div class="small mut" style="margin-top:6px">История: ${hist.length ? hist.map(t => esc(t.title)).join('; ') : 'пусто'}</div>
+      <div class="small"><span class="mut">Последний запуск:</span> ${a.lastRunAt ? fmt(a.lastRunAt) : '—'}</div>
+      ${a.lastResult ? `<div class="small"><span class="mut">Результат:</span> <span data-notr>${esc(a.lastResult)}</span></div>` : ''}${a.lastError ? `<div class="small" style="color:#fbbf24">⚠ ${esc(a.lastError)}</div>` : ''}
+      ${(a.actionLog || []).length ? `<details class="small"><summary>Журнал действий (${a.actionLog.length})</summary>${a.actionLog.slice(0, 12).map(l => `<div class="${l.level === 'error' ? 'err' : 'mut'}">${fmt(l.at)} · ${esc(l.msg)}</div>`).join('')}</details>` : ''}
       <div class="row" style="margin-top:12px">${a.inDevelopment ? `<button class="btn sm" disabled>Старт</button>${DEV()}` : `
         <button class="btn sm primary" data-start="${a.id}" ${!a.enabled || a.status === 'working' ? 'disabled' : ''}>Старт</button>
         <button class="btn sm" data-stop="${a.id}" ${a.status !== 'working' ? 'disabled' : ''}>Стоп</button>
@@ -258,12 +263,17 @@ VIEWS.agents = () => {
 BIND.agents = v => {
   const qf = v.querySelector('#qf'); if (qf) qf.onchange = () => { SUB.qf = qf.value; render(); };
   v.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.toggle); act(() => api('PUT', '/api/agents/' + a.id, { enabled: !a.enabled, status: 'idle' }), a.enabled ? 'Агент выключен' : 'Агент включён'); });
+  if (MODE === 'server') {
+    v.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => act(() => api('POST', `/api/agents/${b.dataset.stop}/stop`), 'Агент остановлен'));
+    v.querySelectorAll('[data-start]').forEach(b => b.onclick = () => act(() => api('POST', `/api/agents/${b.dataset.start}/start`), 'Агент запущен: берёт задачи из очереди в фоне'));
+  } else {
   v.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.stop);
     act(async () => { if (a.currentTaskId) await api('PUT', '/api/tasks/' + a.currentTaskId, { status: 'queued' }); await api('PUT', '/api/agents/' + a.id, { status: 'idle', currentTaskId: null }); }, 'Агент остановлен, задача возвращена в очередь'); });
   v.querySelectorAll('[data-start]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.start);
     const order = { urgent: 0, high: 1, normal: 2, low: 3 }; const q = DB.tasks.filter(t => t.agentId === a.id && t.status === 'queued').sort((x, y) => (order[x.priority] ?? 2) - (order[y.priority] ?? 2));
     if (!q.length) return toast('У агента нет задач в очереди — назначьте задачу', true);
     act(async () => { await api('PUT', '/api/tasks/' + q[0].id, { status: 'in_progress' }); await api('PUT', '/api/agents/' + a.id, { status: 'working', currentTaskId: q[0].id }); }, 'Взята задача: ' + q[0].title); });
+  }
   v.querySelectorAll('[data-assign]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.assign); const free = DB.tasks.filter(t => !['done', 'cancelled'].includes(t.status) && t.agentId !== a.id);
     modal(`<h2>Назначить задачу: ${esc(a.name)}</h2><label>Существующая задача</label><select name="tid"><option value="">— создать новую —</option>${opts(free.map(t => [t.id, t.title + ' (' + agentName(t.agentId) + ')']), '')}</select>`,
       fd => { if (!fd.tid) { setTimeout(() => taskForm(null, { agentId: a.id }), 0); return; } return act(() => api('PUT', '/api/tasks/' + fd.tid, { agentId: a.id }), 'Задача назначена'); }); });

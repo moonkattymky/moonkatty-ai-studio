@@ -9,11 +9,7 @@ const core = require('./public/core.js');
 module.exports = function mountMeta(app, ctx) {
   const { q, get, put, list, log, DB_PATH, express } = ctx;
   // ---- encryption key ----
-  let KEY;
-  if (process.env.STUDIO_SECRET_KEY) KEY = crypto.createHash('sha256').update(process.env.STUDIO_SECRET_KEY).digest();
-  else { const f = path.join(path.dirname(DB_PATH), 'secret.key');
-    if (!fs.existsSync(f)) fs.writeFileSync(f, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
-    KEY = Buffer.from(fs.readFileSync(f, 'utf8').trim(), 'hex'); }
+  const ks = require('./lib/keystore.js').loadKey(path.dirname(DB_PATH)); const KEY = ks.key; ctx.keySource = ks.source;
   const enc = txt => { const iv = crypto.randomBytes(12); const c = crypto.createCipheriv('aes-256-gcm', KEY, iv); const e = Buffer.concat([c.update(String(txt), 'utf8'), c.final()]); return [iv, c.getAuthTag(), e].map(b => b.toString('base64')).join('.'); };
   const dec = s => { const [iv, tag, e] = s.split('.').map(b => Buffer.from(b, 'base64')); const d = crypto.createDecipheriv('aes-256-gcm', KEY, iv); d.setAuthTag(tag); return Buffer.concat([d.update(e), d.final()]).toString('utf8'); };
   const setSecret = (k, v) => v == null ? db().prepare('DELETE FROM meta WHERE k = ?').run('secret:' + k) : q.setMeta.run('secret:' + k, enc(v));
@@ -67,7 +63,7 @@ module.exports = function mountMeta(app, ctx) {
   });
 
   function mountProtected() {
-    app.get('/api/meta/config', (req, res) => { const c = cfg(); res.json({ appId: c.appId, hasSecret: !!c.appSecret, configId: c.configId, redirectUri: c.redirectUri, graphVersion: c.graphVersion, source: c.source, encryption: process.env.STUDIO_SECRET_KEY ? 'env' : 'keyfile' }); });
+    app.get('/api/meta/config', (req, res) => { const c = cfg(); res.json({ appId: c.appId, hasSecret: !!c.appSecret, configId: c.configId, redirectUri: c.redirectUri, graphVersion: c.graphVersion, source: c.source, encryption: ks.source }); });
     app.put('/api/meta/config', (req, res) => {
       if (process.env.META_APP_ID) return res.status(400).json({ error: 'Настройки заданы через переменные окружения' });
       const b = req.body || {}; const cur = JSON.parse(q.meta.get('metaConfig')?.v || '{}');

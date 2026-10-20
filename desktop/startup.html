@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>MOONKATTY AI STUDIO</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'">
+<style>
+body{margin:0;background:radial-gradient(900px 500px at 80% -10%,#231a52,transparent 60%),#0b0f1a;color:#e7e9f3;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.box{width:560px;background:#121829;border:1px solid #262f4d;border-radius:18px;padding:28px 30px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+h1{margin:0;font-size:20px;letter-spacing:.06em}.gold{color:#e8c46a;font-size:12px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #1e2640}.row b{min-width:150px}.mut{color:#8a93b3;font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex:none;background:#555}.ok .dot{background:#4ade80}.bad .dot{background:#f87171}.warn .dot{background:#fbbf24}
+button{background:linear-gradient(90deg,#7c5cff,#4f7cff);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer}button.sec{background:#1e2640}button:disabled{opacity:.5}
+.btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}label{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px}#msg{margin-top:12px;font-size:13px;color:#fbbf24;white-space:pre-wrap}
+</style></head><body><div class="box">
+<div style="display:flex;gap:14px;align-items:center"><img src="../public/logo.svg" width="54" height="54" alt=""><div><h1>MOONKATTY AI STUDIO</h1><div class="gold">9 Lives. One Moon.</div></div></div>
+<p class="mut">Проверка компонентов. Окно показывает только локальный сервер на этом Mac (127.0.0.1); сервер работает в фоне и не останавливается при закрытии окна.</p>
+<div id="rows"></div>
+<label><input type="checkbox" id="auto"> Запускать сервер автоматически при открытии приложения</label>
+<label><input type="checkbox" id="login"> Запускать сервер при входе в систему (LaunchAgent)</label>
+<div class="btns"><button id="start">Запустить сервер</button><button id="open" disabled>Открыть панель</button><button class="sec" id="recheck">Проверить снова</button><button class="sec" id="data">Папка данных</button><button class="sec" id="logs">Журналы</button></div>
+<div id="msg"></div></div>
+<script src="startup.js"></script></body></html>

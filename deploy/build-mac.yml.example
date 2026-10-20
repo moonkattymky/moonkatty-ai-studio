@@ -1,0 +1,29 @@
+# GitHub Actions: native macOS (Apple Silicon) build of MOONKATTY AI STUDIO.app
+# To enable: copy to .github/workflows/build-mac.yml. Pushing workflow files requires a token with the
+# `workflow` permission for THIS repo only (fine-grained PAT: Repository access = moonkattymky/moonkatty-ai-studio,
+# Permissions: Contents = Read and write, Workflows = Read and write). Or add the file via the GitHub web UI.
+name: build-mac
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write   # only to attach artifacts to the Release of the pushed tag
+jobs:
+  mac:
+    runs-on: macos-14   # Apple Silicon (arm64)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: ./scripts/build-mac.sh
+      - name: Smoke-launch the built app (server via ELECTRON_RUN_AS_NODE)
+        run: |
+          APP="dist/mac-arm64/MOONKATTY AI STUDIO.app/Contents"
+          STUDIO_DATA_DIR=$RUNNER_TEMP/mk PORT=8799 ELECTRON_RUN_AS_NODE=1 "$APP/MacOS/MOONKATTY AI STUDIO" "$APP/Resources/app/server.js" &
+          sleep 5; curl -sf http://127.0.0.1:8799/api/health
+      - uses: actions/upload-artifact@v4
+        with: { name: moonkatty-ai-studio-mac-arm64, path: "dist/*.{zip,dmg}" }
+      - if: startsWith(github.ref, 'refs/tags/')
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release upload "${GITHUB_REF_NAME}" dist/*.zip dist/*.dmg --clobber

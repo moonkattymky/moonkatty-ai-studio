@@ -2,7 +2,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const Database = require('better-sqlite3');
+const { open: openDb } = require('./lib/db.js');
 const os = require('os');
 global.MKSocial = require('./public/social.js');
 const core = require('./public/core.js');
@@ -11,9 +11,10 @@ const crypto = require('crypto');
 
 const PORT = +process.env.PORT || 8787;
 const HOST = process.env.HOST || '127.0.0.1';
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'studio.db');
+const DATA_DIR = process.env.STUDIO_DATA_DIR || path.join(__dirname, 'data');
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'studio.db');
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-const db = new Database(DB_PATH);
+const db = openDb(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.exec(`CREATE TABLE IF NOT EXISTS items (col TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (col, id));
          CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);`);
@@ -64,8 +65,17 @@ function newSession(res, user) {
   const tok = crypto.randomBytes(32).toString('hex'); sessions.set(tok, { user, exp: Date.now() + SESSION_TTL }); saveSessions();
   res.setHeader('Set-Cookie', `mk_session=${tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL / 1000}`);
 }
-const meta = require('./meta.js')(app, { q, get, put, list, log, DB_PATH, express, db });
-app.get('/api/auth/status', (req, res) => { const s = sessions.get(tokenOf(req)); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : null }); });
+const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BRAND || 'MOONKATTY';
+const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
+const meta = require('./meta.js')(app, metaCtx);
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND });
+// Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
+const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
+if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
+const APP_TOKEN = fs.readFileSync(APP_TOKEN_FILE, 'utf8').trim();
+const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+function appTokenUser(req) { const h = req.headers['x-studio-app-token']; if (!h || !isLoopback(req) || h.length !== APP_TOKEN.length || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(APP_TOKEN))) return null; return Object.keys(getUsers())[0] || null; }
+app.get('/api/auth/status', (req, res) => { const s = sessions.get(tokenOf(req)); const au = appTokenUser(req); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : au, via: au && !(s && s.exp > Date.now()) ? 'app' : undefined }); });
 app.post('/api/auth/setup', (req, res) => {
   if (Object.keys(getUsers()).length) return res.status(403).json({ error: 'Пользователь уже создан' });
   const { username, password } = req.body || {};
@@ -84,7 +94,7 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/logout', (req, res) => { sessions.delete(tokenOf(req)); saveSessions(); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
-  const s = sessions.get(tokenOf(req)); if (!s || s.exp < Date.now()) return res.status(401).json({ error: 'auth required' });
+  const s = sessions.get(tokenOf(req)); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
   req.user = s.user; next();
 });
 app.post('/api/auth/password', (req, res) => {
@@ -119,7 +129,7 @@ app.post('/api/files/upload', express.raw({ type: '*/*', limit: '500mb' }), (req
   const o = put('files', { id, name, size: req.body.length, mime: req.headers['content-type'] || '', url: `/files/${id}-${name}`, project: req.query.project || 'main', createdAt: core.now() });
   log('info', 'files', 'Загружен файл ' + name, req.user); res.status(201).json(o);
 });
-app.use('/files', (req, res, next) => { const s = sessions.get(tokenOf(req)); if (!s) return res.status(401).end(); next(); }, express.static(FILES_DIR));
+app.use('/files', (req, res, next) => { const s = sessions.get(tokenOf(req)) || appTokenUser(req); if (!s) return res.status(401).end(); next(); }, express.static(FILES_DIR));
 
 // ---- Director chat ----
 async function llmPlan(text) {
@@ -143,7 +153,13 @@ app.post('/api/director/chat', async (req, res) => {
   log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, req.user); res.json({ message: msg, tasks: created });
 });
 
-app.get('/api/health', (req, res) => res.json({ ok: true, mode: 'server', version: require('./package.json').version }));
+app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
+  res.json({ ok: dbOk, app: 'moonkatty-ai-studio', mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
+app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), opencode: runner.opencodePath(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
+app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', req.params.id); if (!t || t.kind !== 'code') return res.status(400).json({ error: 'Не задача OpenCode' });
+  Object.assign(t, { codeApproved: true, codeApprovedBy: req.user, codeApprovedAt: core.now(), status: t.status === 'blocked' ? 'queued' : t.status }); put('tasks', t); log('info', 'opencode', 'Разрешён запуск OpenCode: ' + t.title, req.user); res.json(t); });
 
 let cpuPrev = os.cpus(), cpuPct = null;
 setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i]?.times || x.times; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round(100 * (1 - idle / tot)) : null; cpuPrev = c; }, 5000).unref();
@@ -245,11 +261,21 @@ function tick() {
       q.setMeta.run('lastAutoReport', rep.createdAt); log('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован');
     }
     meta.tick().catch(e => log('error', 'publishing', e.message));
+    runner.tick();
     const lb = q.meta.get('lastBackup')?.v; if (!lb || Date.now() - new Date(lb) >= 86400000) scheduledBackup();
     q.setMeta.run('lastTick', core.now());
   } catch (e) { log('error', 'scheduler', e.message); }
 }
-setInterval(tick, 30000); tick();
+function startBackground() { runner.recover(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
 
 process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
-app.listen(PORT, HOST, () => console.log(`MOONKATTY AI STUDIO: http://${HOST}:${PORT}`));
+// Single instance: if the port is taken by our own server, exit cleanly (launchd will not restart on success).
+const PID_FILE = path.join(path.dirname(DB_PATH), 'server.pid');
+const srv = app.listen(PORT, HOST, err => { if (err) return; startBackground(); fs.writeFileSync(PID_FILE, String(process.pid)); console.log(`MOONKATTY AI STUDIO: http://${HOST}:${PORT} (pid ${process.pid}, db ${db.driver || 'better-sqlite3'})`); });
+srv.on('error', async e => {
+  if (e.code !== 'EADDRINUSE') throw e;
+  let ours = false; try { ours = (await (await fetch(`http://127.0.0.1:${PORT}/api/health`, { signal: AbortSignal.timeout(3000) })).json()).app === 'moonkatty-ai-studio'; } catch {}
+  console.error(ours ? `Сервер уже запущен на порту ${PORT} — второй экземпляр не нужен` : `Порт ${PORT} занят другим процессом`); process.exit(ours ? 0 : 3);
+});
+const shutdown = sig => { console.log('Остановка по ' + sig); srv.close(); try { if (fs.readFileSync(PID_FILE, 'utf8') === String(process.pid)) fs.unlinkSync(PID_FILE); } catch {} try { db.close(); } catch {} process.exit(0); };
+process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'));

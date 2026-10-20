@@ -1,0 +1,57 @@
+// Desktop shell test on Linux (xvfb): startup checks, auto-start of background server, panel via local server,
+// app-token auth, agents start/stop, server independent of the window, persistence and recovery after a kill.
+import { _electron as electron } from 'playwright-core';
+import fs from 'fs'; import path from 'path';
+const UD = process.env.UD || '/tmp/mk-desktop-test', PORT = 8797, shots = 'screenshots';
+const res = []; const ok = (name, cond, extra = '') => { res.push({ name, ok: !!cond, extra }); console.log((cond ? 'PASS ' : 'FAIL ') + name + (extra ? ' — ' + extra : '')); };
+const health = async () => { try { return await (await fetch(`http://127.0.0.1:${PORT}/api/health`)).json(); } catch { return null; } };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+fs.rmSync(UD, { recursive: true, force: true }); fs.mkdirSync(UD, { recursive: true });
+fs.writeFileSync(path.join(UD, 'desktop.json'), JSON.stringify({ port: PORT, autoStartServer: true, checkUpdates: false }));
+const closeApp = async a => { const p = a.process(); await Promise.race([a.close(), sleep(6000)]); if (p.exitCode === null) { closeHang = true; p.kill('SIGKILL'); } };
+let closeHang = false;
+const launch = () => electron.launch({ args: ['.'], env: { ...process.env, STUDIO_USER_DATA: UD } });
+ok('no server before launch', !(await health()));
+let app = await launch(); let w = await app.firstWindow();
+await w.waitForSelector('#rows .row'); await w.screenshot({ path: `${shots}/desktop-startup.png` });
+await w.waitForURL(`http://127.0.0.1:${PORT}/**`, { timeout: 30000 });
+const h1 = await health(); ok('server auto-started on 127.0.0.1 and healthy', h1 && h1.ok, h1 && `pid ${h1.pid}, ${h1.dbDriver}`);
+ok('window loads local server, not GitHub Pages', w.url().startsWith(`http://127.0.0.1:${PORT}/`), w.url());
+await w.waitForSelector('#auth form'); await w.fill('input[name=username]', 'igor'); await w.fill('input[name=password]', 'testpass123'); await w.click('#auth button');
+await w.waitForSelector('#app:not(.hidden) #view .card'); await w.waitForTimeout(800); await w.screenshot({ path: `${shots}/desktop-dashboard.png` });
+await w.evaluate(() => location.hash = 'agents'); await w.waitForTimeout(500);
+await w.click('[data-tab=queue]'); await w.click('[data-task-new]'); await w.fill('#modal input[name=title]', 'Desktop test: news draft'); await w.selectOption('#modal select[name=agentId]', 'news'); await w.click('#modal .btn.primary'); await w.waitForTimeout(500);
+await w.click('[data-task-new]'); await w.fill('#modal input[name=title]', 'Desktop test: analytics report'); await w.selectOption('#modal select[name=agentId]', 'analytics'); await w.click('#modal .btn.primary'); await w.waitForTimeout(500);
+await w.click('[data-tab=cards]'); await w.click('[data-start=news]'); await w.click('[data-start=analytics]'); await sleep(7000);
+await w.evaluate(() => location.hash = 'dashboard'); await w.waitForTimeout(300); await w.evaluate(() => location.hash = 'agents'); await w.waitForTimeout(1500);
+const tasks = await (await fetch(`http://127.0.0.1:${PORT}/api/tasks`, { headers: { 'x-studio-app-token': fs.readFileSync(path.join(UD, 'app-token'), 'utf8').trim() } })).json();
+const tn = tasks.find(t => t.title === 'Desktop test: news draft'), ta = tasks.find(t => t.title === 'Desktop test: analytics report');
+ok('runner: news blocked honestly when Ollama unreachable', tn?.status === 'blocked' && /Ollama/.test(tn.blockedReason || ''), tn?.blockedReason);
+ok('runner: analytics did real work (report)', ta?.status === 'done' && /Отчёт/.test(ta.result || ''), ta?.result);
+await w.screenshot({ path: `${shots}/desktop-agents.png`, fullPage: true });
+await w.click('[data-stop=news]'); await w.waitForTimeout(800);
+ok('agent stop via UI', (await w.locator('[data-start=news]:not([disabled])').count()) === 1);
+await w.evaluate(() => location.hash = 'social'); await w.waitForTimeout(800);
+ok('4 Meta workspace cards, all «Не подключено»', (await w.locator('.ws-grid > *').count()) === 4 && (await w.locator('text=Не подключено').count()) >= 4);
+await w.screenshot({ path: `${shots}/desktop-social.png`, fullPage: true });
+await closeApp(app); await sleep(1500);
+const h2 = await health(); ok('server keeps running after window/app closed', h2 && h2.pid === h1.pid, h2 && 'pid ' + h2.pid);
+// second launch: no duplicate server, direct to panel, data persisted
+app = await launch(); w = await app.firstWindow(); await w.waitForURL(`http://127.0.0.1:${PORT}/**`, { timeout: 30000 });
+await w.waitForSelector('#app:not(.hidden) #view .card', { timeout: 15000 });
+const h3 = await health(); ok('relaunch reuses the same server (no duplicate)', h3.pid === h1.pid);
+await w.context().clearCookies(); await w.reload(); await w.waitForSelector('#app:not(.hidden) #view .card', { timeout: 15000 });
+ok('app-token auth works without session cookie', true);
+await w.evaluate(() => location.hash = 'agents'); await w.click('[data-tab=queue]'); await w.waitForTimeout(500);
+ok('data persisted across app restart', (await w.locator('text=Desktop test: analytics report').count()) > 0);
+await closeApp(app);
+// crash: kill the server; next launch must start a fresh one
+process.kill(h1.pid, 'SIGKILL'); await sleep(1000); ok('server killed', !(await health()));
+app = await launch(); w = await app.firstWindow(); await w.waitForURL(`http://127.0.0.1:${PORT}/**`, { timeout: 30000 });
+const h4 = await health(); ok('recovery: app restarts the server after a crash', h4 && h4.pid !== h1.pid);
+const t2 = await (await fetch(`http://127.0.0.1:${PORT}/api/tasks`, { headers: { 'x-studio-app-token': fs.readFileSync(path.join(UD, 'app-token'), 'utf8').trim() } })).json();
+ok('data intact after crash', t2.some(t => t.title === 'Desktop test: analytics report'));
+ok('foreign request without token is rejected', (await fetch(`http://127.0.0.1:${PORT}/api/tasks`)).status === 401);
+await closeApp(app); process.kill(h4.pid, 'SIGTERM');
+console.log('note: electron quit hung under xvfb (Linux dbus) and was killed:', closeHang);
+console.log(JSON.stringify({ passed: res.filter(r => r.ok).length, failed: res.filter(r => !r.ok).map(r => r.name) }));
