@@ -72,7 +72,7 @@ class NewsVideoFactory {
       s.start = t; t += s.duration;
       if (s.kind === 'story') { const srt = buildSrt([{ text: stripMarkup(s.story.text), start: s.start + 0.25, duration: s.speech - 0.6 }], { maxChars: V ? 28 : 46 }); cues.push(...parseSrt(srt).map(c => ({ start: c.start, end: c.end, text: c.lines.join('\n') }))); }
     }
-    const total = t; if (P.maxDurationSec && total > P.maxDurationSec) throw new Error(`duration ${total.toFixed(1)}s exceeds ${P.name} limit`);
+    const total = t; const lufs = P.targetLufs ?? this.targetLufs; if (P.maxDurationSec && total > P.maxDurationSec) throw new Error(`duration ${total.toFixed(1)}s exceeds ${P.name} limit`);
     const srtText = cues.map((c, i) => `${i + 1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`).join('\n');
     const check = validateSrt(srtText, { maxChars: V ? 28 : 46, totalSec: total }); if (!check.ok) throw new Error('subtitle validation failed: ' + check.errors.join('; '));
     const srt = path.join(outDir, `${basename}.srt`); fs.writeFileSync(srt, srtText);
@@ -121,19 +121,19 @@ class NewsVideoFactory {
     const narr = path.join(work, 'narr.wav');
     const af = segs.map((s, k) => `[${k}:a]aresample=44100,aformat=channel_layouts=mono,apad=whole_dur=${s.duration.toFixed(3)}[a${k}]`).join(';') + ';' + segs.map((_, k) => `[a${k}]`).join('') + `concat=n=${segs.length}:v=0:a=1[out]`;
     await this._ff([...segs.flatMap(s => ['-i', s.wav]), '-filter_complex', af, '-map', '[out]', narr]);
-    const anchor = path.join(outDir, `${basename}.anchor.wav`); await this._ff(['-i', narr, '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '48000', '-ac', '1', '-c:a', 'pcm_s16le', anchor]);
+    const anchor = path.join(outDir, `${basename}.anchor.wav`); await this._ff(['-i', narr, '-af', `loudnorm=I=${lufs}:TP=-1.5:LRA=11`, '-ar', '48000', '-ac', '1', '-c:a', 'pcm_s16le', anchor]);
     const mix = path.join(work, 'mix.wav');
     if (m) await this._ff(['-i', narr, '-stream_loop', '-1', '-i', m.file, '-filter_complex', `[0:a]aformat=channel_layouts=stereo[n];[1:a]aresample=44100,volume=${m.volume},atrim=0:${total.toFixed(3)}[mu];[mu][n]sidechaincompress=threshold=0.03:ratio=8:attack=15:release=350[d];[n][d]amix=inputs=2:duration=first:normalize=0[o]`, '-map', '[o]', '-t', total.toFixed(3), mix]);
     else await this._ff(['-i', narr, '-ac', '2', mix]);
-    const norm = path.join(work, 'norm.wav'); const ln = `loudnorm=I=${this.targetLufs}:TP=-1.5:LRA=11`;
+    const norm = path.join(work, 'norm.wav'); const ln = `loudnorm=I=${lufs}:TP=-1.5:LRA=11`;
     const { stderr } = await this.runFn('ffmpeg', ['-hide_banner', '-nostats', '-i', mix, '-af', `${ln}:print_format=json`, '-f', 'null', '-']); const me = JSON.parse(stderr.slice(stderr.lastIndexOf('{'), stderr.lastIndexOf('}') + 1));
     await this._ff(['-i', mix, '-af', `${ln}:measured_I=${me.input_i}:measured_TP=${me.input_tp}:measured_LRA=${me.input_lra}:measured_thresh=${me.input_thresh}:offset=${me.target_offset}:linear=true,aresample=48000`, norm]);
     // ---- final
     const out = path.join(outDir, `${basename}.mp4`);
     await this._ff(['-i', joined, '-i', norm, '-filter_complex', `[0:v]ass='${path.basename(ass)}',scale=out_range=tv,format=yuv420p[v]`, '-map', '[v]', '-map', '1:a', '-c:v', 'libx264', '-preset', 'medium', '-crf', String(P.crf), '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-t', total.toFixed(3), '-movflags', '+faststart', out], work);
     const thumb = path.join(outDir, `${basename}.jpg`); await this._ff(['-ss', (segs[1].start + 1.6).toFixed(2), '-i', out, '-frames:v', '1', '-q:v', '2', thumb]);
-    const qa = await qaVideo(out, { width: W, height: H, fps, durationSec: total, targetLufs: this.targetLufs, runFn: this.runFn, visual: true });
-    const manifest = { title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
+    const qa = await qaVideo(out, { width: W, height: H, fps, durationSec: total, targetLufs: lufs, runFn: this.runFn, visual: true });
+    const manifest = { title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
       tts: this.tts.name, transitions: used, segments: segs.map(s => ({ kind: s.kind, storyId: s.story?.id, assetId: s.story?.asset.id, layout: s.layout?.mode, start: +s.start.toFixed(3), duration: +s.duration.toFixed(3) })),
       sources: ep.sources, rights: ep.rights, music: m && { title: m.title, artist: m.artist, license: m.license }, subtitles: check, qa, createdAt: new Date().toISOString() };
     fs.writeFileSync(path.join(outDir, `${basename}.json`), JSON.stringify(manifest, null, 2)); if (!process.env.MA_KEEP_WORK) fs.rmSync(work, { recursive: true, force: true });

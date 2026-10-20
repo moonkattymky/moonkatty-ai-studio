@@ -10,11 +10,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 class Orchestrator {
   constructor({ stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets = ['youtube', 'shorts'], storyCount = 3, minStories = 2, stepAttempts = 2, retryMs = 1000, publishTargets, clock = () => new Date() }) {
     fs.mkdirSync(path.join(stateDir, 'runs'), { recursive: true });
-    this.panelFallback = arguments[0].panelFallback || null;
+    this.panelFallback = arguments[0].panelFallback || null; this.fallbackQueue = arguments[0].fallbackQueue || null;
     Object.assign(this, { stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets, storyCount, minStories, stepAttempts, retryMs, clock });
     this.store = new JsonStore(path.join(stateDir, 'orchestrator.json'));
     this.publishTargets = publishTargets || { youtube: ['youtube-news'], shorts: ['youtube-news', 'tiktok-news', 'instagram-news', 'facebook-news'] };
-    jobQueue.registerHandler('video_render', async ({ runId, preset }) => { const r = this.run(runId); return this.factory.render(r.steps.media.output.episode, { preset, outDir: r.dir, basename: `${runId}-${preset}`, music: this.music }); });
+    const rq = jobQueue && typeof jobQueue.registerHandler === 'function' ? jobQueue : arguments[0].fallbackQueue;
+    if (rq && typeof rq.registerHandler === 'function') rq.registerHandler('video_render', async ({ runId, preset }) => { const r = this.run(runId); return this.factory.render(r.steps.media.output.episode, { preset, outDir: r.dir, basename: `${runId}-${preset}`, music: this.music }); });
   }
   _log(runId, event, data) { fs.appendFileSync(path.join(this.stateDir, 'runs', `${runId}.jsonl`), JSON.stringify({ at: this.clock().toISOString(), runId, event, ...data }) + '\n'); }
   run(id) { return this.store.get('runs', {})[id] || null; }
@@ -30,6 +31,8 @@ class Orchestrator {
     }
   }
   /** Run or resume a video issue. Idempotent per runId. */
+  /** 'video_render' is NOT in Studio JOBS_API v1.2.0 (proposed in INTEGRATION.md). Use the local serialized queue unless the Studio queue declares support. */
+  _renderQueue() { const q = this.jobQueue; if (q && Array.isArray(q.supportedTypes) && !q.supportedTypes.includes('video_render')) { if (!this.fallbackQueue) throw new Error('studio queue lacks video_render and no fallbackQueue configured'); return this.fallbackQueue; } return q; }
   async runIssue(runId, { title = 'MOONKATTY NEWS', dateLabel } = {}) {
     let r = this.run(runId);
     if (!r) { r = { id: runId, status: 'running', createdAt: this.clock().toISOString(), dir: path.join(this.stateDir, 'runs', runId), steps: {} }; fs.mkdirSync(r.dir, { recursive: true }); this._save(r); this._log(runId, 'run_created', {}); }
@@ -38,7 +41,7 @@ class Orchestrator {
     const fetched = await this._step(r, 'fetch', async () => { const rep = await this.news.run(); if (rep.fetched === 0 && rep.errors.length) throw new Error('all sources failed'); return rep; });
     const selected = await this._step(r, 'select', async () => {
       const used = new Set(this.store.get('usedStories', []));
-      const c = this.news.stories().filter(s => s.corroboration === 'confirmed' && ['auto_approved', 'approved'].includes(s.reviewStatus) && !used.has(s.id) && (s.summary || '').length > 60)
+      const c = this.news.stories().filter(s => ['confirmed', 'primary_only'].includes(s.corroboration) && s.editorialStatus !== 'dropped-unconfirmed' && ['auto_approved', 'approved'].includes(s.reviewStatus) && !used.has(s.id) && (s.summary || '').length > 60)
         .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
       const GENERIC = new Set(['NASA', 'ESA', 'BBC', 'The', 'New', 'US', 'UK']); const names = h => new Set((String(h).match(/\b[A-Z][A-Za-z0-9-]{2,}/g) || []).map(w => w.replace(/[’']s$/, '')).filter(w => !GENERIC.has(w)));
       const picked = []; for (const s of c) { const tk = tokens(s.headline); const nm = names(s.headline); if (picked.some(p => jaccard(tk, tokens(p.headline)) > 0.2 || [...names(p.headline)].some(n => nm.has(n)))) continue; picked.push(s); if (picked.length >= this.storyCount * 2) break; } // topic diversity
@@ -67,7 +70,7 @@ class Orchestrator {
       fs.writeFileSync(path.join(r.dir, 'rights.json'), JSON.stringify(rights, null, 2)); return { episode, rightsFile: path.join(r.dir, 'rights.json') };
     });
     const renders = await this._step(r, 'render', async () => {
-      const out = {}; for (const preset of this.presets) out[preset] = await this.jobQueue.runExclusive({ type: 'video_render', agent: 'orchestrator', input: { runId, preset }, timeoutSec: 1800, maxAttempts: 1, idempotencyKey: `${runId}:${preset}` }); return out;
+      const out = {}; for (const preset of this.presets) out[preset] = await this._renderQueue().runExclusive({ type: 'video_render', agent: 'orchestrator', input: { runId, preset }, timeoutSec: 1800, maxAttempts: 1, idempotencyKey: `${runId}:${preset}`, resourceClass: 'gpu_heavy', safeToRetry: true }); return out;
     });
     await this._step(r, 'qa', async () => { const bad = Object.entries(renders).filter(([, m]) => !m.qa?.ok); if (bad.length) throw Object.assign(new Error('QA failed: ' + bad.map(b => b[0]).join(',')), { permanent: true }); return Object.fromEntries(Object.entries(renders).map(([k, m]) => [k, m.qa.checks.map(c => `${c.name}:${c.ok}`)])); });
     const handoff = await this._step(r, 'handoff', async () => {
@@ -92,7 +95,7 @@ class Orchestrator {
   async runText(runId, { targets = ['x-news', 'telegram-news'] } = {}) {
     if (this.approval.get(runId)) return this.approval.get(runId);
     await this.news.run(); const used = new Set(this.store.get('usedText', []));
-    const s = this.news.stories().find(x => x.corroboration === 'confirmed' && ['auto_approved', 'approved'].includes(x.reviewStatus) && !used.has(x.id)); if (!s) { this._log(runId, 'text_no_story', {}); return null; }
+    const s = this.news.stories().find(x => ['confirmed', 'primary_only'].includes(x.corroboration) && x.editorialStatus !== 'dropped-unconfirmed' && ['auto_approved', 'approved'].includes(x.reviewStatus) && !used.has(x.id)); if (!s) { this._log(runId, 'text_no_story', {}); return null; }
     const h = await this.editor.headline({ title: s.headline, texts: s.items.map(i => i.summary || i.title) });
     const [a] = await this.media.findForNews(s.id, mediaQueries(s), { count: 1 }).catch(() => []);
     const link = s.items[0].link; let text = `${h.text}\n\n${s.summary}`; const tail = `\n${link}`; if ((text + tail).length > 280) text = text.slice(0, 276 - tail.length).replace(/\s+\S*$/, '') + '…';

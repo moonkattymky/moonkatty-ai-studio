@@ -142,3 +142,23 @@ test('media queries never consist of generic words only when the headline has pr
   const q = mediaQueries({ headline: 'Mars’s oddest cloud may be even odder than we thought', category: 'space' });
   assert.ok(q.length && q.every(x => /Mars/.test(x.q)), JSON.stringify(q));
 });
+test('verify: confirmed needs primary + corroboration; media-only -> unconfirmed; primary alone -> primary_only', () => {
+  const { verifyStory } = require('../src/news/verify'); const now = new Date('2026-10-21T00:00:00Z');
+  const it = (sourceId, title, extra = {}) => ({ sourceId, title, summary: title + ' ' + sourceId + ' independent wording here', published: '2026-10-20T20:00:00Z', ...extra });
+  const sources = { a: { owner: 'A' }, b: { owner: 'B' }, gov: { primary: true, owner: 'GOV' } };
+  assert.equal(verifyStory([it('a', 'Quake hits'), it('b', 'Earthquake strikes')], { now, sources }).status, 'unconfirmed');
+  assert.ok(verifyStory([it('a', 'Quake hits'), it('b', 'Earthquake strikes')], { now, sources }).reasons.includes('no_primary_source'));
+  assert.equal(verifyStory([it('gov', 'Ministry statement')], { now, sources }).status, 'primary_only');
+  assert.equal(verifyStory([it('gov', 'Ministry statement'), it('a', 'Ministry says')], { now, sources }).status, 'confirmed');
+  assert.equal(verifyStory([it('a', 'X', { primarySourceUrl: 'https://gov.example/x' }), it('b', 'Y')], { now, sources }).status, 'confirmed');
+});
+test('license: UK OGL v3 accepted with attribution; other OGL versions rejected', () => {
+  const r = classify('Open Government Licence v3.0'); assert.equal(r.id, 'OGL-UK-3.0'); assert.equal(r.attributionRequired, true);
+  assert.equal(classify('OGL v2').ok, false); assert.match(licenseUrl('OGL-UK-3.0'), /version\/3/);
+});
+test('orchestrator render queue: studio queue without video_render -> local fallback', () => {
+  const { Orchestrator } = require('../src/orchestrator/orchestrator'); const { StudioJobQueueAdapter } = require('../src/jobs/studio-adapter');
+  const local = { runExclusive() {} }; const o = new Orchestrator({ stateDir: tmp(), jobQueue: new StudioJobQueueAdapter(), fallbackQueue: local });
+  assert.equal(o._renderQueue(), local); assert.throws(() => new Orchestrator({ stateDir: tmp(), jobQueue: new StudioJobQueueAdapter() })._renderQueue(), /fallbackQueue/);
+  assert.equal(require('../src/video/presets').getPreset('youtube').targetLufs, -16);
+});

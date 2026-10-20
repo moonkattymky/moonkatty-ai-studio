@@ -6,11 +6,13 @@ const { waitForJob } = require('./port');
  *   { createJob, getJob, cancelJob, listJobs }  (see port.js). Until then every call throws NotConnected.
  * Inline functions can NOT be shipped across; runExclusive(spec) only enqueues `spec` and waits for its result.
  */
+/** Job types in Studio docs/JOBS_API.md (feat/v1.2.0 @00b63fc). 'video_render' is only PROPOSED. */
+const STUDIO_TYPES = ['design3d', 'blender_template', 'opencode_task', 'render_segment'];
 const PUBLIC = new Set(['queued', 'running', 'needs_approval', 'succeeded', 'failed', 'cancelled']);
 const INTERNAL_MAP = { waiting_confirmation: 'needs_approval', waiting_approval: 'needs_approval', blocked: 'queued', done: 'succeeded', rejected: 'cancelled' };
 class NotConnectedError extends Error { constructor() { super('Studio job queue not connected (adapter stub; contract draft)'); this.code = 'NOT_CONNECTED'; } }
 class StudioJobQueueAdapter {
-  constructor({ client = null, pollMs = 1000 } = {}) { this.client = client; this.pollMs = pollMs; }
+  constructor({ client = null, pollMs = 1000, supportedTypes = STUDIO_TYPES } = {}) { this.client = client; this.pollMs = pollMs; this.supportedTypes = supportedTypes; }
   _c() { if (!this.client) throw new NotConnectedError(); return this.client; }
   /** Aligned with feat/v1.2.0 docs/JOBS_API.md (00b63fc): jobsApi.createJob({type, agent, input, timeoutSec, maxAttempts, resourceClass, requiresNode, idempotencyKey, safeToRetry}) -> {jobId, existing?} */
   async createJob(spec) {
@@ -46,4 +48,4 @@ class StudioHost3D {
     catch (e) { if (e.code === 'NOT_CONNECTED' || e.job?.status === 'failed') return null; throw e; }
   }
 }
-module.exports = { StudioJobQueueAdapter, StudioHost3D, NotConnectedError, INTERNAL_MAP };
+module.exports = { STUDIO_TYPES, StudioJobQueueAdapter, StudioHost3D, NotConnectedError, INTERNAL_MAP };

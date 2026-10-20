@@ -12,6 +12,7 @@ function classify(raw, { source } = {}) {
   if (/\bnc\b|non-?commercial/.test(l)) return bad('non-commercial license');
   if (/\bnd\b|no ?deriv/.test(l)) return bad('no-derivatives license');
   if (/fair use|all rights reserved|copyright(ed)?\b(?!.*cc)|non-?free/.test(l) && !/public domain|cc/.test(l)) return bad('not freely licensed');
+  if (/open government licen[cs]e|\bogl\b/.test(l)) return /v?(3|3\.0)\b|version 3/.test(l) || !/\d/.test(l) ? R('OGL-UK-3.0', { attributionRequired: true, note: 'UK Open Government Licence v3: commercial use OK with attribution statement' }) : bad('OGL version not v3');
   if (/cc0|cc-zero|public domain|^pd\b|pd-|no restrictions|pdm/.test(l)) return R(/cc0/.test(l) ? 'CC0-1.0' : 'Public-Domain');
   let m = l.match(/cc[ -]?by[ -]?sa[ -]?(\d\.\d)?(?:[ -]?(igo))?/);
   if (m) return R(`CC-BY-SA-${m[1] || '4.0'}${m[2] ? '-IGO' : ''}`, { attributionRequired: true, shareAlike: true });
@@ -20,7 +21,7 @@ function classify(raw, { source } = {}) {
   if (source === 'nasa' || /nasa/.test(l)) return R('NASA-media', { attributionRequired: true, note: 'NASA media guidelines' });
   return bad('unrecognized license: ' + s);
 }
-const LICENSE_URLS = { 'CC0-1.0': 'https://creativecommons.org/publicdomain/zero/1.0/', 'Public-Domain': 'https://creativecommons.org/publicdomain/mark/1.0/',
+const LICENSE_URLS = { 'OGL-UK-3.0': 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/', 'CC0-1.0': 'https://creativecommons.org/publicdomain/zero/1.0/', 'Public-Domain': 'https://creativecommons.org/publicdomain/mark/1.0/',
   'NASA-media': 'https://www.nasa.gov/nasa-brand-center/images-and-media/', 'CC-BY-SA-3.0-IGO': 'https://creativecommons.org/licenses/by-sa/3.0/igo/' };
 function licenseUrl(id) { if (LICENSE_URLS[id]) return LICENSE_URLS[id]; const m = id.match(/^CC-(BY(?:-SA)?)-(\d\.\d)$/); return m ? `https://creativecommons.org/licenses/${m[1].toLowerCase()}/${m[2]}/` : null; }
 /** Human attribution line, e.g. "Photo: Jane Doe / NASA (Public Domain)". */

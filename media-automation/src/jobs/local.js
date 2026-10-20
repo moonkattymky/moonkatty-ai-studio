@@ -18,10 +18,12 @@ class LocalJobQueue {
   _ev(job, event, data) { (job.events = job.events || []).push({ at: this.now(), event, data: data ?? null }); }
   _save(job) { this.store.update('jobs', js => ({ ...js, [job.jobId]: job }), {}); }
   registerHandler(type, fn) { this.handlers.set(type, fn); return this; }
-  async createJob({ type, agent = null, input = {}, timeoutSec = 600, maxAttempts = 1, requiresApproval = false, idempotencyKey }) {
+  async createJob({ type, agent = null, input = {}, timeoutSec = 600, maxAttempts = 1, requiresApproval = false, idempotencyKey, resourceClass = null, requiresNode = null, safeToRetry = null }) {
     if (!type) throw new Error('type required');
+    if (idempotencyKey && String(idempotencyKey).length > 128) throw new Error('idempotencyKey must be <=128 chars (Studio JOBS_API)');
     if (idempotencyKey) { const ex = Object.values(this.store.get('jobs', {})).find(j => j.idempotencyKey === idempotencyKey && !['failed', 'cancelled'].includes(j.status)); if (ex) return { jobId: ex.jobId }; }
     const job = { jobId: crypto.randomUUID(), type, agent, input, timeoutSec, maxAttempts, attempts: 0, idempotencyKey: idempotencyKey || null,
+      resourceClass: resourceClass || null, requiresNode: requiresNode || null, safeToRetry: safeToRetry == null ? null : !!safeToRetry,
       status: requiresApproval ? 'needs_approval' : 'queued', heavy: HEAVY_TYPES.has(type), result: null, error: null, createdAt: this.now(), updatedAt: this.now(), events: [] };
     this._ev(job, 'created'); this._save(job); setImmediate(() => this._pump()); return { jobId: job.jobId };
   }

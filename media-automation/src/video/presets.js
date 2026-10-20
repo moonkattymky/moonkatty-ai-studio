@@ -1,7 +1,7 @@
 'use strict';
 const H = { width: 1920, height: 1080, aspect: '16:9' };
 const V = { width: 1080, height: 1920, aspect: '9:16' };
-const base = { fps: 30, vcodec: 'libx264', crf: 21, abitrate: '160k', pixfmt: 'yuv420p' };
+const base = { fps: 30, vcodec: 'libx264', crf: 21, abitrate: '160k', pixfmt: 'yuv420p', targetLufs: -16 };
 const PRESETS = {
   youtube: { ...base, ...H, platform: 'YouTube', maxDurationSec: null },
   shorts: { ...base, ...V, platform: 'YouTube Shorts', maxDurationSec: 180 },

@@ -9,9 +9,9 @@ test('quantities and wire detection', () => {
   assert.deepEqual(quantities('12 people killed, prices rose 3.5% in 2026'), [{ value: 12, unit: 'people' }, { value: 3.5, unit: '%' }]);
   assert.equal(wireOf('LONDON (Reuters) - ...'), 'Reuters'); assert.equal(wireOf('(AP) — The'), 'AP'); assert.equal(wireOf('local report'), null);
 });
-test('two independent outlets -> confirmed', () => {
+test('two independent outlets without primary -> unconfirmed', () => {
   const v = verifyStory([it('a', 'Bridge opens in city', 'The new bridge opened to traffic on Monday morning after years of work.'), it('b', 'City bridge opened', 'Officials cut the ribbon as cars crossed the long-awaited bridge.')], { now: NOW });
-  assert.equal(v.status, 'confirmed'); assert.equal(v.independentOrigins, 2);
+  assert.equal(v.status, 'unconfirmed'); assert.equal(v.independentOrigins, 2); assert.ok(v.reasons.includes('no_primary_source'));
 });
 test('same ownership group counts once -> unconfirmed', () => {
   const v = verifyStory([it('a', 'Bridge opens', 'x one'), it('b', 'Bridge opened', 'y two')], { now: NOW, sources: { a: { owner: 'MediaCorp' }, b: { owner: 'MediaCorp' } } });
@@ -26,8 +26,8 @@ test('near-identical text (copy-paste syndication) counts once', () => {
   const v = verifyStory([it('a', 'Council approves budget', txt), it('b', 'Budget approved', txt + ' ')], { now: NOW });
   assert.equal(v.independentOrigins, 1); assert.equal(v.syndicated[0].sameAs, 'src:a');
 });
-test('primary/official source confirms alone; primaryDomains', () => {
-  assert.equal(verifyStory([it('gov', 'Ministry statement', 'Text')], { now: NOW, sources: { gov: { primary: true } } }).status, 'confirmed');
+test('primary/official source alone -> primary_only; primaryDomains', () => {
+  assert.equal(verifyStory([it('gov', 'Ministry statement', 'Text')], { now: NOW, sources: { gov: { primary: true } } }).status, 'primary_only');
   const v = verifyStory([it('x', 'NASA update', 'Text', { link: 'https://www.nasa.gov/news/1' })], { now: NOW, primaryDomains: ['nasa.gov'] });
   assert.deepEqual(v.primarySource, ['x']);
 });
@@ -40,7 +40,7 @@ test('denial -> disputed', () => {
 });
 test('date checks: future -> unconfirmed; stale warning; spread', () => {
   assert.equal(verifyStory([it('a', 'X', 'a', { published: '2026-11-30T00:00:00Z' }), it('b', 'X', 'b')], { now: NOW }).status, 'unconfirmed');
-  const v = verifyStory([it('a', 'X', 'a1', { published: '2026-10-10T00:00:00Z' }), it('b', 'X', 'b1')], { now: NOW });
+  const v = verifyStory([it('a', 'X', 'a1', { published: '2026-10-10T00:00:00Z' }), it('b', 'X', 'b1')], { now: NOW, sources: { a: { primary: true } } });
   assert.ok(v.reasons.includes('stale_warning')); assert.ok(v.dateIssues.some(d => d.issue === 'date_spread'));
 });
 test('engine integration: disputed story requires approval, reasons recorded', async () => {

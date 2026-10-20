@@ -40,7 +40,8 @@ test('dedup + corroboration + review statuses', async () => {
   assert.equal(rep.fetched, 5); assert.equal(rep.errors.length, 0);
   const st = e.stories(); assert.equal(st.length, 4, 'two rocket items merged');
   const rocket = st.find(s => s.category === 'space');
-  assert.equal(rocket.sourceCount, 2); assert.equal(rocket.corroboration, 'confirmed'); assert.equal(rocket.reviewStatus, REVIEW.AUTO);
+  assert.equal(rocket.sourceCount, 2); // two media outlets, no primary source -> unconfirmed (Studio 4 editorial rule)
+  assert.equal(rocket.corroboration, 'unconfirmed'); assert.equal(rocket.reviewStatus, REVIEW.PENDING); assert.ok(rocket.verification.reasons.includes('no_primary_source'));
   assert.equal(rocket.lang, 'en'); assert.ok(rocket.headline && rocket.summary);
   assert.deepEqual(rocket.mediaLicense.find(m => m.source === 'a'), { source: 'a', url: 'https://a.example/img.jpg', license: 'CC BY 4.0', usable: null });
   const bank = st.find(s => s.category === 'economy'); assert.equal(bank.corroboration, 'unconfirmed'); assert.equal(bank.reviewStatus, REVIEW.PENDING);
@@ -54,10 +55,10 @@ test('dedup + corroboration + review statuses', async () => {
   e.approve(prot.id, 'igor'); assert.ok(e.publishable().some(s => s.id === prot.id));
 });
 
-test('official single source counts as confirmed; manual controversial flag forces approval', async () => {
+test('official single source -> primary_only, low-risk auto (needs no corroboration review); manual controversial flag forces approval', async () => {
   const f = mockFetch({ [GOV]: [{ status: 200, body: rss([{ title: 'NASA announces Mars rover sample results', link: 'https://nasa.example/p1', desc: 'Official statement.' }]) }] });
   const e = new NewsEngine({ statePath: path.join(tmp(), 's.json'), fetchFn: f, sources: [{ id: 'nasa', url: GOV, kind: 'official' }] });
-  await e.run(); const [s] = e.stories(); assert.equal(s.corroboration, 'confirmed'); assert.equal(s.reviewStatus, REVIEW.AUTO);
+  await e.run(); const [s] = e.stories(); assert.equal(s.corroboration, 'primary_only'); assert.equal(s.reviewStatus, REVIEW.AUTO);
   const s2 = await e.flag(s.id, { controversial: true }); assert.equal(s2.reviewStatus, REVIEW.PENDING);
 });
 
