@@ -34,6 +34,6 @@ class MasterVoice {
   lock(by) { if (!by) throw new Error('owner name required'); this.createTTS(); this.cfg.status = 'locked'; this.cfg.lockedBy = by; this.cfg.lockedAt = new Date().toISOString(); this.cfg.note = 'Approved master voice. Do not change without owner.'; this._save(); return this.cfg; }
   unlock(by, reason) { if (!by || !reason) throw new Error('owner and reason required'); (this.cfg.audit = this.cfg.audit || []).push({ at: new Date().toISOString(), by, action: 'unlock', reason }); this.cfg.status = 'candidate'; this._save(); return this.cfg; }
   /** Export for the Studio 3D lip-sync pipeline. */
-  exportForLipSync() { const c = this.cfg; return { voiceId: `${c.engine}:${c.voice}`, engine: c.engine, voice: c.voice, rate: c.rate, modelSha256: c.model?.sha256 || null, status: c.status, lockedBy: c.lockedBy, lockedAt: c.lockedAt }; }
+  exportForLipSync() { const c = this.cfg; return { voiceProfileId: c.voiceProfileId || null, voiceId: `${c.engine}:${c.voice}`, engine: c.engine, voice: c.voice, rate: c.rate, modelSha256: c.model?.sha256 || null, status: c.status, lockedBy: c.lockedBy, lockedAt: c.lockedAt }; }
 }
 module.exports = { MasterVoice, sha256File };

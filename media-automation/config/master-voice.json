@@ -6,9 +6,14 @@
   "gender": "male",
   "accent": "en-US",
   "rate": 0.95,
-  "model": { "file": "${MA_KOKORO_MODEL}", "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5" },
+  "model": {
+    "file": "${MA_KOKORO_MODEL}",
+    "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5"
+  },
   "voicesFile": "${MA_KOKORO_VOICES}",
   "loudnessLufs": -16,
   "lockedBy": null,
-  "lockedAt": null
+  "lockedAt": null,
+  "voiceProfileId": null,
+  "voiceProfileNote": "Set to the Studio 5 voice profile id after owner approval."
 }

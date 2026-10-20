@@ -1,6 +1,6 @@
 'use strict';
 const fs = require('fs'); const path = require('path');
-const { JsonStore } = require('../store'); const { pickFact, mediaQueries } = require('./facts'); const { tokens, jaccard } = require('../news/dedup');
+const { JsonStore } = require('../store'); const { pickFact, mediaQueries } = require('./facts'); const { tokens, jaccard } = require('../news/dedup'); const { visemeTimeline, cuesFor } = require('../host3d'); const { stripMarkup } = require('../video/speech');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 /**
  * Pipeline: Scheduler slot -> NewsEngine.run -> select (confirmed + cleared) -> AI Editor (fact-checked) -> Media (licensed) -> Video (JobQueue heavy) -> QA
@@ -69,7 +69,11 @@ class Orchestrator {
     await this._step(r, 'qa', async () => { const bad = Object.entries(renders).filter(([, m]) => !m.qa?.ok); if (bad.length) throw Object.assign(new Error('QA failed: ' + bad.map(b => b[0]).join(',')), { permanent: true }); return Object.fromEntries(Object.entries(renders).map(([k, m]) => [k, m.qa.checks.map(c => `${c.name}:${c.ok}`)])); });
     const handoff = await this._step(r, 'handoff', async () => {
       const f = path.join(r.dir, 'lipsync-handoff.json'); const m = renders[this.presets[0]];
-      const h = { runId, anchorAudio: m.files.anchorAudio, format: 'wav 48kHz mono s16', voice: this.voice, voiceProfileId: this.voice?.voiceProfileId || null, segments: m.segments }; fs.writeFileSync(f, JSON.stringify(h, null, 2)); return { file: f };
+      const byId = Object.fromEntries(media.episode.stories.map(s => [s.id, s])); const segs = [];
+      for (const sg of m.segments) { const st = sg.storyId && byId[sg.storyId]; const visemes = st ? (await visemeTimeline(stripMarkup(st.text), sg.duration, { leadSec: 0.25 }).catch(e => ({ error: e.message }))) : null;
+        segs.push({ ...sg, text: st ? stripMarkup(st.text) : null, visemes: Array.isArray(visemes) ? visemes.map(v => ({ ...v, t: +(v.t + sg.start).toFixed(3) })) : visemes, cues: st ? cuesFor(st, sg.duration).map(c => ({ ...c, t: +(c.t + sg.start).toFixed(3) })) : null }); }
+      const h = { contract: 'host3d.render_segment/v2 (proposal)', runId, anchorAudio: m.files.anchorAudio, format: 'wav 48kHz mono s16 (-16 LUFS)', voiceProfileId: this.voice?.voiceProfileId || null, voice: this.voice,
+        timingNote: 'viseme timing approximate (uniform per phoneme within measured segment duration)', segments: segs }; fs.writeFileSync(f, JSON.stringify(h, null, 2)); return { file: f };
     });
     const approvalIds = await this._step(r, 'approval', async () => {
       const ep = media.episode; const desc = describe(ep, this.music, this.voice);

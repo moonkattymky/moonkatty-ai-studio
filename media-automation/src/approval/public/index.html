@@ -1,20 +1,28 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#0f0d1f">
 <title>MOONKATTY · Approval Center</title>
 <style>
-body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#0f0d1f;color:#eee}
-header{padding:12px 16px;background:#1b1838;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-header h1{font-size:18px;margin:0 12px 0 0}select,button,input,textarea{font:inherit;border-radius:8px;border:1px solid #444;background:#25224a;color:#eee;padding:8px}
-button{cursor:pointer}button.ok{background:#1f7a3a}button.no{background:#8a1f2b}button.back{background:#8a6a1f}
-main{padding:12px;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
-.card{background:#1b1838;border-radius:12px;padding:12px}.st{font-size:12px;padding:2px 8px;border-radius:10px;background:#333}
-.pending{background:#55508a}.approved{background:#1f7a3a}.rejected{background:#8a1f2b}.changes_requested{background:#8a6a1f}
-video,img{width:100%;max-height:420px;background:#000;border-radius:8px}input.h{width:100%;box-sizing:border-box}
-.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}details{font-size:12px;margin-top:8px;color:#bbb}
+:root{--bg:#0b0b1f;--card:#17153a;--line:#2d2a5e;--gold:#f5c542;--violet:#8b5cf6;--txt:#eef}
+*{box-sizing:border-box}body{font-family:-apple-system,system-ui,Inter,sans-serif;margin:0;background:var(--bg);color:var(--txt);padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:2;padding:10px 12px calc(10px) 12px;padding-top:max(10px,env(safe-area-inset-top));background:#14123a;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0 8px 0 0;color:var(--gold);letter-spacing:.5px}
+select,button,input,textarea{font:inherit;font-size:16px;border-radius:10px;border:1px solid var(--line);background:#221f4d;color:var(--txt);padding:9px 10px}
+button{cursor:pointer;font-weight:600}button.ok{background:#1f7a3a;border-color:#2a9a4c}button.no{background:#8a1f2b;border-color:#a8323f}button.back{background:#8a6a1f;border-color:#a88428}
+main{padding:12px;display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}
+.st{font-size:12px;padding:3px 9px;border-radius:999px;background:#333;text-transform:uppercase;letter-spacing:.5px}
+.pending{background:#4b3f9a}.approved{background:#1f7a3a}.rejected{background:#8a1f2b}.changes_requested{background:#8a6a1f}
+video,img.prev{width:100%;max-height:70vh;background:#000;border-radius:12px;margin-top:8px}
+label{display:block;font-size:12px;color:#a5a3d9;margin:10px 0 4px}input.w,textarea{width:100%}textarea{min-height:110px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.row button{flex:1 1 30%}
+details{font-size:13px;margin-top:10px;background:#11102c;border-radius:10px;padding:8px}summary{cursor:pointer;color:var(--gold)}
+.lic{border-left:3px solid var(--violet);padding:4px 8px;margin:6px 0}.lic a,.src a{color:#a5b4fc;word-break:break-all}
+.pub{font-size:13px;margin-top:8px;color:#c4b5fd}.ok-qa{color:#4ade80}.bad-qa{color:#f87171}
 </style></head><body>
 <header><h1>Approval Center</h1>
-<select id="f"><option value="">all</option><option>pending</option><option>approved</option><option>rejected</option><option value="changes_requested">sent back</option></select>
-<input id="by" placeholder="reviewer name" size="10"><button id="reload">Reload</button><span id="msg"></span></header>
+<select id="f"><option value="">all</option><option selected>pending</option><option>approved</option><option>rejected</option><option value="changes_requested">sent back</option></select>
+<input id="by" placeholder="reviewer" size="8"><button id="reload">↻</button><span id="msg"></span></header>
 <main id="list"></main>
 <script>
 const qs = new URLSearchParams(location.search); const TOKEN = qs.get('token') || sessionStorage.getItem('t') || '';
@@ -25,21 +33,24 @@ const api = (p, body) => fetch(p, { method: body ? 'POST' : 'GET', headers: { au
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const media = u => u + '?token=' + encodeURIComponent(TOKEN);
 async function load() {
-  const items = await api('api/items' + (f.value ? '?status=' + f.value : '')); const L = document.getElementById('list'); L.innerHTML = '';
+  const items = await api('api/items' + (f.value ? '?status=' + f.value : '')); const L = document.getElementById('list'); L.innerHTML = items.length ? '' : '<p>No items.</p>';
   for (const it of items) {
     const d = document.createElement('div'); d.className = 'card';
-    d.innerHTML = `<div><span class="st ${esc(it.status)}">${esc(it.status)}</span> <b>${esc(it.kind)}</b> · ${esc(it.title)}</div>
-      ${it.videoUrl ? `<video controls preload="metadata" playsinline poster="${it.thumbUrl ? media(it.thumbUrl) : ''}" src="${media(it.videoUrl)}"></video>` : it.thumbUrl ? `<img src="${media(it.thumbUrl)}">` : ''}
-      <input class="h" value="${esc(it.headline)}"> ${it.text ? `<p>${esc(it.text)}</p>` : ''}
-      ${(it.sources || []).length ? `<details><summary>sources</summary>${it.sources.map(s => `<div>${esc(s.name)} — ${esc(s.url)}</div>`).join('')}</details>` : ''}
-      <div class="row"><button data-a="edit">Save headline</button><button class="ok" data-a="approve">Approve</button><button class="back" data-a="send-back">Send back</button><button class="no" data-a="reject">Reject</button></div>
-      <details><summary>history (${it.history.length})</summary>${it.history.map(h => `<div>${esc(h.at)} · ${esc(h.by)} · ${esc(h.action)} ${esc(h.note || '')} ${h.changes?.headline ? '“' + esc(h.changes.headline.from) + '” → “' + esc(h.changes.headline.to) + '”' : ''}</div>`).join('')}</details>`;
+    d.innerHTML = `<div><span class="st ${esc(it.status)}">${esc(it.status.replace('_', ' '))}</span> <b>${esc(it.kind)}</b>${it.preset ? ' · ' + esc(it.preset) : ''} ${it.qa != null ? `<span class="${it.qa ? 'ok-qa' : 'bad-qa'}">QA ${it.qa ? '✓' : '✗'}</span>` : ''}</div>
+      ${it.videoUrl ? `<video controls preload="metadata" playsinline poster="${it.thumbUrl ? media(it.thumbUrl) : ''}" src="${media(it.videoUrl)}"></video>` : it.thumbUrl ? `<img class="prev" src="${media(it.thumbUrl)}">` : ''}
+      <label>Title</label><input class="w t" maxlength="100" value="${esc(it.title)}">
+      ${it.kind === 'video' ? `<label>Description</label><textarea class="dsc">${esc(it.description)}</textarea>` : `<label>Post text</label><textarea class="txt">${esc(it.text)}</textarea>`}
+      <div class="pub">Targets: ${esc((it.targets || []).join(', ') || '—')} · Publish: <b>${esc(it.publish?.status || '—')}</b>${(it.publish?.posts || []).map(p => `<div>${esc(p.account)}: ${esc(p.status)} ${esc(p.error || '')}</div>`).join('')}</div>
+      <details><summary>Sources (${(it.sources || []).length})</summary>${(it.sources || []).map(s => `<div class="src">${esc(s.name)} — <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)}</a></div>`).join('')}</details>
+      <details><summary>Licenses (${(it.licenses || []).length})${it.music ? ' + music' : ''}</summary>${(it.licenses || []).map(l => `<div class="lic"><b>${esc(l.license)}</b> — ${esc(l.title)}<br>${esc(l.author || '')}<br><a href="${esc(l.pageUrl)}" target="_blank" rel="noopener noreferrer">${esc(l.pageUrl)}</a></div>`).join('')}${it.music ? `<div class="lic"><b>${esc(it.music.license)}</b> — music: ${esc(it.music.title)}</div>` : ''}</details>
+      <div class="row"><button data-a="edit">Save edits</button><button class="ok" data-a="approve">Approve</button><button class="back" data-a="send-back">Send back</button><button class="no" data-a="reject">Reject</button></div>
+      <details><summary>History (${it.history.length})</summary>${it.history.map(h => `<div>${esc(h.at.slice(0, 16).replace('T', ' '))} · ${esc(h.by)} · ${esc(h.action)} ${esc(h.note || '')}</div>`).join('')}</details>`;
     d.querySelectorAll('button').forEach(b => b.onclick = async () => {
-      const a = b.dataset.a; const body = { by: by.value };
-      if (!by.value) return alert('Enter reviewer name');
-      if (a === 'edit') body.headline = d.querySelector('input.h').value;
+      const a = b.dataset.a; const body = { by: by.value }; if (!by.value) return alert('Enter reviewer name');
+      if (a === 'edit') { body.title = d.querySelector('.t').value; const ds = d.querySelector('.dsc'); if (ds) body.description = ds.value; const tx = d.querySelector('.txt'); if (tx) body.text = tx.value; }
       if (a === 'send-back') { body.note = prompt('What should change?'); if (!body.note) return; }
       if (a === 'reject') body.reason = prompt('Reason (optional)') || '';
+      if (a === 'approve' && !confirm('Approve this exact content for publishing (dry-run unless live is enabled)?')) return;
       try { await api(`api/items/${encodeURIComponent(it.id)}/${a}`, body); msg.textContent = a + ' ✓'; load(); } catch (e) { msg.textContent = 'Error: ' + e.message; }
     });
     L.appendChild(d);

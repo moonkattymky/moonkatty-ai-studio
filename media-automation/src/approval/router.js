@@ -22,7 +22,7 @@ function createApprovalRouter({ center, token, mediaRoots = [], express = requir
   r.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
   r.get('/api/items', wrap(req => center.list({ status: req.query.status || undefined }).map(pub)));
   r.get('/api/items/:id', wrap(req => { const it = center.get(req.params.id); if (!it) { const e = new Error('not found'); e.status = 404; throw e; } return pub(it); }));
-  r.post('/api/items/:id/edit', wrap(req => pub(center.edit(req.params.id, { headline: req.body.headline, text: req.body.text }, req.body.by))));
+  r.post('/api/items/:id/edit', wrap(req => pub(center.edit(req.params.id, { headline: req.body.headline, text: req.body.text, title: req.body.title, description: req.body.description }, req.body.by))));
   r.post('/api/items/:id/approve', wrap(async req => pub(await center.approve(req.params.id, req.body.by, req.body.note))));
   r.post('/api/items/:id/reject', wrap(req => pub(center.reject(req.params.id, req.body.by, req.body.reason))));
   r.post('/api/items/:id/send-back', wrap(req => pub(center.sendBack(req.params.id, req.body.by, req.body.note))));
