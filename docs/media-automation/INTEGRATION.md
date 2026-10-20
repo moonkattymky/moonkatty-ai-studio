@@ -48,3 +48,17 @@ Rules we follow:
 ## 6. Mac mini notes
 - TTS: `MA_TTS=say` with `MA_SAY_VOICE`/`MA_SAY_RATE`, or Piper with `MA_PIPER_MODEL`/`MA_PIPER_BIN`. With no engine, the pipeline fails loudly; there is no tone fallback.
 - LLM: `MA_OLLAMA_URL` (default `http://127.0.0.1:11434`), `MA_OLLAMA_MODEL` (default `qwen2.5:1.5b`). 3B–8B Q4 models fit in 24 GB, but they must not run together with Blender (queue rule).
+
+## 7. Studio JOBS_API v1.2.0 alignment (read-only from feat/v1.2.0 @00b63fc docs/JOBS_API.md)
+`StudioJobQueueAdapter({client: jobsApi})` passes `resourceClass`, `requiresNode`, `idempotencyKey` (≤128), `safeToRetry`. It normalizes `id`→`jobId` and `publicStatus`, and maps internal statuses (waiting_*→needs_approval, done→succeeded, rejected→cancelled). Artifacts are mapped to `result.videoPath`. `StudioHost3D` enqueues `render_segment` (gpu_heavy, mac-mini). A `failed` result (the current stub) or a missing client returns `null`, and the episode continues without the host. `blenderService` is not called by us.
+
+## 8. Host3D contract v2 (PROPOSAL for Studio)
+Request `host3d.render_segment/v2`: `{script, audioPath (48k mono wav), durationSec, aspect, outPath, voice:{voiceProfileId, voiceId, modelSha256}, visemes:[{t,d,viseme,phoneme}], cues:[{t,emotion,gaze,ears,head}], costumeId, character:{id:'moonkatty-master-cat', modelVersion (pinned)}, output:{alpha:true,fps:30,format:'mov-prores4444'}}` → `{videoPath}|null`. Still enqueued as `render_segment`. Viseme set: PP FF TH DD kk CH SS RR I E aa O U sil. Per episode, `lipsync-handoff.json` carries anchorAudio, voiceProfileId, per-segment visemes and cues. We never build our own cat.
+
+## 9. Studio 4 (feat/news-launch-integration, news-launch/CONTRACTS.md), mismatches
+1. Imports old commits (4537b7a/66d4b20): Video Factory v0, not factory2/orchestrator/Approval Center.
+2. TTS default Piper `ljspeech-high` (female) conflicts with the male-only anchor. They refuse `ryan-high`. Their own `kokoro.js` bypasses MasterVoice (no hash pin, no loud failure).
+3. Loudness −14 LUFS (theirs) vs −16 LUFS (ours). Duplicate QC/loudness steps.
+4. Publishing via old `social.adapt`/`meta.js` queue with `imageRights:'generated'`, versus our Publisher plus per-asset licenses.
+5. Proposed fact-check fields (`primarySourceUrl`, `primaryPublisher`, `primaryPublished`, `editorialStatus`) are not in our engine yet. We are willing to accept them.
+6. Job contract without resourceClass/idempotencyKey/safeToRetry. They believe feat/v1.2.0 is not on origin; it is now.

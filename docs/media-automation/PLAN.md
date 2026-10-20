@@ -20,3 +20,15 @@
 - Connect StudioJobQueueAdapter + real Host3D once the other developer's contract is final.
 - Run the full suite on the Mac mini (say voices, h264_videotoolbox, memory budget).
 - Brand/Project Memory and Cost Control modules (still interface-only).
+
+## Phase 3 (done on branch, see STAGES.md)
+Licensed media sourcing with relevance filter and branded-panel fallback, Video Factory v2, Kokoro plus a pinned MASTER VOICE (candidate), real orchestrator with resume, YouTube OAuth PKCE / Telegram setup (mock-tested), Approval Center v2, visemes plus Host3D v2 proposal, editorial (anchor profile, corrections desk, major-event pause), Studio JOBS_API alignment.
+
+## Roadmap (Studio items)
+1. voiceProfileId: **added** (field null until Studio 5 provides the id).
+2. Anchor behavior/speech profile: **added** (`config/anchor-profile.json`, draft). Next step: enforce it in the editor prompt.
+3. Breaking News Engine: **roadmap**. Detection only exists (`editorial.detectMajorEvent`). Needs a fast-poll source loop, a breaking template, an owner push notification and a breaking video preset.
+4. Pause the regular schedule on major events: **added** (`applyMajorEventPolicy`). Not yet called from the scheduler daemon automatically.
+5. Corrections/retractions: **added** (`CorrectionsDesk` with VerificationPort for Studio 4 and CorrectionLogPort for Studio 5). Correction video segment is roadmap.
+6. Owner approval for anything breaking/controversial: **existed** (Approval Center; nothing auto-publishes).
+Other roadmap items: forced-alignment visemes (e.g. Montreal/whisper timestamps), host overlay compositing once Studio delivers alpha video, owner master-voice lock, live publishing per platform after audits, image relevance via vision model (local).

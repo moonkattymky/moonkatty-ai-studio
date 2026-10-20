@@ -14,3 +14,6 @@ Sample outputs live under `/workspace/ma-out/` on the box. They are not in git.
 | 6 | Scheduler | `0138ee8` | 72 | Timezone math against real ICU tz data, including the Israel DST change on 2026-10-25 | Handlers in tests are fakes. Nothing is wired to real renders yet |
 | 7 | Approval Center | `3ed76e3` | 74 | Standalone server ran on 127.0.0.1:8795: 401 without token, 206 Range video streaming. iPhone-size screenshot: `/workspace/ma-out/stage7/approval-iphone.png` | Not mounted in `server.js` (by design). No HTTPS/tunnel set up |
 | 8 | Analytics | `a141b09` | 77 | — | **All analytics APIs mocked.** Recommendations are rule-based |
+
+## Phase 3 commits
+44d11e5 media sourcing · 2d41da4 Kokoro/speech/master voice · bb0bcbd factory v2 + QA · 8af27ea orchestrator · 8400fab OAuth/Telegram/visemes/editorial/approval v2 · cb85e5a JOBS_API alignment · 882cd39 MAC_VERIFY · 78e7bd6 relevance + panel fallback. Tests: 95/95.

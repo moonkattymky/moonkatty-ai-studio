@@ -33,3 +33,12 @@
   - Subtitle chunk merging can, in rare cases, produce an over-long line. Validation then fails the render loudly.
 - **State:** state is JSON files with atomic writes, single process. Concurrent processes writing the same state file are not supported.
 - **Unchanged since phase 1:** Brand Memory and Cost Control are still documentation and interfaces only.
+
+## Phase 3 limits
+- The voice is not verified by ear. am_michael was chosen from published grades and is a candidate, not locked.
+- Image relevance is keyword-based on metadata. It can still pick a related-but-different image (episode e used a Jezero crater photo for a Schiaparelli story). When nothing relevant passes, a branded own-work panel is used instead.
+- Visemes have approximate timing (uniform per phoneme from espeak-ng IPA); there is no forced alignment.
+- YouTube OAuth, Telegram setup and Keychain writes are tested only with mocks; nothing was run live. Keychain needs macOS.
+- The Host3D render is a stub: Studio `render_segment` currently fails by design, which is treated as "no host". There is no own cat.
+- The local LLM (qwen2.5:1.5b) is small, so headlines are sometimes bland. Scripts are trimmed to 36 words.
+- Run in a Linux sandbox. macOS `say` voices were not evaluated.
