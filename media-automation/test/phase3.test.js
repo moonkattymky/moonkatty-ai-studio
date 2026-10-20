@@ -138,3 +138,7 @@ test('panel fallback: own-work branded panel registered with rights, no stock im
   const a = await mk({ story: { id: 's1', category: 'space' }, headline: 'Shock analysis', fact: null });
   assert.equal(a.license, 'Own-work'); assert.ok(fs.existsSync(a.localPath)); assert.equal(lib.rightsReport([a.id]).assets[0].provider, 'moonkatty-generated');
 });
+test('media queries never consist of generic words only when the headline has proper nouns', () => {
+  const q = mediaQueries({ headline: 'Mars’s oddest cloud may be even odder than we thought', category: 'space' });
+  assert.ok(q.length && q.every(x => /Mars/.test(x.q)), JSON.stringify(q));
+});

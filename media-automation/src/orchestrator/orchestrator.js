@@ -119,7 +119,7 @@ class Orchestrator {
     return this.run(runId);
   }
 }
-function trimScript(t, maxWords = 36) { const sents = String(t).split(/(?<=[.!?])\s+/); let out = ''; for (const x of sents) { if ((out + ' ' + x).split(/\s+/).length > maxWords && out) break; out = (out + ' ' + x).trim(); }
+function trimScript(t, maxWords = 34) { const sents = String(t).split(/(?<=[.!?])\s+/); let out = ''; for (const x of sents) { if ((out + ' ' + x).split(/\s+/).length > maxWords && out) break; out = (out + ' ' + x).trim(); }
   return out.split(/\s+/).length > maxWords ? out.split(/\s+/).slice(0, maxWords).join(' ') + '.' : out; }
 function describe(ep, music, voice) {
   return [`${ep.title} — ${ep.dateLabel}`, '', ...ep.stories.map(s => `• ${s.headline}`), '', 'Sources:', ...ep.sources.map(s => `${s.name}: ${s.url}`), '', 'Images:', ...ep.rights,
