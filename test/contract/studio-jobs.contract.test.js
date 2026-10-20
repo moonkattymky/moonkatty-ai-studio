@@ -22,7 +22,7 @@ test('bridge: dispatch → node lease → poll returns Studio statuses + artifac
   assert.ok(d.nodeJobId); assert.equal(b.dispatch(job({ idempotencyKey: 'rss:1' })).duplicate, true); assert.equal(b.poll(d.nodeJobId).status, 'queued');
   const l = m.pull(n, {}).job; assert.equal(b.poll(d.nodeJobId).status, 'running'); const h = m.putLocalFile(Buffer.from('arch'));
   m.complete(n, l.id, { leaseId: l.leaseId, result: { items: [] }, artifacts: [{ sha256: h, kind: 'archive' }] });
-  const u = b.poll(d.nodeJobId); assert.equal(u.status, 'succeeded'); assert.deepEqual(u.artifacts, [{ path: 'ops-node-files/' + h, sha256: h, kind: 'archive' }]); assert.ok(A.STATUSES.includes(u.status));
+  const u = b.poll(d.nodeJobId); assert.equal(u.status, 'succeeded'); assert.deepEqual(u.artifacts, [{ name: h, path: 'ops-node-files/' + h, size: 4, sha256: h, kind: 'archive' }]); assert.ok(A.STATUSES.includes(u.status));
   assert.equal(b.dispatch(job({ type: 'opencode_task' })).local, true);
 });
 test('cancelJob mapping and resource-class mapping (ours ↔ Studio)', () => {
