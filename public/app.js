@@ -91,11 +91,12 @@ function localTick() {
   const last = local.meta('lastAutoReport'); if (!last || Date.now() - new Date(last) >= 3 * 86400000) { const r = C.buildReport(LD, 3); r.trigger = 'auto'; LD.reports.push(r); local.meta('lastAutoReport', r.createdAt); llog('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован'); }
   local.meta('lastTick', C.now()); local.save(LD);
 }
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? esc(u) : '#'; // no javascript:/data: links
 async function api(method, path, body) {
   if (MODE === 'browser') return localRoute(method, path, body);
   const isFile = typeof File !== 'undefined' && body instanceof File;
   const r = await fetch(path + (isFile ? `?name=${encodeURIComponent(body.name)}` : ''), { method, credentials: 'same-origin',
-    headers: isFile ? { 'content-type': body.type || 'application/octet-stream' } : body ? { 'content-type': 'application/json' } : {}, body: isFile ? body : body ? JSON.stringify(body) : undefined });
+    headers: Object.assign({ 'x-studio-request': '1' }, isFile ? { 'content-type': body.type || 'application/octet-stream' } : body ? { 'content-type': 'application/json' } : {}), body: isFile ? body : body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && !path.startsWith('/api/auth')) { showAuth(); throw new Error('Требуется вход'); }
   if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j;
@@ -303,7 +304,7 @@ VIEWS.news = () => {
     <button class="btn" disabled>Автопоиск новостей</button>${DEV()}</div>
   <div class="devbox" style="margin-bottom:14px">Этапы конвейера отмечаются вручную (нажмите на этап) или по итогам задач агентов. Автоматическое выполнение этапов (поиск, фактчек, перевод, TTS-озвучка, рендер, публикация) — <b>в разработке</b>. Плееры появляются, когда к версии прикреплён файл.</div>
   ${eps.length ? eps.map(e => `<div class="card" style="margin-bottom:14px"><h3><span>${esc(e.title)} <small>${e.durationMin ? e.durationMin + ' мин · ' : ''}${fmt(e.createdAt)}</small></span><span class="row"><button class="btn sm" data-ep-edit="${e.id}">Изм.</button><button class="btn sm danger" data-ep-del="${e.id}">✕</button></span></h3>
-    ${e.sources?.length ? `<div class="small mut">Источники: ${e.sources.map(s => `<a href="${esc(s)}" target="_blank" rel="noopener">${esc(s.replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(', ')}</div>` : '<div class="small mut">Источники не указаны</div>'}
+    ${e.sources?.length ? `<div class="small mut">Источники: ${e.sources.map(s => `<a href="${safeUrl(s)}" target="_blank" rel="noopener noreferrer">${esc(s.replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(', ')}</div>` : '<div class="small mut">Источники не указаны</div>'}
     ${C.LANGS.map(L => { const v = e.versions[L], m = (e.media || {})[L] || {}; const doneN = C.PIPELINE.filter(([k]) => v[k] === 'done').length;
       return `<div style="margin-top:12px"><div class="row"><b>${L}</b>${L === 'EN' ? '<span class="badge b-gold b-none">основной</span>' : ''}<div class="bar sp"><i style="width:${doneN / C.PIPELINE.length * 100}%"></i></div><span class="small mut">${doneN}/${C.PIPELINE.length}</span>
         <button class="btn sm" data-script="${e.id}|${L}">Сценарий</button><button class="btn sm" data-media="${e.id}|${L}">Файлы</button></div>

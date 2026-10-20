@@ -19,6 +19,23 @@ const h1 = await health(); ok('server auto-started on 127.0.0.1 and healthy', h1
 ok('window loads local server, not GitHub Pages', w.url().startsWith(`http://127.0.0.1:${PORT}/`), w.url());
 await w.waitForSelector('#auth form'); await w.fill('input[name=username]', 'igor'); await w.fill('input[name=password]', 'testpass123'); await w.click('#auth button');
 await w.waitForSelector('#app:not(.hidden) #view .card'); await w.waitForTimeout(800); await w.screenshot({ path: `${shots}/desktop-dashboard.png` });
+// --- renderer security ---
+const rs = await w.evaluate(() => ({ req: typeof require, proc: typeof process, bridge: typeof window.studioDesktop, node: typeof globalThis.Buffer,
+  inlineBlocked: (() => { const el = document.createElement('script'); el.textContent = 'window.__inl = 1'; document.head.appendChild(el); return window.__inl === undefined; })() }));
+ok('renderer: no require/process/Buffer', rs.req === 'undefined' && rs.proc === 'undefined' && rs.node === 'undefined', JSON.stringify(rs));
+ok('renderer: desktop IPC bridge not exposed to the panel', rs.bridge === 'undefined');
+ok('renderer: CSP blocks injected inline <script> (XSS mitigation)', rs.inlineBlocked);
+const nWin = app.windows().length; await w.evaluate(() => { window.open('https://example.com/'); window.open('file:///etc/passwd'); }); await sleep(800);
+ok('window.open blocked (no new windows)', app.windows().length === nWin);
+const before = w.url(); await w.evaluate(() => { location.href = 'https://example.com/'; }).catch(() => {}); await sleep(1200);
+ok('navigation to external site blocked', w.url().startsWith(`http://127.0.0.1:${PORT}/`), w.url());
+await w.evaluate(() => { location.href = 'file:///etc/passwd'; }).catch(() => {}); await sleep(800);
+ok('navigation to file:// blocked', w.url().startsWith(`http://127.0.0.1:${PORT}/`), w.url());
+const perm = await w.evaluate(async () => ({ notif: await Notification.requestPermission(), geo: (await navigator.permissions.query({ name: 'geolocation' })).state }));
+ok('permission requests denied (notifications, geolocation)', perm.notif === 'denied' && perm.geo === 'denied', JSON.stringify(perm));
+const sysCmd = await app.evaluate(async ({ BrowserWindow }) => { const wc = BrowserWindow.getAllWindows()[0].webContents; return wc.executeJavaScript("typeof require === 'undefined' && typeof process === 'undefined'"); });
+ok('renderer cannot reach Node to run system commands', sysCmd === true);
+void before;
 await w.evaluate(() => location.hash = 'agents'); await w.waitForTimeout(500);
 await w.click('[data-tab=queue]'); await w.click('[data-task-new]'); await w.fill('#modal input[name=title]', 'Desktop test: news draft'); await w.selectOption('#modal select[name=agentId]', 'news'); await w.click('#modal .btn.primary'); await w.waitForTimeout(500);
 await w.click('[data-task-new]'); await w.fill('#modal input[name=title]', 'Desktop test: analytics report'); await w.selectOption('#modal select[name=agentId]', 'analytics'); await w.click('#modal .btn.primary'); await w.waitForTimeout(500);

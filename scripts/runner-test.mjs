@@ -9,7 +9,7 @@ const mock = http.createServer((q, r) => { let b = ''; q.on('data', d => b += d)
   r.statusCode = 404; r.end(); }); }).listen(OPORT);
 const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, STUDIO_DATA_DIR: UD, PORT }, stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms)); await sleep(2500);
-const tok = fs.readFileSync(UD + '/app-token', 'utf8').trim(); const H = { 'x-studio-app-token': tok, 'content-type': 'application/json' };
+const tok = fs.readFileSync(UD + '/app-token', 'utf8').trim(); const H = { 'x-studio-app-token': tok, 'content-type': 'application/json', 'x-studio-request': '1' };
 const api = async (m, p, b) => (await fetch(`http://127.0.0.1:${PORT}${p}`, { method: m, headers: H, body: b && JSON.stringify(b) })).json();
 await fetch(`http://127.0.0.1:${PORT}/api/auth/setup`, { method: 'POST', headers: H, body: JSON.stringify({ username: 'igor', password: 'testpass123' }) });
 await api('PUT', '/api/integrations/ollama', { url: `http://127.0.0.1:${OPORT}`, model: 'qwen3:8b' });

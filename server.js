@@ -8,6 +8,7 @@ global.MKSocial = require('./public/social.js');
 const core = require('./public/core.js');
 const S = MKSocial;
 const crypto = require('crypto');
+const sec = require('./lib/security.js');
 
 const PORT = +process.env.PORT || 8787;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -31,7 +32,7 @@ const list = col => q.list.all(col).map(r => JSON.parse(r.data));
 const get = (col, id) => { const r = q.get.get(col, id); return r ? JSON.parse(r.data) : null; };
 const put = (col, obj) => { q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
 function log(level, source, message, user) {
-  put('logs', { id: core.uid(), at: core.now(), level, source, message, user: user || null });
+  put('logs', { id: core.uid(), at: core.now(), level, source, message: sec.redact(message), user: user || null });
   const logs = list('logs'); if (logs.length > 2000) { logs.sort((a, b) => a.at.localeCompare(b.at)); for (const l of logs.slice(0, logs.length - 2000)) q.del.run('logs', l.id); }
 }
 
@@ -43,7 +44,12 @@ if (!q.meta.get('seeded')) {
   const n = Object.values(miss).reduce((a, x) => a + x.length, 0); if (n) { for (const c in miss) for (const o of miss[c]) put(c, o); log('info', 'system', 'Обновление: добавлены новые элементы — ' + n); } }
 
 const app = express();
-app.use(express.json({ limit: '50mb' }));
+app.disable('x-powered-by');
+app.use(sec.headers);
+app.use(sec.hostCheck(PORT));          // DNS-rebinding protection (STUDIO_ALLOWED_HOSTS for a Tailscale name)
+app.use('/api', sec.csrfCheck(PORT));  // Origin + X-Studio-Request on state-changing calls
+const jsonSmall = express.json({ limit: '2mb' });
+app.use((req, res, next) => req.path === '/api/restore' ? next() : jsonSmall(req, res, next));
 const STARTED = Date.now();
 
 
@@ -57,12 +63,14 @@ const checkPw = (pw, stored) => { const [salt, h] = stored.split(':'); const a =
 const getUsers = () => JSON.parse(q.meta.get('users')?.v || '{}');
 const setUsers = u => q.setMeta.run('users', JSON.stringify(u));
 if (process.env.STUDIO_ADMIN_PASSWORD && !Object.keys(getUsers()).length) setUsers({ [process.env.STUDIO_ADMIN_USER || 'igor']: hashPw(process.env.STUDIO_ADMIN_PASSWORD) });
-const sessions = new Map(JSON.parse(q.meta.get('sessions')?.v || '[]'));
+const hashTok = t => 'h:' + crypto.createHash('sha256').update(String(t)).digest('hex');
+const sessions = new Map(JSON.parse(q.meta.get('sessions')?.v || '[]').filter(([k]) => String(k).startsWith('h:'))); // only hashed session ids are stored
+const getSession = req => { const t = tokenOf(req); const s = t && sessions.get(hashTok(t)); return s && s.exp > Date.now() ? s : null; };
 const saveSessions = () => q.setMeta.run('sessions', JSON.stringify([...sessions]));
 const SESSION_TTL = 30 * 86400000;
 function tokenOf(req) { const m = /(?:^|;\s*)mk_session=([a-f0-9]+)/.exec(req.headers.cookie || ''); return m ? m[1] : (req.headers.authorization || '').replace(/^Bearer /, ''); }
 function newSession(res, user) {
-  const tok = crypto.randomBytes(32).toString('hex'); sessions.set(tok, { user, exp: Date.now() + SESSION_TTL }); saveSessions();
+  q.setMeta.run('appTokenDisabled', '0'); const tok = crypto.randomBytes(32).toString('hex'); sessions.set(hashTok(tok), { user, exp: Date.now() + SESSION_TTL }); saveSessions();
   res.setHeader('Set-Cookie', `mk_session=${tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL / 1000}`);
 }
 const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BRAND || 'MOONKATTY';
@@ -74,8 +82,8 @@ const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
 const APP_TOKEN = fs.readFileSync(APP_TOKEN_FILE, 'utf8').trim();
 const isLoopback = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
-function appTokenUser(req) { const h = req.headers['x-studio-app-token']; if (!h || !isLoopback(req) || h.length !== APP_TOKEN.length || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(APP_TOKEN))) return null; return Object.keys(getUsers())[0] || null; }
-app.get('/api/auth/status', (req, res) => { const s = sessions.get(tokenOf(req)); const au = appTokenUser(req); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : au, via: au && !(s && s.exp > Date.now()) ? 'app' : undefined }); });
+function appTokenUser(req) { const h = req.headers['x-studio-app-token']; const o = req.headers.origin; if (o && !sec.allowedHosts(PORT).has((() => { try { return new URL(o).host; } catch { return ''; } })())) return null; if (q.meta.get('appTokenDisabled')?.v === '1') return null; if (!h || !isLoopback(req) || h.length !== APP_TOKEN.length || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(APP_TOKEN))) return null; return Object.keys(getUsers())[0] || null; }
+app.get('/api/auth/status', (req, res) => { const s = getSession(req); const au = appTokenUser(req); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : au, via: au && !(s && s.exp > Date.now()) ? 'app' : undefined }); });
 app.post('/api/auth/setup', (req, res) => {
   if (Object.keys(getUsers()).length) return res.status(403).json({ error: 'Пользователь уже создан' });
   const { username, password } = req.body || {};
@@ -91,10 +99,11 @@ app.post('/api/auth/login', (req, res) => {
   f.n++; if (f.n >= 5) { f.until = Date.now() + 60000; f.n = 0; } fails.set(ip, f);
   log('warn', 'auth', 'Неудачный вход: ' + String(username).slice(0, 40)); res.status(401).json({ error: 'Неверный логин или пароль' });
 });
-app.post('/api/auth/logout', (req, res) => { sessions.delete(tokenOf(req)); saveSessions(); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
+app.post('/api/auth/logout', (req, res) => { sessions.delete(hashTok(tokenOf(req))); saveSessions(); q.setMeta.run('appTokenDisabled', '1'); // «Выйти» also stops the desktop auto-login until the next password login
+  log('info', 'auth', 'Выход', getSession(req)?.user || null); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
-  const s = sessions.get(tokenOf(req)); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
+  const s = getSession(req); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
   req.user = s.user; next();
 });
 app.post('/api/auth/password', (req, res) => {
@@ -124,12 +133,12 @@ app.post('/api/restore', express.json({ limit: '50mb' }), (req, res) => {
 
 // ---- Files (uploads for episodes/video) ----
 app.post('/api/files/upload', express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
-  const name = String(req.query.name || 'file').replace(/[^\w.\-]+/g, '_').slice(0, 120); const id = core.uid();
+  const name = String(req.query.name || 'file').replace(/[^\w.\-]+/g, '_').replace(/\.{2,}/g, '.').replace(/^[.\-]+/, '').slice(0, 120) || 'file'; const id = core.uid();
   fs.writeFileSync(path.join(FILES_DIR, id + '-' + name), req.body);
   const o = put('files', { id, name, size: req.body.length, mime: req.headers['content-type'] || '', url: `/files/${id}-${name}`, project: req.query.project || 'main', createdAt: core.now() });
   log('info', 'files', 'Загружен файл ' + name, req.user); res.status(201).json(o);
 });
-app.use('/files', (req, res, next) => { const s = sessions.get(tokenOf(req)) || appTokenUser(req); if (!s) return res.status(401).end(); next(); }, express.static(FILES_DIR));
+app.use('/files', (req, res, next) => { const s = getSession(req) || appTokenUser(req); if (!s) return res.status(401).end(); next(); }, sec.filesHeaders, express.static(FILES_DIR, { dotfiles: 'deny', index: false, redirect: false }));
 
 // ---- Director chat ----
 async function llmPlan(text) {
@@ -155,7 +164,7 @@ app.post('/api/director/chat', async (req, res) => {
 
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
   res.json({ ok: dbOk, app: 'moonkatty-ai-studio', mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
-app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), opencode: runner.opencodePath(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
+app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
 app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', req.params.id); if (!t || t.kind !== 'code') return res.status(400).json({ error: 'Не задача OpenCode' });
@@ -179,7 +188,8 @@ app.get('/api/system', (req, res) => {
 app.post('/api/integrations/:id/test', async (req, res) => {
   const it = get('integrations', req.params.id);
   if (!it) return res.status(404).json({ error: 'not found' });
-  const url = it.url.replace(/\/$/, '') + (it.testPath || '/');
+  const url = String(it.url || '').replace(/\/$/, '') + (it.testPath || '/');
+  if (!/^https?:\/\//i.test(url)) return res.status(400).json({ error: 'Разрешены только http(s) URL' });
   const t0 = Date.now(); let result;
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -217,6 +227,10 @@ app.post('/api/reset', (req, res) => {
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
 app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
+// Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).
+const PROTECTED = { tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId'], comments: ['repliedAt', 'replyId'] };
+const stripProtected = (col, b) => { const o = Object.assign({}, b); for (const k of PROTECTED[col] || []) delete o[k]; if (col === 'tasks' && 'kind' in o) o.codeApproved = false; return o; };
+app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); next(); });
 app.post('/api/:col', okCol, (req, res) => {
   const o = Object.assign({}, req.body, { id: req.body.id || core.uid(), createdAt: core.now() });
   if (req.params.col === 'tasks' && o.schedule && o.schedule.type !== 'none') o.nextRunAt = core.nextRun(o.schedule);

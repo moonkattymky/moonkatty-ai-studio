@@ -8,9 +8,16 @@ const LABEL = 'com.moonkatty.aistudio.server';
 const loginPlist = () => path.join(os.homedir(), 'Library', 'LaunchAgents', LABEL + '.plist');
 const plistPath = o => o && !o.startAtLogin ? path.join(o.dataDir, 'launchd', LABEL + '.plist') : loginPlist();
 const xml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-function plist({ execPath, serverJs, dataDir, port, startAtLogin, logDir }) {
-  const env = { ELECTRON_RUN_AS_NODE: '1', STUDIO_DATA_DIR: dataDir, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'production',
+function serverEnv({ dataDir, port, runAsNode, enableOpenCode, allowedHosts }) {
+  const env = { STUDIO_DATA_DIR: dataDir, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'production',
     PATH: [path.join(os.homedir(), '.opencode', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':') };
+  if (runAsNode) env.ELECTRON_RUN_AS_NODE = '1'; // dev only; packaged builds use the bundled Node binary (RunAsNode fuse off)
+  if (enableOpenCode) env.STUDIO_OPENCODE = '1';
+  if (allowedHosts && allowedHosts.length) env.STUDIO_ALLOWED_HOSTS = allowedHosts.join(',');
+  return env;
+}
+function plist(o) {
+  const { execPath, serverJs, dataDir, logDir } = o; const env = serverEnv(o);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -36,7 +43,7 @@ async function installAndStart(o) {
   fs.mkdirSync(o.logDir, { recursive: true }); fs.mkdirSync(o.dataDir, { recursive: true });
   if (process.platform !== 'darwin') { // dev/test path: detached process, independent of the window
     const out = fs.openSync(path.join(o.logDir, 'server.log'), 'a');
-    const p = spawn(o.execPath, [o.serverJs], { detached: true, stdio: ['ignore', out, out], cwd: o.dataDir, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', STUDIO_DATA_DIR: o.dataDir, PORT: String(o.port), HOST: '127.0.0.1' } });
+    const p = spawn(o.execPath, [o.serverJs], { detached: true, stdio: ['ignore', out, out], cwd: o.dataDir, env: { ...serverEnv(o), HOME: os.homedir() } });
     p.unref(); return { method: 'detached', pid: p.pid };
   }
   const f = plistPath(o), other = plistPath({ ...o, startAtLogin: !o.startAtLogin }); fs.mkdirSync(path.dirname(f), { recursive: true });

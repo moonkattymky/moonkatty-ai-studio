@@ -2,7 +2,7 @@
 // An agent with status 'working' takes its queued tasks one by one. Each handler either does a real action
 // (report, queue processing, comment drafts, Ollama draft, OpenCode run) or marks the task 'blocked' with the reason.
 'use strict';
-const fs = require('fs'), path = require('path'), { spawn, execFileSync } = require('child_process');
+const fs = require('fs'), path = require('path'), os = require('os'), { spawn } = require('child_process');
 module.exports = function createRunner(ctx) {
   const { get, put, list, log, core, meta, dataDir } = ctx;
   const busy = new Map(); // agentId -> { taskId, abort }
@@ -21,15 +21,43 @@ module.exports = function createRunner(ctx) {
       body: JSON.stringify({ model, stream: false, think: false, messages: [{ role: 'user', content: prompt }] }) });
     if (!r.ok) throw new Error('Ollama HTTP ' + r.status); const j = await r.json(); return { text: String(j.message?.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim(), model };
   }
-  function opencodePath() { try { return execFileSync('/bin/sh', ['-lc', 'command -v opencode'], { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString().trim() || null; } catch { return null; } }
+  // OpenCode is OFF by default (STUDIO_OPENCODE=1 to enable). A folder alone is NOT a sandbox: on macOS the process is
+  // additionally wrapped in sandbox-exec (deprecated by Apple but functional) that denies writes outside the task folder
+  // and reads of studio secrets, ~/.ssh and Keychains. Network stays allowed (the model provider needs it). See docs/SECURITY_AUDIT.md.
+  const opencodeEnabled = () => process.env.STUDIO_OPENCODE === '1';
+  function opencodePath() {
+    const dirs = String(process.env.PATH || '').split(path.delimiter).concat([path.join(os.homedir(), '.opencode', 'bin')]);
+    for (const d of dirs) { if (!path.isAbsolute(d)) continue; const f = path.join(d, 'opencode'); try { fs.accessSync(f, fs.constants.X_OK); return f; } catch {} }
+    return null;
+  }
+  const sbq = p => '"' + String(p).replace(/[\\"]/g, '\\$&') + '"';
+  function sandboxProfile(dir) {
+    const home = os.homedir();
+    return ['(version 1)', '(allow default)', '(deny file-write*)',
+      `(allow file-write* (subpath ${sbq(fs.realpathSync(dir))}) (subpath "/private/tmp") (subpath "/private/var/folders") (literal "/dev/null") (literal "/dev/tty")`,
+      `  (subpath ${sbq(path.join(home, '.local', 'share', 'opencode'))}) (subpath ${sbq(path.join(home, '.local', 'state', 'opencode'))}) (subpath ${sbq(path.join(home, '.cache', 'opencode'))}) (subpath ${sbq(path.join(home, '.config', 'opencode'))}))`,
+      `(deny file-read* (subpath ${sbq(path.join(home, '.ssh'))}) (subpath ${sbq(path.join(home, 'Library', 'Keychains'))})`,
+      `  (literal ${sbq(path.join(dataDir, 'studio.db'))}) (literal ${sbq(path.join(dataDir, 'secret.key'))}) (literal ${sbq(path.join(dataDir, 'app-token'))}) (subpath ${sbq(path.join(dataDir, 'backups'))}))`].join('\n');
+  }
   function runOpencode(task, signal) {
     return new Promise((resolve, reject) => {
-      const bin = opencodePath(); if (!bin) return reject(Object.assign(new Error('OpenCode CLI не найден в PATH (в разработке: установите opencode)'), { blocked: true }));
-      const dir = path.join(dataDir, 'opencode-sandbox', task.id); fs.mkdirSync(dir, { recursive: true });
-      const env = { ...process.env, OPENCODE_PERMISSION: JSON.stringify({ edit: 'allow', bash: 'deny', webfetch: 'deny', external_directory: 'deny' }), OPENCODE_DISABLE_AUTOUPDATE: '1' };
-      const p = spawn(bin, ['run', '--dir', dir, '--title', task.title.slice(0, 60), `${task.title}\n\n${task.description || ''}`], { cwd: dir, env, signal });
+      if (!opencodeEnabled()) return reject(Object.assign(new Error('OpenCode отключён (по умолчанию). Включение — только вручную: STUDIO_OPENCODE=1, см. docs/SECURITY_AUDIT.md'), { blocked: true }));
+      const bin = opencodePath(); if (!bin) return reject(Object.assign(new Error('OpenCode CLI не найден в PATH'), { blocked: true }));
+      if (!/^[A-Za-z0-9_-]{1,64}$/.test(task.id)) return reject(new Error('Недопустимый id задачи'));
+      const dir = path.join(dataDir, 'opencode-sandbox', task.id); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      const env = { PATH: process.env.PATH, HOME: os.homedir(), LANG: 'en_US.UTF-8', OPENCODE_DISABLE_AUTOUPDATE: '1',
+        OPENCODE_PERMISSION: JSON.stringify({ edit: 'allow', bash: 'deny', webfetch: 'deny', external_directory: 'deny' }) }; // no studio env/secrets passed
+      const prompt = `${task.title}\n\n${task.description || ''}`.replace(/^-+/, '');
+      let cmd = bin, args = ['run', '--dir', dir, '--title', String(task.title).replace(/^-+/, '').slice(0, 60), '--', prompt];
+      if (process.platform === 'darwin') {
+        if (!fs.existsSync('/usr/bin/sandbox-exec')) return reject(Object.assign(new Error('sandbox-exec недоступен — OpenCode не запускается без изоляции'), { blocked: true }));
+        const prof = path.join(dir, '..', task.id + '.sb'); fs.writeFileSync(prof, sandboxProfile(dir), { mode: 0o600 });
+        cmd = '/usr/bin/sandbox-exec'; args = ['-f', prof, bin, ...args];
+      } else if (process.env.STUDIO_OPENCODE_UNSANDBOXED !== '1') return reject(Object.assign(new Error('Изоляция OpenCode реализована только для macOS (sandbox-exec)'), { blocked: true }));
+      const p = spawn(cmd, args, { cwd: dir, env, signal, shell: false });
       let out = ''; p.stdout.on('data', d => out = (out + d).slice(-20000)); p.stderr.on('data', d => out = (out + d).slice(-20000));
-      p.on('error', reject); p.on('close', c => c === 0 ? resolve({ text: out.trim(), dir }) : reject(new Error(`opencode завершился с кодом ${c}: ${out.slice(-500)}`)));
+      const killer = setTimeout(() => p.kill('SIGTERM'), 15 * 60000);
+      p.on('error', e => { clearTimeout(killer); reject(e); }); p.on('close', c => { clearTimeout(killer); c === 0 ? resolve({ text: out.trim(), dir }) : reject(new Error(`opencode завершился с кодом ${c}: ${out.slice(-500)}`)); });
     });
   }
   const blocked = msg => Object.assign(new Error(msg), { blocked: true });
@@ -87,5 +115,5 @@ module.exports = function createRunner(ctx) {
   // after a restart: tasks left in_progress go back to the queue (called once the port is bound — single instance)
   function recover() { for (const t of list('tasks')) if (t.status === 'in_progress' && t.startedAt) { t.status = 'queued'; put('tasks', t); }
   for (const a of list('agents')) if (a.currentTaskId) { a.currentTaskId = null; put('agents', a); } }
-  return { recover, tick, start, stop, ollamaStatus, opencodePath, busy };
+  return { recover, tick, start, stop, ollamaStatus, opencodePath, opencodeEnabled, sandboxProfile, busy };
 };

@@ -134,7 +134,7 @@ function queueRows(items) {
     return `<div class="card" style="margin-bottom:12px"><h3><span>${DEMO(m)} ${esc(m.title)} <small>${esc(brandName(m.brand))} · ${fmt(m.createdAt)}</small></span>
       <span class="row">${m.brand === 'news' ? (m.factCheck === 'passed' ? '<span class="badge b-ok">Фактчек пройден</span>' : `<button class="btn sm" data-fc="${m.materialId}">Отметить: фактчек пройден</button>`) : ''}
       <button class="btn sm danger" data-mdel="${m.materialId}">✕</button></span></h3>
-      ${m.sourceUrl ? `<div class="small mut">Источник: <a href="${esc(m.sourceUrl)}" target="_blank" rel="noopener">${esc(SX.hostOf(m.sourceUrl))}</a></div>` : ''}
+      ${m.sourceUrl ? `<div class="small mut">Источник: <a href="${safeUrl(m.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(SX.hostOf(m.sourceUrl))}</a></div>` : ''}
       <div class="tbl-wrap"><table><tr><th>Канал</th><th>Формат</th><th>Длина</th><th>Время</th><th>Статус</th><th>Проверки</th><th>Действия</th></tr>${g.map(it => { const iss = liveIssues(it); const why = publishReason(it);
         return `<tr><td>${PF_ICON[it.platform] || ''} ${esc(chName(it.channelId))}</td><td class="small">${esc(it.format)}<div class="mut">${esc(it.aspect)}</div></td>
         <td class="small" style="color:${it.length > it.limit ? 'var(--err)' : ''}">${it.length}/${it.limit}</td><td class="small">${fmt(it.scheduledAt)}</td><td>${qBadge(it.status)}${it.lastError ? `<div class="small" style="color:var(--err)">${esc(it.lastError.message)}${it.nextRetryAt ? ' · ' + fmt(it.nextRetryAt) : ''}</div>` : ''}</td>
