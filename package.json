@@ -1,6 +1,6 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "test:runner": "node scripts/runner-test.mjs",
     "test:opencode": "node scripts/opencode-auth-test.mjs",
     "desktop": "electron .",
-    "dist:mac": "electron-builder --mac zip --arm64"
+    "dist:mac": "electron-builder --mac zip --arm64",
+    "test:policy": "node scripts/policy-test.mjs",
+    "test:3d": "node scripts/design3d-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
@@ -46,6 +48,8 @@
       "meta.js",
       "runner.js",
       "lib/**",
+      "blender/**",
+      "opencode/**",
       "public/**",
       "desktop/**",
       "build/icon.png",
@@ -88,7 +92,9 @@
       "package.json",
       "lib/**",
       "public/**",
-      "node_modules/**"
+      "node_modules/**",
+      "blender/**",
+      "opencode/**"
     ],
     "extraResources": [
       {

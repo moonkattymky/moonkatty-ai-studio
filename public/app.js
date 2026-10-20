@@ -364,9 +364,72 @@ VIEWS.video = () => {
 };
 BIND.video = v => { const a = v.querySelector('#vep'), b = v.querySelector('#vfmt'); if (a) a.onchange = () => { SUB.vep = a.value; render(); }; b.onchange = () => { SUB.vfmt = b.value; render(); }; };
 
-VIEWS.studio3d = () => `<div class="devbox" style="margin-bottom:16px">3D Studio и агент 3D DESIGN <b>запланированы</b>. Настройки ниже пока не работают и отключены.</div>
-  <div class="grid g3">${[['Фон', ['Лунная база', 'Космос', 'Студия новостей']], ['Освещение', ['Мягкое', 'Неон', 'Драматичное']], ['Камера', ['Общий план', 'Крупный план', 'Облёт']], ['Анимация', ['Ведущий говорит', 'Жесты', 'Idle']], ['Голос ведущего', ['EN', 'RU', 'UK']]]
-    .map(([n, o]) => `<div class="card"><h3>${n} <span class="badge b-dev b-none">Запланировано</span></h3><select disabled>${o.map(x => `<option>${x}</option>`).join('')}</select></div>`).join('')}</div>`;
+// ---- 3D STUDIO (v1.2.0): task → Director → 3D DESIGN agent (OpenCode server) → Blender headless ----
+const S3 = { jobs: [], job: null, events: [], status: null, timer: null, sel: null };
+const JST = { queued: ['В очереди', 'b-blue'], running: ['Выполняется', 'b-pur'], waiting_confirmation: ['Ждёт подтверждения', 'b-warn'], waiting_approval: ['Ждёт утверждения', 'b-warn'], done: ['Готово', 'b-ok'], failed: ['Ошибка', 'b-err'], blocked: ['Заблокировано', 'b-warn'], cancelled: ['Отменено', ''] };
+const jBadge = s => `<span class="badge ${(JST[s] || ['', ''])[1]}">${(JST[s] || [s])[0]}</span>`;
+async function s3refresh(full) {
+  if (MODE !== 'server' || ROUTE !== 'studio3d') { clearInterval(S3.timer); S3.timer = null; return; }
+  try {
+    if (full || !S3.status) S3.status = await api('GET', '/api/studio3d/status');
+    S3.jobs = (await api('GET', '/api/jobs?limit=20')).filter(j => j.kind === '3d');
+    if (!S3.sel && S3.jobs[0]) S3.sel = S3.jobs[0].id;
+    S3.job = S3.sel ? await api('GET', '/api/jobs/' + S3.sel) : null;
+  } catch (e) { S3.err = e.message; }
+  if (full) return render();
+  const box = $('#s3live'); if (box) { box.innerHTML = s3live(); s3bind(box); }
+}
+function s3live() {
+  const j = S3.job; const cp = j?.checkpoint || {};
+  const stages = (j?.stages || []).map(s => { const i = j.stages.findIndex(x => x.id === j.stage), k = j.stages.findIndex(x => x.id === s.id);
+    const st = k < i || (k === i && ['waiting_approval', 'done'].includes(j.status)) ? 'b-ok' : k === i ? (['failed', 'blocked'].includes(j.status) ? 'b-err' : 'b-pur') : '';
+    return `<span class="badge ${st}" style="margin:2px">${k + 1}. ${esc(s.label)}</span>`; }).join('');
+  const png = j && cp.projectId && (j.artifacts || []).some(a => a.name === 'renders/preview.png') ? `/api/projects3d/${encodeURIComponent(cp.projectId)}/${encodeURIComponent(cp.version)}/file?name=renders/preview.png&t=${encodeURIComponent(j.updatedAt)}` : null;
+  const live = j && ['queued', 'running', 'waiting_confirmation'].includes(j.status);
+  return `<div class="grid g2"><div class="card"><h3>Задание ${j ? jBadge(j.status) : ''}</h3>
+    ${j ? `<div class="small"><b>${esc(j.task?.title || '')}</b></div><div style="margin:8px 0">${stages}</div>
+      ${j.error ? `<div class="small" style="color:#ef4444;white-space:pre-wrap">${esc(j.error)}</div>` : ''}
+      ${j.pending ? `<div class="devbox small">Требуется подтверждение: ${esc(j.pending.reason)} <button class="btn sm" data-s3confirm="1">Разрешить</button> <button class="btn sm danger" data-s3confirm="0">Отклонить</button></div>` : ''}
+      <div class="row" style="margin-top:8px">${live ? '<button class="btn sm danger" id="s3cancel">Отменить</button>' : ''}${['failed', 'blocked', 'cancelled'].includes(j.status) ? '<button class="btn sm" id="s3retry">Повторить</button>' : ''}
+      ${j.status === 'waiting_approval' ? `<button class="btn sm" disabled title="В разработке">Утвердить</button><button class="btn sm" disabled title="В разработке">На доработку</button><button class="btn sm" disabled title="В разработке">Отклонить</button> ${DEV('В разработке')}` : ''}</div>
+      <div class="small mut" style="margin-top:6px">Попытка ${j.attempt}, повторов ${j.retries}/${j.maxRetries}${cp.version ? ` · проект ${esc(cp.projectId)} / ${esc(cp.version)}` : ''}${cp.paramsBy ? ' · параметры: ' + esc(cp.paramsBy === 'rules' ? 'по правилам (без ИИ)' : cp.paramsBy) : ''}</div>` : '<div class="empty">Заданий пока нет</div>'}
+    </div><div class="card"><h3>Превью (PNG)</h3>${png ? `<img src="${png}" alt="preview" style="width:100%;border-radius:8px">
+      <div class="small mut">${(j.artifacts || []).map(a => esc(a.name) + ' · ' + fmtSize(a.size)).join('<br>')}</div>` : '<div class="empty">Превью появится после рендера</div>'}</div></div>
+    <div class="card"><h3>Журнал действий</h3><div class="small" style="max-height:320px;overflow:auto;font-family:ui-monospace,monospace" data-notr>${(j?.events || []).map(e => `<div style="color:${e.level === 'error' ? '#ef4444' : e.level === 'warn' ? '#f59e0b' : 'inherit'}">${esc(fmt(e.at))} [${esc(e.stage || '')}] ${esc(e.msg)}${e.rule ? ` <span class="mut">(${esc(e.rule)})</span>` : ''}</div>`).join('') || '—'}</div></div>
+    <div class="card"><h3>История заданий</h3>${S3.jobs.length ? S3.jobs.map(x => `<div class="list-item" style="cursor:pointer" data-s3sel="${esc(x.id)}"><span class="sp">${esc(x.task?.title || x.id)}</span>${jBadge(x.status)}<span class="small mut">${esc(fmt(x.createdAt))}</span></div>`).join('') : '<div class="empty">Нет</div>'}</div>`;
+}
+function s3bind(v) {
+  v.querySelectorAll('[data-s3sel]').forEach(b => b.onclick = () => { S3.sel = b.dataset.s3sel; s3refresh(); });
+  const c = v.querySelector('#s3cancel'); if (c) c.onclick = async () => { try { await api('POST', `/api/jobs/${S3.sel}/cancel`); toast('Задание отменено'); } catch (e) { toast('Ошибка: ' + e.message, true); } s3refresh(); };
+  const r = v.querySelector('#s3retry'); if (r) r.onclick = async () => { try { await api('POST', `/api/jobs/${S3.sel}/retry`); toast('Повтор запущен'); } catch (e) { toast('Ошибка: ' + e.message, true); } s3refresh(); };
+  v.querySelectorAll('[data-s3confirm]').forEach(b => b.onclick = async () => { try { await api('POST', `/api/jobs/${S3.sel}/confirm`, { approve: b.dataset.s3confirm === '1' }); } catch (e) { toast('Ошибка: ' + e.message, true); } s3refresh(); });
+}
+VIEWS.studio3d = () => {
+  if (MODE !== 'server') return '<div class="devbox">3D Studio работает только в приложении (серверный режим): нужен локальный Blender и OpenCode server.</div>';
+  const st = S3.status; const b = st?.blender, oc = st?.opencode;
+  return `<div class="grid g2"><div class="card"><h3>Новая 3D-задача</h3>
+      <textarea id="s3text" rows="3" placeholder="Например: фиолетовый кот MOONKATTY в студийном свете"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="s3run">Создать 3D-модель</button></div>
+      <p class="small mut">Director назначает задачу агенту 3D DESIGN → агент OpenCode записывает параметры сцены → Blender (без окна) собирает сцену, сохраняет .blend, открывает её заново и рендерит PNG. Произвольные команды и файлы вне папки проекта запрещены политикой.</p>
+      <label>Референсы (изображения)</label><input type="file" disabled> ${DEV('В разработке')}</div>
+    <div class="card"><h3>Окружение <button class="btn sm" id="s3ref">Проверить</button></h3>
+      <div class="small">Blender: ${b ? (b.ok ? `<span class="badge b-ok">${esc(b.version)}</span> <span class="mut">${esc(b.bin)}</span>` : `<span class="badge b-err">Не найден</span> <span class="mut">${esc(b.error || '')}</span>`) : '…'}</div>
+      <div class="small">OpenCode server: ${oc ? `<span class="badge ${oc.lastTest?.ok ? 'b-ok' : 'b-warn'}">${esc(oc.status)}</span> <span class="mut">${esc(oc.url)} · пароль: ${oc.hasPassword ? 'в Keychain' : 'не задан'}</span>` : '…'}</div>
+      <label>Путь к Blender (необязательно)</label><input id="s3bp" value="${esc(st?.blenderPath || '')}" placeholder="/Applications/Blender.app/Contents/MacOS/Blender">
+      <label>Модель OpenCode (provider/model)</label><input id="s3model" value="${esc(st?.opencodeModel || '')}" placeholder="ollama/qwen2.5-coder:7b">
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="s3save">Сохранить</button></div>
+      <p class="small mut">Экспорт FBX/GLB из интерфейса, версии и сравнение — ${DEV('В разработке')}</p></div></div>
+    <div id="s3live">${s3live()}</div>`;
+};
+BIND.studio3d = v => {
+  if (MODE !== 'server') return; s3bind(v);
+  if (!S3.timer) { S3.timer = setInterval(() => { if (!document.hidden) s3refresh(); }, 2000); s3refresh(true); }
+  v.querySelector('#s3run').onclick = async () => { const text = v.querySelector('#s3text').value.trim(); if (!text) return toast('Опишите, что создать', true);
+    try { const t = await api('POST', '/api/studio3d/run', { text }); toast('Задача назначена агенту 3D DESIGN'); v.querySelector('#s3text').value = ''; S3.sel = null; await s3refresh(); void t; } catch (e) { toast('Ошибка: ' + e.message, true); } };
+  v.querySelector('#s3ref').onclick = () => api('GET', '/api/studio3d/status?refresh=1').then(s => { S3.status = s; render(); }).catch(e => toast('Ошибка: ' + e.message, true));
+  v.querySelector('#s3save').onclick = () => api('PUT', '/api/studio3d/settings', { blenderPath: v.querySelector('#s3bp').value.trim(), opencodeModel: v.querySelector('#s3model').value.trim() })
+    .then(() => { toast('Сохранено'); S3.status = null; s3refresh(true).then(render); }).catch(e => toast('Ошибка: ' + e.message, true));
+};
 
 // ---- SOCIAL ----
 const toLocalInput = d => d ? new Date(new Date(d) - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 16) : '';

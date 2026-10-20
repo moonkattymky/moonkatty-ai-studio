@@ -55,6 +55,19 @@ ollama pull qwen3:8b
 
 > **Не проверено на реальном Mac**: работа с Keychain для пароля OpenCode протестирована на Linux только с тестовой заглушкой `security`. См. `docs/MAC_TEST_CHECKLIST.md` → «OpenCode server (Basic Auth)».
 
+### 3D Studio: агент 3D DESIGN + Blender (с 1.2.0)
+1. **Blender 4.2+** (проверено на Linux с 5.2.2 LTS; на Mac ожидается `/Applications/Blender.app`). Студия находит его сама: `/Applications/Blender*.app`, `~/Applications`, PATH; иначе укажите путь в 3D Studio → «Путь к Blender».
+2. **Ollama**: `ollama pull qwen2.5-coder:7b` (для агента OpenCode) и `qwen3:8b` (выбор параметров сцены). Для OpenCode нужен контекст ≥ 16k: `launchctl setenv OLLAMA_CONTEXT_LENGTH 16384` и перезапустите Ollama.
+3. **OpenCode server** (≥ 1.1, проверено с 1.19.3): `npm i -g opencode-ai@1.19.3` (или официальный установщик).
+4. Сохраните пароль OpenCode в студии (Настройки → OpenCode server). Он хранится только в Keychain.
+5. Запустите сервер скриптом из приложения (пароль идёт из Keychain только в окружение процесса, не в argv):
+   `"/Applications/MOONKATTY AI STUDIO.app/Contents/Resources/app.asar.unpacked/opencode/serve.sh"`
+   Скрипт использует `opencode/opencode-studio.json`: provider `ollama` (`http://127.0.0.1:11434/v1`), `bash/webfetch/external_directory = deny`, `edit = ask`. **Студия отказывается запускать агента**, если у сервера другая политика (например, `bash` не `deny`).
+6. 3D Studio → «Проверить» (Blender и OpenCode должны быть зелёными), введите задачу и нажмите **«Создать 3D-модель»**. Модель OpenCode: `ollama/qwen2.5-coder:7b`.
+
+Конвейер: Проверка → Параметры (qwen3:8b, или по правилам без ИИ, если Ollama недоступна — это пишется в журнал) → Агент OpenCode пишет `scene_params.json` → проверка схемы → Blender `-b --python-exit-code 3` собирает сцену и сохраняет `.blend` → второй процесс Blender открывает `.blend` и рендерит PNG (+GLB) → проверка → «Ждёт утверждения». Файлы: `~/Library/Application Support/MOONKATTY AI STUDIO/projects3d/<проект>/vNNN/`. Каждый запуск — новая версия; предыдущий `.blend` копируется в `backup/`.
+Тяжёлые операции (Blender, Ollama) выполняются по одной (24 ГБ общей памяти).
+
 ## Доступ с телефона
 
 Только через Tailscale (см. `docs/CONNECT_MAC.md`): сервер слушает 127.0.0.1, а `tailscale serve --bg 8787` публикует его внутри вашей приватной сети tailnet по HTTPS. Сервер отвечает только на разрешённые имена хоста (защита от DNS rebinding): добавьте имя в `desktop.json` — `"allowedHosts": ["<имя-mac>.<tailnet>.ts.net"]` — и перезапустите сервер (меню Сервер → Остановить, затем открыть приложение). Не открывайте порт в интернет. На телефоне вход по логину и паролю.

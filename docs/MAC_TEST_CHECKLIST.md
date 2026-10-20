@@ -54,3 +54,15 @@
 
 ## Tailscale
 - [ ] `tailscale serve --bg 8787`; добавить `"allowedHosts": ["<mac>.<tailnet>.ts.net"]` в `desktop.json`, перезапустить сервер; вход с телефона по паролю работает; без записи в allowedHosts — ответ 421.
+
+## 3D Studio / 3D DESIGN (1.2.0) — НЕ проверено на Mac
+- [ ] 3D Studio → «Проверить»: Blender 5.2.2 найден в /Applications, версия и Python API показаны.
+- [ ] `opencode/serve.sh` стартует сервер с паролем из Keychain; `ps -Eww` не показывает пароль в argv; «Проверить» → OpenCode зелёный.
+- [ ] «Создать 3D-модель» с текстом «фиолетовый кот MOONKATTY»: все 7 этапов, PNG-превью видно в интерфейсе, `scene.blend` открывается в Blender.app.
+- [ ] Реальная модель `ollama/qwen2.5-coder:7b` действительно вызывает инструмент write (на Linux проверено только с мок-LLM). Если модель не вызывает инструмент — задача падает с «не записал scene_params.json»; сообщите.
+- [ ] Параметры через qwen3:8b (журнал: «Параметры (llm:qwen3:8b)»), а не «по правилам».
+- [ ] EEVEE/Workbench рендер из фонового приложения (Metal без окна). На Linux без GPU работает только Cycles.
+- [ ] Отмена во время рендера: процесс Blender исчезает (Activity Monitor).
+- [ ] Перезапуск приложения во время рендера: задание продолжается с этапа рендера.
+- [ ] Память: Ollama + Blender одновременно не запускаются (журнал), Activity Monitor → Memory Pressure не красный.
+- [ ] Gatekeeper/подпись не мешают приложению запускать Blender.app.

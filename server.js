@@ -77,6 +77,16 @@ const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BR
 const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
 const meta = require('./meta.js')(app, metaCtx);
 const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND });
+// ---- v1.2.0: job engine + 3D DESIGN agent (OpenCode server + Blender) ----
+const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
+const ws3d = require('./lib/workspace.js')(path.dirname(DB_PATH));
+const blender = require('./lib/blender.js')();
+const policy = require('./lib/policy.js');
+const design3d = require('./lib/executors/design3d.js')({ jobs, ws: ws3d, blender, get, put, log, sec, ollamaStatus: runner.ollamaStatus, ollamaJson: runner.ollamaJson });
+runner.register('design3d', design3d.run);
+const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log }); app.locals.services = services; module.exports = { services };
+if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
+  q.setMeta.run('mig_120_design3d', core.now()); }
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
 const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -156,7 +166,7 @@ app.post('/api/director/chat', async (req, res) => {
   put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
   let plan, llmError = null;
   try { plan = await llmPlan(text); } catch (e) { llmError = String(e.cause?.code || e.message); plan = core.rulePlan(text); }
-  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
+  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), ...(t.agentId === 'design3d' ? { kind: '3d' } : {}), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
     status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
   const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
   log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, req.user); res.json({ message: msg, tasks: created });
@@ -164,7 +174,7 @@ app.post('/api/director/chat', async (req, res) => {
 
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
   res.json({ ok: dbOk, app: 'moonkatty-ai-studio', mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
-app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
+app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
 app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', req.params.id); if (!t || t.kind !== 'code') return res.status(400).json({ error: 'Не задача OpenCode' });
@@ -252,6 +262,48 @@ app.post('/api/reset', (req, res) => {
   log('info', 'system', 'Данные сброшены к начальным', req.user); res.json({ ok: true });
 });
 
+// ---- Jobs (action log, cancel, retry, confirm) and 3D Studio ----
+const jobView = j => j && { ...j, pid: undefined, publicStatus: services.PUBLIC[j.status], task: get('tasks', j.taskId), stages: design3d.STAGES.map(s => ({ id: s, label: design3d.STAGE_LABEL[s] })) };
+app.get('/api/jobs', (req, res) => { const s = req.query.status; res.json(jobs.list(Math.min(+req.query.limit || 30, 200)).filter(j => !s || j.status === s || services.PUBLIC[j.status] === s).map(jobView)); });
+app.post('/api/jobs', (req, res) => { const b = req.body || {}; try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.get('/api/jobs/:id', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); res.json({ ...jobView(j), events: jobs.events(j.id, +req.query.after || 0) }); });
+app.post('/api/jobs/:id/cancel', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); if (j.kind === 'blender_template') { jobs.update(j.id, { status: 'cancelled' }); services.jobsApi.cancelJob(j.id); return res.json(jobView(jobs.get(j.id))); }
+  const t = get('tasks', j.taskId); if (t && !['done', 'cancelled'].includes(t.status)) { t.status = 'cancelled'; put('tasks', t); }
+  design3d.cancelJob(j.id); runner.cancelTask(j.taskId); log('warn', 'design3d', 'Задание отменено: ' + (t?.title || j.id), req.user); res.json(jobView(jobs.get(j.id))); });
+app.post('/api/jobs/:id/retry', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' });
+  if (!['failed', 'blocked', 'cancelled'].includes(j.status)) return res.status(400).json({ error: 'Повтор возможен только для заданий с ошибкой, блокировкой или отменённых' });
+  if (j.retries >= j.maxRetries) return res.status(400).json({ error: `Лимит повторов исчерпан (${j.maxRetries})` });
+  jobs.update(j.id, { status: 'queued', retries: j.retries + 1, error: null }); jobs.event(j.id, 'info', j.stage, `Повтор запрошен человеком (${j.retries + 1}/${j.maxRetries})`);
+  const t = get('tasks', j.taskId); Object.assign(t, { status: 'queued', retryRequested: true, blockedReason: null, error: null }); put('tasks', t);
+  const a = get('agents', t.agentId); if (a && a.status !== 'working') runner.start(a.id, req.user); res.json(jobView(jobs.get(j.id))); });
+app.post('/api/jobs/:id/confirm', (req, res) => { const ok = design3d.confirm(req.params.id, req.body?.approve === true); if (!ok) return res.status(409).json({ error: 'Задание не ждёт подтверждения' });
+  log('info', 'design3d', `Подтверждение задания ${req.params.id}: ${req.body?.approve === true ? 'разрешено' : 'отклонено'}`, req.user); res.json({ ok: true }); });
+app.post('/api/studio3d/run', (req, res) => {
+  const text = String(req.body?.text || '').trim().slice(0, 1000); if (!text) return res.status(400).json({ error: 'Опишите, что создать' });
+  const a = get('agents', 'design3d'); if (!a || !a.enabled) return res.status(409).json({ error: 'Агент 3D DESIGN выключен' });
+  put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
+  const t = put('tasks', { id: core.uid(), kind: '3d', title: text.slice(0, 120), description: text.length > 120 ? text : '', agentId: 'design3d', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' });
+  put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: 'studio3d', text: 'Director: задача назначена агенту 3D DESIGN', taskIds: [t.id] });
+  log('info', 'director', 'Задача назначена агенту 3D DESIGN: ' + t.title, req.user);
+  if (a.status !== 'working') runner.start('design3d', req.user); else runner.tick(); res.status(201).json(t); });
+const SAFE_PATH = /^\/[^\0\n\r]{1,400}$/, SAFE_MODEL = /^[A-Za-z0-9._-]{1,64}\/[A-Za-z0-9._:\/-]{1,128}$/;
+app.get('/api/studio3d/status', async (req, res) => { const bi = get('integrations', 'blender') || {}; const oc = get('integrations', 'opencode') || {};
+  res.json({ blender: await blender.detect(bi.path, { force: req.query.refresh === '1' }), blenderPath: bi.path || '', opencode: await ocView(), opencodeModel: oc.model || '', agent: get('agents', 'design3d') }); });
+app.put('/api/studio3d/settings', (req, res) => { const b = req.body || {};
+  if ('blenderPath' in b) { if (b.blenderPath && !SAFE_PATH.test(b.blenderPath)) return res.status(400).json({ error: 'Путь к Blender: абсолютный путь' }); const it = get('integrations', 'blender') || { id: 'blender', name: 'Blender' }; it.path = b.blenderPath || ''; put('integrations', it); }
+  if ('opencodeModel' in b) { if (b.opencodeModel && !SAFE_MODEL.test(b.opencodeModel)) return res.status(400).json({ error: 'Модель: provider/model, например ollama/qwen2.5-coder:7b' }); const it = ocItem(); it.model = b.opencodeModel || ''; put('integrations', it); }
+  log('info', 'studio3d', 'Настройки 3D Studio изменены: ' + Object.keys(b).join(', '), req.user); res.json({ ok: true }); });
+app.get('/api/projects3d/:pid/:ver/file', (req, res) => { let f; try { f = ws3d.file(req.params.pid, req.params.ver, String(req.query.name || '')); } catch { f = null; }
+  if (!f) return res.status(404).json({ error: 'not found' }); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Cache-Control', 'no-store');
+  if (!/\.png$/i.test(f)) res.setHeader('Content-Disposition', 'attachment; filename="' + path.basename(f).replace(/[^A-Za-z0-9._-]/g, '_') + '"'); res.sendFile(f); });
+// Deleting a version is a dangerous action: two steps (policy → confirm:true).
+app.delete('/api/projects3d/:pid/:ver', (req, res) => { let dir; try { dir = path.join(ws3d.projDir(req.params.pid), req.params.ver); } catch (e) { return res.status(400).json({ error: e.message }); }
+  const d = policy.decide({ type: 'fs.delete', ws: ws3d.root, path: dir });
+  if (d.decision === 'deny') return res.status(403).json({ error: d.reason, rule: d.rule });
+  if (req.body?.confirm !== true) return res.status(409).json({ needsConfirmation: true, rule: d.rule, error: d.reason });
+  try { ws3d.removeVersion(req.params.pid, req.params.ver); } catch (e) { return res.status(400).json({ error: e.message }); }
+  log('warn', 'studio3d', `Удалена версия ${req.params.pid}/${req.params.ver} (подтверждено)`, req.user); res.json({ ok: true }); });
+
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
@@ -316,7 +368,7 @@ function tick() {
     q.setMeta.run('lastTick', core.now());
   } catch (e) { log('error', 'scheduler', e.message); }
 }
-function startBackground() { runner.recover(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
+function startBackground() { const rj = jobs.recover(); if (rj.length) log('warn', 'jobs', 'Восстановлено после перезапуска заданий: ' + rj.length); runner.recover(); services.resume(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
 
 process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
 // Single instance: if the port is taken by our own server, exit cleanly (launchd will not restart on success).

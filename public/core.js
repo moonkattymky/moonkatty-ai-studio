@@ -24,7 +24,7 @@
         A('content', 'CONTENT', 'Content Agent: адаптирует один материал под каждую платформу (длина, хэштеги, формат)'),
         A('publishing', 'PUBLISHING', 'Publishing Agent: очередь, расписание, публикация через официальные API, повторы при ошибках'),
         A('community', 'COMMUNITY', 'Community Agent: черновики ответов на комментарии (только с утверждением)'),
-        A('design3d', '3D DESIGN', '3D-модели и сцены MOONKATTY', { enabled: false, status: 'dev', inDevelopment: true })
+        A('design3d', '3D DESIGN', '3D-модели и сцены MOONKATTY: OpenCode-агент + Blender (headless)')
       ],
       projects: [
         { id: 'news', name: 'MOONKATTY NEWS', description: 'Новостные выпуски на EN/RU/UK', plan: [], createdAt: t },
@@ -140,7 +140,7 @@
     if (!langs.length) langs.push('EN');
     const mins = (t.match(/(\d+)\s*(мин|min)/) || [])[1];
     const L = langs.join('/'), dur = mins ? ` (${mins} мин)` : '';
-    const add = (agentId, title, priority = 'normal') => tasks.push({ agentId, title, priority, description: `Из запроса: «${text}»` });
+    const add = (agentId, title, priority = 'normal', kind) => tasks.push(Object.assign({ agentId, title, priority, description: `Из запроса: «${text}»` }, kind ? { kind } : {}));
     let matched = false;
     if (/новост|news|выпуск/.test(t)) { matched = true;
       add('news', 'Поиск новостей для выпуска' + dur, 'high'); add('news', 'Проверка фактов', 'high'); add('news', 'Сценарий выпуска' + dur + ' — ' + L, 'high');
@@ -152,7 +152,7 @@
     if (/игр|game|бот|@moonkattygamebot/.test(t)) { matched = true; add('games', 'Задача по игре: ' + text.slice(0, 80)); }
     if (/mkty|токен|token|solana/.test(t)) { matched = true; add('mkty', 'Материал по $MKTY (токен ещё не запущен): ' + text.slice(0, 60)); }
     if (/отчёт|отчет|аналит|report|статист/.test(t)) { matched = true; add('analytics', 'Сформировать отчёт'); }
-    if (/3d|3д/.test(t)) { matched = true; add('design3d', '3D: ' + text.slice(0, 80) + ' (агент в разработке)'); }
+    if (/3d|3д|blender|блендер|3-?d/.test(t)) { matched = true; add('design3d', '3D: ' + text.slice(0, 80), 'normal', '3d'); }
     if (!matched) add('director', 'Разобрать запрос: ' + text.slice(0, 100));
     return { planner: 'rules', summary: `Правиловой планировщик (без ИИ): создано задач — ${tasks.length}.`, tasks };
   }

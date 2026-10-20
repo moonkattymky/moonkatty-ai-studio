@@ -304,6 +304,31 @@ P = [  # regex (full match) -> EN, UK; $n are recursively translated
 (r"• (.+) —", "• $1 —", "• $1 —"),(r"• Ссылки в подписи некликабельны", "• Links in captions aren't clickable", "• Посилання в підписі неклікабельні"),(r"• (.+) →", "• $1 →", "• $1 →"),(r"(.+?) · (.+)", "$1 · $2", "$1 · $2"),(r"(.+) — (.+)", "$1 — $2", "$1 — $2"),(r"(.+) —", "$1 —", "$1 —"),
 (r"(.+) \(([^()]+)\)", "$1 ($2)", "$1 ($2)"),(r"(.+?): (.+)", "$1: $2", "$1: $2"),(r"(.+) / (.+)", "$1 / $2", "$1 / $2"),
 ]
+E += [
+("Новая 3D-задача","New 3D task","Нове 3D-завдання"),("Создать 3D-модель","Create 3D model","Створити 3D-модель"),
+("Например: фиолетовый кот MOONKATTY в студийном свете","E.g.: a purple MOONKATTY cat in studio lighting","Наприклад: фіолетовий кіт MOONKATTY у студійному світлі"),
+("Director назначает задачу агенту 3D DESIGN → агент OpenCode записывает параметры сцены → Blender (без окна) собирает сцену, сохраняет .blend, открывает её заново и рендерит PNG. Произвольные команды и файлы вне папки проекта запрещены политикой.",
+ "Director assigns the task to the 3D DESIGN agent → the OpenCode agent writes the scene parameters → Blender (headless) builds the scene, saves the .blend, reopens it and renders a PNG. Arbitrary commands and files outside the project folder are blocked by policy.",
+ "Director призначає завдання агенту 3D DESIGN → агент OpenCode записує параметри сцени → Blender (без вікна) збирає сцену, зберігає .blend, відкриває її знову й рендерить PNG. Довільні команди та файли поза папкою проєкту заборонені політикою."),
+("Референсы (изображения)","References (images)","Референси (зображення)"),("В разработке","In development","В розробці"),("Окружение","Environment","Середовище"),("Проверить","Check","Перевірити"),
+("Не найден","Not found","Не знайдено"),("Путь к Blender (необязательно)","Blender path (optional)","Шлях до Blender (необов'язково)"),("Модель OpenCode (provider/model)","OpenCode model (provider/model)","Модель OpenCode (provider/model)"),
+("Экспорт FBX/GLB из интерфейса, версии и сравнение —","FBX/GLB export from the UI, versions and comparison —","Експорт FBX/GLB з інтерфейсу, версії та порівняння —"),
+("Задание","Job","Завдання"),("Заданий пока нет","No jobs yet","Завдань поки немає"),("Отменить","Cancel","Скасувати"),("Повторить","Retry","Повторити"),("Утвердить","Approve","Затвердити"),("На доработку","Rework","На доопрацювання"),("Отклонить","Reject","Відхилити"),("Разрешить","Allow","Дозволити"),
+("Превью (PNG)","Preview (PNG)","Превʼю (PNG)"),("Превью появится после рендера","The preview appears after rendering","Превʼю з'явиться після рендеру"),("Журнал действий","Action log","Журнал дій"),("История заданий","Job history","Історія завдань"),("Нет","None","Немає"),
+("Ждёт подтверждения","Awaiting confirmation","Чекає підтвердження"),("Заблокировано","Blocked","Заблоковано"),("Задание отменено","Job cancelled","Завдання скасовано"),("Повтор запущен","Retry started","Повтор запущено"),
+("Задача назначена агенту 3D DESIGN","Task assigned to the 3D DESIGN agent","Завдання призначено агенту 3D DESIGN"),("Опишите, что создать","Describe what to create","Опишіть, що створити"),
+("3D Studio работает только в приложении (серверный режим): нужен локальный Blender и OpenCode server.","3D Studio works only in the app (server mode): a local Blender and OpenCode server are required.","3D Studio працює лише в застосунку (серверний режим): потрібні локальний Blender і OpenCode server."),
+("Проверка Blender и OpenCode","Blender and OpenCode check","Перевірка Blender і OpenCode"),("Параметры сцены","Scene parameters","Параметри сцени"),("Агент OpenCode","OpenCode agent","Агент OpenCode"),("Проверка параметров","Parameter validation","Перевірка параметрів"),
+("Сборка сцены (.blend)","Scene build (.blend)","Збирання сцени (.blend)"),("Повторное открытие и рендер PNG","Reopen and render PNG","Повторне відкриття та рендер PNG"),("Проверка результата","Result check","Перевірка результату"),
+("по правилам (без ИИ)","rule-based (no AI)","за правилами (без ШІ)"),("в Keychain","in Keychain","у Keychain"),("не задан","not set","не задано"),("Требуется подтверждение:","Confirmation required:","Потрібне підтвердження:"),
+("3D-модели и сцены MOONKATTY: OpenCode-агент + Blender (headless)","MOONKATTY 3D models and scenes: OpenCode agent + Blender (headless)","3D-моделі та сцени MOONKATTY: OpenCode-агент + Blender (headless)"),
+]
+P += [(r"(\d+)\. (.+)", "$1. $2", "$1. $2"),(r"Попытка (\d+), повторов (\d+)/(\d+)(.*)", "Attempt $1, retries $2/$3$4", "Спроба $1, повторів $2/$3$4"),(r" · проект (.+)", " · project $1", " · проєкт $1"),(r" · параметры: (.+)", " · parameters: $1", " · параметри: $1"),(r"3D: (.+)", "3D: $1", "3D: $1")]
+E += [("пароль","password","пароль"),("Сборка сцены","Scene build","Збирання сцени"),("параметры","parameters","параметри"),("по правилам","rule-based","за правилами"),("без ИИ","no AI","без ШІ"),("подтверждено","confirmed","підтверджено"),
+("Восстановлено после перезапуска заданий","Jobs recovered after restart","Відновлено після перезапуску завдань"),("Настройки 3D Studio изменены","3D Studio settings changed","Налаштування 3D Studio змінено"),
+("задача назначена агенту 3D DESIGN","task assigned to the 3D DESIGN agent","завдання призначено агенту 3D DESIGN"),("Агент OpenCode не записал scene_params.json","The OpenCode agent did not write scene_params.json","Агент OpenCode не записав scene_params.json"),
+("Параметры от агента не прошли проверку схемы","Agent parameters failed schema validation","Параметри від агента не пройшли перевірку схеми"),("Конфигурация OpenCode server не соответствует политике студии","OpenCode server configuration does not match the studio policy","Конфігурація OpenCode server не відповідає політиці студії")]
+P += [(r"проект (.+)", "project $1", "проєкт $1"),(r"Удалена версия (.+)", "Version deleted $1", "Видалено версію $1"),(r"Создано задание (.+)", "Job created $1", "Створено завдання $1"),(r"Blender \((\w+)\) завершился с кодом (.+)", "Blender ($1) exited with code $2", "Blender ($1) завершився з кодом $2")]
 en = {r: e for r, e, u in E}; uk = {r: u for r, e, u in E}
 pats = [[p, {"en": e, "uk": u}] for p, e, u in P]
 print("/* Generated from scripts/i18n_src.py — RU source strings → EN / UK */")

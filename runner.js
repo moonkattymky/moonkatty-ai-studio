@@ -3,6 +3,7 @@
 // (report, queue processing, comment drafts, Ollama draft, OpenCode run) or marks the task 'blocked' with the reason.
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), { spawn } = require('child_process');
+const { withHeavy } = require('./lib/heavy-lock.js');
 module.exports = function createRunner(ctx) {
   const { get, put, list, log, core, meta, dataDir } = ctx;
   const busy = new Map(); // agentId -> { taskId, abort }
@@ -17,8 +18,8 @@ module.exports = function createRunner(ctx) {
   }
   async function ollamaDraft(prompt, signal) {
     const { url, model } = ollamaCfg();
-    const r = await fetch(url + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.any([signal, AbortSignal.timeout(600000)]),
-      body: JSON.stringify({ model, stream: false, think: false, messages: [{ role: 'user', content: prompt }] }) });
+    const r = await withHeavy('ollama', () => fetch(url + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.any([signal, AbortSignal.timeout(600000)]),
+      body: JSON.stringify({ model, stream: false, think: false, messages: [{ role: 'user', content: prompt }] }) }), signal);
     if (!r.ok) throw new Error('Ollama HTTP ' + r.status); const j = await r.json(); return { text: String(j.message?.content || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim(), model };
   }
   // OpenCode is OFF by default (STUDIO_OPENCODE=1 to enable). A folder alone is NOT a sandbox: on macOS the process is
@@ -60,6 +61,13 @@ module.exports = function createRunner(ctx) {
       p.on('error', e => { clearTimeout(killer); reject(e); }); p.on('close', c => { clearTimeout(killer); c === 0 ? resolve({ text: out.trim(), dir }) : reject(new Error(`opencode завершился с кодом ${c}: ${out.slice(-500)}`)); });
     });
   }
+  // JSON-mode call (used by the 3D DESIGN agent to choose template parameters).
+  async function ollamaJson(prompt, signal) {
+    const { url, model } = ollamaCfg();
+    const j = await withHeavy('ollama', async () => { const r = await fetch(url + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.any([signal || new AbortController().signal, AbortSignal.timeout(180000)]),
+      body: JSON.stringify({ model, stream: false, think: false, format: 'json', keep_alive: '2m', messages: [{ role: 'user', content: prompt }] }) });
+    if (!r.ok) throw new Error('Ollama HTTP ' + r.status); return r.json(); }, signal); return { json: JSON.parse(String(j.message?.content || '{}').replace(/<think>[\s\S]*?<\/think>/g, '')), model };
+  }
   const blocked = msg => Object.assign(new Error(msg), { blocked: true });
   const draftPrompt = (a, t) => `Ты агент «${a.name}» студии ${ctx.brand || 'MOONKATTY'}. Роль: ${a.role}.\nЗадача: ${t.title}\n${t.description || ''}\nПодготовь черновик результата (на русском, если не указано иное). Не выдумывай факты, цифры и источники; если данных не хватает — перечисли, что нужно уточнить. Результат пойдёт на утверждение человеку.`;
   const HANDLERS = {
@@ -88,11 +96,12 @@ module.exports = function createRunner(ctx) {
         const o = await runOpencode(t, ac.signal); r = { status: 'waiting_approval', result: `OpenCode (песочница ${o.dir}):\n${o.text}` }; }
       else r = await (HANDLERS[a.id] || llmTask)(a, t, ac.signal);
       const cur = get('tasks', t.id); if (!cur || cur.status !== 'in_progress') return; // stopped meanwhile
-      Object.assign(cur, { status: r.status, result: r.result, model: r.model || null, finishedAt: core.now() }); if (r.status === 'done') cur.completedAt = core.now(); put('tasks', cur);
+      Object.assign(cur, { status: r.status, result: r.result, model: r.model || null, finishedAt: core.now() }, r.jobId ? { jobId: r.jobId } : {}); if (r.status === 'done') cur.completedAt = core.now(); put('tasks', cur);
       const ag = get('agents', a.id); Object.assign(ag, { lastResult: String(r.result).slice(0, 300), lastError: null }); addLog(ag, 'info', `Готово (${r.status}): ${t.title}`); put('agents', ag);
     } catch (e) {
       const cur = get('tasks', t.id); const ag = get('agents', a.id);
       if (ac.signal.aborted) { addLog(ag, 'warn', 'Остановлено: ' + t.title); put('agents', ag); return; }
+      if (cur && cur.status !== 'in_progress') return; // cancelled meanwhile
       if (cur) { Object.assign(cur, e.blocked ? { status: 'blocked', blockedReason: e.message } : { status: 'failed', error: e.message }); put('tasks', cur); }
       Object.assign(ag, { lastError: e.message }); addLog(ag, e.blocked ? 'warn' : 'error', (e.blocked ? 'Заблокировано: ' : 'Ошибка: ') + e.message); put('agents', ag);
     } finally {
@@ -113,7 +122,9 @@ module.exports = function createRunner(ctx) {
     if (b) { b.abort.abort(); const t = get('tasks', b.taskId); if (t && t.status === 'in_progress') { t.status = 'queued'; put('tasks', t); } }
     Object.assign(a, { status: 'idle', currentTaskId: null }); addLog(a, 'info', 'Агент остановлен' + (b ? ', задача возвращена в очередь' : '')); put('agents', a); return a; }
   // after a restart: tasks left in_progress go back to the queue (called once the port is bound — single instance)
+  function register(id, fn) { HANDLERS[id] = fn; }
+  function cancelTask(taskId) { for (const [aid, b] of busy) if (b.taskId === taskId) { b.abort.abort(); return aid; } return null; }
   function recover() { for (const t of list('tasks')) if (t.status === 'in_progress' && t.startedAt) { t.status = 'queued'; put('tasks', t); }
   for (const a of list('agents')) if (a.currentTaskId) { a.currentTaskId = null; put('agents', a); } }
-  return { recover, tick, start, stop, ollamaStatus, opencodePath, opencodeEnabled, sandboxProfile, busy };
+  return { recover, register, cancelTask, ollamaJson, tick, start, stop, ollamaStatus, opencodePath, opencodeEnabled, sandboxProfile, busy };
 };

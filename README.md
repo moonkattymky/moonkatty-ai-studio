@@ -34,7 +34,7 @@ Ollama: для доступа из Docker/браузера может понад
 Никаких выдуманных просмотров, подписчиков и статусов: всё, что не подключено, помечено «Не подключено», нереализованные функции — «в разработке» и кнопки отключены. Отчёты строятся только из реальных задач/журнала. Арт в интерфейсе (коты, превью) — из концепта, превью помечено как концепт.
 
 ## В разработке
-Автономное выполнение задач агентами, автопоиск новостей, TTS-озвучка, рендер/экспорт видео, автосубтитры, публикация в соцсети и статистика платформ, запуск рекламы, 3D Studio, терминал, web push.
+Автономное выполнение задач агентами, автопоиск новостей, TTS-озвучка, рендер/экспорт видео, автосубтитры, публикация в соцсети и статистика платформ, запуск рекламы, 3D Studio (кроме минимального конвейера 1.2.0: референсы, утверждение/доработка, экспорт из UI, конвейер персонажа, ролик), терминал, web push.
 
 ## Тесты
 `node scripts/smoke.mjs <url> <prefix> <user> <pass>` — headless Chrome (playwright-core): вход, чат с Director, задачи с расписанием, старт агента, выпуск и этапы, утверждение поста, отчёт, тест Ollama, скриншоты всех разделов (десктоп + iPhone) в `screenshots/`.
@@ -60,6 +60,9 @@ Electron shell + background server (launchd LaunchAgent). Window loads only the 
 - Tests: `xvfb-run -a node scripts/desktop-test.mjs`, `node scripts/runner-test.mjs`
 - Guide (RU): [docs/INSTALL_MAC.md](docs/INSTALL_MAC.md)
 - Env: `STUDIO_DATA_DIR`, `STUDIO_SQLITE=node|better`, `STUDIO_BRAND`, `STUDIO_KEYCHAIN=0`
+
+### 3D Studio — Autonomous 3D Production (1.2.0, stages A+B)
+Director → agent **3D DESIGN** → real **OpenCode server API** (Basic Auth, password from Keychain, policy: no shell, workspace-only) → vetted **Blender** template headless (`-b --python-exit-code`): scene → `.blend` → reopen → PNG/GLB. Jobs are resumable after restart, with cancel/retry/timeouts and an action log. See `docs/INSTALL_MAC.md` (3D Studio), `docs/JOBS_API.md`, `docs/SECURITY_AUDIT.md`, `CHANGELOG.md`. Tests: `npm run test:policy`, `npm run test:3d` (needs `OPENCODE_BIN`, `STUDIO_BLENDER_BIN`).
 
 ### OpenCode server password (1.1.2)
 
