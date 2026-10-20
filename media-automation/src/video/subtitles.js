@@ -12,7 +12,7 @@ function chunk(text, maxChars = 42) {
   return out;
 }
 /** segments: [{text, start, duration}] -> SRT; up to 2 lines per cue, timing by text length, short cues borrow time from neighbours. */
-function buildSrt(segments, { maxChars = 42, minDur = 0.8 } = {}) {
+function buildSrt(segments, { maxChars = 42, minDur = 0.8, maxDur = 6.5 } = {}) {
   const cues = [];
   for (const s of segments) {
     const lines = chunk(s.text, maxChars); const groups = [];
@@ -24,6 +24,9 @@ function buildSrt(segments, { maxChars = 42, minDur = 0.8 } = {}) {
       if (i > 0 && local[i - 1].end - local[i - 1].start - (minDur - (c.end - c.start)) >= minDur) { c.start = c.end - minDur; local[i - 1].end = c.start; }
       else if (i > 0) { local[i - 1].end = c.end; local[i - 1].text = (local[i - 1].text.replace('\n', ' ') + ' ' + c.text).trim(); local.splice(i, 1); i--; }
     }
+    for (let i = 0; i < local.length; i++) { const c = local[i]; const ls = c.text.split('\n');
+      if (c.end - c.start > maxDur && ls.length === 2) { const tot = ls[0].length + ls[1].length; const mid = c.start + (c.end - c.start) * ls[0].length / tot;
+        local.splice(i, 1, { start: c.start, end: mid, text: ls[0] }, { start: mid, end: c.end, text: ls[1] }); } }
     cues.push(...local);
   }
   return cues.map((c, i) => `${i + 1}\n${ts(c.start)} --> ${ts(c.end)}\n${c.text}\n`).join('\n');

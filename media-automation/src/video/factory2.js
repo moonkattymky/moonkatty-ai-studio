@@ -29,8 +29,8 @@ class NewsVideoFactory {
       const zexp = dir % 2 === 0 ? `1+${(z - 1).toFixed(4)}*on/${N}` : `${z.toFixed(4)}`;
       f = `[0:v]scale=${Math.ceil(W * z)}:${Math.ceil(H * z)}:force_original_aspect_ratio=increase,crop=${Math.ceil(W * z)}:${Math.ceil(H * z)},zoompan=z='${zexp}':x='${px}':y='${py}':d=1:s=${W}x${H}:fps=${fps},setsar=1[bg0]`;
     } else if (bg.type === 'blurfill') { // background: blurred cover (decorative); foreground: native/downscaled image centered with slow drift
-      f = `[0:v]split[a][b];[a]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},gblur=sigma=40,eq=brightness=-0.18:saturation=1.2,scale=${Math.round(W * 1.08)}:-2,crop=${W}:${H}:'(iw-${W})/2+(iw-${W})/2*sin(t/${L.toFixed(2)}*3.14)':'(ih-${H})/2'[bb];` +
-        `[b]scale=${bg.fgWidth}:${bg.fgHeight}[fg];[bb][fg]overlay=x='(W-w)/2':y='(H-h)/2-${Math.round(H * (H > W ? 0.06 : 0.04))}+${Math.round(H * 0.012)}*t/${L.toFixed(2)}',setsar=1,fps=${fps}[bg0]`;
+      f = `[0:v]split[a][b];[a]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},gblur=sigma=40,eq=brightness=-0.18:saturation=1.2,scale=${Math.round(W * 1.15)}:-2,crop=${W}:${H}:'(iw-${W})*t/${L.toFixed(2)}':'(ih-${H})/2'[bb];` +
+        `[b]scale=w='trunc(${bg.fgWidth}*(0.9+0.1*t/${L.toFixed(2)})/2)*2':h=-2:eval=frame[fg];[bb][fg]overlay=x='(W-w)/2':y='(H-h)/2-${Math.round(H * (H > W ? 0.06 : 0.04))}',setsar=1,fps=${fps}[bg0]`;
     } else { // stars: slow drift
       f = `[0:v]crop=${W}:${H}:'(iw-${W})*t/${(L * 6).toFixed(2)}':'(ih-${H})/2+20*sin(t)',setsar=1,fps=${fps}[bg0]`;
     }

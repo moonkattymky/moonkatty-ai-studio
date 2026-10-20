@@ -3,6 +3,12 @@ const fs = require('fs'); const path = require('path'); const crypto = require('
 const { JsonStore } = require('../store'); const { run } = require('../video/exec');
 const { licenseUrl, attributionLine } = require('./licenses'); const { UA } = require('./providers');
 
+const GENERIC = new Set(['nasa', 'esa', 'image', 'photo', 'file', 'new', 'first', 'mission', 'space', 'news', 'live', 'during', 'from', 'with', 'jpg', 'png']);
+/** Candidate must share at least one significant query term with its title/description/keywords. */
+function relevant(q, c) {
+  const terms = String(q).toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3 && !GENERIC.has(w)); if (!terms.length) return true;
+  const hay = ` ${c.title} ${c.description || ''} ${(c.keywords || []).join(' ')} `.toLowerCase(); const hits = terms.filter(t => new RegExp('[^a-z0-9]' + t + '[^a-z0-9]').test(hay)).length; return hits >= Math.min(2, terms.length);
+}
 /** Layout for a still at a target frame: never upscales content. */
 function layoutFor(asset, W, H, { kbZoom = 1.12 } = {}) {
   const cover = Math.max(W / asset.width, H / asset.height) * kbZoom;
@@ -41,6 +47,7 @@ class MediaLibrary {
         if (got.length >= count) break;
         if (got.some(a => a.pageUrl === c.pageUrl) || this.assets().some(a => a.pageUrl === c.pageUrl && a.newsId !== newsId)) continue; // no reuse across stories
         if (!c.license.ok) { this._reject(c, c.license.reason); continue; }
+        if (!relevant(q, c)) { this._reject(c, 'not relevant to query'); continue; }
         if (c.width && Math.min(c.width, c.height) < this.minShortSide) { this._reject(c, `too small ${c.width}x${c.height}`); continue; }
         try {
           c = await p.resolve(c); if (!c?.url) { this._reject(c || {}, 'no downloadable file'); continue; }
@@ -65,4 +72,4 @@ class MediaLibrary {
       assets: items.map(({ localPath, ...a }) => a), ...extra };
   }
 }
-module.exports = { MediaLibrary, layoutFor };
+module.exports = { MediaLibrary, layoutFor, relevant };

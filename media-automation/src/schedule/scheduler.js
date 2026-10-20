@@ -69,4 +69,10 @@ const DEFAULT_PLANS = [
   { id: 'news-text', label: 'MOONKATTY NEWS — text posts (X with image, Telegram)', action: 'news_text_post', times: ['08:00', '11:00', '14:00', '17:00', '21:00'] },
   { id: 'project-plan', label: 'MOONKATTY PROJECT — content plan (separate channel)', action: 'project_post', times: ['12:00'], days: [0, 2, 4] },
 ];
-module.exports = { Scheduler, DEFAULT_PLANS };
+/** Owner's MOONKATTY NEWS plan: 2 video issues + daytime text news (X with image, Telegram); everything goes to the Approval Center. */
+const NEWS_PLANS = [
+  { id: 'news-video-0900', label: 'MOONKATTY NEWS video issue 09:00', action: 'news_video_issue', times: ['09:00'], tz: 'Asia/Jerusalem' },
+  { id: 'news-video-1900', label: 'MOONKATTY NEWS video issue 19:00', action: 'news_video_issue', times: ['19:00'], tz: 'Asia/Jerusalem' },
+  { id: 'news-text-day', label: 'Daytime text news (X + Telegram)', action: 'news_text_post', times: ['11:00', '13:30', '16:00'], tz: 'Asia/Jerusalem' },
+];
+module.exports = { Scheduler, DEFAULT_PLANS, NEWS_PLANS };
