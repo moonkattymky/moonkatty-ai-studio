@@ -8,12 +8,14 @@ const LABEL = 'com.moonkatty.aistudio.server';
 const loginPlist = () => path.join(os.homedir(), 'Library', 'LaunchAgents', LABEL + '.plist');
 const plistPath = o => o && !o.startAtLogin ? path.join(o.dataDir, 'launchd', LABEL + '.plist') : loginPlist();
 const xml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-function serverEnv({ dataDir, port, runAsNode, enableOpenCode, allowedHosts }) {
+function serverEnv({ dataDir, port, runAsNode, enableOpenCode, allowedHosts, opsResources, opsMobile }) {
   const env = { STUDIO_DATA_DIR: dataDir, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'production',
     PATH: [path.join(os.homedir(), '.opencode', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':') };
   if (runAsNode) env.ELECTRON_RUN_AS_NODE = '1'; // dev only; packaged builds use the bundled Node binary (RunAsNode fuse off)
   if (enableOpenCode) env.STUDIO_OPENCODE = '1';
   if (allowedHosts && allowedHosts.length) env.STUDIO_ALLOWED_HOSTS = allowedHosts.join(',');
+  if (opsResources) env.STUDIO_OPS_RESOURCES = '1'; // Resource Manager (docs/ops/RESOURCE_MANAGER.md)
+  if (opsMobile) env.STUDIO_OPS_MOBILE = '1';       // Mobile Control Center (docs/ops/MOBILE.md)
   return env;
 }
 function plist(o) {
