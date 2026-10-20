@@ -32,7 +32,7 @@ lsof -nP -iTCP:8790 -sTCP:LISTEN
 ## Шаг 3. Зарегистрировать MacBook Retina 13" 2015 (Intel) (на Mac mini)
 ```
 curl -s -X POST http://127.0.0.1:8787/api/ops/nodes -H 'x-studio-request: 1' -H 'content-type: application/json' \
-  -H "x-studio-app-token: $APP" -d '{"id":"macbook","role":"monitor","name":"MacBook Retina 13" 2015 (Intel)"}'
+  -H "x-studio-app-token: $APP" -d '{"id":"macbook","role":"monitor","name":"MacBook"}'
 ```
 В ответе `token` (`nk_macbook.…`) — показывается **один раз**, никому не отправляйте. Скопируйте сертификат на MacBook Retina 13" 2015 (Intel): файл `"$DATA/ops/nodes-tls.crt"` (AirDrop), он не секретный.
 **Проверка:** `curl -s http://127.0.0.1:8787/api/ops/nodes -H 'x-studio-request: 1' -H "x-studio-app-token: $APP" | grep -o '"id":"macbook"[^}]*"status":"[a-z-]*"'` → `never-seen`.

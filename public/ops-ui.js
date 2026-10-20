@@ -2,7 +2,7 @@
    appears only when the server reports the flag. Extends NAV/VIEWS/BIND from app.js. */
 'use strict';
 (() => {
-  if (typeof MODE !== 'undefined' && MODE === 'browser') return;
+  // MODE is detected asynchronously by app.js; the probe below simply finds no server in browser-only mode
   const gb = b => b == null ? '—' : (b / 1024 ** 3).toFixed(1) + ' ГБ';
   const dot = ok => `<span class="badge ${ok ? 'b-ok' : 'b-err'}">${ok ? 'OK' : 'ОШИБКА'}</span>`;
   let D = null, ERR = null;

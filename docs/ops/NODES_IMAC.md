@@ -30,7 +30,7 @@ lsof -nP -iTCP:8790 -sTCP:LISTEN
 ## Шаг 3. Зарегистрировать iMac 27" (Intel, macOS Monterey 12.5.1) (на Mac mini)
 ```
 curl -s -X POST http://127.0.0.1:8787/api/ops/nodes -H 'x-studio-request: 1' -H 'content-type: application/json' \
-  -H "x-studio-app-token: $APP" -d '{"id":"imac","role":"news","name":"iMac 27" (Intel, macOS Monterey 12.5.1)"}'
+  -H "x-studio-app-token: $APP" -d '{"id":"imac","role":"news","name":"iMac"}'
 ```
 В ответе `token` (`nk_imac.…`) — показывается **один раз**, никому не отправляйте. Скопируйте сертификат на iMac 27" (Intel, macOS Monterey 12.5.1): файл `"$DATA/ops/nodes-tls.crt"` (AirDrop), он не секретный.
 **Проверка:** `curl -s http://127.0.0.1:8787/api/ops/nodes -H 'x-studio-request: 1' -H "x-studio-app-token: $APP" | grep -o '"id":"imac"[^}]*"status":"[a-z-]*"'` → `never-seen`.

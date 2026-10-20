@@ -4,7 +4,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}.side{background:#0c1328;border-right:1px solid var(--line);padding:16px 10px}
 .logo{display:flex;align-items:center;gap:8px;margin:0 6px 18px}.logo b{font-size:16px;letter-spacing:.5px}.logo small{display:block;color:var(--blue);font-weight:700;letter-spacing:2px;font-size:10px}
-.cat{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#9fb7ff,#3d5bd8);display:grid;place-items:center;font-size:18px}
+.cat{width:34px;height:34px;border-radius:50%;object-fit:cover;background:radial-gradient(circle at 35% 35%,#9fb7ff,#3d5bd8);display:grid;place-items:center;font-size:18px}
 .nav a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;color:#c9d2f5;text-decoration:none;margin-bottom:2px}.nav a.on,.nav a:hover{background:#1c3a8a;color:#fff}
 .nav .b{margin-left:auto;background:var(--red);border-radius:10px;padding:0 6px;font-size:11px}
 .main{padding:18px 22px}.hdr{display:flex;align-items:center;gap:14px;margin-bottom:14px}.hdr h1{margin:0;font-size:22px;color:#7fb0ff;letter-spacing:.5px}.hdr .sub{color:var(--mut)}
@@ -16,7 +16,7 @@
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}.st{margin-left:auto;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}.st.ok{background:#0f3d24;color:#4ade80}.st.run{background:#10295e;color:#7fb0ff}.st.err{background:#3d1212;color:#f87171}.st.pend{background:#3d2e0f;color:#fbbf24}
 .cur{display:flex;align-items:center;gap:14px;margin-top:12px}.cur .bar{flex:1}button{background:#1b2a55;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
 .empty{color:var(--mut);font-size:13px;padding:10px 0}svg{width:100%;height:46px}
-</style></head><body><div class="app"><aside class="side"><div class="logo"><div class="cat">🐱</div><div><b>MOONKATTY</b><small>AI STUDIO</small></div></div><nav class="nav" id="nav"></nav></aside>
+</style></head><body><div class="app"><aside class="side"><div class="logo"><img class="cat" src="/logo.jpg" alt=""><div><b>MOONKATTY</b><small>AI STUDIO</small></div></div><nav class="nav" id="nav"></nav></aside>
 <main class="main"><div class="hdr"><div><h1 id="title">MOONKATTY NODE</h1><div class="sub" id="sub"></div></div><span class="pill" id="pill">…</span></div>
 <div class="grid g3" id="mets"></div><div class="grid g2" style="margin-top:12px" id="body"></div>
 <div class="card cur" id="cur"></div><div class="mut" style="margin-top:10px" id="foot"></div></main></div>

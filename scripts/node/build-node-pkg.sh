@@ -11,7 +11,7 @@ curl -fsSO "$BASE/$NV/SHASUMS256.txt"; curl -fsSO "$BASE/$NV/node-$NV-darwin-x64
 grep " node-$NV-darwin-x64.tar.gz\$" SHASUMS256.txt | sha256sum -c - >/dev/null; SIG="sha256 OK"
 if command -v gpg >/dev/null && curl -fsSO "$BASE/$NV/SHASUMS256.txt.sig" && gpg --verify SHASUMS256.txt.sig SHASUMS256.txt 2>/dev/null; then SIG="$SIG + GPG OK"; else SIG="$SIG (GPG: ключи релизов не импортированы — проверена только SHA-256)"; fi
 tar -xzf "node-$NV-darwin-x64.tar.gz" "node-$NV-darwin-x64/bin/node" "node-$NV-darwin-x64/LICENSE"; cp "node-$NV-darwin-x64/bin/node" "$NAME/bin/node"; cp "node-$NV-darwin-x64/LICENSE" "$NAME/bin/NODE_LICENSE"
-cp "$ROOT"/node-agent/{agent.js,status.html,node-agent.env.example} "$ROOT/deploy/com.moonkatty.node-agent.plist" "$NAME/app/"; cp "$ROOT"/scripts/node/{install.sh,uninstall.sh,detect-specs.sh} "$NAME/"
+cp "$ROOT"/node-agent/{agent.js,status.html,logo.jpg,node-agent.env.example} "$ROOT/deploy/com.moonkatty.node-agent.plist" "$NAME/app/"; cp "$ROOT"/scripts/node/{install.sh,uninstall.sh,detect-specs.sh} "$NAME/"
 printf 'MOONKATTY NODE %s\nruntime: Node.js %s darwin-x64 (macOS >= 11), %s\nsource: %s @ %s\nbuilt: %s\n' "$VER" "$NV" "$SIG" "$(git -C "$ROOT" remote get-url origin)" "$(git -C "$ROOT" rev-parse HEAD)" "$(date -u +%FT%TZ)" > "$NAME/BUILDINFO"
 (cd "$NAME" && find . -type f ! -name MANIFEST.sha256 | sort | xargs shasum -a 256 > MANIFEST.sha256)
 tar -czf "$OUT/$NAME.tar.gz" "$NAME"; (cd "$OUT" && shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256")

@@ -2,7 +2,7 @@
 import { chromium } from 'playwright-core'; import { spawn } from 'node:child_process'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import http from 'node:http'; import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url); const { startServer, sleep } = require('../../test/helpers/server.js');
 const OUT = process.argv[2] || '/workspace/ui-shots'; fs.mkdirSync(OUT, { recursive: true }); const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
-const s = await startServer({ port: 18655, env: { STUDIO_OPS_NODES: '1', STUDIO_OPS_DASHBOARD: '1', STUDIO_OPS_MOBILE: '1', STUDIO_OPS_RESOURCES: '1', OPS_NODES_PORT: '18799' } });
+const s = await startServer({ port: 18655, env: { STUDIO_OPS_NODES: '1', STUDIO_OPS_DASHBOARD: '1', STUDIO_OPS_MOBILE: '1', STUDIO_OPS_RESOURCES: '1', STUDIO_OPS_MONEY: '1', OPS_NODES_PORT: '18799' } });
 const procs = []; const kill = () => procs.forEach(p => { try { p.kill(); } catch {} });
 try {
   // simulated RSS feeds (clearly labelled as simulation, loopback only)
@@ -33,6 +33,6 @@ try {
   await shot('http://127.0.0.1:18792/', '03-macbook-monitor-node.png', { width: 1200, height: 760 });
   await s.j('POST', '/api/ops/nodes/macbook/command', s.A, { command: 'pause' }); await sleep(1500);
   await shot(s.B + '/studio.html', '04-main-server-macbook-paused.png');
-  await shot(s.B + '/#ops', '05-operations-panel-nodes.png');
+  await shot(s.B + '/', '05-main-panel.png'); { const p = await ctx.newPage(); await p.goto(s.B + '/'); await p.waitForTimeout(7000); await p.evaluate(() => { location.hash = 'ops'; }); await p.waitForTimeout(3000); await p.screenshot({ path: path.join(OUT, '06-operations-panel-nodes-money.png'), fullPage: true }); await p.close(); }
   console.log(JSON.stringify({ ok: true, errors: errs, files: fs.readdirSync(OUT) })); await b.close();
 } finally { kill(); await s.cleanup(); process.exit(0); }
