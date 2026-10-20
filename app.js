@@ -18,7 +18,7 @@ const local = {
   meta(k, v) { const m = JSON.parse(localStorage.getItem(LS + '-meta') || '{}'); if (v === undefined) return m[k]; m[k] = v; localStorage.setItem(LS + '-meta', JSON.stringify(m)); }
 };
 let LD = null;
-function ldInit() { LD = local.load(); if (!LD) { LD = C.seed(); LD.logs.push({ id: C.uid(), at: C.now(), level: 'info', source: 'system', message: 'Браузерный режим: начальные данные загружены' }); local.save(LD); } for (const c of C.COLLECTIONS) LD[c] = LD[c] || []; }
+function ldInit() { LD = local.load(); if (!LD) { LD = C.seed(); LD.logs.push({ id: C.uid(), at: C.now(), level: 'info', source: 'system', message: 'Браузерный режим: начальные данные загружены' }); local.save(LD); } for (const c of C.COLLECTIONS) LD[c] = LD[c] || []; const miss = C.missingSeed(LD); for (const c in miss) LD[c].push(...miss[c]); local.save(LD); }
 function llog(level, source, message) { LD.logs.push({ id: C.uid(), at: C.now(), level, source, message, user: USER }); if (LD.logs.length > 2000) LD.logs.splice(0, LD.logs.length - 2000); }
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 
@@ -61,6 +61,14 @@ async function localRoute(method, path, body) {
     const o = { id: C.uid(), name: f.name, size: f.size, mime: f.type, url, project: 'main', createdAt: C.now() }; LD.files.push(o); llog('info', 'files', 'Загружен файл ' + f.name); return ok(o);
   }
   if (col === 'backups') return [];
+  if (col === 'meta') { if (id === 'config') return method === 'GET' ? { appId: '', hasSecret: false, redirectUri: '', graphVersion: 'v26.0', source: 'browser', browser: true } : (() => { throw new Error('Требуется сервер на Mac: OAuth и токены Meta работают только на сервере'); })();
+    throw new Error('Требуется сервер на Mac: OAuth и токены Meta работают только на сервере'); }
+  if (col === 'demo' && id === 'remove') { let n = 0; for (const c of C.COLLECTIONS) { const before = LD[c].length; LD[c] = LD[c].filter(o => !o.demo); n += before - LD[c].length; } llog('info', 'system', 'Демо-данные удалены: ' + n); return ok({ removed: n }); }
+  if (col === 'queue' && act === 'publish') { const it = LD.queue.find(x => x.id === id); throw new Error(it?.demo ? 'Демо-данные не публикуются' : 'Требуется сервер на Mac и подключённый аккаунт'); }
+  if (col === 'comments' && act === 'reply') throw new Error('Требуется сервер на Mac и подключённый аккаунт');
+  if (col === 'queue' && method === 'PUT' && body.status === 'approved') { const cur = LD.queue.find(x => x.id === id); const cand = Object.assign({}, cur, body);
+    const issues = [...MKSocial.guardrails(cand, LD), ...MKSocial.dailyCheck(cand, LD.queue, LD.workspaces)]; if (issues.length) { llog('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`); local.save(LD); throw new Error(issues.join('; ')); } }
+  if (col === 'queue' && method === 'PUT' && body.status) { const cur = LD.queue.find(x => x.id === id); if (cur && body.status !== cur.status) body.history = [...(cur.history || []), { at: C.now(), event: body.status, user: USER }]; }
   if (!C.COLLECTIONS.includes(col)) throw new Error('Не поддерживается в браузерном режиме');
   const arr = LD[col];
   if (method === 'GET') return id ? arr.find(x => x.id === id) : arr;
@@ -130,7 +138,7 @@ const NAV = [
 ];
 let ROUTE = 'dashboard'; const SUB = {};
 function navTo(r) { location.hash = r; }
-window.addEventListener('hashchange', () => { ROUTE = location.hash.slice(1) || 'dashboard'; $('#sidebar').classList.remove('open'); render(); });
+window.addEventListener('hashchange', () => { ROUTE = location.hash.slice(1).split('?')[0] || 'dashboard'; $('#sidebar').classList.remove('open'); render(); });
 function renderNav() { $('#nav').innerHTML = NAV.map(([k, i, l]) => `<a href="#${k}" class="${k === ROUTE ? 'active' : ''}"><i>${i}</i>${l}</a>`).join(''); }
 function render() {
   if (!DB.agents) return;
@@ -502,7 +510,7 @@ let started = false;
 async function start() {
   $('#auth').classList.add('hidden'); $('#app').classList.remove('hidden');
   $('#modeBadge').className = 'badge ' + (MODE === 'server' ? 'b-ok' : 'b-warn'); $('#modeBadge').textContent = MODE === 'server' ? 'Сервер · SQLite' : 'Браузерный режим';
-  await loadAll(); ROUTE = location.hash.slice(1) || 'dashboard'; render();
+  await loadAll(); ROUTE = location.hash.slice(1).split('?')[0] || 'dashboard'; render(); if (typeof metaReturnToast === 'function') metaReturnToast();
   if (started) return; started = true;
   setInterval(async () => { if (MODE === 'browser') localTick(); if (document.hidden || !$('#modal').classList.contains('hidden')) return;
     try { await loadAll(); if (!document.activeElement || !document.activeElement.matches('input,textarea,select')) render(); } catch {} }, 30000);

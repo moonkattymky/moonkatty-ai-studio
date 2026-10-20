@@ -3,7 +3,7 @@
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.MKCore = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
-  const COLLECTIONS = ['agents', 'chat', 'campaigns', 'files', 'tasks', 'projects', 'episodes', 'channels', 'posts', 'logs', 'reports', 'integrations'];
+  const COLLECTIONS = ['workspaces', 'queue', 'utm', 'comments', 'agents', 'chat', 'campaigns', 'files', 'tasks', 'projects', 'episodes', 'channels', 'posts', 'logs', 'reports', 'integrations'];
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const now = () => new Date().toISOString();
 
@@ -21,6 +21,9 @@
         A('mkty', 'MKTY', 'Материалы по будущему токену $MKTY на Solana (токен ещё не запущен)'),
         A('analytics', 'ANALYTICS', 'Отчёты по задачам и журналу системы'),
         A('marketing', 'MARKETING', 'Рекламные кампании и промо (без реальных запусков)'),
+        A('content', 'CONTENT', 'Content Agent: адаптирует один материал под каждую платформу (длина, хэштеги, формат)'),
+        A('publishing', 'PUBLISHING', 'Publishing Agent: очередь, расписание, публикация через официальные API, повторы при ошибках'),
+        A('community', 'COMMUNITY', 'Community Agent: черновики ответов на комментарии (только с утверждением)'),
         A('design3d', '3D DESIGN', '3D-модели и сцены MOONKATTY', { enabled: false, status: 'dev', inDevelopment: true })
       ],
       projects: [
@@ -32,7 +35,11 @@
         { id: 'yt-main', name: 'YouTube main', platform: 'YouTube', handle: '@moonkattymky', project: 'main', connected: false },
         { id: 'tiktok', name: 'TikTok', platform: 'TikTok', handle: '@moonkattymky', project: 'main', connected: false },
         { id: 'x', name: 'X', platform: 'X', handle: '@moonkattymky', project: 'main', connected: false },
-        { id: 'telegram', name: 'Telegram', platform: 'Telegram', handle: 't.me/moonkattymkty', project: 'main', connected: false }
+        { id: 'telegram', name: 'Telegram', platform: 'Telegram', handle: 't.me/moonkattymkty', project: 'main', connected: false },
+        { id: 'fb-news', name: 'Facebook NEWS', platform: 'Facebook', handle: '', project: 'news', connected: false, workspace: 'news-fb' },
+        { id: 'ig-news', name: 'Instagram NEWS', platform: 'Instagram', handle: '', project: 'news', connected: false, workspace: 'news-ig' },
+        { id: 'fb-main', name: 'Facebook MOONKATTY', platform: 'Facebook', handle: '', project: 'main', connected: false, workspace: 'mk-fb' },
+        { id: 'ig-main', name: 'Instagram MOONKATTY', platform: 'Instagram', handle: '', project: 'main', connected: false, workspace: 'mk-ig' }
       ],
       integrations: [
         { id: 'ollama', name: 'Ollama', url: 'http://localhost:11434', testPath: '/api/tags', note: 'Модель: qwen3:8b', lastTest: null },
@@ -40,7 +47,7 @@
         { id: 'docker', name: 'Docker', url: 'http://localhost:2375', testPath: '/_ping', note: 'Docker Engine API (TCP должен быть явно включён)', lastTest: null },
         { id: 'openwebui', name: 'Open WebUI', url: 'http://localhost:3000', testPath: '/health', note: '', lastTest: null }
       ],
-      chat: [], campaigns: [], files: [], tasks: [], episodes: [], posts: [], logs: [], reports: []
+      workspaces: (typeof MKSocial !== 'undefined' ? MKSocial : require('./social.js')).seedWorkspaces(), queue: [], utm: [], comments: [], chat: [], campaigns: [], files: [], tasks: [], episodes: [], posts: [], logs: [], reports: []
     };
   }
 
@@ -155,5 +162,7 @@
     return Object.assign({ id: uid(), title: '', durationMin: 15, media: {}, project: 'news', sources: [], notes: '', versions, createdAt: now() }, fields);
   }
 
-  return { rulePlan, COLLECTIONS, uid, now, seed, validCron, cronMatch, nextRun, schedulerTick, buildReport, PIPELINE, LANGS, newEpisode };
+  // Insert seed items that are missing (for upgrades of existing databases).
+  function missingSeed(data) { const s = seed(), out = {}; for (const c of ['agents', 'channels', 'workspaces', 'integrations']) { const ids = new Set((data[c] || []).map(x => x.id)); out[c] = s[c].filter(x => !ids.has(x.id)); } return out; }
+  return { missingSeed, rulePlan, COLLECTIONS, uid, now, seed, validCron, cronMatch, nextRun, schedulerTick, buildReport, PIPELINE, LANGS, newEpisode };
 });
