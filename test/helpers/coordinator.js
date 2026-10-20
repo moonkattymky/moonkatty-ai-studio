@@ -9,7 +9,7 @@ N.listen(mgr, { host: '127.0.0.1', port: 0, tls }).then(srv => {
   const admin = http.createServer(async (req, res) => { const c = []; for await (const d of req) c.push(d); const b = c.length ? JSON.parse(Buffer.concat(c)) : {};
     try { let out; const u = req.url;
       if (u === '/register') out = mgr.registerNode(b); else if (u === '/submit') out = mgr.submit(b); else if (u === '/status') out = { ...mgr.status(), alerts, jobsFull: mgr._state.jobs };
-      else if (u === '/put-file') out = { sha256: mgr.putLocalFile(Buffer.from(b.data, 'base64')) }; else if (u === '/retry') out = mgr.retry(b.id); else throw new Error('404');
+      else if (u === '/put-file') out = { sha256: mgr.putLocalFile(Buffer.from(b.data, 'base64')) }; else if (u === '/command') out = mgr.setCommand(b.id, b.command); else if (u === '/retry') out = mgr.retry(b.id); else throw new Error('404');
       res.end(JSON.stringify(out)); } catch (e) { res.statusCode = 400; res.end(JSON.stringify({ error: e.message })); } });
   admin.listen(0, '127.0.0.1', () => process.stdout.write(JSON.stringify({ port: srv.address().port, admin: admin.address().port, fingerprint: tls.fingerprint, cert: dir + '/nodes-tls.crt' }) + '\n'));
 });

@@ -24,6 +24,10 @@
         ${D.tasks.current.map(t => `<div class="small">▶ ${esc(t.title)} <span class="mut">${esc(t.agentId)} · ${t.minutes ?? '?'} мин</span></div>`).join('')}
         ${D.tasks.waitingPlan.length ? `<h4>План LLM ждёт проверки</h4>${D.tasks.waitingPlan.map(t => `<div class="row small">${esc(t.title)} <button class="btn sm" data-plan="${esc(t.id)}">Утвердить</button></div>`).join('')}` : ''}</div>
     </div>
+    ${D.money ? `<div class="card"><h3>Деньги (журнал)</h3>${D.money.empty ? '<div class="small mut">Данных нет. Записи вносятся вручную или импортом CSV с подтверждением (proof). Числа не выдумываются.</div>' :
+      ['actual', 'estimate', 'forecast'].map(k => `<div class="small"><b>${{ actual: 'Факт (с подтверждением)', estimate: 'Оценки (не выплаты)', forecast: 'Прогноз' }[k]}:</b> ${D.money.totals[k] ? Object.entries(D.money.totals[k]).map(([dir, cur]) => (dir === 'income' ? 'доход ' : 'расход ') + Object.entries(cur).map(([c, v]) => esc(v) + ' ' + esc(c)).join(' / ')).join(' · ') : '<span class="mut">нет данных</span>'}</div>`).join('')}
+      <div class="small mut">Факт, оценки и прогноз не суммируются между собой; валюты не конвертируются. Сделок: ${D.money.deals} · целостность журнала: ${D.money.integrity.ok ? 'OK' : 'НАРУШЕНА'}</div>
+      ${D.money.budgets.filter(b => b.over || b.warn).map(b => `<div class="small"><span class="badge ${b.over ? 'b-err' : 'b-warn'}">${b.over ? 'превышен' : '≥80%'}</span> ${esc(b.category)}: ${esc(b.spentActual)} / ${b.monthly} ${esc(b.currency)}</div>`).join('')}</div>` : ''}
     ${D.nodes ? `<div class="card"><h3>Узлы (Node Manager)</h3>${D.nodes.nodes.length ? D.nodes.nodes.map(n => `<div class="row small"><b>${esc(n.name)}</b> <span class="mut">${esc(n.id)} · ${esc(n.role)}</span> <span class="badge ${n.status === 'online' ? 'b-ok' : n.status === 'down' ? 'b-err' : 'b-warn'}">${esc(n.status)}</span>
       ${n.info ? `<span class="mut">${esc(n.info.os)} · CPU ${n.info.cpus} · load ${n.info.load1 != null ? n.info.load1.toFixed(1) : '?'} · RAM своб. ${gb(n.info.memAvailable)} из ${gb(n.info.memTotal)} · диск ${gb(n.info.diskFree)}</span>` : ''} · задач ${n.running} · ошибок ${n.errors}${n.lastError ? ` <span class="mut">(${esc(n.lastError)})</span>` : ''}</div>`).join('') : '<div class="small mut">Узлы не зарегистрированы (docs/ops/NODES.md)</div>'}
       <div class="small">Очередь узлов: ${Object.entries(D.nodes.counts).map(([k, v]) => esc(k) + ' ' + v).join(' · ') || 'пусто'}</div>
@@ -55,6 +59,7 @@
   // show the section only when the server has the dashboard flag
   let tries = 0; const probe = () => fetch('/api/ops/status', { credentials: 'same-origin' }).then(r => r.status === 401 ? 'retry' : r.ok ? r.json() : null).then(s => {
     if (s === 'retry') { if (++tries < 120) setTimeout(probe, 5000); return; } // not logged in yet
+    if (s && s.flags && s.flags.nodes && !NAV.some(n => n[0] === 'computers')) { NAV.splice(NAV.length - 1, 0, ['computers', '🖥', 'Computers (Nodes)']); window.addEventListener('hashchange', () => { if (location.hash === '#computers') location.href = '/studio.html'; }); if (DB.agents) render(); }
     if (s && s.flags && s.flags.dashboard && !NAV.some(n => n[0] === 'ops')) { NAV.splice(NAV.length - 1, 0, ['ops', '⛨', 'Операции']); if (DB.agents) render(); setInterval(() => { if (ROUTE === 'ops' && !document.hidden) load(); }, 30000); }
   }).catch(() => {});
   probe();

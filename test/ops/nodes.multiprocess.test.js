@@ -11,7 +11,7 @@ const admin = (c, p, b = {}) => new Promise((res, rej) => { const r = http.reque
 function agent(c, id, token, { port = c.port, fault = '', fingerprint = c.fingerprint, slow = 0 } = {}) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-' + id + '-')); const out = [];
   const p = spawn(process.execPath, [path.join(ROOT, 'node-agent/agent.js')], { env: { PATH: process.env.PATH, HOME: home, NODE_AGENT_ENV: path.join(home, 'none.env'), NODE_ID: id, NODE_TOKEN: token, COORDINATOR_URL: `https://127.0.0.1:${port}`,
-    COORDINATOR_CERT: c.cert, COORDINATOR_FINGERPRINT: fingerprint, NODE_POLL_MS: '150', NODE_AGENT_FAULT: fault, NODE_AGENT_SLOW_MS: String(slow), NODE_ARCHIVE_DIR: path.join(home, 'archive') }, stdio: ['ignore', 'pipe', 'pipe'] });
+    COORDINATOR_CERT: c.cert, COORDINATOR_FINGERPRINT: fingerprint, NODE_POLL_MS: '150', NODE_STATUS_PORT: '0', NODE_AGENT_FAULT: fault, NODE_AGENT_SLOW_MS: String(slow), NODE_ARCHIVE_DIR: path.join(home, 'archive') }, stdio: ['ignore', 'pipe', 'pipe'] });
   p.stdout.on('data', d => out.push(String(d))); p.stderr.on('data', d => out.push(String(d))); procs.push(p); p.out = out; p.home = home; return p; }
 async function until(fn, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { const v = await fn(); if (v) return v; await sleep(100); } throw new Error('timeout ' + fn.toString().slice(0, 80)); }
 const job = async (c, id) => (await admin(c, '/status')).jobsFull[id];

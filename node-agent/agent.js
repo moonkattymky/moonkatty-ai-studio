@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// MOONKATTY Node Agent — lightweight worker for Intel Macs (iMac Monterey 12.5.1, MacBook 2015). Zero dependencies.
+// MOONKATTY NODE — one app, device profiles (NEWS NODE on iMac, MONITOR NODE on MacBook) — lightweight worker for Intel Macs (iMac Monterey 12.5.1, MacBook 2015). Zero dependencies.
 // Runtime: Node.js 22 LTS x64 (official binaries need macOS ≥ 11) — works on Monterey 12; if a Mac is on 10.15 use Node 18 (EOL, last resort).
 // Code is kept compatible with Node ≥ 16 (no fetch, no newer syntax-only APIs).
 // Pull-only: the agent connects OUT to the coordinator over HTTPS with a pinned self-signed certificate; it listens on no port.
@@ -24,9 +24,13 @@ async function memAvailable() {
 async function disk(dir) { try { const l = (await run('/bin/df', ['-k', dir])).trim().split('\n').pop().split(/\s+/); return { total: +l[1] * 1024, free: +l[3] * 1024 }; } catch { return { total: null, free: null }; } }
 async function osVersion() { if (process.platform === 'darwin') { try { return 'macOS ' + (await run('/usr/bin/sw_vers', ['-productVersion'])).trim(); } catch {} } return os.type() + ' ' + os.release(); }
 async function which(t, extra = []) { for (const d of ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', ...extra]) if (fs.existsSync(path.join(d, t))) return path.join(d, t); return null; }
-async function sysInfo(cfg) { const d = await disk(cfg.workDir); const tools = []; if (await which('ffprobe')) tools.push('ffprobe');
+const TOOLS = { ffprobe: [], ffmpeg: [], python3: [], sips: [], magick: [], convert: [], curl: [] };
+let toolCache = null; async function tools() { if (toolCache) return toolCache; const t = []; for (const k of Object.keys(TOOLS)) if (await which(k)) t.push(k); return (toolCache = t); }
+async function sysInfo(cfg) { const d = await disk(cfg.workDir); const tl = await tools(); const cpu = cpuPct();
   return { hostname: os.hostname(), os: await osVersion(), arch: process.arch, cpuModel: (os.cpus()[0] || {}).model || '', cpus: os.cpus().length, memTotal: os.totalmem(), memAvailable: await memAvailable(),
-    diskFree: d.free, diskTotal: d.total, load1: os.loadavg()[0], node: process.version, agentVersion: VERSION, tools }; }
+    diskFree: d.free, diskTotal: d.total, load1: os.loadavg()[0], cpuPct: cpu, node: process.version, agentVersion: VERSION, tools: tl, model: await hwModel() }; }
+let lastCpu = null; function cpuPct() { const c = os.cpus().reduce((a, x) => { const t = x.times; a.idle += t.idle; a.total += t.user + t.nice + t.sys + t.idle + t.irq; return a; }, { idle: 0, total: 0 }); const p = lastCpu ? 100 * (1 - (c.idle - lastCpu.idle) / Math.max(1, c.total - lastCpu.total)) : null; lastCpu = c; return p == null ? null : Math.round(p); }
+let modelCache; async function hwModel() { if (modelCache !== undefined) return modelCache; try { modelCache = process.platform === 'darwin' ? (await run('/usr/sbin/sysctl', ['-n', 'hw.model'])).trim() : null; } catch { modelCache = null; } return modelCache; }
 // ---------- coordinator client (pinned TLS) ----------
 function client(cfg) {
   const u = new URL(cfg.url); const isHttps = u.protocol === 'https:';
@@ -50,11 +54,12 @@ function parseRss(xml) { const items = []; const re = /<(item|entry)\b[\s\S]*?<\
   const l = (/<link[^>]*>([\s\S]*?)<\/link>/.exec(b) || [])[1] || (/<link[^>]*href="([^"]+)"/.exec(b) || [])[1] || ''; const d = (/<(pubDate|updated|published)>([\s\S]*?)<\/\1>/.exec(b) || [])[2] || '';
   items.push({ title: t.replace(/<!\[CDATA\[|\]\]>/g, '').trim().slice(0, 300), link: l.trim().slice(0, 500), date: d.trim(), untrusted: true }); } return items; }
 function dedup(items) { const seen = new Set(), out = []; for (const it of items || []) { const k = sha256(norm(it.title) + '|' + norm(it.link).replace(/\s/g, '')); if (!seen.has(k)) { seen.add(k); out.push({ ...it, key: k.slice(0, 16) }); } } return out; }
+const safeHost = u => { try { return new URL(u).hostname; } catch { return null; } };
 function makeHandlers(cfg, ctx) {
   const inArchive = n => { const f = path.resolve(cfg.archiveDir, path.basename(String(n))); if (!f.startsWith(path.resolve(cfg.archiveDir) + path.sep)) throw new Error('путь'); return f; };
   return {
     'rss.fetch': async i => ({ feed: i.url, items: parseRss(await getUrl(i.url)) }),
-    'news.collect': async i => { const all = []; const errors = []; for (const u of (i.feeds || []).slice(0, 50)) { try { all.push(...parseRss(await getUrl(u))); } catch (e) { errors.push({ feed: u, error: e.message }); } } return { items: dedup(all), errors }; },
+    'news.collect': async i => { const all = []; const errors = []; const feeds = (i.feeds || []).slice(0, 50); const bySource = {}; for (let k = 0; k < feeds.length; k++) { const f = feeds[k]; const u = typeof f === 'string' ? f : f.url; const src = String((typeof f === 'object' && f.source) || safeHost(u)).slice(0, 60); ctx.progress(Math.round(100 * k / feeds.length)); try { const it = parseRss(await getUrl(u)).map(x => ({ ...x, source: src })); bySource[src] = (bySource[src] || 0) + it.length; all.push(...it); } catch (e) { errors.push({ feed: u, error: e.message }); } } const items = dedup(all); ctx.stats.collected += items.length; return { items, bySource, errors }; },
     'news.dedup': async i => ({ items: dedup(i.items) }),
     'schedule.tick': async () => ({ at: new Date().toISOString() }),
     'stats.compute': async i => { const v = (i.values || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b); const s = v.reduce((a, b) => a + b, 0);
@@ -75,6 +80,12 @@ function makeHandlers(cfg, ctx) {
       const byHour = {}; for (const r of ranked) if (r.hour != null) (byHour[r.hour] ||= []).push(r.er); const bestHours = Object.entries(byHour).map(([h, v]) => [+h, v.reduce((a, b) => a + b, 0) / v.length]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
       return { top: ranked.slice(0, 10), bestHoursUTC: bestHours, note: 'Только аналитика по выгрузке. Никаких автоматических действий в X.' }; },
     'x.draft': async i => ({ drafts: (i.topics || []).slice(0, 10).map(t => ({ text: String(t).slice(0, 270), status: 'draft', requiresHumanPost: true })), note: 'Черновики. Публикует только человек вручную (правила X).' }),
+    'news.prepare': async i => ({ items: dedup(i.items).map(it => ({ title: String(it.title || '').replace(/\s+/g, ' ').trim(), link: it.link, date: it.date || null, source: it.source || (it.link ? safeHost(it.link) : null), key: it.key, untrusted: true })).filter(x => x.title) }),
+    'image.light': async (i, job) => { const sips = await which('sips'); if (!sips) throw Object.assign(new Error('sips недоступен (только macOS)'), { retryable: false }); const out = []; const max = Math.max(64, Math.min(4096, i.maxPx | 0 || 1280));
+      for (const f of job.localFiles) { if (!/\.(jpe?g|png|heic|tiff?|gif)$/i.test(f.name)) throw Object.assign(new Error('не изображение: ' + f.name), { retryable: false }); const dst = path.join(path.dirname(f.path), 'out-' + path.basename(f.name).replace(/\.[^.]+$/, '') + '.jpg');
+        await run(sips, ['-Z', String(max), '-s', 'format', 'jpeg', f.path, '--out', dst], { timeout: 60000 }); const h = await ctx.upload(fs.readFileSync(dst)); out.push({ sha256: h, name: path.basename(dst), kind: 'image' }); } return { artifacts: out }; },
+    'site.check': async i => { const out = []; for (const u of (i.urls || []).slice(0, 20)) { const t = Date.now(); try { const b = await getUrl(u, 2e5); out.push({ url: u, ok: !i.expectText || b.includes(i.expectText), ms: Date.now() - t }); } catch (e) { out.push({ url: u, ok: false, error: e.message }); } } return { checks: out, ok: out.every(c => c.ok) }; },
+    'result.verify': async (i, job) => { const out = job.localFiles.map(f => ({ name: f.name, sha256: f.sha256, ok: true, size: fs.statSync(f.path).size })); for (const r of out) { if (i.minBytes && r.size < i.minBytes) { r.ok = false; r.problem = 'слишком маленький'; } } return { files: out, ok: out.every(r => r.ok) }; },
     'notify.send': async i => localNotify(cfg, i), 'telegram.notify': async i => localNotify(cfg, i),
   };
 }
@@ -83,9 +94,23 @@ async function localNotify(cfg, i) { // credentials live ONLY on this node (its 
   await new Promise((res, rej) => { const u = new URL(cfg.ntfyUrl); const r = https.request(u, { method: 'POST', timeout: 10000, headers: { title: String(i.title || 'MOONKATTY').slice(0, 100) } }, x => { x.resume(); x.statusCode < 300 ? res() : rej(new Error('ntfy ' + x.statusCode)); }); r.on('error', rej); r.end(String(i.text || '').slice(0, 2000)); });
   return { sent: true };
 }
+function sample(ctx) { const i = ctx.info || {}; (ctx.history ||= []).push({ t: Date.now(), cpu: i.cpuPct, mem: i.memTotal ? Math.round(100 * (1 - i.memAvailable / i.memTotal)) : null, disk: i.diskTotal ? Math.round(100 * (1 - i.diskFree / i.diskTotal)) : null }); if (ctx.history.length > 120) ctx.history.shift(); }
+// ---------- local status page (127.0.0.1 only; Pause needs a per-start random token, same-origin) ----------
+function startStatusPage(cfg, ctx, { pause }) {
+  const tok = crypto.randomBytes(16).toString('hex'); const page = fs.readFileSync(path.join(__dirname, 'status.html'), 'utf8').replace('__TOKEN__', tok);
+  const srv = http.createServer((req, res) => { const host = String(req.headers.host || ''); if (!/^(127\.0\.0\.1|localhost):\d+$/.test(host)) { res.writeHead(421); return res.end(); }
+    if (req.method === 'GET' && req.url === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'", 'x-frame-options': 'DENY' }); return res.end(page); }
+    if (req.method === 'GET' && req.url === '/status') { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      return res.end(JSON.stringify({ node: cfg.nodeId, profile: cfg.profile, version: VERSION, state: ctx.state, command: ctx.command, online: !!ctx.online, current: ctx.current, stats: ctx.stats, lastError: ctx.lastError || null, info: ctx.info || null, recent: ctx.recent.slice(-20).reverse(), coordinator: cfg.url, lastNews: ctx.lastNews || null, qc: ctx.qc || [], history: ctx.history || [], localPause: ctx.state === 'paused' })); }
+    if (req.method === 'POST' && (req.url === '/pause' || req.url === '/resume')) { if (req.headers['x-node-local'] !== tok) { res.writeHead(403); return res.end(); } pause(req.url === '/pause'); res.writeHead(200); return res.end('{}'); }
+    res.writeHead(404); res.end(); });
+  srv.on('error', e => console.error('status page:', e.message)); srv.listen(cfg.statusPort, '127.0.0.1'); srv.unref(); return srv;
+}
 // ---------- main loop ----------
 async function main(cfg) {
-  const req = client(cfg); const ctx = { running: new Map() }; const fault = cfg.fault || ''; let backoff = 1000;
+  const req = client(cfg); const ctx = { running: new Map(), stats: { collected: 0, done: 0, failed: 0 }, recent: [], state: 'starting', command: 'run', current: null, progressVal: null, progress: p => { ctx.progressVal = p; if (ctx.current) ctx.current.progress = p; } };
+  const act = (a, extra = {}) => { const e = { at: new Date().toISOString(), a, ...extra }; ctx.recent.push(e); if (ctx.recent.length > 50) ctx.recent.shift(); try { fs.mkdirSync(path.dirname(cfg.actionLog), { recursive: true }); fs.appendFileSync(cfg.actionLog, JSON.stringify(e) + '\n', { mode: 0o600 }); } catch {} };
+  ctx.act = act; let localPause = false; if (cfg.statusPort) startStatusPage(cfg, ctx, { pause: v => { localPause = v; act(v ? 'локальная пауза' : 'продолжить'); } }); act('старт ' + VERSION); const fault = cfg.fault || ''; let backoff = 1000;
   ctx.upload = async buf => { let h = sha256(buf); const body = fault === 'bad-checksum' ? Buffer.concat([buf, Buffer.from('X')]) : buf; const r = await req('PUT', '/files/' + h, body); if (r.status !== 200) throw Object.assign(new Error('upload: ' + (r.body && r.body.error)), { retryable: true }); return h; };
   const H = makeHandlers(cfg, ctx); fs.mkdirSync(cfg.workDir, { recursive: true });
   const log = (...a) => console.log(new Date().toISOString(), ...a);
@@ -93,12 +118,17 @@ async function main(cfg) {
   let stop = false; process.on('SIGTERM', () => { stop = true; }); process.on('SIGINT', () => { stop = true; });
   while (!stop) {
     try {
-      const r = await req('POST', '/pull', { info: await sysInfo(cfg) }); if (r.status === 401) { log('токен отклонён (отозван?) — пауза 60 с'); await sleep(60000); continue; }
-      if (r.status !== 200) throw new Error('pull HTTP ' + r.status); backoff = 1000; const job = r.body.job;
+      if (localPause) { ctx.state = 'paused'; ctx.info = await sysInfo(cfg); await sleep(cfg.pollMs); continue; }
+      const r = await req('POST', '/pull', { info: (ctx.info = await sysInfo(cfg)), state: ctx.state }); sample(ctx);
+      if (!cfg.profile) { const hh = await req('POST', '/hello', { info: ctx.info }); if (hh.status === 200) { cfg.profile = hh.body.title || hh.body.role; } } if (r.status === 401) { log('токен отклонён (отозван?) — пауза 60 с'); await sleep(60000); continue; }
+      if (r.status !== 200) throw new Error('pull HTTP ' + r.status); backoff = 1000; const job = r.body.job; ctx.command = r.body.command || 'run'; ctx.online = true;
+      if (ctx.command === 'stop') { act('остановка по команде координатора'); log('команда stop — выхожу'); break; }
+      if (ctx.command !== 'run') { if (ctx.state !== ctx.command) act('команда ' + ctx.command); ctx.state = ctx.command === 'drain' ? 'drained' : 'paused'; await sleep(cfg.pollMs); continue; } ctx.state = job ? 'busy' : 'idle';
       if (!job) { await sleep(cfg.pollMs); continue; }
       log('задача', job.id, job.capability, 'попытка', job.attempt);
       if (fault === 'drop-after-lease') { log('FAULT: падаю после получения аренды'); process.exit(3); }
-      const hb = setInterval(() => req('POST', `/jobs/${job.id}/heartbeat`, { leaseId: job.leaseId }).catch(() => {}), Math.max(1000, Math.floor(job.leaseMs / 3)));
+      ctx.current = { id: job.id, capability: job.capability, startedAt: new Date().toISOString(), progress: null }; act('задача ' + job.capability, { job: job.id });
+      const hb = setInterval(() => req('POST', `/jobs/${job.id}/heartbeat`, { leaseId: job.leaseId, checkpoint: { progress: ctx.current && ctx.current.progress } }).then(h => { if (h.body && h.body.command) ctx.command = h.body.command; }).catch(() => {}), Math.max(1000, Math.floor(job.leaseMs / 3)));
       try {
         const h = H[job.capability]; if (!h) throw Object.assign(new Error('capability не поддерживается агентом: ' + job.capability), { retryable: false });
         const dir = fs.mkdtempSync(path.join(cfg.workDir, 'job-')); job.localFiles = [];
@@ -106,12 +136,14 @@ async function main(cfg) {
           if (sha256(g.buf) !== f.sha256) throw Object.assign(new Error('SHA-256 скачанного файла не совпадает'), { retryable: true }); const p = path.join(dir, path.basename(f.name || f.sha256)); fs.writeFileSync(p, g.buf, { mode: 0o600 }); job.localFiles.push({ ...f, path: p }); }
         if (cfg.slowMs) await sleep(cfg.slowMs);
         const out = await h(job.input || {}, job); fs.rmSync(dir, { recursive: true, force: true });
+        if (job.capability === 'news.collect' || job.capability === 'news.prepare') ctx.lastNews = { at: new Date().toISOString(), bySource: out.bySource || null, headlines: (out.items || []).slice(0, 8).map(x => ({ title: x.title, source: x.source || null, date: x.date || null })), total: (out.items || []).length };
+        if (job.capability === 'ffprobe.check' || job.capability === 'result.verify') { (ctx.qc ||= []).unshift(...(out.files || []).map(f => ({ at: new Date().toISOString(), name: f.name, ok: f.ok, problems: f.problems || (f.problem ? [f.problem] : []), codec: f.codec, width: f.width, height: f.height, durationSec: f.durationSec }))); ctx.qc = ctx.qc.slice(0, 20); }
         const artifacts = (out && out.artifacts) || []; const body = { leaseId: job.leaseId, result: out, artifacts };
         let c = await req('POST', `/jobs/${job.id}/complete`, body); if (fault === 'duplicate-complete') c = await req('POST', `/jobs/${job.id}/complete`, body);
-        log('завершено', job.id, c.status, c.body && c.body.duplicate ? '(повтор подтверждения)' : '');
-      } catch (e) { log('ошибка', job.id, e.message); await req('POST', `/jobs/${job.id}/fail`, { leaseId: job.leaseId, error: e.message, retryable: !!e.retryable }).catch(() => {}); }
-      finally { clearInterval(hb); }
-    } catch (e) { log('нет связи с координатором:', e.message, `— повтор через ${backoff / 1000} с`); await sleep(backoff); backoff = Math.min(backoff * 2, 60000); }
+        log('завершено', job.id, c.status, c.body && c.body.duplicate ? '(повтор подтверждения)' : ''); ctx.stats.done++; act('готово ' + job.capability, { job: job.id, status: c.status });
+      } catch (e) { log('ошибка', job.id, e.message); ctx.stats.failed++; ctx.lastError = e.message; act('ошибка ' + job.capability, { job: job.id, error: e.message }); await req('POST', `/jobs/${job.id}/fail`, { leaseId: job.leaseId, error: e.message, retryable: !!e.retryable }).catch(() => {}); }
+      finally { clearInterval(hb); ctx.current = null; }
+    } catch (e) { if (ctx.online !== false) act('нет связи: ' + e.message); ctx.online = false; ctx.state = 'offline'; log('нет связи с координатором:', e.message, `— повтор через ${backoff / 1000} с`); await sleep(backoff); backoff = Math.min(backoff * 2, 60000); }
   }
   log('остановлен');
 }
@@ -121,7 +153,7 @@ async function config(env = process.env) {
   const token = e.NODE_TOKEN || await keychainToken('moonkatty-node-' + nodeId); if (!token) throw new Error('нет токена: Keychain (moonkatty-node-' + nodeId + ') или NODE_TOKEN в node-agent.env (chmod 600)');
   const home = path.join(os.homedir(), '.moonkatty-node');
   return { nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
-    workDir: e.NODE_WORK_DIR || path.join(home, 'work'), archiveDir: e.NODE_ARCHIVE_DIR || path.join(home, 'archive'), pollMs: +(e.NODE_POLL_MS || 5000), ntfyUrl: e.NODE_NTFY_URL || '', fault: e.NODE_AGENT_FAULT || '', slowMs: +(e.NODE_AGENT_SLOW_MS || 0) };
+    workDir: e.NODE_WORK_DIR || path.join(home, 'work'), actionLog: e.NODE_ACTION_LOG || path.join(e.NODE_WORK_DIR || path.join(home, 'work'), '..', 'actions.log'), statusPort: e.NODE_STATUS_PORT === '0' ? 0 : +(e.NODE_STATUS_PORT || 8791), profile: e.NODE_PROFILE || '', archiveDir: e.NODE_ARCHIVE_DIR || path.join(home, 'archive'), pollMs: +(e.NODE_POLL_MS || 5000), ntfyUrl: e.NODE_NTFY_URL || '', fault: e.NODE_AGENT_FAULT || '', slowMs: +(e.NODE_AGENT_SLOW_MS || 0) };
 }
 if (require.main === module) {
   if (process.argv.includes('--info')) config().catch(() => ({ workDir: os.tmpdir() })).then(c => sysInfo(c)).then(i => { console.log(JSON.stringify(i, null, 2)); });

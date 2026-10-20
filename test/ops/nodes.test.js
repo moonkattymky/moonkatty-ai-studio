@@ -61,3 +61,10 @@ test('adapter maps resource classes and statuses both ways', () => {
   assert.equal(A.toStudioClass('render'), 'gpu_heavy'); assert.equal(A.toStudioClass('llm-large'), 'llm'); assert.equal(A.fromStudioClass('gpu_heavy'), 'render'); assert.equal(A.fromStudioClass(undefined), 'light');
   assert.equal(A.toStudioUpdate({ status: 'leased', attempt: 1 }).status, 'running');
 });
+test('central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor', () => {
+  const { m, im, auth } = setup(); const I = auth(im.token); m.submit({ capability: 'rss.fetch', input: {} });
+  m.setCommand('imac', 'pause'); assert.deepEqual(m.pull(I, info()), { job: null, command: 'pause' }); m.setCommand('imac', 'drain'); assert.equal(m.pull(I, info()).command, 'drain');
+  m.setCommand('imac', 'stop'); assert.equal(m.pull(I, info()).command, 'stop'); assert.throws(() => m.setCommand('imac', 'rm -rf')); m.setCommand('imac', 'run'); assert.ok(m.pull(I, info()).job);
+  const n = m.registerNode({ id: 'news1', role: 'news' }); assert.ok(n.caps.includes('image.light')); assert.equal(m.hello(auth(n.token), info()).title, 'NEWS NODE');
+  assert.throws(() => m.registerNode({ id: 'mon1', role: 'monitor', caps: ['news.collect'] }), /недопустимые/);
+});
