@@ -15,5 +15,6 @@ test('flags off: mobile API absent, ops status reports flags off', async () => {
   assert.equal((await fetch(B + '/api/mobile/summary')).status, 401);
   assert.equal((await fetch(B + '/api/mobile/summary', { headers: A })).status, 404);
   assert.equal((await fetch(B + '/api/ops/mobile-tokens', { method: 'POST', headers: A, body: '{}' })).status, 404);
-  const s = await (await fetch(B + '/api/ops/status', { headers: A })).json(); assert.deepEqual(s.flags, { resources: false, mobile: false }); assert.equal(s.resources, null);
+  const s = await (await fetch(B + '/api/ops/status', { headers: A })).json(); assert.ok(Object.values(s.flags).every(v => v === false), JSON.stringify(s.flags));
+  for (const p of ['/api/ops/dashboard', '/api/ops/backups', '/api/ops/costs', '/api/ops/security/audit', '/api/ops/permissions']) assert.equal((await fetch(B + p, { headers: A })).status, 404, p); assert.equal(s.resources, null);
 });

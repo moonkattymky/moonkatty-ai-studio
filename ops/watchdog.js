@@ -6,6 +6,13 @@ const path = require('path');
 const { createWatchdog, config } = require('../lib/ops/watchdog.js');
 const { stateFile } = require('../lib/ops/state.js');
 const { makeNotifier } = require('../lib/ops/notifier.js');
+const fs = require('fs');
+// Token source preference: macOS Keychain (service com.moonkatty.watchdog) → env file (must be chmod 600).
+function keychainToken() { if (process.platform !== 'darwin' || process.env.OPS_WATCHDOG_TOKEN) return;
+  try { const t = require('child_process').execFileSync('/usr/bin/security', ['find-generic-password', '-s', 'com.moonkatty.watchdog', '-a', 'watchdog', '-w'], { stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString().trim(); if (t) process.env.OPS_WATCHDOG_TOKEN = t; } catch {} }
+const envFile = process.env.OPS_ENV_FILE || require('path').join(require('os').homedir(), '.config', 'moonkatty', 'watchdog.env');
+try { const m = fs.statSync(envFile).mode & 0o777; if (m & 0o077) { console.error(`ВНИМАНИЕ: ${envFile} имеет права ${m.toString(8)} — выполните chmod 600. Токен из файла не используется.`); delete process.env.OPS_WATCHDOG_TOKEN; } } catch {}
+keychainToken();
 const cfg = config();
 require('fs').mkdirSync(path.join(cfg.dataDir, 'ops'), { recursive: true, mode: 0o700 });
 const store = stateFile(path.join(cfg.dataDir, 'ops', 'watchdog-state.json'));

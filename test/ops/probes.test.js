@@ -4,8 +4,8 @@ const p = require('../../lib/ops/probes.js');
 test('vm_stat parsing (macOS, mocked)', async () => {
   const txt = 'Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                               1000.\nPages active:  5.\nPages inactive:                           2000.\nPages speculative:                         500.\nPages purgeable: 100.\n';
   assert.equal(p.parseVmStat(txt), 3600 * 16384);
-  const m = await p.memInfo({ platform: 'darwin', exec: async cmd => { assert.equal(cmd, '/usr/bin/vm_stat'); return txt; } });
-  assert.equal(m.available, 3600 * 16384);
+  const m = await p.memInfo({ platform: 'darwin', exec: async (cmd, args) => cmd === '/usr/bin/vm_stat' ? txt : args.includes('hw.memsize') ? String(24 * 1024 ** 3) : '1' });
+  assert.equal(m.total, 24 * 1024 ** 3); assert.equal(m.pressure, 'green'); assert.ok(m.available > 0 && m.available <= m.total);
 });
 test('etime and ps parsing', () => {
   assert.equal(p.etimeToSec('05:03'), 303); assert.equal(p.etimeToSec('02:00:01'), 7201); assert.equal(p.etimeToSec('1-00:00:00'), 86400);

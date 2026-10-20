@@ -9,12 +9,13 @@
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j;
   }
   function logout() { localStorage.removeItem('mk_mobile_token'); tok = ''; $('#login').hidden = false; app.hidden = true; $('#nav').hidden = true; }
-  const gb = b => (b / 1024 ** 3).toFixed(1) + ' ГБ';
+  const gb = b => b == null ? '—' : (b / 1024 ** 3).toFixed(2) + ' ГБ';
+  const memLine = m => m && m.total ? `Память: занято ${gb(m.used)} из ${gb(m.total)} (${m.usedPct}%) · давление <b class="${m.pressure === 'green' ? 'ok' : m.pressure === 'yellow' ? 'warn' : 'err'}">${esc(m.pressure)}</b><br>App ${gb(m.app)} · Wired ${gb(m.wired)} · Compressed ${gb(m.compressed)} · Cached ${gb(m.cached)} · Swap ${gb(m.swapUsed)}` : 'Память: нет данных';
   const V = {
     async summary() { const s = await api('GET', '/summary'); const w = s.watchdog;
       return `<div class="card"><div class="row"><b>Система</b><span class="mut">${esc(new Date(s.at).toLocaleTimeString())}</span></div>
-        <div class="mut">RAM свободно ${gb(s.system.memFree)} / ${gb(s.system.memTotal)} · load ${s.system.loadavg.map(x => x.toFixed(1)).join(' ')}</div>
-        <div class="mut">Tick: ${esc(s.system.lastTick || '—')}</div>${s.resources ? `<div class="mut">Ресурсы: занято ${s.resources.reservedGB} ГБ, Ollama ${s.resources.ollama.totalGB} ГБ</div>` : ''}</div>
+        <div class="mut">${memLine(s.system.memory)}</div><div class="mut">load ${s.system.loadavg.map(x => x.toFixed(1)).join(' ')}</div>
+        <div class="mut">Tick: ${esc(s.system.lastTick || '—')}</div>${s.resources ? `<div class="mut">Ресурсы: ${esc(s.resources.mode)}, Ollama ${s.resources.ollama.totalGB} ГБ, задач ${s.resources.running.length}</div>` : ''}</div>
         ${w ? `<div class="card"><b>Watchdog</b> <span class="mut">${esc(w.lastCycleAt || '')}</span>${Object.entries(w.checks).map(([k, v]) => `<div class="${v.ok ? 'ok' : 'err'}">${v.ok ? '●' : '▲'} ${esc(k)} <span class="mut">${esc(v.detail)}</span></div>`).join('')}</div>` : ''}
         <div class="card"><b>Задачи</b><div class="mut">${Object.entries(s.tasks.byStatus).map(([k, v]) => esc(k) + ': ' + v).join(' · ') || 'нет'}</div>
         ${s.tasks.stuck.length ? `<div class="warn">Долго выполняются: ${s.tasks.stuck.map(t => esc(t.title) + ' (' + t.minutes + ' мин)').join(', ')}</div>` : ''}</div>

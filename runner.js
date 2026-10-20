@@ -61,7 +61,7 @@ module.exports = function createRunner(ctx) {
     });
   }
   const blocked = msg => Object.assign(new Error(msg), { blocked: true });
-  const draftPrompt = (a, t) => `Ты агент «${a.name}» студии ${ctx.brand || 'MOONKATTY'}. Роль: ${a.role}.\nЗадача: ${t.title}\n${t.description || ''}\nПодготовь черновик результата (на русском, если не указано иное). Не выдумывай факты, цифры и источники; если данных не хватает — перечисли, что нужно уточнить. Результат пойдёт на утверждение человеку.`;
+  const draftPrompt = (a, t) => `Ты агент «${a.name}» студии ${ctx.brand || 'MOONKATTY'}. Роль: ${a.role}.\nЗадача: ${t.untrusted && ctx.wrapUntrusted ? ctx.wrapUntrusted(t.title + '\n' + (t.description || ''), t.source || 'external') : t.title + '\n' + (t.description || '')}\nПодготовь черновик результата (на русском, если не указано иное). Не выдумывай факты, цифры и источники; если данных не хватает — перечисли, что нужно уточнить. Результат пойдёт на утверждение человеку.`;
   const HANDLERS = {
     async analytics(a, t) { const data = Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])); const rep = core.buildReport(data, 3); rep.trigger = 'agent'; put('reports', rep);
       return { status: 'done', result: `Отчёт сформирован: задач ${rep.totals.tasks}, выполнено за 3 дня ${rep.totals.doneInPeriod}, ошибок в журнале ${rep.totals.errorsInPeriod} (id ${rep.id})` }; },
@@ -84,6 +84,8 @@ module.exports = function createRunner(ctx) {
     Object.assign(a, { status: 'working', currentTaskId: t.id, lastRunAt: core.now() }); addLog(a, 'info', 'Взята задача: ' + t.title); put('agents', a);
     try {
       let r;
+      if (ctx.can && t.kind === 'code' && !ctx.can(a.id, 'shell')) throw blocked('Security Center: у агента нет права shell (Операции → Права агентов)');
+      if (ctx.can && a.id === 'publishing' && !ctx.can(a.id, 'publish')) throw blocked('Security Center: у агента нет права publish');
       if (t.kind === 'code') { if (!t.codeApproved) throw blocked('Задача для OpenCode ждёт явного подтверждения (кнопка «Разрешить OpenCode»)');
         const o = await runOpencode(t, ac.signal); r = { status: 'waiting_approval', result: `OpenCode (песочница ${o.dir}):\n${o.text}` }; }
       else r = await (HANDLERS[a.id] || llmTask)(a, t, ac.signal);

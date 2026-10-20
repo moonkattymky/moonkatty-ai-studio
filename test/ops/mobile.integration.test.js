@@ -44,7 +44,7 @@ test('existing protections still apply: host check + CSRF', async () => {
 });
 test('summary / tasks / notifications', async () => {
   const s = (await j('GET', '/api/mobile/summary', M(tok))).body;
-  assert.ok(Array.isArray(s.agents) && s.tasks.byStatus && 'last10min' in s.errors && s.system.memTotal > 0 && s.resources.profile.budgetGB === 18);
+  assert.ok(Array.isArray(s.agents) && s.tasks.byStatus && 'last10min' in s.errors && s.system.memTotal > 0 && /uncalibrated/.test(s.resources.mode) && 'memory' in s.system);
   assert.ok(Array.isArray((await j('GET', '/api/mobile/notifications', M(tok))).body.logs));
   assert.equal((await j('GET', '/api/mobile/me', M(tokRo))).body.scopes.join(), 'read');
 });

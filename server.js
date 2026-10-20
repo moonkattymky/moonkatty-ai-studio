@@ -77,8 +77,8 @@ const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BR
 const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
 const meta = require('./meta.js')(app, metaCtx);
 // ---- Studio Operations (feature flags, off by default; see docs/ops/) ----
-const ops = require('./lib/ops/index.js')({ env: process.env, dataDir: path.dirname(DB_PATH), log });
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, admit: ops.admit, release: ops.release });
+const ops = require('./lib/ops/index.js')({ env: process.env, dataDir: path.dirname(DB_PATH), log, q });
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, admit: ops.admit, release: ops.release, can: ops.can, wrapUntrusted: ops.wrapUntrusted });
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
 const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -103,7 +103,7 @@ app.post('/api/auth/login', (req, res) => {
 });
 app.post('/api/auth/logout', (req, res) => { sessions.delete(hashTok(tokenOf(req))); saveSessions(); q.setMeta.run('appTokenDisabled', '1'); // «Выйти» also stops the desktop auto-login until the next password login
   log('info', 'auth', 'Выход', getSession(req)?.user || null); res.setHeader('Set-Cookie', 'mk_session=; Path=/; Max-Age=0'); res.json({ ok: true }); });
-const mobile = ops.mountMobile(app, { q, get, put, list, log, sec, core, S, runner, filesDir: FILES_DIR, ownerUser: req => getSession(req)?.user || appTokenUser(req) }); // before main auth: own scoped token
+const mobile = ops.mountMobile(app, { q, get, put, list, log, sec, core, S, runner, filesDir: FILES_DIR, ownerUser: req => getSession(req)?.user || appTokenUser(req), memory: () => memSampler.last }); // before main auth: own scoped token
 app.use('/api', (req, res, next) => {
   if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
   const s = getSession(req); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
@@ -111,6 +111,8 @@ app.use('/api', (req, res, next) => {
 });
 if (mobile) mobile.mountAdmin();
 app.get('/api/ops/status', (req, res) => res.json(ops.status()));
+ops.mountProtected(app, { q, get, put, list, log, sec, core, runner, db, openDb, filesDir: FILES_DIR, version: require('./package.json').version, memory: () => memSampler.last,
+  checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
 app.post('/api/auth/password', (req, res) => {
   const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
   if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });
@@ -161,8 +163,8 @@ app.post('/api/director/chat', async (req, res) => {
   put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
   let plan, llmError = null;
   try { plan = await llmPlan(text); } catch (e) { llmError = String(e.cause?.code || e.message); plan = core.rulePlan(text); }
-  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
-    status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
+  const created = plan.tasks.map(t => put('tasks', ops.guardPlannedTask({ id: core.uid(), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
+    status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }, plan.planner)));
   const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
   log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, req.user); res.json({ message: msg, tasks: created });
 });
@@ -177,12 +179,14 @@ app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', r
 
 let cpuPrev = os.cpus(), cpuPct = null;
 setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i]?.times || x.times; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round(100 * (1 - idle / tot)) : null; cpuPrev = c; }, 5000).unref();
+// Activity-Monitor-compatible memory (vm_stat + sysctl on macOS, MemAvailable on Linux); os.freemem() kept for compatibility.
+const memSampler = require('./lib/ops/memory.js').createMemorySampler(); memSampler.sample(); setInterval(() => memSampler.sample(), 5000).unref();
 app.get('/api/system', (req, res) => {
   const m = process.memoryUsage(); let disk = null;
   try { const st = fs.statfsSync(path.dirname(DB_PATH)); disk = { total: st.blocks * st.bsize, free: st.bavail * st.bsize }; } catch {}
   res.json({
     uptimeSec: Math.round((Date.now() - STARTED) / 1000), node: process.version, platform: `${os.platform()} ${os.arch()}`,
-    cpuPct, cpus: os.cpus().length, disk, hostname: os.hostname(), loadavg: os.loadavg(), memTotal: os.totalmem(), memFree: os.freemem(), rss: m.rss,
+    cpuPct, cpus: os.cpus().length, disk, memory: memSampler.last, hostname: os.hostname(), loadavg: os.loadavg(), memTotal: os.totalmem(), memFree: os.freemem(), rss: m.rss,
     dbPath: DB_PATH, dbSize: fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0,
     counts: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c).length])),
     lastSchedulerTick: q.meta.get('lastTick')?.v || null, lastBackup: q.meta.get('lastBackup')?.v || null
@@ -301,6 +305,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use((err, req, res, next) => { // body-parser messages can quote the request body (e.g. a password) — never log/return them
   if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') { log('warn', 'http', `${req.method} ${req.path}: неверное тело запроса (${err.type})`); return res.status(400).json({ error: 'Неверное тело запроса' }); }
+  const pub = ops.publicError(err); if (pub) return res.status(500).json(pub); // Security Center: generic message + ref
   log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: sec.redact(err.message) }); });
 
 // Scheduler: every 30s; auto-report every 3 days.
@@ -315,7 +320,7 @@ function tick() {
       const rep = core.buildReport(data, 3); rep.trigger = 'auto'; put('reports', rep);
       q.setMeta.run('lastAutoReport', rep.createdAt); log('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован');
     }
-    meta.tick().catch(e => log('error', 'publishing', e.message));
+    if (!ops.can || ops.can('publishing', 'publish')) meta.tick().catch(e => log('error', 'publishing', e.message)); // Security Center: publish capability
     runner.tick();
     const lb = q.meta.get('lastBackup')?.v; if (!lb || Date.now() - new Date(lb) >= 86400000) scheduledBackup();
     q.setMeta.run('lastTick', core.now());
