@@ -3,8 +3,8 @@ const { StudioError } = require('./errors');
 const { validate } = require('./validate');
 
 /**
- * Реестр бренда — только контракт.
- * Оригинального кота нельзя подменить без утверждения владельца, и эта проверка ещё не исполняется.
+ * Реестр бренда хранит утверждённые файлы владельца.
+ * Проверка сходства и подмена оригинала не исполняются.
  */
 const RULES = Object.freeze({
   namespace: 'moonkatty_project',
@@ -42,12 +42,17 @@ function validateCheck(request) {
   return request;
 }
 
-function check() {
-  throw new StudioError('NOT_IMPLEMENTED', 'Проверка соответствия бренду описана контрактом и ещё не выполняется.', { retryable: false });
+function createBrand({ assets }) {
+  function register({ principal, asset }) {
+    const clean = validateAsset(asset);
+    return assets.registerBrand({ principal, asset: clean });
+  }
+
+  function check() {
+    throw new StudioError('NOT_IMPLEMENTED', 'Проверка сходства и подмена бренда не выполняются. Реестр только хранит утверждённый оригинал.', { retryable: false });
+  }
+
+  return { RULES, validateAsset, validateCheck, check, register };
 }
 
-function register() {
-  throw new StudioError('NOT_IMPLEMENTED', 'Реестр бренда ещё не хранит записи. Утверждённые правила можно положить в память как decision после решения владельца.', { retryable: false });
-}
-
-module.exports = { RULES, validateAsset, validateCheck, check, register };
+module.exports = { RULES, validateAsset, validateCheck, createBrand };

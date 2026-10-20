@@ -8,7 +8,7 @@
   "properties": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
     "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
-    "subjectType": { "enum": ["task", "publication", "brand_substitution", "workflow_step", "opencode"] },
+    "subjectType": { "enum": ["task", "publication", "brand_substitution", "workflow_step", "opencode", "asset"] },
     "subjectId": { "type": "string", "minLength": 1, "maxLength": 64 },
     "requiredRole": { "const": "owner" },
     "status": { "const": "pending" },

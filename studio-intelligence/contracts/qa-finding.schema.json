@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/qa-finding.schema.json",
+  "title": "QaFinding",
+  "description": "Запись результата технической проверки. Сам ролик не открывается.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "publicationId", "publicationVersion", "checkName", "ok", "detail"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "publicationId": { "type": ["string", "null"], "maxLength": 64 },
+    "publicationVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "checkName": { "enum": ["sound", "subtitles", "format", "corrupted_frames", "rights"] },
+    "ok": { "type": "boolean" },
+    "detail": { "type": ["string", "null"], "maxLength": 2000 }
+  }
+}

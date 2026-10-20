@@ -8,6 +8,7 @@
 - [Подключение](../docs/studio-intelligence/INTEGRATION.md)
 - [Нагрузка](../docs/studio-intelligence/LOAD.md)
 - [Риски](../docs/studio-intelligence/RISKS.md)
+- [Дорожная карта](../docs/studio-intelligence/ROADMAP.md)
 
 Контракты: `contracts/*.schema.json`. Код: `src/`.
 

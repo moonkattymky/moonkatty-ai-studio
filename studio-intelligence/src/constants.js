@@ -57,7 +57,7 @@ const RUNTIME_PROJECT = Object.freeze({
   moonkatty_project: 'main'
 });
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 module.exports = {
   NAMESPACES, AGENTS, KINDS, OWNER_ONLY_KINDS, AGENT_WRITE_KINDS,

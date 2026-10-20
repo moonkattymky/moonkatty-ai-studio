@@ -5,11 +5,17 @@
   "separateDatabaseForbidden": true,
   "tablePrefix": "si_",
   "doNotModifyTables": ["items", "meta"],
-  "tables": ["si_meta", "si_records", "si_records_fts", "si_idempotency", "si_grants", "si_progress"],
+  "tables": [
+    "si_meta", "si_records", "si_records_fts", "si_idempotency", "si_grants", "si_progress",
+    "si_assets", "si_asset_rights", "si_asset_usage",
+    "si_approvals", "si_approval_events",
+    "si_cost_entries", "si_health_samples", "si_qa_findings"
+  ],
   "namespaces": ["moonkatty_news", "moonkatty_project"],
   "fts": "FTS5 unicode61, without embeddings",
   "embeddings": false,
   "idempotency": "unique (namespace, key); same hash replays the record; different hash conflicts unless versionPolicy is bump",
   "secrets": "rejected before insert",
-  "approvalExecution": "not stored; contract only"
+  "approvalExecution": "rows are stored with auto_execute = 0; decide never publishes or substitutes files",
+  "assetDedup": "content hash, else normalized source URL without utm_*, else idempotency key"
 }

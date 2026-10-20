@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/asset-usage.schema.json",
+  "title": "AssetUsage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["assetId", "namespace", "whereUsed", "publicationId", "publicationVersion", "context", "idempotencyKey", "payload"],
+  "properties": {
+    "assetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "whereUsed": { "enum": ["publication", "episode", "render", "shorts", "reels", "facial_animation", "qa", "music_bed", "thumbnail"] },
+    "publicationId": { "type": ["string", "null"], "maxLength": 64 },
+    "publicationVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "context": { "type": ["string", "null"], "maxLength": 500 },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
+    "payload": { "type": "object" }
+  }
+}

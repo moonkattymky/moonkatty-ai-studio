@@ -20,7 +20,7 @@ const si = openStudioIntelligence({ db });
 
 Если в дереве есть `lib/db.js` (ветка разработчика №1), файл открывается через него. Иначе используется `better-sqlite3`, а если модуль не установлен — встроенный `node:sqlite` (Node 22+).
 
-Новые таблицы: `si_meta`, `si_records`, `si_records_fts`, `si_idempotency`, `si_grants`, `si_progress`. Правила лежат в `studio-intelligence/contracts/storage-rules.json`.
+Новые таблицы имеют префикс `si_`: записи и поиск, плюс `si_assets`, `si_asset_rights`, `si_asset_usage`, `si_approvals`, `si_approval_events`, `si_cost_entries`, `si_health_samples`, `si_qa_findings`. Полный список — в `studio-intelligence/contracts/storage-rules.json`. Таблицы `items` и `meta` не меняются.
 
 ## Участник и права
 
@@ -187,9 +187,9 @@ si.memory.put({
 });
 ```
 
-Готовый файл рендера передаётся как `file-result-handoff` (черновик). Публикация остаётся за очередью панели и за guardrails `public/social.js`. JSON-store медиа-модуля эта библиотека не читает и не подменяет.
+Готовый файл рендера передаётся как `file-result-handoff` (черновик). Публикация остаётся за очередью панели и за guardrails `public/social.js`. JSON-store медиа-модуля эта библиотека не читает и не подменяет. Поле `mediaLicense` у сюжета и проверка `license` у музыки остаются в медиа-ветке: каноническая карточка файла, его права и история использования живут в `si.assets` (ниже).
 
-`Character3D` по-прежнему подключается в Video Factory. Схема 3D-сценария описывает шаги, но не рендерит.
+`Character3D` по-прежнему подключается в Video Factory. Схема 3D-сценария описывает шаги, но не рендерит. Мимика губ, глаз, головы и ушей в репозитории не считается: сюда пишется только разрешение использовать утверждённую модель.
 
 ## Безопасность (разработчик №3)
 
@@ -208,22 +208,133 @@ si.contracts.envelope({
 
 Конверт не пишется в базу сам.
 
-## Сценарии, бренд, утверждение
+## Активы, права и использование
 
-Это схемы и проверка формы. Исполнения нет.
+Карточка актива — один ряд на файл. Повтор с тем же SHA-256, тем же адресом источника (метки `utm_*` отбрасываются) или тем же ключом идемпотентности возвращает уже существующий ряд: `{ reused: true }`. Второй ряд не создаётся.
 
 ```js
-si.workflow.describe('news');      // шаги, без запуска
-si.workflow.run();                 // NOT_IMPLEMENTED
-si.brand.validateAsset(asset);     // форма; check/register — NOT_IMPLEMENTED
-si.approval.validateRequest(req);  // autoExecute обязан быть false
-si.approval.request();             // NOT_IMPLEMENTED
-si.approval.decide();              // NOT_IMPLEMENTED
+const saved = si.assets.register({
+  principal: newsAgent,
+  asset: {
+    namespace: 'moonkatty_news',
+    kind: 'video',
+    title: 'Кадр пуска',
+    sourceName: 'NASA',
+    sourceUrl: 'https://example.com/clip.mp4?utm_source=news',
+    contentHash: sha256hex,
+    idempotencyKey: 'news/clip/nasa-1',
+    rights: {
+      basis: 'licensed',          // own | licensed | generated | cc0 | unknown
+      license: 'CC-BY-4.0',
+      holder: 'NASA',
+      attributionRequired: true,
+      attributionText: 'NASA'
+    }
+  }
+});
+
+const again = si.assets.findReusable({
+  principal: newsAgent,
+  namespace: 'moonkatty_news',
+  contentHash: sha256hex
+});
+
+si.assets.recordUsage({
+  principal: newsAgent,
+  usage: {
+    assetId: saved.asset.id,
+    namespace: 'moonkatty_news',
+    whereUsed: 'shorts',          // publication | episode | render | shorts | reels | facial_animation | qa | music_bed | thumbnail
+    publicationId: 'ep9',
+    publicationVersion: 3,
+    idempotencyKey: 'usage/ep9/shorts'
+  }
+});
 ```
 
-Шаг, у которого `requiresOwnerApproval`, `executor: 'human'` или `executor: 'opencode'`, в описании сценария имеет `autoExecute: false`. Оригинал кота (`kind: 'cat_image'`) в схеме заблокирован: `locked: true`, `substitutionPolicy: 'owner_approval_required'`. Подмена (`action: 'substitute'`) помечается как требующая владельца и тоже не выполняется.
+Агент может оставить черновик и права при первой записи. Сменить права потом может только владелец (`addRights`). Статус `approved` агент поставить не может. Секрет в карточке даёт `SECRET_REJECTED`.
 
-Утвердить в журнале может только `actorRole: 'owner'`. Таблицы журнала нет: событие можно проверить формой `approval-event`, записать его пока некуда. Так сделано специально, чтобы утверждение нельзя было «случайно» исполнить.
+`whereUsed` отвечает на вопрос, где файл уже был: выпуск, нарезка, публикация. `usageOf` возвращает эту историю для читателя пространства.
+
+## Бренд и мимика (разработчик №1)
+
+Реестр бренда пишет владелец. Оригинал кота (`cat_image`) и мастер-модель (`master_model`) живут в `moonkatty_project`. Второй оригинал и смена уже записанного пути — `IDEMPOTENCY_CONFLICT`. Файл при этом не открывается и не подменяется.
+
+```js
+const model = si.brand.register({ principal: owner, asset: brandAsset });
+si.assets.approvedCharacterModel({ principal: videoAgent });
+```
+
+Агент новостей не читает произвольные файлы проекта: `assets.get` на модель вернёт `NOT_FOUND`. Узкое исключение — `approvedCharacterModel`: её видит тот, кто читает новости или проект. Использование этой модели в выпуске пишется в `moonkatty_news`.
+
+`prepareFacialUse` проверяет, что в запросе именно эта модель и что аудио — актив `moonkatty_news` вида `audio`, затем пишет `whereUsed: 'facial_animation'` с каналами `lip`, `eye`, `head`, `ear`, id выпуска и версией. Возврат всегда `executed: false`. Кадры не считаются, Blender не вызывается. Запись делает агент с правом записи в новости (`video`). `design3d` модель видит, чужое аудио новостей — нет.
+
+`brand.check` по-прежнему `NOT_IMPLEMENTED`: сходство и подмена не исполняются.
+
+## Утверждения
+
+Журнал пишется. Решение ничего не запускает: в `si_approvals.auto_execute` стоит проверка `= 0`, `decide` возвращает `executed: false` и не создаёт строк в `items`.
+
+```js
+const pending = si.approval.request({ principal: director, request });
+const decided = si.approval.decide({
+  principal: owner, approvalId: pending.id, action: 'approved', comment: 'можно в эфир'
+});
+// decided.executed === false
+```
+
+Повтор того же решения идемпотентен. Агент запрос создать может, решить — нет. Регистрация бренда и утверждённого актива сразу дописывает событие `approved` от владельца и тоже ничего не публикует.
+
+## Дневной отчёт (разработчик №3, чтение)
+
+`core.buildReport` и `/api/mobile/summary` на ветке операций читают коллекции панели и сторож. Этот модуль их не заменяет. Сводка по памяти — отдельное чтение:
+
+```js
+const report = si.reports.daily({
+  principal: analyticsAgent,
+  from: '2026-10-20T00:00:00.000Z',
+  to: '2026-10-21T00:00:00.000Z',
+  compact: true
+});
+```
+
+Считаются задачи, события прогресса, версии публикаций, использования `publication|shorts|reels|episode`, провалы прогресса и технической проверки, журнал утверждений. Стоимость и здоровье компонентов есть в отчёте, только если их записал владелец (`recordCost`, `recordHealth`). Пустое окно даёт нули и `available: false`, а не выдуманную сумму. `compact: true` — вид для телефона: не больше 8 строк внимания и без текста `detail`. Агент `games` видит только `moonkatty_project`.
+
+## Техническая проверка перед выпуском (разработчик №4)
+
+`video/qa.js` и проверка субтитров остаются в медиа-ветке и отсюда не вызываются. В память кладётся результат и чтение прав:
+
+```js
+const rights = si.qa.rightsForPublication({
+  principal: videoAgent, namespace: 'moonkatty_news', publicationId: 'ep4'
+});
+// rights.blocking === true, если лицензии нет, основание unknown или срок вышел
+// warning === 'no_assets_recorded', если к выпуску ничего не привязано; blocking при этом false
+
+si.qa.recordFinding({
+  principal: videoAgent,
+  finding: {
+    namespace: 'moonkatty_news', publicationId: 'ep4', publicationVersion: 1,
+    checkName: 'corrupted_frames', // sound | subtitles | format | corrupted_frames | rights
+    ok: false, detail: 'кадр 10 не читается'
+  }
+});
+```
+
+`recordFinding` возвращает `executed: false` и ролик не открывает.
+
+## Сценарии, бренд, утверждение
+
+Сценарий по-прежнему только описывается. `workflow.run` отвечает `NOT_IMPLEMENTED`.
+
+```js
+si.workflow.describe('news');
+si.workflow.run();                 // NOT_IMPLEMENTED
+si.brand.check(check);             // NOT_IMPLEMENTED
+si.approval.decide({ principal: owner, approvalId, action: 'approved' }); // executed: false
+```
+
+Шаг, у которого `requiresOwnerApproval`, `executor: 'human'` или `executor: 'opencode'`, в описании сценария имеет `autoExecute: false`. Оригинал кота (`kind: 'cat_image'`) в схеме заблокирован: `locked: true`, `substitutionPolicy: 'owner_approval_required'`. Подмена (`action: 'substitute'`) помечается как требующая владельца и не выполняется.
 
 Сценарии:
 
@@ -253,6 +364,12 @@ si.approval.decide();              // NOT_IMPLEMENTED
 | `brand-asset`, `brand-check` | реестр бренда |
 | `approval-request`, `approval-event` | утверждение и журнал |
 | `event-envelope` | конверт события |
+| `asset-record`, `asset-rights`, `asset-usage` | источник, права, где использован |
+| `rights-lookup` | проверка прав перед выпуском |
+| `facial-animation-request` | запрос мимики на утверждённую модель |
+| `cost-entry`, `health-sample` | стоимость и состояние для отчёта |
+| `qa-finding` | результат технической проверки |
+| `studio-daily-report` | дневная сводка, в том числе короткий вид |
 
 Коды ошибок: `VALIDATION`, `PERMISSION_DENIED`, `NOT_FOUND`, `IDEMPOTENCY_CONFLICT`, `INVALID_STATE`, `NOT_IMPLEMENTED`, `SECRET_REJECTED`. Поле `retryable` у этих ошибок `false`. Объект `err.toJSON()` совпадает со схемой `error`.
 

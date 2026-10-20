@@ -9,8 +9,11 @@ const { createRetrieval } = require('./retrieval');
 const { createProgress } = require('./progress');
 const { createRuntimeAdapter } = require('./runtime-adapter');
 const workflow = require('./workflow');
-const brand = require('./brand');
-const approval = require('./approval');
+const { createApproval } = require('./approval');
+const { createAssets } = require('./assets');
+const { createBrand } = require('./brand');
+const { createReports } = require('./reports');
+const { createQaMemory } = require('./qa-memory');
 const { schemas, validate, schemaNames } = require('./validate');
 
 function envelope({ type, principal, namespace, payload, at, id }) {
@@ -49,6 +52,11 @@ function openStudioIntelligence(options = {}) {
   const retrieval = createRetrieval(db, { memory, permissions, transaction: tx, now });
   const progress = createProgress(db, { now, permissions });
   const runtime = createRuntimeAdapter({ permissions });
+  const approval = createApproval(db, { now, permissions, transaction: tx });
+  const assets = createAssets(db, { now, permissions, transaction: tx, approval });
+  const brand = createBrand({ assets });
+  const reports = createReports(db, { now, permissions, transaction: tx });
+  const qa = createQaMemory(db, { now, permissions, assets });
   return {
     schemaVersion: SCHEMA_VERSION,
     driver: db.driver || 'injected',
@@ -62,6 +70,9 @@ function openStudioIntelligence(options = {}) {
     workflow,
     brand,
     approval,
+    assets,
+    reports,
+    qa,
     contracts: { schemas, validate, schemaNames, envelope },
     tableNames: () => tableNames(db),
     close() { if (owned) db.close(); }

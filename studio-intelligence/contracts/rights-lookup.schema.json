@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/rights-lookup.schema.json",
+  "title": "RightsLookup",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "publicationId", "blocking", "warning", "assets"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "publicationId": { "type": ["string", "null"], "maxLength": 64 },
+    "blocking": { "type": "boolean" },
+    "warning": { "type": ["string", "null"], "enum": ["no_assets_recorded", null] },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assetId", "present", "blocking", "reason", "basis", "license", "expiresAt", "attributionRequired"],
+        "properties": {
+          "assetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "present": { "type": "boolean" },
+          "blocking": { "type": "boolean" },
+          "reason": { "type": ["string", "null"], "enum": ["missing", "unknown_basis", "expired", null] },
+          "basis": { "type": ["string", "null"], "enum": ["own", "licensed", "generated", "cc0", "unknown", null] },
+          "license": { "type": ["string", "null"] },
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "attributionRequired": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

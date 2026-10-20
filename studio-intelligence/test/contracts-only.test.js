@@ -29,9 +29,8 @@ test('сценарии описаны, шаги владельца не авто
   si.close();
 });
 
-test('бренд и утверждение только проверяют форму и ничего не пишут', () => {
-  const { si, owner } = setup();
-  const before = si.tableNames();
+test('бренд сохраняет оригинал, проверка и решение ничего не исполняют', () => {
+  const { si, owner, agent } = setup();
   const asset = si.brand.validateAsset({
     id: 'cat_original', kind: 'cat_image', namespace: 'moonkatty_project', version: 1,
     filePath: 'brand/cat-original.png', approvedBy: 'igor',
@@ -44,16 +43,35 @@ test('бренд и утверждение только проверяют фо�
   });
   assert.equal(check.autoExecute, false);
   assert.equal(check.requiresOwnerApproval, true);
+  const saved = si.brand.register({ principal: owner, asset });
+  assert.equal(saved.reused, false);
+  assert.equal(saved.asset.storagePath, 'brand/cat-original.png');
+  assert.equal(saved.approval.autoExecute, false);
+  assert.equal(saved.approval.status, 'approved');
   assert.throws(() => si.brand.check(check), err => err.code === 'NOT_IMPLEMENTED');
-  assert.throws(() => si.brand.register(asset), err => err.code === 'NOT_IMPLEMENTED');
+  assert.equal(si.assets.get({ principal: owner, id: saved.asset.id }).storagePath, 'brand/cat-original.png');
+  assert.throws(() => si.brand.register({
+    principal: owner,
+    asset: Object.assign({}, asset, { id: 'cat_other', filePath: 'brand/cat-other.png' })
+  }), err => err.code === 'IDEMPOTENCY_CONFLICT');
   const request = si.approval.validateRequest({
     id: 'ap1', namespace: 'moonkatty_project', subjectType: 'brand_substitution', subjectId: 'cat_original',
     requiredRole: 'owner', status: 'pending', autoExecute: false, requestedBy: 'director',
     requestedAt: '2026-10-20T12:00:00.000Z'
   });
   assert.equal(request.autoExecute, false);
-  assert.throws(() => si.approval.request(request), err => err.code === 'NOT_IMPLEMENTED');
-  assert.throws(() => si.approval.decide({ id: 'ap1', action: 'approved' }), err => err.code === 'NOT_IMPLEMENTED');
+  const pending = si.approval.request({ principal: agent('director'), request });
+  assert.equal(pending.status, 'pending');
+  assert.equal(pending.autoExecute, false);
+  assert.throws(() => si.approval.decide({ principal: agent('director'), approvalId: 'ap1', action: 'approved' }), err => err.code === 'PERMISSION_DENIED');
+  const decided = si.approval.decide({ principal: owner, approvalId: 'ap1', action: 'rejected', comment: 'подмена не нужна' });
+  assert.equal(decided.executed, false);
+  assert.equal(decided.approval.status, 'rejected');
+  assert.equal(decided.approval.autoExecute, false);
+  assert.equal(decided.event.action, 'rejected');
+  const again = si.approval.decide({ principal: owner, approvalId: 'ap1', action: 'rejected' });
+  assert.equal(again.executed, false);
+  assert.equal(again.approval.status, 'rejected');
   const event = si.approval.validateEvent({
     id: 'ev1', approvalId: 'ap1', at: '2026-10-20T12:00:00.000Z', action: 'approved',
     actorId: 'igor', actorRole: 'owner', prevStatus: 'pending', nextStatus: 'approved'
@@ -61,9 +79,17 @@ test('бренд и утверждение только проверяют фо�
   assert.equal(event.action, 'approved');
   assert.throws(() => si.approval.validateEvent(Object.assign({}, event, { id: 'ev2', actorRole: 'agent' })), err => err.code === 'VALIDATION');
   assert.equal(si.permissions.checkPermission(owner, 'approve', { namespace: 'moonkatty_project' }).allowed, true);
-  assert.deepEqual(si.tableNames(), before);
-  assert.ok(si.tableNames().every(name => name.startsWith('si_')));
-  assert.ok(!si.tableNames().some(name => /approval|brand|workflow/.test(name)));
+  const names = si.tableNames();
+  assert.ok(names.includes('si_approvals'));
+  assert.ok(names.includes('si_approval_events'));
+  assert.ok(names.includes('si_assets'));
+  assert.ok(!names.includes('items'));
+  assert.ok(!names.some(name => name.includes('workflow')));
+  assert.ok(names.every(name => name.startsWith('si_')));
+  const row = si.db.prepare('SELECT auto_execute, status FROM si_approvals WHERE id = ?').get('ap1');
+  assert.equal(row.auto_execute, 0);
+  assert.equal(row.status, 'rejected');
+  assert.equal(si.db.prepare('SELECT COUNT(*) AS n FROM si_approval_events WHERE approval_id = ?').get('ap1').n, 2);
   si.close();
 });
 

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/facial-animation-request.schema.json",
+  "title": "FacialAnimationRequest",
+  "description": "Запрос на использование утверждённой модели. Кадры здесь не считаются.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "characterModelAssetId", "audioAssetId", "channels", "idempotencyKey"],
+  "properties": {
+    "namespace": { "const": "moonkatty_news" },
+    "characterModelAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "audioAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "channels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": { "enum": ["lip", "eye", "head", "ear"] }
+    },
+    "publicationId": { "type": ["string", "null"], "maxLength": 64 },
+    "publicationVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" }
+  }
+}
