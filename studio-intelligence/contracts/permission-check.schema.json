@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/permission-check.schema.json",
+  "title": "PermissionCheck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["principal", "action", "resource"],
+  "properties": {
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "role": { "enum": ["owner", "agent"] },
+        "agentId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "user": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "action": { "enum": ["read", "write", "approve", "cancel", "handoff", "index"] },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace"],
+      "properties": {
+        "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+        "kind": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "recordId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "agentId": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    }
+  }
+}

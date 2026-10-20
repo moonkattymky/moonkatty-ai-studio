@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/memory-record.schema.json",
+  "title": "MemoryRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "namespace", "kind", "title", "body", "version", "status", "sourcePath", "sourceRecordId", "createdBy", "approvedBy", "approvedAt", "idempotencyKey", "supersedes", "payload", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "kind": { "enum": ["decision", "task", "result", "file", "model_version", "publication_version", "document"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "body": { "type": "string", "maxLength": 200000 },
+    "version": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "approved", "superseded", "rejected"] },
+    "sourcePath": { "type": ["string", "null"], "maxLength": 500 },
+    "sourceRecordId": { "type": ["string", "null"], "maxLength": 64 },
+    "createdBy": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "approvedBy": { "type": ["string", "null"], "maxLength": 64 },
+    "approvedAt": { "type": ["string", "null"], "format": "date-time" },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
+    "supersedes": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "payload": { "type": "object" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

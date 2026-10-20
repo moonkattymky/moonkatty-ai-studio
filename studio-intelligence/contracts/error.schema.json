@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/error.schema.json",
+  "title": "StudioError",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "retryable", "details"],
+  "properties": {
+    "code": {
+      "enum": ["VALIDATION", "PERMISSION_DENIED", "NOT_FOUND", "IDEMPOTENCY_CONFLICT", "INVALID_STATE", "NOT_IMPLEMENTED", "SECRET_REJECTED"]
+    },
+    "message": { "type": "string", "minLength": 1 },
+    "retryable": { "type": "boolean" },
+    "details": { "type": "object" }
+  }
+}

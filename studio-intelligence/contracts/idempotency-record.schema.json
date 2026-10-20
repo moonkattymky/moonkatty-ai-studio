@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/idempotency-record.schema.json",
+  "title": "IdempotencyRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "key", "requestHash", "recordId", "createdAt"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project"] },
+    "key": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
+    "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "recordId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

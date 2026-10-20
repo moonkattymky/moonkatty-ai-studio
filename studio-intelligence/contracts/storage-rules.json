@@ -1,0 +1,15 @@
+{
+  "databaseFile": "data/studio.db",
+  "engine": "sqlite",
+  "reuseExistingFile": true,
+  "separateDatabaseForbidden": true,
+  "tablePrefix": "si_",
+  "doNotModifyTables": ["items", "meta"],
+  "tables": ["si_meta", "si_records", "si_records_fts", "si_idempotency", "si_grants", "si_progress"],
+  "namespaces": ["moonkatty_news", "moonkatty_project"],
+  "fts": "FTS5 unicode61, without embeddings",
+  "embeddings": false,
+  "idempotency": "unique (namespace, key); same hash replays the record; different hash conflicts unless versionPolicy is bump",
+  "secrets": "rejected before insert",
+  "approvalExecution": "not stored; contract only"
+}

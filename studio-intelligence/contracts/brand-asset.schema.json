@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/brand-asset.schema.json",
+  "title": "BrandAsset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "namespace", "version", "filePath", "approvedBy", "substitutionPolicy", "autoExecute"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "kind": { "enum": ["cat_image", "master_model", "texture", "animation", "logo", "color", "style_rule"] },
+    "namespace": { "const": "moonkatty_project" },
+    "version": { "type": "integer", "minimum": 1 },
+    "filePath": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "approvedBy": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "substitutionPolicy": { "const": "owner_approval_required" },
+    "autoExecute": { "const": false },
+    "locked": { "type": "boolean" }
+  }
+}

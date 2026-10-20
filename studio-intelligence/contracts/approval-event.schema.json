@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/approval-event.schema.json",
+  "title": "ApprovalEvent",
+  "description": "Неизменяемая запись журнала. Обновление и удаление этой формы не предусмотрены.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "approvalId", "at", "action", "actorId", "actorRole", "prevStatus", "nextStatus"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "approvalId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "at": { "type": "string", "format": "date-time" },
+    "action": { "enum": ["requested", "approved", "rejected"] },
+    "actorId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "actorRole": { "enum": ["owner", "agent"] },
+    "comment": { "type": "string", "maxLength": 2000 },
+    "prevStatus": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "nextStatus": { "type": "string", "minLength": 1, "maxLength": 32 }
+  }
+}
