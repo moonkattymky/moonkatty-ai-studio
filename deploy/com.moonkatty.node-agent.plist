@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- MOONKATTY Node Agent (iMac / MacBook). Copy to ~/Library/LaunchAgents/, replace YOURUSER, then:
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.moonkatty.node-agent.plist
+     The agent opens NO ports: it only connects out to the Mac mini (HTTPS, pinned certificate). -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.moonkatty.node-agent</string>
+  <key>ProgramArguments</key><array>
+    <string>/usr/local/bin/node</string>
+    <string>/Users/YOURUSER/moonkatty-node/agent.js</string>
+  </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>NODE_AGENT_ENV</key><string>/Users/YOURUSER/.moonkatty-node/node-agent.env</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>LowPriorityIO</key><true/>
+  <key>Nice</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/YOURUSER/.moonkatty-node/agent.log</string>
+  <key>StandardErrorPath</key><string>/Users/YOURUSER/.moonkatty-node/agent.log</string>
+</dict></plist>
