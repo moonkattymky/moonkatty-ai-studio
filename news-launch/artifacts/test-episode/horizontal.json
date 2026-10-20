@@ -1,0 +1,18 @@
+{
+  "title": "MOONKATTY NEWS",
+  "preset": "youtube",
+  "platform": "YouTube",
+  "width": 1920,
+  "height": 1080,
+  "aspect": "16:9",
+  "durationSec": 57.7,
+  "files": {
+    "video": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+    "subtitles": "/workspace/news-launch/artifacts/test-episode/horizontal.srt",
+    "thumbnail": "/workspace/news-launch/artifacts/test-episode/horizontal.jpg"
+  },
+  "tts": "piper",
+  "character3d": "stub-3d",
+  "music": null,
+  "createdAt": "2026-10-20T22:13:18.132Z"
+}

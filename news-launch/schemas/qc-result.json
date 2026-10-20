@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/qc-result.json",
+  "title": "QcResult",
+  "description": "Technical QC from ffprobe and ffmpeg. Loudness target is about -14 LUFS (EBU R128). No editorial claim is made here.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["file", "ok", "width", "height", "durationSec", "videoCodec", "audioCodec", "audioPresent", "loudnessLUFS", "truePeakDb", "clipping", "blackFrames", "subtitleFile", "checkedAt"],
+  "properties": {
+    "file": { "type": "string" },
+    "ok": { "type": "boolean" },
+    "width": { "type": "integer" },
+    "height": { "type": "integer" },
+    "durationSec": { "type": "number" },
+    "videoCodec": { "type": "string" },
+    "audioCodec": { "type": "string" },
+    "audioPresent": { "type": "boolean" },
+    "loudnessLUFS": { "type": ["number", "null"] },
+    "truePeakDb": { "type": ["number", "null"] },
+    "clipping": { "type": "boolean" },
+    "blackFrames": { "type": "array", "items": { "type": "string" } },
+    "subtitleFile": { "type": "string" },
+    "subtitleCues": { "type": "integer" },
+    "failures": { "type": "array", "items": { "type": "string" } },
+    "checkedAt": { "type": "string" }
+  }
+}

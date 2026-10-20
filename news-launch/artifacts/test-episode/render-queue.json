@@ -1,0 +1,67 @@
+{
+  "jobs": [
+    {
+      "id": "news-horizontal",
+      "payload": {
+        "preset": "youtube",
+        "basename": "horizontal"
+      },
+      "status": "done",
+      "attempts": 1,
+      "createdAt": "2026-10-20T22:12:51.987Z",
+      "startedAt": "2026-10-20T22:12:51.990Z",
+      "result": {
+        "title": "MOONKATTY NEWS",
+        "preset": "youtube",
+        "platform": "YouTube",
+        "width": 1920,
+        "height": 1080,
+        "aspect": "16:9",
+        "durationSec": 57.7,
+        "files": {
+          "video": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+          "subtitles": "/workspace/news-launch/artifacts/test-episode/horizontal.srt",
+          "thumbnail": "/workspace/news-launch/artifacts/test-episode/horizontal.jpg"
+        },
+        "tts": "piper",
+        "character3d": "stub-3d",
+        "music": null,
+        "createdAt": "2026-10-20T22:13:18.132Z"
+      },
+      "finishedAt": "2026-10-20T22:13:18.135Z",
+      "error": null
+    },
+    {
+      "id": "news-vertical",
+      "payload": {
+        "preset": "shorts",
+        "basename": "vertical"
+      },
+      "status": "done",
+      "attempts": 2,
+      "createdAt": "2026-10-20T22:12:51.989Z",
+      "startedAt": "2026-10-20T22:14:06.475Z",
+      "recovered": 1,
+      "result": {
+        "title": "MOONKATTY NEWS",
+        "preset": "shorts",
+        "platform": "YouTube Shorts",
+        "width": 1080,
+        "height": 1920,
+        "aspect": "9:16",
+        "durationSec": 57.666667,
+        "files": {
+          "video": "/workspace/news-launch/artifacts/test-episode/vertical.mp4",
+          "subtitles": "/workspace/news-launch/artifacts/test-episode/vertical.srt",
+          "thumbnail": "/workspace/news-launch/artifacts/test-episode/vertical.jpg"
+        },
+        "tts": "piper",
+        "character3d": "stub-3d",
+        "music": null,
+        "createdAt": "2026-10-20T22:14:32.314Z"
+      },
+      "finishedAt": "2026-10-20T22:14:32.317Z",
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "id": "generated-color-cards",
+      "origin": "generated",
+      "generator": "ffmpeg lavfi color + drawtext via Video Factory v0",
+      "license": "Original graphics produced by this pipeline. No third-party photograph or footage.",
+      "thirdPartyAssets": [
+        {
+          "name": "DejaVu Sans",
+          "license": "Bitstream Vera / DejaVu, free for commercial use"
+        }
+      ]
+    }
+  ],
+  "music": null,
+  "tts": {
+    "engine": "piper",
+    "voice": "en_US-ljspeech-high",
+    "license": "Piper MIT; voice en_US-ljspeech-high trained from scratch on the public-domain LJ Speech dataset",
+    "commercialUse": true
+  }
+}

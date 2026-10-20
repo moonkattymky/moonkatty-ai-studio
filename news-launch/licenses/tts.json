@@ -1,0 +1,37 @@
+{
+  "engine": {
+    "name": "Piper",
+    "version": "2023.11.14-2",
+    "license": "MIT",
+    "url": "https://github.com/rhasspy/piper",
+    "commercialUse": true,
+    "note": "The Piper tarball also bundles espeak-ng (GPL-3) as a phonemizer. GPL applies to that program if you redistribute the binary. Synthesized waveforms are not copies of espeak-ng. This repository does not vendor the binary."
+  },
+  "voice": {
+    "id": "en_US-ljspeech-high",
+    "language": "en_US",
+    "dataset": "LJ Speech",
+    "datasetUrl": "https://keithito.com/LJ-Speech-Dataset/",
+    "datasetLicense": "public domain",
+    "datasetLicenseQuote": "License: Public Domain. The texts were published between 1884 and 1964, and are in the public domain. The audio was recorded in 2016-17 by the LibriVox project and is also in the public domain.",
+    "modelCardUrl": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/ljspeech/high/MODEL_CARD",
+    "modelLicense": "public domain",
+    "trainedFromScratch": true,
+    "commercialUse": true,
+    "rejectedAlternatives": [
+      {
+        "id": "en_US-lessac-medium",
+        "reason": "Blizzard 2013 Lessac licence is research-only and excludes commercial use."
+      },
+      {
+        "id": "voices finetuned from lessac (amy, joe, ryan, alan, hfc_*)",
+        "reason": "Weights are derived from the non-commercial Lessac checkpoint, or the dataset itself is CC BY-NC-SA."
+      }
+    ]
+  },
+  "font": {
+    "name": "DejaVu Sans",
+    "license": "Bitstream Vera Fonts / DejaVu license, free for commercial use",
+    "path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+  }
+}

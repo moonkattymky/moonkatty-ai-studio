@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/story-candidate.json",
+  "title": "StoryCandidate",
+  "description": "One cluster emitted by the News Intelligence Engine before the launch fact-check. engineCorroboration is the engine's own flag (a single official source counts as confirmed there). The launch fact-check does not trust that flag alone.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "headline", "summary", "category", "engineCorroboration", "reviewStatus", "items"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "headline": { "type": "string" },
+    "summary": { "type": "string" },
+    "category": { "type": "string" },
+    "engineCorroboration": { "enum": ["confirmed", "unconfirmed"] },
+    "reviewStatus": { "type": "string" },
+    "breaking": { "type": "boolean" },
+    "controversial": { "type": "boolean" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sourceId", "org", "publisher", "url", "title"],
+        "properties": {
+          "sourceId": { "type": "string" },
+          "org": { "type": "string", "description": "Publisher organisation. Two feeds from the same org are not independent." },
+          "publisher": { "type": "string" },
+          "url": { "type": "string", "minLength": 8 },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "published": { "type": ["string", "null"] },
+          "kind": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/video-render-job.json",
+  "title": "VideoRenderJob",
+  "description": "A job handed to the existing RenderQueue and Video Factory. music is null. character3d stays the stub until an owner-approved host exists.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "preset", "status", "scriptTitle", "width", "height", "character3d", "music"],
+  "properties": {
+    "id": { "type": "string" },
+    "preset": { "enum": ["youtube", "shorts"] },
+    "status": { "enum": ["queued", "running", "done", "failed"] },
+    "scriptTitle": { "type": "string" },
+    "width": { "type": "integer" },
+    "height": { "type": "integer" },
+    "character3d": { "const": "stub-3d" },
+    "music": { "type": "null" },
+    "video": { "type": "string" },
+    "subtitles": { "type": "string" }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "mvh8zknhof3n96",
+  "episodeId": "mvh8sdbz7rtk1t",
+  "status": "pending_approval",
+  "publish": false,
+  "requestedAt": "2026-10-20T22:21:24.174Z",
+  "summary": "This is MOONKATTY NEWS. Three world stories, each checked against at least two independent sources.\n\nThe Guardian reports: Alberta voters overwhelmingly reject plan to leave Canada in referendum. CBS News reports: Voters reject separation of Alberta from Canada in referendum.\n\nNPR reports: Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive. ABC News reports: Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive.\n\nBBC News reports",
+  "sources": [
+    "https://www.theguardian.com/world/2026/oct/20/canada-alberta-rejects-independence-succession-referendum",
+    "https://www.cbsnews.com/news/canada-alberta-referendum-vote-separation-independence/",
+    "https://www.npr.org/2026/10/20/g-s1-148975/nigeria-confirms-ebola-case",
+    "https://abcnews.com/International/wireStory/nigeria-confirms-ebola-case-abuja-woman-arrived-uganda-137420211",
+    "https://www.bbc.co.uk/news/articles/ckr5yqe1r1llo?at_medium=RSS&at_campaign=rss",
+    "https://www.theguardian.com/uk-news/2026/oct/20/uk-raf-typhoon-fighters-saudi-arabia-houthi-attacks",
+    "https://www.aljazeera.com/video/newsfeed/2026/10/20/aje-onl-nf_uk-to-deploy-fighter-jets-to-defend-saudi-arabia_1-201026?traffic_source=rss"
+  ],
+  "taskId": "mvh8zknhof3n96",
+  "queueIds": [
+    "mvh8zkninnn99g",
+    "mvh8zknihu9a8f"
+  ]
+}

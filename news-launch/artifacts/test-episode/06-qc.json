@@ -1,0 +1,38 @@
+[
+  {
+    "file": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+    "ok": true,
+    "width": 1920,
+    "height": 1080,
+    "durationSec": 57.899,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioPresent": true,
+    "loudnessLUFS": -14.2,
+    "truePeakDb": -2.5,
+    "clipping": false,
+    "blackFrames": [],
+    "subtitleFile": "/workspace/news-launch/artifacts/test-episode/horizontal.srt",
+    "subtitleCues": 22,
+    "failures": [],
+    "checkedAt": "2026-10-20T22:16:19.042Z"
+  },
+  {
+    "file": "/workspace/news-launch/artifacts/test-episode/vertical.mp4",
+    "ok": true,
+    "width": 1080,
+    "height": 1920,
+    "durationSec": 57.745,
+    "videoCodec": "h264",
+    "audioCodec": "aac",
+    "audioPresent": true,
+    "loudnessLUFS": -14.2,
+    "truePeakDb": -2.1,
+    "clipping": false,
+    "blackFrames": [],
+    "subtitleFile": "/workspace/news-launch/artifacts/test-episode/vertical.srt",
+    "subtitleCues": 37,
+    "failures": [],
+    "checkedAt": "2026-10-20T22:16:21.848Z"
+  }
+]

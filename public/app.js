@@ -290,15 +290,16 @@ function mediaPlayer(f) { if (!f) return ''; const u = esc(f.url), k = f.mime + 
 VIEWS.news = () => {
   const eps = DB.episodes.filter(e => e.project === 'news').sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return `<div class="row" style="margin-bottom:14px"><button class="btn primary" id="newEp">+ Новый выпуск</button><button class="btn" data-task-new="news" data-project="news">+ Задача NEWS</button><span class="sp"></span>
-    <button class="btn" disabled>Автопоиск новостей</button>${DEV()}</div>
-  <div class="devbox" style="margin-bottom:14px">Этапы конвейера отмечаются вручную (нажмите на этап) или по итогам задач агентов. Автоматическое выполнение этапов (поиск, фактчек, перевод, TTS-озвучка, рендер, публикация) — <b>в разработке</b>. Плееры появляются, когда к версии прикреплён файл.</div>
-  ${eps.length ? eps.map(e => `<div class="card" style="margin-bottom:14px"><h3><span>${esc(e.title)} <small>${e.durationMin ? e.durationMin + ' мин · ' : ''}${fmt(e.createdAt)}</small></span><span class="row"><button class="btn sm" data-ep-edit="${e.id}">Изм.</button><button class="btn sm danger" data-ep-del="${e.id}">✕</button></span></h3>
+    <button class="btn primary" id="prepareNews">Подготовить выпуск</button><button class="btn" disabled>Автопоиск новостей</button>${DEV('RU/UK, 3D, публикация')}</div>
+  <div class="devbox" style="margin-bottom:14px">Короткий выпуск EN запускается кнопкой «Подготовить выпуск»: поиск, фактчек по двум независимым источникам, сценарий, озвучка Piper, рендер 16:9 и 9:16, технический QC. Выпуск остаётся на утверждении и не публикуется. Перевод RU/UK, 3D-ведущий и автопубликация в этот запуск не входят. Этапы по-прежнему можно сменить вручную.</div>
+  ${eps.length ? eps.map(e => `<div class="card" style="margin-bottom:14px"><h3><span>${esc(e.title)} <small>${e.durationSec ? Math.round(e.durationSec) + ' с · ' : (e.durationMin ? e.durationMin + ' мин · ' : '')}${fmt(e.createdAt)}</small></span><span class="row"><button class="btn sm" data-ep-edit="${e.id}">Изм.</button><button class="btn sm danger" data-ep-del="${e.id}">✕</button></span></h3>
+    ${e.approvalStatus === 'pending_approval' ? '<div class="badge b-warn" style="margin:6px 0">Ждёт утверждения · не опубликовано</div>' : ''}
     ${e.sources?.length ? `<div class="small mut">Источники: ${e.sources.map(s => `<a href="${esc(s)}" target="_blank" rel="noopener">${esc(s.replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(', ')}</div>` : '<div class="small mut">Источники не указаны</div>'}
     ${C.LANGS.map(L => { const v = e.versions[L], m = (e.media || {})[L] || {}; const doneN = C.PIPELINE.filter(([k]) => v[k] === 'done').length;
       return `<div style="margin-top:12px"><div class="row"><b>${L}</b>${L === 'EN' ? '<span class="badge b-gold b-none">основной</span>' : ''}<div class="bar sp"><i style="width:${doneN / C.PIPELINE.length * 100}%"></i></div><span class="small mut">${doneN}/${C.PIPELINE.length}</span>
         <button class="btn sm" data-script="${e.id}|${L}">Сценарий</button><button class="btn sm" data-media="${e.id}|${L}">Файлы</button></div>
         <div class="pipe" style="margin-top:6px">${C.PIPELINE.map(([k, l]) => `<div class="stage s-${v[k]}" data-stage="${e.id}|${L}|${k}" title="Нажмите, чтобы сменить статус"><b>${l}</b>${ST_L[v[k]]}</div>`).join('')}</div>
-        ${m.audio || m.video ? `<div class="grid g2" style="margin-top:8px">${mediaPlayer(fileById(m.audio))}${mediaPlayer(fileById(m.video))}</div>` : ''}</div>`; }).join('')}</div>`).join('') : '<div class="empty" style="margin-bottom:14px">Выпусков пока нет. Создайте выпуск или попросите Director: «Подготовь сегодняшний выпуск новостей на 15 минут на трёх языках».</div>'}
+        ${m.audio || m.video || m.videoVertical ? `<div class="grid g2" style="margin-top:8px">${mediaPlayer(fileById(m.audio))}${mediaPlayer(fileById(m.video))}${m.videoVertical ? mediaPlayer(fileById(m.videoVertical)) : ''}</div>` : ''}</div>`; }).join('')}</div>`).join('') : '<div class="empty" style="margin-bottom:14px">Выпусков пока нет. Создайте выпуск или попросите Director: «Подготовь сегодняшний выпуск новостей на 15 минут на трёх языках».</div>'}
   <div class="grid">${contentPlan('news')}<div class="card"><h3>Задачи NEWS</h3>${taskTable(DB.tasks.filter(t => t.project === 'news'))}</div></div>`;
 };
 function epForm(e) {
@@ -310,6 +311,16 @@ function epForm(e) {
 }
 BIND.news = v => {
   bindPlan(v); v.querySelector('#newEp').onclick = () => epForm();
+  const prep = v.querySelector('#prepareNews');
+  if (prep) prep.onclick = async () => {
+    if (MODE !== 'server') { toast('Нужен серверный режим', true); return; }
+    prep.disabled = true;
+    toast('Готовим выпуск. Это несколько минут.');
+    try {
+      await api('POST', '/api/news/prepare', { text: 'Подготовь выпуск MOONKATTY NEWS о трёх важных мировых событиях' });
+      await loadAll(); render(); toast('Выпуск готов и ждёт утверждения');
+    } catch (e) { toast('Ошибка: ' + e.message, true); prep.disabled = false; }
+  };
   v.querySelectorAll('[data-ep-edit]').forEach(b => b.onclick = () => epForm(DB.episodes.find(e => e.id === b.dataset.epEdit)));
   v.querySelectorAll('[data-ep-del]').forEach(b => b.onclick = () => confirmDo('Удалить выпуск?', () => act(() => api('DELETE', '/api/episodes/' + b.dataset.epDel), 'Удалено')));
   v.querySelectorAll('[data-stage]').forEach(s => s.onclick = () => { const [id, L, k] = s.dataset.stage.split('|'); const e = DB.episodes.find(x => x.id === id);
@@ -562,7 +573,7 @@ VIEWS.dashboard = () => {
     <div class="card"><h3><span><img src="img/av-news.jpg" alt="" style="width:22px;border-radius:6px;vertical-align:middle"> Director</span><span class="small mut">${DB.integrations.find(i => i.id === 'ollama')?.lastTest?.ok ? 'LLM' : 'правиловой планировщик'}</span></h3>
       <form id="dashChat" class="row"><input name="text" class="sp" placeholder="Подготовь сегодняшний выпуск новостей на 15 минут на трёх языках" required><button class="btn primary">➤</button></form></div>
   </div><div class="col">
-    <div class="card"><h3>Content Pipeline ${ep ? `<small>${esc(ep.title)} · EN</small>` : ''}</h3>
+    <div class="card"><h3>Content Pipeline ${ep ? `<small>${esc(ep.title)} · EN</small>` : ''} ${ep && ep.approvalStatus === 'pending_approval' ? '<span class="badge b-warn">Ждёт утверждения</span>' : ''}</h3>
       ${ep ? `<div class="stepper">${C.PIPELINE.map(([k, l], i) => `<div class="step ${epV[k] === 'done' ? 'done' : i === curI ? 'cur' : ''}">${i + 1} ${l}</div>`).join('')}</div>
       <div class="row"><div class="bar sp"><i style="width:${pct(doneN, C.PIPELINE.length)}%"></i></div><span class="small">Этап ${Math.min(doneN + 1, C.PIPELINE.length)}/${C.PIPELINE.length} · <b>${pct(doneN, C.PIPELINE.length)}%</b></span></div>` : '<div class="empty">Выпусков нет. <button class="btn sm" data-go="news">Создать выпуск</button></div>'}</div>
     <div class="card"><h3>Preview <span class="badge b-none">16:9</span></h3>

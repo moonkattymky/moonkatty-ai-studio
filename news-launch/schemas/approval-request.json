@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/approval-request.json",
+  "title": "ApprovalRequest",
+  "description": "Editorial hold. publish is false. The Social Publisher queue item stays pending_approval and is not sent to any platform.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "episodeId", "status", "publish", "requestedAt", "summary", "sources"],
+  "properties": {
+    "id": { "type": "string" },
+    "episodeId": { "type": "string" },
+    "status": { "const": "pending_approval" },
+    "publish": { "const": false },
+    "requestedAt": { "type": "string" },
+    "summary": { "type": "string" },
+    "sources": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+    "taskId": { "type": "string" },
+    "queueIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

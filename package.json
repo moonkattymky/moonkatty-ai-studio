@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test": "node --test media-automation/test/*.js news-launch/test/*.js",
+    "news:prepare": "node news-launch/bin/prepare.js"
   },
   "keywords": [],
   "author": "",

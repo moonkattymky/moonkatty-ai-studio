@@ -1,0 +1,26 @@
+[
+  {
+    "id": "news-horizontal",
+    "preset": "youtube",
+    "status": "done",
+    "scriptTitle": "MOONKATTY NEWS",
+    "width": 1920,
+    "height": 1080,
+    "character3d": "stub-3d",
+    "music": null,
+    "video": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+    "subtitles": "/workspace/news-launch/artifacts/test-episode/horizontal.srt"
+  },
+  {
+    "id": "news-vertical",
+    "preset": "shorts",
+    "status": "done",
+    "scriptTitle": "MOONKATTY NEWS",
+    "width": 1080,
+    "height": 1920,
+    "character3d": "stub-3d",
+    "music": null,
+    "video": "/workspace/news-launch/artifacts/test-episode/vertical.mp4",
+    "subtitles": "/workspace/news-launch/artifacts/test-episode/vertical.srt"
+  }
+]

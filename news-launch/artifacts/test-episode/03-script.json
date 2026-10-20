@@ -1,0 +1,45 @@
+{
+  "title": "MOONKATTY NEWS",
+  "lang": "en",
+  "scenes": [
+    {
+      "id": "intro",
+      "kind": "intro",
+      "heading": "MOONKATTY NEWS",
+      "text": "This is MOONKATTY NEWS. Three world stories, each checked against at least two independent sources."
+    },
+    {
+      "id": "f9ec31204119",
+      "kind": "story",
+      "storyId": "f9ec31204119",
+      "heading": "Guardian · CBS",
+      "text": "The Guardian reports: Alberta voters overwhelmingly reject plan to leave Canada in referendum. CBS News reports: Voters reject separation of Alberta from Canada in referendum."
+    },
+    {
+      "id": "97dab615c25b",
+      "kind": "story",
+      "storyId": "97dab615c25b",
+      "heading": "NPR · ABC",
+      "text": "NPR reports: Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive. ABC News reports: Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive."
+    },
+    {
+      "id": "59bc6b4539c2",
+      "kind": "story",
+      "storyId": "59bc6b4539c2",
+      "heading": "BBC · Guardian",
+      "text": "BBC News reports: UK to deploy jets to defend Saudi Arabia from Houthi attacks. The Guardian reports: UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks."
+    },
+    {
+      "id": "outro",
+      "kind": "outro",
+      "heading": "Sources",
+      "text": "These accounts come from the sources named in this edition. This edition is waiting for approval and has not been published."
+    }
+  ],
+  "llm": {
+    "mode": "temporary-adapter",
+    "model": null,
+    "adapter": "TEMPORARY_ADAPTER:extractive-headlines",
+    "reason": "fetch failed"
+  }
+}
