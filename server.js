@@ -184,8 +184,37 @@ app.get('/api/system', (req, res) => {
   });
 });
 
+// ---- OpenCode server Basic Auth (password only in macOS Keychain; see lib/opencode-auth.js) ----
+const oca = require('./lib/opencode-auth.js');
+const ocItem = () => get('integrations', 'opencode') || { id: 'opencode', name: 'OpenCode', url: 'http://127.0.0.1:4096', testPath: '/global/health' };
+async function ocView() { const it = ocItem(); const ks = oca.keychainStatus();
+  return { url: it.url, username: it.username || oca.DEFAULT_USER, hasPassword: ks.available ? await oca.hasPassword() : false, keychain: ks, lastTest: it.lastTest || null, status: !ks.available ? 'Не подключено' : (it.lastTest?.ok ? 'Подключено' : 'Не подключено') }; }
+app.get('/api/opencode/auth', async (req, res) => res.json(await ocView()));
+app.put('/api/opencode/auth', async (req, res) => {
+  const b = req.body && typeof req.body === 'object' ? req.body : {}; const allowed = ['url', 'username', 'password', 'clearPassword'];
+  if (Object.keys(b).some(k => !allowed.includes(k))) return res.status(400).json({ error: 'Недопустимые поля' });
+  const it = ocItem(); const changes = [];
+  if ('url' in b) { const v = oca.validateUrl(b.url); if (v.error) return res.status(400).json({ error: v.error, code: v.code }); it.url = v.url; changes.push('url'); }
+  if ('username' in b) { if (!oca.validUser(b.username)) return res.status(400).json({ error: 'Логин: 1–64 символа (латиница, цифры, . _ @ -)' }); it.username = b.username; changes.push('username'); }
+  if ('password' in b && b.password !== '' && b.password != null) {
+    if (!oca.validPw(b.password)) return res.status(400).json({ error: 'Пароль: 1–256 печатных ASCII-символов' });
+    if (!oca.keychainStatus().available) return res.status(409).json({ error: 'Не подключено: Keychain недоступна, пароль не сохранён (запасного хранилища нет)' });
+    try { await oca.setPassword(b.password); } catch (e) { return res.status(e.status || 500).json({ error: oca.scrub(e.message, b.password) }); }
+    changes.push('password→Keychain');
+  }
+  if (b.clearPassword === true) { await oca.deletePassword(); changes.push('password удалён'); }
+  delete it.password; delete it.authorization; it.lastTest = changes.length ? null : it.lastTest; put('integrations', it);
+  log('info', 'integration:opencode', 'Настройки OpenCode изменены: ' + (changes.join(', ') || 'без изменений'), req.user); res.json(await ocView());
+});
+async function ocTest(req, res) {
+  const it = ocItem(); const r = await oca.test({ url: it.url, username: it.username || oca.DEFAULT_USER, sec });
+  if (r.code === 'non_loopback' || r.code === 'invalid_url') { log('warn', 'integration:opencode', 'Проверка OpenCode отклонена: ' + r.detail, req.user); return res.status(400).json({ ...r, error: r.detail }); }
+  it.lastTest = r; put('integrations', it); log(r.ok ? 'info' : 'error', 'integration:opencode', `Проверка OpenCode (${r.url}): ${r.ok ? 'OK' : 'ошибка — ' + r.detail}`, req.user); res.json(r);
+}
+app.post('/api/opencode/test', ocTest);
 // Integration test — real HTTP request from the server.
 app.post('/api/integrations/:id/test', async (req, res) => {
+  if (req.params.id === 'opencode') return ocTest(req, res);
   const it = get('integrations', req.params.id);
   if (!it) return res.status(404).json({ error: 'not found' });
   const url = String(it.url || '').replace(/\/$/, '') + (it.testPath || '/');
@@ -228,9 +257,14 @@ const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? ne
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
 app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
 // Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).
-const PROTECTED = { tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId'], comments: ['repliedAt', 'replyId'] };
+const PROTECTED = { integrations: ['password', 'authorization', 'lastTest'], tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId'], comments: ['repliedAt', 'replyId'] };
 const stripProtected = (col, b) => { const o = Object.assign({}, b); for (const k of PROTECTED[col] || []) delete o[k]; if (col === 'tasks' && 'kind' in o) o.codeApproved = false; return o; };
 app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); next(); });
+// OpenCode URL must pass the same loopback validation when written through generic CRUD.
+app.use('/api/integrations', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
+  const id = req.path.split('/')[1] || req.body.id; if (id !== 'opencode') return next();
+  for (const k of ['username']) if (k in req.body && !oca.validUser(req.body[k])) return res.status(400).json({ error: 'Неверный логин' });
+  if ('url' in req.body) { const v = oca.validateUrl(req.body.url); if (v.error) return res.status(400).json({ error: v.error, code: v.code }); req.body.url = v.url; } next(); });
 app.post('/api/:col', okCol, (req, res) => {
   const o = Object.assign({}, req.body, { id: req.body.id || core.uid(), createdAt: core.now() });
   if (req.params.col === 'tasks' && o.schedule && o.schedule.type !== 'none') o.nextRunAt = core.nextRun(o.schedule);
@@ -260,7 +294,9 @@ app.delete('/api/:col/:id', okCol, (req, res) => {
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use((err, req, res, next) => { log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: err.message }); });
+app.use((err, req, res, next) => { // body-parser messages can quote the request body (e.g. a password) — never log/return them
+  if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') { log('warn', 'http', `${req.method} ${req.path}: неверное тело запроса (${err.type})`); return res.status(400).json({ error: 'Неверное тело запроса' }); }
+  log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: sec.redact(err.message) }); });
 
 // Scheduler: every 30s; auto-report every 3 days.
 function tick() {

@@ -35,6 +35,9 @@ async function localRoute(method, path, body) {
     if (id === 'password') { if ((await sha(u.salt + body.oldPassword)) !== u.hash) throw new Error('Старый пароль неверен'); if ((body.newPassword || '').length < 8) throw new Error('Новый пароль: мин. 8 символов');
       u.salt = C.uid(); u.hash = await sha(u.salt + body.newPassword); local.meta('user', u); llog('info', 'auth', 'Пароль изменён'); return ok({ ok: true }); }
   }
+  if (col === 'opencode') { // browser demo: no Keychain → feature unavailable, password is never stored in localStorage
+    if (method === 'GET') return { url: 'http://127.0.0.1:4096', username: 'opencode', hasPassword: false, keychain: { available: false, reason: 'Браузерный режим: Keychain недоступна. Пароль OpenCode можно сохранить только в приложении на Mac.' }, lastTest: null, status: 'Не подключено' };
+    throw new Error('Не подключено: в браузерном режиме пароль OpenCode не сохраняется'); }
   if (col === 'system') return { mode: 'browser', userAgent: navigator.userAgent, storageBytes: (localStorage.getItem(LS) || '').length, counts: Object.fromEntries(C.COLLECTIONS.map(c => [c, LD[c].length])), lastSchedulerTick: local.meta('lastTick') || null };
   if (col === 'backup') return { app: 'moonkatty-ai-studio', version: 1, exportedAt: C.now(), data: LD };
   if (col === 'restore') { const d = body?.data; if (!d) throw new Error('Неверный файл резервной копии'); for (const c of C.COLLECTIONS) if (Array.isArray(d[c])) LD[c] = d[c]; llog('info', 'backup', 'Данные восстановлены из резервной копии'); return ok({ ok: true }); }
@@ -469,15 +472,24 @@ BIND.logs = v => { v.querySelector('#lv').onchange = e => { SUB.lv = e.target.va
 // ---- SETTINGS ----
 VIEWS.settings = () => `<div class="grid g2"><div class="card" style="grid-column:1/-1"><h3>Интеграции (Mac mini)</h3>
   <p class="small mut" style="margin-top:0">${MODE === 'server' ? 'Проверка выполняется сервером (реальный HTTP-запрос, таймаут 5 с).' : 'Браузерный режим: проверка идёт прямо из браузера; с https-страницы запросы к http://localhost обычно блокируются (mixed content / CORS). Для реальной проверки запустите сервер на Mac.'}</p>
-  ${DB.integrations.map(i => `<form class="list-item" data-int="${i.id}"><b style="min-width:100px">${esc(i.name)}</b><input name="url" value="${esc(i.url)}" style="flex:2;min-width:180px" aria-label="URL"><input name="testPath" value="${esc(i.testPath)}" style="flex:1;min-width:80px" title="путь проверки" aria-label="путь проверки">
+  ${DB.integrations.filter(i => i.id !== 'opencode').map(i => `<form class="list-item" data-int="${i.id}"><b style="min-width:100px">${esc(i.name)}</b><input name="url" value="${esc(i.url)}" style="flex:2;min-width:180px" aria-label="URL"><input name="testPath" value="${esc(i.testPath)}" style="flex:1;min-width:80px" title="путь проверки" aria-label="путь проверки">
     ${i.id === 'ollama' ? `<input name="model" value="${esc(i.model || 'qwen3:8b')}" style="flex:1;min-width:90px" title="модель" aria-label="модель">` : ''}<button class="btn sm">Сохранить</button><button type="button" class="btn sm primary" data-test="${i.id}">Тест</button>${svcBadge(i)}
     ${i.lastTest ? `<div class="small mut" style="width:100%">${fmt(i.lastTest.at)} · ${esc(i.lastTest.url)} · HTTP ${i.lastTest.status ?? '—'} · ${i.lastTest.ms} мс · ${esc(i.lastTest.detail)} (${i.lastTest.via})</div>` : ''}</form>`).join('')}</div>
+  <div class="card" style="grid-column:1/-1" id="ocCard"><h3>OpenCode — доступ к серверу <span id="ocBadge" class="badge">Не подключено</span></h3>
+    <p class="small mut" style="margin-top:0">Для <code>opencode serve</code> с <code>OPENCODE_SERVER_PASSWORD</code> (HTTP Basic Auth). Пароль хранится только в macOS Keychain и никогда не показывается и не попадает в базу, бэкапы и журналы.</p>
+    <form id="ocForm" autocomplete="off"><div class="row" style="flex-wrap:wrap;gap:8px">
+      <label style="flex:2;min-width:200px">URL сервера<input name="url" id="ocUrl" placeholder="http://127.0.0.1:4096" required></label>
+      <label style="flex:1;min-width:120px">Логин<input name="username" id="ocUser" placeholder="opencode" autocomplete="off"></label>
+      <label style="flex:1;min-width:160px">Пароль<input type="password" name="password" id="ocPw" autocomplete="new-password" placeholder="не задан" maxlength="256"></label></div>
+      <div class="row" style="margin-top:10px;gap:8px"><button class="btn" id="ocSave">Сохранить</button><button type="button" class="btn primary" id="ocTest">Проверить подключение</button><button type="button" class="btn danger" id="ocClear">Удалить пароль</button></div>
+      <p class="small mut" id="ocInfo"></p><p class="small" id="ocResult"></p></form></div>
   <div class="card"><h3>Резервное копирование</h3><div class="row"><button class="btn" id="bkExp">Экспорт JSON</button><label class="btn" style="margin:0;color:var(--text);font-size:13px">Импорт<input type="file" id="bkImp" accept=".json,application/json" hidden></label>${MODE === 'server' ? '<button class="btn" id="bkRun">Бэкап на сервере сейчас</button>' : ''}</div>
     <p class="small mut">${MODE === 'server' ? 'Сервер автоматически сохраняет копию раз в сутки в data/backups (хранятся 14 последних).' : 'Браузерный режим: автобэкап на сервере недоступен — используйте экспорт.'}</p><div id="bkList" class="small mut"></div></div>
   <div class="card"><h3>Учётная запись: ${esc(USER)}</h3><form id="pwForm"><label>Старый пароль</label><input type="password" name="oldPassword" required autocomplete="current-password"><label>Новый пароль</label><input type="password" name="newPassword" minlength="8" required autocomplete="new-password"><button class="btn" style="margin-top:10px">Сменить пароль</button></form></div>
   <div class="card"><h3>Уведомления</h3><p class="small">Ошибки показываются в колокольчике 🔔 (работает).</p><button class="btn" disabled>Включить web push</button> ${DEV()}</div>
   <div class="card"><h3>Режим работы</h3><p class="small">${MODE === 'server' ? 'Серверный режим: Node.js + SQLite.' : 'Браузерный демо-режим: данные хранятся только в этом браузере (localStorage).'}</p><button class="btn danger" id="resetBtn">Сбросить все данные</button></div></div>`;
 BIND.settings = v => {
+  bindOpencode(v);
   v.querySelectorAll('[data-int]').forEach(f => f.onsubmit = e => { e.preventDefault(); act(() => api('PUT', '/api/integrations/' + f.dataset.int, Object.fromEntries(new FormData(f))), 'Сохранено'); });
   v.querySelector('#bkExp').onclick = async () => download('moonkatty-studio-backup.json', await api('GET', '/api/backup'));
   v.querySelector('#bkImp').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { const d = JSON.parse(await f.text()); confirmDo('Восстановить данные из файла? Текущие данные будут заменены.', () => act(() => api('POST', '/api/restore', d), 'Данные восстановлены')); } catch { toast('Файл не является JSON', true); } };
@@ -485,6 +497,23 @@ BIND.settings = v => {
   v.querySelector('#pwForm').onsubmit = async e => { e.preventDefault(); try { await api('POST', '/api/auth/password', Object.fromEntries(new FormData(e.target))); toast('Пароль изменён'); e.target.reset(); } catch (er) { toast(er.message, true); } };
   v.querySelector('#resetBtn').onclick = () => confirmDo('Сбросить ВСЕ данные к начальным?', () => act(() => api('POST', '/api/reset', { confirm: 'RESET' }), 'Данные сброшены'));
 };
+
+async function bindOpencode(v) {
+  const f = v.querySelector('#ocForm'); if (!f) return; const pw = v.querySelector('#ocPw'), info = v.querySelector('#ocInfo'), res = v.querySelector('#ocResult'), badge = v.querySelector('#ocBadge');
+  const show = s => { v.querySelector('#ocUrl').value = s.url || ''; v.querySelector('#ocUser').value = s.username || 'opencode'; pw.value = '';
+    pw.placeholder = s.hasPassword ? '•••••• сохранён в Keychain' : 'не задан';
+    const off = !s.keychain?.available; badge.textContent = s.status || 'Не подключено'; badge.className = 'badge' + (s.status === 'Подключено' ? ' b-ok' : '');
+    info.textContent = off ? 'Не подключено — ' + (s.keychain?.reason || 'Keychain недоступна') : 'Пароль: ' + (s.hasPassword ? 'сохранён в macOS Keychain' : 'не задан') + ' · разрешены только локальные адреса';
+    [pw, v.querySelector('#ocClear')].forEach(x => x.disabled = off); if (off) pw.placeholder = 'недоступно без Keychain';
+    if (s.lastTest) res.textContent = (s.lastTest.ok ? '✓ ' : '✗ ') + s.lastTest.detail; };
+  try { show(await api('GET', '/api/opencode/auth')); } catch (e) { info.textContent = 'Не подключено — ' + e.message; }
+  f.onsubmit = async e => { e.preventDefault(); const b = { url: f.url.value.trim(), username: f.username.value.trim() || 'opencode' }; if (pw.value) b.password = pw.value;
+    try { show(await api('PUT', '/api/opencode/auth', b)); toast('Сохранено'); } catch (er) { toast('Ошибка: ' + er.message, true); } finally { pw.value = ''; } };
+  v.querySelector('#ocClear').onclick = () => confirmDo('Удалить пароль OpenCode из Keychain?', async () => { try { show(await api('PUT', '/api/opencode/auth', { clearPassword: true })); toast('Пароль удалён'); } catch (er) { toast('Ошибка: ' + er.message, true); } });
+  v.querySelector('#ocTest').onclick = async () => { const btn = v.querySelector('#ocTest'); btn.disabled = true; res.textContent = 'Проверка…';
+    try { const r = await api('POST', '/api/opencode/test'); res.textContent = (r.ok ? '✓ ' : '✗ ') + r.detail; toast(r.ok ? 'Подключено ✓' : r.detail, !r.ok); show(await api('GET', '/api/opencode/auth')); }
+    catch (er) { res.textContent = '✗ ' + er.message; } finally { btn.disabled = false; } };
+}
 
 // ================= Director chat =================
 function openChat() { $('#chatDrawer').classList.remove('hidden'); renderChat(); }

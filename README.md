@@ -61,5 +61,9 @@ Electron shell + background server (launchd LaunchAgent). Window loads only the 
 - Guide (RU): [docs/INSTALL_MAC.md](docs/INSTALL_MAC.md)
 - Env: `STUDIO_DATA_DIR`, `STUDIO_SQLITE=node|better`, `STUDIO_BRAND`, `STUDIO_KEYCHAIN=0`
 
+### OpenCode server password (1.1.2)
+
+Settings → «OpenCode — доступ к серверу»: URL (loopback only), username (`opencode`), password for `OPENCODE_SERVER_PASSWORD`. The password is stored only in the macOS Keychain (unavailable → «Не подключено», no fallback). Not yet tested on a real Mac. Details: `docs/SECURITY_AUDIT.md`.
+
 ### Security (1.1.1)
 See [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md). Tests: `node scripts/security-test.mjs`, `xvfb-run -a node scripts/desktop-test.mjs`. Build: [docs/BUILD_MAC.md](docs/BUILD_MAC.md), signing: [docs/APPLE_SIGNING.md](docs/APPLE_SIGNING.md), Mac checklist: [docs/MAC_TEST_CHECKLIST.md](docs/MAC_TEST_CHECKLIST.md). Env: `STUDIO_ALLOWED_HOSTS` (Tailscale `*.ts.net` names), `STUDIO_OPENCODE=1` (off by default).

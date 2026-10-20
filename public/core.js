@@ -43,7 +43,7 @@
       ],
       integrations: [
         { id: 'ollama', name: 'Ollama', url: 'http://localhost:11434', testPath: '/api/tags', note: 'Модель: qwen3:8b', lastTest: null },
-        { id: 'opencode', name: 'OpenCode', url: 'http://localhost:4096', testPath: '/', note: 'opencode serve', lastTest: null },
+        { id: 'opencode', name: 'OpenCode', url: 'http://127.0.0.1:4096', testPath: '/global/health', username: 'opencode', note: 'opencode serve', lastTest: null },
         { id: 'docker', name: 'Docker', url: 'http://localhost:2375', testPath: '/_ping', note: 'Docker Engine API (TCP должен быть явно включён)', lastTest: null },
         { id: 'openwebui', name: 'Open WebUI', url: 'http://localhost:3000', testPath: '/health', note: '', lastTest: null }
       ],

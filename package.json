@@ -1,11 +1,14 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
     "start": "node server.js",
     "smoke": "node scripts/smoke.mjs",
+    "test:security": "node scripts/security-test.mjs",
+    "test:runner": "node scripts/runner-test.mjs",
+    "test:opencode": "node scripts/opencode-auth-test.mjs",
     "desktop": "electron .",
     "dist:mac": "electron-builder --mac zip --arm64"
   },
