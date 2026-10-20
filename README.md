@@ -38,3 +38,14 @@ Ollama: для доступа из Docker/браузера может понад
 
 ## Тесты
 `node scripts/smoke.mjs <url> <prefix> <user> <pass>` — headless Chrome (playwright-core): вход, чат с Director, задачи с расписанием, старт агента, выпуск и этапы, утверждение поста, отчёт, тест Ollama, скриншоты всех разделов (десктоп + iPhone) в `screenshots/`.
+
+
+## Facebook & Instagram module
+
+«Соцсети» → tabs: FB/IG pages (4 workspaces: MOONKATTY NEWS FB/IG, MOONKATTY FB/IG), unified queue (YouTube, TikTok, X, Telegram, Facebook, Instagram), analytics (actual vs forecast kept separate), community (reply drafts with approval).
+
+- Official Meta OAuth (Facebook Login for Business, Graph API v26.0), server-side only; tokens encrypted (AES-256-GCM).
+- Manual approval ON, autopublish OFF by default. Guardrails: fact-check, source attribution, image rights, dedup.
+- Env: `META_APP_ID`, `META_APP_SECRET`, `META_REDIRECT_URI`, `META_CONFIG_ID` (optional), `META_GRAPH_VERSION`, `STUDIO_SECRET_KEY` (optional).
+- Demo data: «Загрузить демо-данные» creates items marked `[ДЕМО]`; they are never published and can be removed in one click.
+- Guide (RU): [docs/CONNECT_META.md](docs/CONNECT_META.md).

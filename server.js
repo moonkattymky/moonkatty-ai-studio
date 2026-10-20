@@ -4,7 +4,9 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const os = require('os');
+global.MKSocial = require('./public/social.js');
 const core = require('./public/core.js');
+const S = MKSocial;
 const crypto = require('crypto');
 
 const PORT = +process.env.PORT || 8787;
@@ -36,6 +38,8 @@ if (!q.meta.get('seeded')) {
   db.transaction(() => { const s = core.seed(); for (const col of Object.keys(s)) for (const o of s[col]) put(col, o); q.setMeta.run('seeded', core.now()); })();
   log('info', 'system', 'База данных создана, начальные данные загружены');
 }
+{ const miss = core.missingSeed(Object.fromEntries(['agents', 'channels', 'workspaces', 'integrations'].map(c => [c, list(c)])));
+  const n = Object.values(miss).reduce((a, x) => a + x.length, 0); if (n) { for (const c in miss) for (const o of miss[c]) put(c, o); log('info', 'system', 'Обновление: добавлены новые элементы — ' + n); } }
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -60,6 +64,7 @@ function newSession(res, user) {
   const tok = crypto.randomBytes(32).toString('hex'); sessions.set(tok, { user, exp: Date.now() + SESSION_TTL }); saveSessions();
   res.setHeader('Set-Cookie', `mk_session=${tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL / 1000}`);
 }
+const meta = require('./meta.js')(app, { q, get, put, list, log, DB_PATH, express, db });
 app.get('/api/auth/status', (req, res) => { const s = sessions.get(tokenOf(req)); res.json({ needsSetup: !Object.keys(getUsers()).length, user: s && s.exp > Date.now() ? s.user : null }); });
 app.post('/api/auth/setup', (req, res) => {
   if (Object.keys(getUsers()).length) return res.status(403).json({ error: 'Пользователь уже создан' });
@@ -88,6 +93,8 @@ app.post('/api/auth/password', (req, res) => {
   if (!newPassword || newPassword.length < 8) return res.status(400).json({ error: 'Новый пароль: мин. 8 символов' });
   u[req.user] = hashPw(newPassword); setUsers(u); log('info', 'auth', 'Пароль изменён', req.user); res.json({ ok: true });
 });
+
+meta.mountProtected();
 
 // ---- Backup / restore ----
 const dump = () => ({ app: 'moonkatty-ai-studio', version: 1, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])) });
@@ -179,6 +186,11 @@ app.post('/api/reports/generate', (req, res) => {
   res.json(rep);
 });
 
+app.post('/api/demo/remove', (req, res) => {
+  let n = 0; db.transaction(() => { for (const c of core.COLLECTIONS) for (const o of list(c)) if (o.demo) { q.del.run(c, o.id); n++; } })();
+  for (const w of list('workspaces')) if (w.demoAnalytics || w.audiencePlanDemo) { delete w.demoAnalytics; put('workspaces', w); }
+  log('info', 'system', 'Демо-данные удалены: ' + n, req.user); res.json({ removed: n });
+});
 app.post('/api/reset', (req, res) => {
   if (req.body?.confirm !== 'RESET') return res.status(400).json({ error: 'confirm required' });
   db.transaction(() => { db.exec('DELETE FROM items'); const s = core.seed(); for (const c of Object.keys(s)) for (const o of s[c]) put(c, o); })();
@@ -197,6 +209,12 @@ app.post('/api/:col', okCol, (req, res) => {
 });
 app.put('/api/:col/:id', okCol, (req, res) => {
   const cur = get(req.params.col, req.params.id); if (!cur) return res.status(404).json({ error: 'not found' });
+  if (req.params.col === 'queue' && req.body.status === 'approved') {
+    const cand = Object.assign({}, cur, req.body); const data = { queue: list('queue'), episodes: list('episodes') };
+    const issues = [...S.guardrails(cand, data), ...S.dailyCheck(cand, data.queue, list('workspaces'))];
+    if (issues.length) { log('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`, req.user); return res.status(400).json({ error: issues.join('; '), issues }); }
+  }
+  if (req.params.col === 'queue' && req.body.status && req.body.status !== cur.status) req.body.history = [...(cur.history || []), { at: core.now(), event: req.body.status, user: req.user }];
   const o = Object.assign(cur, req.body, { id: cur.id, updatedAt: core.now() });
   if (req.params.col === 'tasks') {
     if (req.body.status === 'done' && !o.completedAt) o.completedAt = core.now();
@@ -226,6 +244,7 @@ function tick() {
       const rep = core.buildReport(data, 3); rep.trigger = 'auto'; put('reports', rep);
       q.setMeta.run('lastAutoReport', rep.createdAt); log('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован');
     }
+    meta.tick().catch(e => log('error', 'publishing', e.message));
     const lb = q.meta.get('lastBackup')?.v; if (!lb || Date.now() - new Date(lb) >= 86400000) scheduledBackup();
     q.setMeta.run('lastTick', core.now());
   } catch (e) { log('error', 'scheduler', e.message); }
