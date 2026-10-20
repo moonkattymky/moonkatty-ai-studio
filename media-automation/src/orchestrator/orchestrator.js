@@ -10,6 +10,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 class Orchestrator {
   constructor({ stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets = ['youtube', 'shorts'], storyCount = 3, minStories = 2, stepAttempts = 2, retryMs = 1000, publishTargets, clock = () => new Date() }) {
     fs.mkdirSync(path.join(stateDir, 'runs'), { recursive: true });
+    this.panelFallback = arguments[0].panelFallback || null;
     Object.assign(this, { stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets, storyCount, minStories, stepAttempts, retryMs, clock });
     this.store = new JsonStore(path.join(stateDir, 'orchestrator.json'));
     this.publishTargets = publishTargets || { youtube: ['youtube-news'], shorts: ['youtube-news', 'tiktok-news', 'instagram-news', 'facebook-news'] };
@@ -55,7 +56,9 @@ class Orchestrator {
     });
     const media = await this._step(r, 'media', async () => {
       const stories = [];
-      for (const s of edited.stories) { if (stories.length >= this.storyCount) break; const [a] = await this.media.findForNews(s.id, mediaQueries(s), { count: 1 }); if (!a) { this._log(runId, 'story_dropped_no_media', { storyId: s.id }); continue; }
+      for (const s of edited.stories) { if (stories.length >= this.storyCount) break; let [a] = await this.media.findForNews(s.id, mediaQueries(s), { count: 1 }).catch(() => []);
+        if (!a) { if (!this.panelFallback) { this._log(runId, 'story_dropped_no_media', { storyId: s.id }); continue; }
+          a = await this.panelFallback({ story: s, headline: s.editedHeadline, fact: s.fact }); this._log(runId, 'media_fallback_panel', { storyId: s.id, assetId: a.id }); }
         stories.push({ id: s.id, category: s.category, headline: s.editedHeadline, text: s.script, asset: a, fact: s.fact, sources: s.items.map(i => ({ name: i.sourceName, url: i.link })) }); }
       if (stories.length < this.minStories) { const e = new Error(`only ${stories.length} stories with licensed media`); e.permanent = true; throw e; }
       const sources = [...new Map(stories.flatMap(s => s.sources).map(x => [x.name + x.url, x])).values()];

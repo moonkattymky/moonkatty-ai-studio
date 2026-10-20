@@ -125,3 +125,16 @@ test('studio adapter aligned with v1.2.0 JOBS_API: extra fields, status/id norma
   assert.equal(await new StudioHost3D({ adapter: stub }).renderSegment({ script: 's' }), null);
   assert.equal(await new StudioHost3D({ adapter: new StudioJobQueueAdapter() }).renderSegment({}), null);
 });
+test('relevance: proper noun must match (no opera image for BepiColombo)', () => {
+  assert.equal(relevant('Celebrating BepiColombo three words', { title: 'Lakmé - opera in three acts - music; words by Gondinet' }), false);
+  assert.equal(relevant('Schiaparelli Crater Mars', { title: 'Jezero Crater as Seen by Mars Express' }), false);
+  assert.equal(relevant('BepiColombo Mercury', { title: 'BepiColombo approaching Mercury' }), true);
+});
+test('panel fallback: own-work branded panel registered with rights, no stock image', async () => {
+  const { MediaLibrary } = require('../src/media/library'); const { panelFallbackFactory, panelSvg } = require('../src/media/panel'); const d = tmp();
+  const lib = new MediaLibrary({ dir: d, providers: {} });
+  assert.match(panelSvg({ headline: 'A & B', category: 'space' }), /A &amp; B/);
+  const mk = panelFallbackFactory({ library: lib, dir: d, runFn: async (cmd, args) => { fs.writeFileSync(args[1], 'png'); return { stdout: '' }; } });
+  const a = await mk({ story: { id: 's1', category: 'space' }, headline: 'Shock analysis', fact: null });
+  assert.equal(a.license, 'Own-work'); assert.ok(fs.existsSync(a.localPath)); assert.equal(lib.rightsReport([a.id]).assets[0].provider, 'moonkatty-generated');
+});
