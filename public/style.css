@@ -142,3 +142,4 @@ body{background:radial-gradient(1200px 600px at 75% -10%,#231a52 0%,transparent 
 .mini-cal .has{box-shadow:inset 0 -2px 0 var(--gold)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.seg button{background:none;border:none;color:var(--mut);padding:4px 10px;cursor:pointer;font:inherit;font-size:12px}.seg button.on{background:#7c3aed;color:#fff}
 @media (max-width:760px){.agent-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:4px}.agent-row .agent-mini{min-width:230px;scroll-snap-align:start}}
+.lang{width:auto;padding:6px 8px;font-size:12px;background:var(--card);border-radius:8px}

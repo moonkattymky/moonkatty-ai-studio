@@ -4,6 +4,9 @@
 
 **Демо (браузерный режим, данные в localStorage):** https://moonkattymky.github.io/moonkatty-ai-studio/
 
+## Языки
+Интерфейс: RU (по умолчанию) / EN / UK — переключатель в верхней панели и на экране входа, выбор сохраняется. Все строки — через словарь `public/i18n-dict.js` (генерируется из `scripts/i18n_src.py`); названия MOONKATTY, MOONKATTY NEWS, Ollama, OpenCode, Docker не переводятся. Пользовательский контент (названия ваших задач/постов) не переводится.
+
 ## Два режима
 | | Серверный (Node + SQLite) | Браузерный (GitHub Pages) |
 |---|---|---|

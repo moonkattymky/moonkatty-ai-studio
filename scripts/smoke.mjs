@@ -37,4 +37,11 @@ await p.evaluate(() => location.hash = 'settings'); await p.waitForTimeout(300);
 for (const r of all) { await p.evaluate(r => location.hash = r, r); await p.waitForTimeout(400); await p.screenshot({ path: `screenshots/${prefix}-desktop-${r}.png`, fullPage: true }); }
 await run({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, 'iphone', ['dashboard', 'agents', 'news', 'social']).then(async ({ p }) => {
   await p.click('#menuBtn'); await p.waitForTimeout(300); await p.screenshot({ path: `screenshots/${prefix}-iphone-menu.png` }); });
+for (const lang of ['en', 'uk']) {
+  await p.evaluate(l => localStorage.setItem('mk-lang', l), lang); await p.evaluate(() => location.hash = 'dashboard'); await p.reload(); await p.waitForSelector('#app:not(.hidden) #view .card'); await p.waitForTimeout(600);
+  await p.screenshot({ path: `screenshots/${prefix}-desktop-dashboard-${lang}.png`, fullPage: true });
+  await p.evaluate(() => location.hash = 'news'); await p.waitForTimeout(500); await p.screenshot({ path: `screenshots/${prefix}-desktop-news-${lang}.png`, fullPage: true });
+  await p.setViewportSize({ width: 390, height: 844 }); await p.evaluate(() => location.hash = 'dashboard'); await p.waitForTimeout(500); await p.screenshot({ path: `screenshots/${prefix}-iphone-dashboard-${lang}.png` }); await p.setViewportSize({ width: 1440, height: 900 });
+}
+await p.evaluate(() => localStorage.setItem('mk-lang', 'ru'));
 console.log(JSON.stringify({ ok: errors.length === 0, errors }, null, 1)); await b.close();
