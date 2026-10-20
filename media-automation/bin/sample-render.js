@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 'use strict';
 // Renders sample videos for 16:9 (youtube) and 9:16 (shorts..fb_reels) via the render queue.
-// Usage: node media-automation/bin/sample-render.js [outDir] [--say]
+// Usage: node media-automation/bin/sample-render.js [outDir]   (engine: MA_TTS=say|piper|espeak, MA_PIPER_MODEL, MA_PIPER_BIN)
 const path = require('path');
 const fs = require('fs');
-const { VideoFactory, RenderQueue, StubTTS, MacSayTTS, run } = require('../src/video');
+const { VideoFactory, RenderQueue, detectTTS, run } = require('../src/video');
 const outDir = path.resolve(process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : path.join(__dirname, '..', 'out', 'sample'));
 fs.mkdirSync(outDir, { recursive: true });
 (async () => {
-  const tts = process.argv.includes('--say') ? new MacSayTTS() : new StubTTS();
+  const tts = await detectTTS(); // throws if no real engine
+  console.log('TTS engine:', tts.name);
   const music = path.join(outDir, 'music-cc0-generated.wav');
   await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=8', '-f', 'lavfi', '-i', 'sine=frequency=330:duration=8', '-filter_complex', 'amix=inputs=2', music]);
   const script = { title: 'MOONKATTY NEWS', scenes: [

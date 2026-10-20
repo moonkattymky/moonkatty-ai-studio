@@ -4,7 +4,6 @@ const path = require('path');
 const { run, probeDuration } = require('./exec');
 const { getPreset } = require('./presets');
 const { buildSrt } = require('./subtitles');
-const { StubTTS } = require('./tts');
 const { StubCharacter3D } = require('./character3d');
 const { validateMusic } = require('./music');
 
@@ -19,7 +18,8 @@ function validateScript(s) {
 }
 
 class VideoFactory {
-  constructor({ tts = new StubTTS(), character3d = new StubCharacter3D(), runFn = run, font = defaultFont(), brand = {} } = {}) {
+  constructor({ tts, character3d = new StubCharacter3D(), runFn = run, font = defaultFont(), brand = {} } = {}) {
+    if (!tts || typeof tts.synthesize !== 'function') throw new Error('VideoFactory: a real TTS provider is required (use detectTTS())');
     Object.assign(this, { tts, character3d, runFn, font });
     this.brand = { colors: ['0x14112b', '0x1f2a5a', '0x3a1f5a'], textColor: 'white', ...brand };
   }

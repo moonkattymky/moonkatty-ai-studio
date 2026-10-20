@@ -11,4 +11,13 @@ function mockFetch(routes) {
     return { ok: r.status < 400, status: r.status, text: async () => r.body }; };
   fn.calls = calls; return fn;
 }
-module.exports = { tmp, rss, mockFetch };
+/** TEST-ONLY tone stub (not speech). Not exported from src/. */
+class StubTTS {
+  constructor() { this.name = 'test-stub-tone'; }
+  async synthesize(text, outWav) {
+    const { run } = require('../src/video/exec'); const d = Math.max(1.5, String(text).split(/\s+/).length / 2.6).toFixed(2);
+    await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${d}:sample_rate=22050`, '-af', 'volume=0.05', '-ac', '1', outWav]);
+    return { file: outWav, durationSec: +d };
+  }
+}
+module.exports = { tmp, rss, mockFetch, StubTTS };
