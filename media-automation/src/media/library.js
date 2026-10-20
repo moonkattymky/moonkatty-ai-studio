@@ -42,7 +42,8 @@ class MediaLibrary {
   async _probe(file) { const { stdout } = await this.runFn('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file]); const [w, h] = stdout.trim().split(',').map(Number); return { width: w, height: h }; }
   /** Find up to `count` licensed images for a news item. queries: [{ provider, q }] tried in order. */
   async findForNews(newsId, queries, { count = 2 } = {}) {
-    const have = this.assets({ newsId }); if (have.length >= count) return have.slice(0, count);
+    // cached assets must still pass the CURRENT relevance rules (rules get stricter over time)
+    const have = this.assets({ newsId }).filter(a => a.provider === 'moonkatty-generated' ? false : queries.some(({ q }) => relevant(q, a))); if (have.length >= count) return have.slice(0, count);
     const got = [...have];
     for (const { provider, q } of queries) {
       const p = this.providers[provider]; if (!p) continue;
