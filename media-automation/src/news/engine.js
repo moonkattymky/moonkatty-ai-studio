@@ -5,6 +5,7 @@ const { fetchWithRetry } = require('./http');
 const { parseFeed } = require('./rss');
 const { categorize, isBreaking, isControversial } = require('./classify');
 const { normUrl, tokens, jaccard } = require('./dedup');
+const { verifyStory } = require('./verify');
 const { FallbackProvider, LocalExtractiveProvider, identityTranslator } = require('./providers');
 
 const REVIEW = { AUTO: 'auto_approved', PENDING: 'pending_approval', APPROVED: 'approved', REJECTED: 'rejected' };
@@ -15,12 +16,12 @@ const id = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 12);
  */
 class NewsEngine {
   constructor({ statePath, sources = [], provider, translator = identityTranslator, fetchFn, retries = 2, backoffMs = 200,
-    similarity = 0.5, minSources = 2, outputLang = 'en', now = () => new Date().toISOString() } = {}) {
+    similarity = 0.5, minSources = 2, verifyOptions = {}, outputLang = 'en', now = () => new Date().toISOString() } = {}) {
     if (!statePath) throw new Error('statePath required');
     this.store = new JsonStore(statePath);
     this.sources = new Map(); sources.forEach(s => this.addSource(s));
     this.provider = new FallbackProvider(provider || new LocalExtractiveProvider());
-    Object.assign(this, { translator, fetchFn, retries, backoffMs, similarity, minSources, outputLang, now });
+    Object.assign(this, { verifyOptions, translator, fetchFn, retries, backoffMs, similarity, minSources, outputLang, now });
   }
   addSource(s) { if (!s.id || (!s.url && !s.fetch)) throw new Error('source needs id and url|fetch'); this.sources.set(s.id, { kind: 'rss', trust: 0.5, ...s }); }
   removeSource(sid) { this.sources.delete(sid); }
@@ -80,7 +81,9 @@ class NewsEngine {
     const distinct = new Set(s.items.map(i => i.sourceId));
     s.sourceCount = distinct.size;
     s.officialSource = s.items.some(i => i.kind === 'official');
-    s.corroboration = (s.sourceCount >= this.minSources || s.officialSource) ? 'confirmed' : 'unconfirmed';
+    const srcMeta = Object.fromEntries([...this.sources.values()].map(x => [x.id, x]));
+    s.verification = verifyStory(s.items, { sources: srcMeta, now: new Date(this.now()), minIndependent: this.minSources, ...this.verifyOptions });
+    s.corroboration = s.verification.status; // confirmed | unconfirmed | disputed
     s.category = s.manualFlags.category || categorize(text);
     s.breaking = !!(s.manualFlags.breaking ?? s.items.some(i => /^(breaking|just in)/i.test(i.title) || isBreaking(i.title)));
     s.controversial = !!(s.manualFlags.controversial ?? isControversial(text));
@@ -93,7 +96,7 @@ class NewsEngine {
     // Editorial review: never downgrade a human decision.
     const needs = s.breaking || s.controversial || s.corroboration !== 'confirmed';
     if (s.reviewStatus !== REVIEW.APPROVED && s.reviewStatus !== REVIEW.REJECTED) s.reviewStatus = needs ? REVIEW.PENDING : REVIEW.AUTO;
-    s.reviewReasons = [s.breaking && 'breaking', s.controversial && 'controversial', s.corroboration !== 'confirmed' && 'unconfirmed'].filter(Boolean);
+    s.reviewReasons = [s.breaking && 'breaking', s.controversial && 'controversial', s.corroboration !== 'confirmed' && s.corroboration].filter(Boolean);
     s.updatedAt = this.now();
   }
 
