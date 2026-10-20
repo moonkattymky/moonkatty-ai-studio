@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOONKATTY · Approval Center</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#0f0d1f;color:#eee}
+header{padding:12px 16px;background:#1b1838;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header h1{font-size:18px;margin:0 12px 0 0}select,button,input,textarea{font:inherit;border-radius:8px;border:1px solid #444;background:#25224a;color:#eee;padding:8px}
+button{cursor:pointer}button.ok{background:#1f7a3a}button.no{background:#8a1f2b}button.back{background:#8a6a1f}
+main{padding:12px;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.card{background:#1b1838;border-radius:12px;padding:12px}.st{font-size:12px;padding:2px 8px;border-radius:10px;background:#333}
+.pending{background:#55508a}.approved{background:#1f7a3a}.rejected{background:#8a1f2b}.changes_requested{background:#8a6a1f}
+video,img{width:100%;max-height:420px;background:#000;border-radius:8px}input.h{width:100%;box-sizing:border-box}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}details{font-size:12px;margin-top:8px;color:#bbb}
+</style></head><body>
+<header><h1>Approval Center</h1>
+<select id="f"><option value="">all</option><option>pending</option><option>approved</option><option>rejected</option><option value="changes_requested">sent back</option></select>
+<input id="by" placeholder="reviewer name" size="10"><button id="reload">Reload</button><span id="msg"></span></header>
+<main id="list"></main>
+<script>
+const qs = new URLSearchParams(location.search); const TOKEN = qs.get('token') || sessionStorage.getItem('t') || '';
+if (TOKEN) { sessionStorage.setItem('t', TOKEN); history.replaceState(null, '', location.pathname); }
+const by = document.getElementById('by'); by.value = localStorage.getItem('by') || ''; by.onchange = () => localStorage.setItem('by', by.value);
+const api = (p, body) => fetch(p, { method: body ? 'POST' : 'GET', headers: { authorization: 'Bearer ' + TOKEN, 'content-type': 'application/json' }, body: body && JSON.stringify(body) })
+  .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || r.status); return j; });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const media = u => u + '?token=' + encodeURIComponent(TOKEN);
+async function load() {
+  const items = await api('api/items' + (f.value ? '?status=' + f.value : '')); const L = document.getElementById('list'); L.innerHTML = '';
+  for (const it of items) {
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div><span class="st ${esc(it.status)}">${esc(it.status)}</span> <b>${esc(it.kind)}</b> · ${esc(it.title)}</div>
+      ${it.videoUrl ? `<video controls preload="metadata" playsinline poster="${it.thumbUrl ? media(it.thumbUrl) : ''}" src="${media(it.videoUrl)}"></video>` : it.thumbUrl ? `<img src="${media(it.thumbUrl)}">` : ''}
+      <input class="h" value="${esc(it.headline)}"> ${it.text ? `<p>${esc(it.text)}</p>` : ''}
+      ${(it.sources || []).length ? `<details><summary>sources</summary>${it.sources.map(s => `<div>${esc(s.name)} — ${esc(s.url)}</div>`).join('')}</details>` : ''}
+      <div class="row"><button data-a="edit">Save headline</button><button class="ok" data-a="approve">Approve</button><button class="back" data-a="send-back">Send back</button><button class="no" data-a="reject">Reject</button></div>
+      <details><summary>history (${it.history.length})</summary>${it.history.map(h => `<div>${esc(h.at)} · ${esc(h.by)} · ${esc(h.action)} ${esc(h.note || '')} ${h.changes?.headline ? '“' + esc(h.changes.headline.from) + '” → “' + esc(h.changes.headline.to) + '”' : ''}</div>`).join('')}</details>`;
+    d.querySelectorAll('button').forEach(b => b.onclick = async () => {
+      const a = b.dataset.a; const body = { by: by.value };
+      if (!by.value) return alert('Enter reviewer name');
+      if (a === 'edit') body.headline = d.querySelector('input.h').value;
+      if (a === 'send-back') { body.note = prompt('What should change?'); if (!body.note) return; }
+      if (a === 'reject') body.reason = prompt('Reason (optional)') || '';
+      try { await api(`api/items/${encodeURIComponent(it.id)}/${a}`, body); msg.textContent = a + ' ✓'; load(); } catch (e) { msg.textContent = 'Error: ' + e.message; }
+    });
+    L.appendChild(d);
+  }
+}
+f.onchange = load; reload.onclick = load; load().catch(e => msg.textContent = 'Error: ' + e.message);
+</script></body></html>
