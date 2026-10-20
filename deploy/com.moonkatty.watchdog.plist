@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- MOONKATTY Watchdog (отдельный процесс). Замените USERNAME и путь к репозиторию/данным, затем:
+     cp deploy/com.moonkatty.watchdog.plist ~/Library/LaunchAgents/
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.moonkatty.watchdog.plist
+     Секреты (OPS_WATCHDOG_TOKEN, токены ntfy/Telegram) НЕ кладите сюда — см. docs/ops/WATCHDOG.md (файл env 0600). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.moonkatty.watchdog</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string><string>-c</string>
+    <string>set -a; [ -f "$HOME/.config/moonkatty/watchdog.env" ] &amp;&amp; . "$HOME/.config/moonkatty/watchdog.env"; set +a; exec /opt/homebrew/bin/node /Users/USERNAME/moonkatty-ai-studio/ops/watchdog.js</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/USERNAME/moonkatty-ai-studio</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OPS_SERVER_URL</key><string>http://127.0.0.1:8787</string>
+    <key>OPS_OLLAMA_URL</key><string>http://127.0.0.1:11434</string>
+    <key>OPS_DATA_DIR</key><string>/Users/USERNAME/moonkatty-ai-studio/data</string>
+    <key>OPS_WATCHDOG_INTERVAL_MS</key><string>60000</string>
+    <key>OPS_WATCHDOG_RESTART</key><string>0</string>
+    <key>OPS_WATCHDOG_KILL_HUNG</key><string>0</string>
+    <key>OPS_NOTIFY</key><string>none</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/Users/USERNAME/moonkatty-ai-studio/data/ops/watchdog.log</string>
+  <key>StandardErrorPath</key><string>/Users/USERNAME/moonkatty-ai-studio/data/ops/watchdog.err.log</string>
+</dict>
+</plist>
