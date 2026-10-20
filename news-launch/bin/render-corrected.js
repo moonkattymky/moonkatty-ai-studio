@@ -1,33 +1,49 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * Renders the editor-written bulletin. Does not re-run RSS selection.
- * Provisional Kokoro voice. Does not publish. Does not write server/jobs or server/blender.
+ * Renders the editor-written bulletin through NewsVideoFactory.
+ * Does not re-run RSS selection. Does not lock the voice. Does not publish.
+ * Does not write server/jobs or server/blender.
  */
 const fs = require('fs');
 const path = require('path');
-const { PiperTTS } = require('../../media-automation/src/video/tts');
-const { VideoFactory, RenderQueue, StubCharacter3D, getPreset } = require('../../media-automation/src/video');
-const { editorialScript, SAMPLE_TEXT } = require('../src/editorial');
-const { applyLexicon } = require('../src/lexicon');
-const { KokoroTTS, synthesizeBatch, prewarm, PROVISIONAL, MODEL, VOICES } = require('../src/kokoro');
-const { measure, BRAND } = require('../src/pipeline');
-const { normalizeLoudness } = require('../src/loudness');
-const { qcFile } = require('../src/qc');
+const { editorialScript } = require('../src/editorial');
 const { assertSchema, SCHEMAS } = require('../src/schemas');
 const { assertLaunchPaths, probeStudioJobs } = require('../src/studio-boundary');
+const { findStill } = require('../src/stills');
+const {
+  masterSpeech, episodeFromScript, renderEpisode, holdForApproval, licenseRecords,
+} = require('../src/factory-render');
 
 const ROOT = path.join(__dirname, '..');
 
-function arg(name) {
-  const i = process.argv.indexOf(name);
-  return i >= 0 ? process.argv[i + 1] : null;
-}
-
-function writeJson(file, data) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+const STORY_QUERIES = [
+  {
+    storyId: 'alberta-referendum-2026-10-19',
+    category: 'politics',
+    skip: /separatist|protest|rally|demonstration/i,
+    queries: [
+      { provider: 'commons', q: 'Alberta Legislature Building' },
+      { provider: 'commons', q: 'Alberta Legislature Building Edmonton' },
+    ],
+  },
+  {
+    storyId: 'nigeria-ebola-2026-10-20',
+    category: 'news',
+    queries: [
+      { provider: 'commons', q: 'Abuja Nigeria skyline' },
+      { provider: 'commons', q: 'Abuja city Nigeria' },
+    ],
+  },
+  {
+    storyId: 'uk-saudi-typhoon-2026-10-20',
+    category: 'politics',
+    queries: [
+      { provider: 'commons', q: 'Royal Air Force Typhoon' },
+      { provider: 'commons', q: 'RAF Eurofighter Typhoon' },
+    ],
+  },
+];
 
 const PRIMARY_SOURCES = [
   {
@@ -39,6 +55,10 @@ const PRIMARY_SOURCES = [
     title: 'Unofficial Referendum Results Reporting Process',
     published: '2026-10-19',
     role: 'primary',
+    primarySourceUrl: 'https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/',
+    primaryPublisher: 'Elections Alberta',
+    primaryPublished: '2026-10-19',
+    editorialStatus: 'confirmed-primary',
   },
   {
     storyId: 'alberta-referendum-2026-10-19',
@@ -49,6 +69,10 @@ const PRIMARY_SOURCES = [
     title: 'Referendum',
     published: '2026-10-19',
     role: 'primary',
+    primarySourceUrl: 'https://www.elections.ab.ca/elections/referendum/',
+    primaryPublisher: 'Elections Alberta',
+    primaryPublished: '2026-10-19',
+    editorialStatus: 'confirmed-primary',
   },
   {
     storyId: 'nigeria-ebola-2026-10-20',
@@ -59,6 +83,10 @@ const PRIMARY_SOURCES = [
     title: 'FG CONFIRMS EBOLA DISEASE CASE IN FCT, ACTIVATES PUBLIC HEALTH RESPONSE',
     published: '2026-10-20',
     role: 'primary',
+    primarySourceUrl: 'https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf',
+    primaryPublisher: 'Federal Ministry of Health and Social Welfare of Nigeria',
+    primaryPublished: '2026-10-20',
+    editorialStatus: 'confirmed-primary',
   },
   {
     storyId: 'uk-saudi-typhoon-2026-10-20',
@@ -69,173 +97,139 @@ const PRIMARY_SOURCES = [
     title: 'Operational update 20 October – UK military support to the Kingdom of Saudi Arabia',
     published: '2026-10-20',
     role: 'primary',
+    primarySourceUrl: 'https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia',
+    primaryPublisher: 'UK Ministry of Defence',
+    primaryPublished: '2026-10-20',
+    editorialStatus: 'confirmed-primary',
   },
 ];
 
-async function renderSamples(dir) {
-  fs.mkdirSync(dir, { recursive: true });
-  const spoken = applyLexicon(SAMPLE_TEXT);
-  fs.writeFileSync(path.join(dir, 'sample.txt'), SAMPLE_TEXT + '\n');
-  fs.writeFileSync(path.join(dir, 'sample-spoken.txt'), spoken + '\n');
-  if (!fs.existsSync(MODEL)) throw new Error('Kokoro model missing');
-  const items = PROVISIONAL.candidates.map(voice => ({
-    text: spoken,
-    voice,
-    speed: PROVISIONAL.speed,
-    out: path.join(dir, `kokoro-${voice}.wav`),
-  }));
-  const kokoro = await synthesizeBatch(items);
-  const piperModel = path.join(ROOT, 'models', 'piper', 'en_US-ljspeech-high.onnx');
-  const piperOut = path.join(dir, 'piper-en_US-ljspeech-high.wav');
-  if (!fs.existsSync(piperModel)) throw new Error('Piper LJ Speech model missing');
-  const piper = new PiperTTS({ model: piperModel, bin: path.join(ROOT, 'bin', 'piper-wrapper') });
-  await piper.synthesize(spoken, piperOut);
-  const rows = [];
-  for (const item of items) {
-    const { probeDuration } = require('../../media-automation/src/video/exec');
-    rows.push({ engine: 'kokoro', voice: item.voice, file: item.out, durationSec: await probeDuration(item.out), provisional: true, locked: false });
-  }
-  const { probeDuration } = require('../../media-automation/src/video/exec');
-  rows.push({
-    engine: 'piper', voice: 'en_US-ljspeech-high', file: piperOut,
-    durationSec: await probeDuration(piperOut), comparisonOnly: true, fit: false,
-  });
-  writeJson(path.join(dir, 'samples.json'), {
-    text: SAMPLE_TEXT,
-    spoken,
-    lexicon: 'applied to every sample, including the Piper comparison',
-    model: MODEL,
-    voices: VOICES,
-    kokoroVoices: kokoro.voices,
-    locked: false,
-    provisionalDefault: PROVISIONAL.defaultVoice,
-    rows,
-  });
-  return rows;
+function arg(name) {
+  const i = process.argv.indexOf(name);
+  return i >= 0 ? process.argv[i + 1] : null;
+}
+
+function writeJson(file, data) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 async function main() {
   const outDir = path.resolve(arg('--out') || path.join(ROOT, 'artifacts', 'corrected-episode'));
-  const sampleDir = path.resolve(arg('--samples') || path.join(ROOT, 'artifacts', 'voice-samples'));
-  assertLaunchPaths([outDir, sampleDir]);
-  const script = assertSchema(editorialScript(), SCHEMAS.script, 'NewsScript');
-  const samples = process.argv.includes('--skip-samples') ? null : await renderSamples(sampleDir);
-  if (samples) {
-    const bad = samples.filter(r => r.engine === 'kokoro' && (r.durationSec < 15 || r.durationSec > 20));
-    if (bad.length) {
-      console.error(JSON.stringify({ sampleOutOfRange: bad }, null, 2));
-      process.exitCode = 2;
-      if (!process.argv.includes('--continue-samples')) return;
-    }
-  }
-  const tts = new KokoroTTS({ voice: arg('--voice') || PROVISIONAL.defaultVoice });
-  await prewarm(tts.voiceId, tts.speed, script.scenes.map(s => s.text));
-  const voiceDir = path.join(outDir, 'voiceover');
-  const measured = await measure(tts, script, voiceDir);
-  console.log(JSON.stringify({
-    speechSec: measured.speechSec,
-    expectedVideoSec: measured.expectedVideoSec,
-    scenes: measured.segments.map(s => s.durationSec),
-    samples,
-  }, null, 2));
-  if (measured.expectedVideoSec < 30 || measured.expectedVideoSec > 60) {
-    throw new Error(`Duration ${measured.expectedVideoSec.toFixed(1)}s is outside 30-60s. Refusing to pad.`);
-  }
-  if (process.argv.includes('--measure-only')) return;
-
+  assertLaunchPaths([outDir]);
   fs.mkdirSync(outDir, { recursive: true });
-  writeJson(path.join(outDir, '03-script.json'), script);
-  fs.writeFileSync(path.join(outDir, 'script.txt'), script.scenes.map(s => (s.heading ? s.heading + '\n' : '') + s.text).join('\n\n') + '\n');
+  const script = assertSchema(editorialScript(), SCHEMAS.script, 'NewsScript');
+  const mediaDir = path.join(outDir, 'media');
+  const assetsById = {};
+  const searches = [];
+  for (const story of STORY_QUERIES) {
+    const found = await findStill(story.storyId, story.queries, mediaDir, { skip: story.skip });
+    searches.push({
+      storyId: story.storyId,
+      picked: found.asset && { id: found.asset.id, title: found.asset.title, license: found.asset.license, width: found.asset.width, height: found.asset.height, pageUrl: found.asset.pageUrl },
+      rejected: found.rejections.filter(r => found.considered.every(a => a.pageUrl !== r.pageUrl)).slice(-8),
+    });
+    if (!found.asset) {
+      writeJson(path.join(outDir, 'still-search.json'), searches);
+      throw new Error(`no licensed still for ${story.storyId}`);
+    }
+    assetsById[story.storyId] = found.asset;
+  }
+  writeJson(path.join(outDir, 'still-search.json'), searches);
+  if (process.argv.includes('--stills-only')) {
+    console.log(JSON.stringify(searches, null, 2));
+    return;
+  }
+
+  const { master, tts, approved } = masterSpeech();
+  if (approved) throw new Error('MasterVoice is locked. This launch must not treat am_michael as owner-approved.');
+  const stories = STORY_QUERIES.map(story => ({
+    storyId: story.storyId,
+    category: story.category,
+    sources: PRIMARY_SOURCES.filter(s => s.storyId === story.storyId),
+  }));
+  const episode = episodeFromScript(script, stories, assetsById, 'TUESDAY 20 OCTOBER 2026');
+  episode.rights.push('Edition status: awaits approval and is not published.');
+  const episodeId = arg('--episode') || ('corr' + Date.now().toString(36));
+  const rendered = await renderEpisode({ episode, outDir, tts, episodeId, targetLufs: -16 });
+  const jobs = rendered.jobs.map(job => assertSchema(job, SCHEMAS.renderJob, 'VideoRenderJob'));
+  const qc = rendered.qc.map(report => assertSchema(report, SCHEMAS.qc, 'QcResult'));
+  const failed = qc.filter(q => !q.ok);
+  if (failed.length) throw new Error('QC failed: ' + failed.map(q => `${q.width}x${q.height} ${(q.failures || []).join(', ')}`).join(' | '));
+
   const voiceover = assertSchema({
     engine: tts.name,
-    voice: tts.voiceId,
-    license: tts.license,
+    voice: master.cfg.voice,
+    license: 'Kokoro-82M model card apache-2.0. Candidate am_michael is not owner-approved.',
     commercialUse: true,
     provisional: true,
     locked: false,
-    segments: measured.segments,
-  }, SCHEMAS.voiceover, 'Voiceover');
-  writeJson(path.join(outDir, '04-voiceover.json'), voiceover);
-  writeJson(path.join(outDir, 'sources.json'), PRIMARY_SOURCES);
-  const imageLicenses = {
-    images: [{
-      id: 'generated-color-cards',
-      origin: 'generated',
-      generator: 'ffmpeg lavfi color + drawtext via Video Factory v0',
-      license: 'Original graphics produced for this edition. No third-party photograph or footage.',
-      commercialUse: true,
-      attribution: 'None required for the cards. DejaVu Sans is named below.',
-      frames: script.scenes.map((scene, i) => ({
-        scene: scene.id,
-        heading: scene.heading,
-        background: 'solid brand color, generated',
-        color: BRAND.colors[i % BRAND.colors.length],
-        thirdPartyImage: null,
-      })),
-      thirdPartyAssets: [{ name: 'DejaVu Sans Bold', license: 'Bitstream Vera / DejaVu, free for commercial use', attributionRequired: false }],
+    segments: [{
+      text: episode.stories.map(s => s.text).join(' '),
+      file: rendered.manifests[0].files.anchorAudio,
+      durationSec: rendered.manifests[0].durationSec,
     }],
+  }, SCHEMAS.voiceover, 'Voiceover');
+  const assets = episode.stories.map(s => s.asset);
+  const imageLicenses = {
+    images: assets.map(a => ({
+      id: a.id,
+      origin: a.provider,
+      title: a.title,
+      author: a.author,
+      credit: a.credit,
+      license: a.license,
+      licenseUrl: a.licenseUrl,
+      pageUrl: a.pageUrl,
+      sourceUrl: a.sourceUrl,
+      attribution: a.attribution,
+      width: a.width,
+      height: a.height,
+      sha256: a.sha256,
+      commercialUse: true,
+      storyId: a.newsId,
+    })),
     music: null,
     excluded: ['GOV.UK Ministry of Defence building photograph on the primary page was not used. Rights were not cleared.'],
-    tts: { engine: voiceover.engine, voice: voiceover.voice, license: voiceover.license, commercialUse: true, provisional: true, locked: false },
+    tts: { engine: voiceover.engine, voice: voiceover.voice, license: voiceover.license, commercialUse: true, provisional: true, locked: false, loudnessLufs: master.cfg.loudnessLufs },
   };
-  writeJson(path.join(outDir, 'image-licenses.json'), imageLicenses);
-
-  const character3d = new StubCharacter3D();
-  const factory = new VideoFactory({ tts, character3d, brand: BRAND });
-  const queue = new RenderQueue({
-    statePath: path.join(outDir, 'render-queue.json'),
-    concurrency: 1,
-    maxAttempts: 1,
-    worker: payload => factory.render(script, {
-      preset: getPreset(payload.preset, { crf: 23 }),
-      outDir,
-      basename: payload.basename,
-      music: null,
-    }),
-  });
-  for (const [preset, basename] of [['youtube', 'horizontal'], ['shorts', 'vertical']]) {
-    queue.add({ preset, basename }, { id: `news-${basename}` });
-  }
-  queue.start();
-  await queue.onIdle();
-  const jobs = [];
-  for (const job of queue.jobs()) {
-    if (job.status !== 'done') throw new Error(`Render ${job.id} ${job.status}: ${job.error}`);
-    const preset = getPreset(job.payload.preset);
-    jobs.push(assertSchema({
-      id: job.id, preset: job.payload.preset, status: 'done', scriptTitle: script.title,
-      width: preset.width, height: preset.height, character3d: 'stub-3d', music: null,
-      video: job.result.files.video, subtitles: job.result.files.subtitles,
-    }, SCHEMAS.renderJob, 'VideoRenderJob'));
-  }
-  writeJson(path.join(outDir, '05-render-jobs.json'), jobs);
-  for (const job of jobs) await normalizeLoudness(job.video);
-  const nowIso = new Date().toISOString();
-  const qc = [];
-  for (const job of jobs) {
-    qc.push(await qcFile(job.video, {
-      expectWidth: job.width, expectHeight: job.height, minDuration: 30, maxDuration: 60,
-      subtitleFile: job.subtitles, now: () => nowIso,
-    }));
-  }
-  writeJson(path.join(outDir, '06-qc.json'), qc);
-  const failed = qc.filter(q => !q.ok);
-  if (failed.length) throw new Error('QC failed: ' + failed.map(q => `${q.width}x${q.height} ${q.failures.join(', ')}`).join(' | '));
-
-  const studioJobs = await probeStudioJobs(null);
-  const episodeId = arg('--episode') || ('corr' + Date.now().toString(36));
-  const approval = assertSchema({
-    id: 'approval-' + episodeId,
+  const summary = script.scenes.map(s => s.text).join(' ');
+  const held = await holdForApproval({
+    outDir,
     episodeId,
-    status: 'pending_approval',
+    title: 'MOONKATTY NEWS',
+    summary,
+    sources: PRIMARY_SOURCES.map(s => ({ name: s.publisher, url: s.url })),
+    licenses: licenseRecords(assets),
+    videos: {
+      horizontal: jobs.find(j => j.preset === 'youtube').video,
+      vertical: jobs.find(j => j.preset === 'shorts').video,
+    },
+  });
+  if (held.item.status !== 'pending') throw new Error('Approval Center status is ' + held.item.status);
+  if (held.posts.some(p => p.status !== 'dry_run')) throw new Error('Publisher left dry-run');
+  const nowIso = new Date().toISOString();
+  const approval = assertSchema({
+    id: held.item.id,
+    episodeId,
+    status: 'pending',
     publish: false,
     requestedAt: nowIso,
-    summary: script.scenes.map(s => s.text).join(' '),
+    summary,
     sources: PRIMARY_SOURCES.map(s => s.url),
     taskId: '',
-    queueIds: [],
+    queueIds: held.posts.map(p => p.id),
+    licenses: held.item.licenses,
   }, SCHEMAS.approval, 'ApprovalRequest');
+  writeJson(path.join(outDir, '03-script.json'), script);
+  fs.writeFileSync(path.join(outDir, 'script.txt'), script.scenes.map(s => (s.heading ? s.heading + '\n' : '') + s.text).join('\n\n') + '\n');
+  writeJson(path.join(outDir, '04-voiceover.json'), voiceover);
+  writeJson(path.join(outDir, 'sources.json'), PRIMARY_SOURCES);
+  writeJson(path.join(outDir, 'image-licenses.json'), imageLicenses);
+  writeJson(path.join(outDir, '05-render-jobs.json'), jobs);
+  writeJson(path.join(outDir, '06-qc.json'), qc);
   writeJson(path.join(outDir, 'approval-request.json'), approval);
+  const studioJobs = await probeStudioJobs(null);
   const manifest = {
     episodeId,
     profile: 'corrected-editorial',
@@ -246,20 +240,31 @@ async function main() {
     qc,
     sources: PRIMARY_SOURCES,
     imageLicenses,
-    character3d: 'stub-3d',
+    character3d: 'host3d-stub',
     hostUsed: false,
     publish: false,
-    provisionalVoice: { voice: tts.voiceId, locked: false },
+    factory: 'NewsVideoFactory',
+    targetLufs: -16,
+    mediaAutomation: '882cd398d191eea9dbaeef046562282ccd9a9d8c',
+    provisionalVoice: { voice: master.cfg.voice, status: master.cfg.status, locked: false, rate: master.cfg.rate },
+    publisher: held.posts.map(p => ({ id: p.id, accountId: p.accountId, status: p.status })),
+    approval: { id: approval.id, status: approval.status, publish: false },
     producedBy: 'news-launch editor',
     studioJobs: { mode: studioJobs.mode, connected: studioJobs.connected, error: studioJobs.error },
     blender: { invoked: false, pathWritten: false },
   };
   writeJson(path.join(outDir, 'manifest.json'), manifest);
   writeJson(path.join(outDir, 'studio-boundary.json'), manifest.studioJobs);
+  fs.rmSync(path.join(outDir, 'starfield.png'), { force: true });
   console.log(JSON.stringify({
     outDir,
     episodeId,
-    qc: qc.map(q => ({ ok: q.ok, width: q.width, height: q.height, durationSec: q.durationSec, loudnessLUFS: q.loudnessLUFS, truePeakDb: q.truePeakDb, subtitleCues: q.subtitleCues })),
+    voice: master.cfg.voice,
+    voiceStatus: master.cfg.status,
+    stills: searches.map(s => s.picked),
+    publisher: manifest.publisher,
+    approval: manifest.approval,
+    qc: qc.map(q => ({ ok: q.ok, width: q.width, height: q.height, durationSec: q.durationSec, loudnessLUFS: q.loudnessLUFS, truePeakDb: q.truePeakDb, targetLufs: q.targetLufs })),
   }, null, 2));
 }
 

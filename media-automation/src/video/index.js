@@ -1,2 +1,2 @@
 'use strict';
-module.exports = { ...require('./factory'), ...require('./queue'), ...require('./tts'), ...require('./presets'), ...require('./subtitles'), ...require('./character3d'), ...require('./music'), ...require('./exec') };
+module.exports = { ...require('./factory'), ...require('./queue'), ...require('./tts'), ...require('./presets'), ...require('./subtitles'), ...require('./character3d'), ...require('./music'), ...require('./exec'), ...require('./srtcheck'), ...require('./qa'), ...require('./ambient'), ...require('./speech'), ...require('./master-voice'), ...require('./factory2'), ...require('./ass') };

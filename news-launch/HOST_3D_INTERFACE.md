@@ -1,6 +1,6 @@
 # Stage D — official 3D MOONKATTY host
 
-This launch does not render a host. It does not invent a substitute cat. The episode profile forces `StubCharacter3D` (`name: stub-3d`), which returns no segment. Video Factory v0 then keeps the generated title cards.
+This launch does not render a host. It does not invent a substitute cat. The episode profile uses `StubHost3D` (`name: host3d-stub`), which returns no segment. `NewsVideoFactory` then keeps the licensed stills and the title cards.
 
 `feat/v1.2.0` is not on `origin`. Nothing in this branch creates or writes `server/jobs*` or `server/blender*`. Blender is not executed.
 
@@ -36,13 +36,13 @@ When `feat/v1.2.0` exists, that branch owns the handler. This launch will pass a
 
 ## Owner approval gate
 
-`news-launch/src/pipeline.js` refuses a host whose `capabilities().available` is true unless `capabilities().ownerApproval` contains both `approvedBy` and `modelHash`. The master model, costume, facial expressions, head motion, paw motion, and lip sync are the owner's approved asset. A missing record stops the launch. A queued host is still not used by the episode profile: that profile accepts only `stub-3d`.
+`news-launch/src/pipeline.js` refuses a host whose `capabilities().available` is true unless `capabilities().ownerApproval` contains both `approvedBy` and `modelHash`. The master model, costume, facial expressions, head motion, paw motion, and lip sync are the owner's approved asset. A missing record stops the launch. A queued host is still not used by the episode profile: that profile accepts only `host3d-stub`.
 
 To turn the official host on later, all of the following have to be true:
 
 1. The owner has approved one master model and recorded `approvedBy` plus `modelHash`.
 2. `feat/v1.2.0` injects the job client. This branch does not construct `server/jobs` itself.
 3. Their `render_segment` handler implements costume, expressions, head and paw motion, and lip sync against that master model.
-4. The episode profile is changed in a later review to allow `QueuedHost3D` instead of `stub-3d`.
+4. The episode profile is changed in a later review to allow `QueuedHost3D` instead of `host3d-stub`.
 
 Until then the bulletin is title cards, Piper narration, and burned-in subtitles.

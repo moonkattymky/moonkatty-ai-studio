@@ -1,135 +1,68 @@
 1
-00:00:00,000 --> 00:00:01,900
-This is MOONKATTY NEWS.
-
-2
-00:00:01,900 --> 00:00:03,641
+00:00:03,850 --> 00:00:07,509
 On October nineteenth,
-
-3
-00:00:03,641 --> 00:00:05,541
 Elections Alberta held a
 
-4
-00:00:05,541 --> 00:00:06,412
+2
+00:00:07,509 --> 00:00:10,233
 referendum.
-
-5
-00:00:06,412 --> 00:00:08,232
 Question ten: remain in
 
-6
-00:00:08,232 --> 00:00:10,290
+3
+00:00:10,233 --> 00:00:14,203
 Canada, or start the legal
-
-7
-00:00:10,290 --> 00:00:12,190
 process for a separation
 
-8
-00:00:12,190 --> 00:00:12,586
+4
+00:00:14,203 --> 00:00:16,538
 vote.
-
-9
-00:00:12,586 --> 00:00:14,485
 Official results are due
 
-10
-00:00:14,485 --> 00:00:16,148
+5
+00:00:16,538 --> 00:00:19,807
 October twenty-ninth.
-
-11
-00:00:16,148 --> 00:00:17,731
 No winner is called.
 
-12
-00:00:17,731 --> 00:00:19,885
+6
+00:00:20,407 --> 00:00:24,925
 Nigeria's health ministry
+confirmed one Ebola case in
 
-13
-00:00:19,885 --> 00:00:21,954
-confirmed one Ebola case
-
-14
-00:00:21,954 --> 00:00:23,764
-in the FCT on October
-
-15
-00:00:23,764 --> 00:00:24,625
+7
+00:00:24,925 --> 00:00:27,396
+the FCT on October
 twentieth.
 
-16
-00:00:24,625 --> 00:00:26,780
+8
+00:00:27,396 --> 00:00:30,465
 A woman from Uganda is in
-
-17
-00:00:26,780 --> 00:00:27,642
 isolation.
 
-18
-00:00:27,642 --> 00:00:29,797
+9
+00:00:30,465 --> 00:00:33,959
 Officials list forty-four
-
-19
-00:00:29,797 --> 00:00:31,089
 close contacts.
 
-20
-00:00:31,089 --> 00:00:33,330
+10
+00:00:33,959 --> 00:00:38,050
 Minister Muhammad Ali Pate
-
-21
-00:00:33,330 --> 00:00:35,140
 issued the statement.
 
-22
-00:00:35,140 --> 00:00:37,007
+11
+00:00:38,650 --> 00:00:42,166
 Britain's Defence Ministry
-
-23
-00:00:37,007 --> 00:00:38,587
 says Typhoon jets will
 
-24
-00:00:38,587 --> 00:00:40,239
-defend Saudi cities and
+12
+00:00:42,166 --> 00:00:45,754
+defend Saudi cities and will
+not conduct offensive
 
-25
-00:00:40,239 --> 00:00:42,107
-will not conduct offensive
+13
+00:00:45,754 --> 00:00:49,772
+strikes against the Houthis.
+Wes Streeting approved that
 
-26
-00:00:42,107 --> 00:00:43,471
-strikes against the
-
-27
-00:00:43,471 --> 00:00:44,046
-Houthis.
-
-28
-00:00:44,046 --> 00:00:45,626
-Wes Streeting approved
-
-29
-00:00:45,626 --> 00:00:47,493
-that on October twentieth.
-
-30
-00:00:47,493 --> 00:00:48,914
-Sources are official
-
-31
-00:00:48,914 --> 00:00:49,696
-statements.
-
-32
-00:00:49,696 --> 00:00:51,045
-This edition awaits
-
-33
-00:00:51,045 --> 00:00:52,395
-approval and is not
-
-34
-00:00:52,395 --> 00:00:53,105
-published.
+14
+00:00:49,772 --> 00:00:51,279
+on October twentieth.

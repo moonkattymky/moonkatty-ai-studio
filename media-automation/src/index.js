@@ -1,2 +1,2 @@
 'use strict';
-module.exports = { news: require('./news'), video: require('./video'), ...require('./store') };
+module.exports = { news: require('./news'), llm: require('./llm'), video: require('./video'), jobs: require('./jobs'), publish: require('./publish'), schedule: require('./schedule'), approval: require('./approval/center'), analytics: require('./analytics'), media: require('./media'), auth: require('./auth'), editorial: require('./editorial'), orchestrator: require('./orchestrator'), secrets: require('./secrets'), host3d: require('./host3d'), ...require('./store') };

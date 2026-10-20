@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { assertSchema, SCHEMAS } = require('./schemas');
 const { assertLaunchPaths } = require('./studio-boundary');
+const { holdForApproval, licenseRecords } = require('./factory-render');
 
 function registerFile(deps, abs, name, mime) {
   const id = deps.core.uid();
@@ -16,9 +17,9 @@ function registerFile(deps, abs, name, mime) {
   });
 }
 
-function saveToStudio(deps, manifest) {
+async function saveToStudio(deps, manifest) {
   assertLaunchPaths([deps.filesDir, deps.dbPath]);
-  const { core, social, put, log } = deps;
+  const { core, put, log } = deps;
   const user = deps.user || 'news-launch';
   const horizontal = manifest.jobs.find(j => j.preset === 'youtube');
   const vertical = manifest.jobs.find(j => j.preset === 'shorts');
@@ -27,10 +28,12 @@ function saveToStudio(deps, manifest) {
   const subs = registerFile(deps, horizontal.subtitles, 'moonkatty-news-16x9.srt', 'application/x-subrip');
   const subsVertical = registerFile(deps, vertical.subtitles, 'moonkatty-news-9x16.srt', 'application/x-subrip');
   const narration = manifest.voiceover.segments[0];
-  const audio = narration ? registerFile(deps, narration.file, 'moonkatty-news-narration.wav', 'audio/wav') : null;
+  const audio = narration && narration.file && fs.existsSync(narration.file)
+    ? registerFile(deps, narration.file, 'moonkatty-news-narration.wav', 'audio/wav')
+    : null;
   const urls = [...new Set(manifest.sources.map(s => s.url))];
   const scriptText = manifest.script.scenes.map(s => s.text).join('\n\n');
-  const durationSec = manifest.qc.find(q => q.width === 1920)?.durationSec || manifest.qc[0].durationSec;
+  const durationSec = (manifest.qc.find(q => q.width === 1920) || manifest.qc[0]).durationSec;
   const ep = core.newEpisode({
     id: manifest.episodeId,
     title: `MOONKATTY NEWS — ${manifest.script.title}`,
@@ -59,43 +62,39 @@ function saveToStudio(deps, manifest) {
     schedule: { type: 'none' }, episodeId: ep.id, source: 'news-launch', createdAt: core.now(),
   });
 
-  const materialId = core.uid();
-  const src = {
-    id: materialId, brand: 'news', kind: 'news', title: 'MOONKATTY NEWS',
-    text: scriptText + '\n\nSources:\n' + urls.join('\n'),
-    sourceUrl: urls[0], episodeId: ep.id, hashtags: ['moonkatty', 'news'],
-    mediaUrl: '', mediaType: 'none', imageRights: 'generated', link: '', scheduledAt: null,
-  };
-  const queueIds = [];
-  for (const channelId of ['fb-news', 'yt-news']) {
-    const adapted = social.adapt(src, channelId);
-    const item = put('queue', {
-      ...src, ...adapted, id: core.uid(), materialId, status: 'pending_approval', factCheck: 'passed',
-      attempts: 0, scheduledAt: null, demo: false, publish: false,
-      history: [{ at: core.now(), event: 'created', user, note: 'held for approval; not published' }],
-      createdAt: core.now(),
-    });
-    queueIds.push(item.id);
-  }
-  put('posts', {
-    id: core.uid(), title: 'MOONKATTY NEWS', text: scriptText, channelId: 'yt-news',
-    status: 'pending', episodeId: ep.id, scheduledAt: null, createdAt: core.now(),
+  const stateDir = manifest.outDir || path.dirname(horizontal.video);
+  const images = (manifest.imageLicenses && manifest.imageLicenses.images) || [];
+  const licenses = licenseRecords(images);
+  const held = await holdForApproval({
+    outDir: stateDir,
+    episodeId: ep.id,
+    title: 'MOONKATTY NEWS',
+    summary: scriptText + '\n\nSources:\n' + urls.join('\n'),
+    sources: manifest.sources.map(s => ({ name: s.publisher || s.name, url: s.url })),
+    licenses,
+    videos: { horizontal: horizontal.video, vertical: vertical.video },
   });
+  if (held.posts.some(p => p.status !== 'dry_run')) {
+    throw new Error('Publisher left dry-run. Refusing to save a live post.');
+  }
 
   const approval = assertSchema({
-    id: task.id, episodeId: ep.id, status: 'pending_approval', publish: false,
-    requestedAt: core.now(), summary: src.text.slice(0, 500), sources: urls, taskId: task.id, queueIds,
+    id: held.item.id, episodeId: ep.id, status: 'pending', publish: false,
+    requestedAt: core.now(), summary: scriptText.slice(0, 500), sources: urls, taskId: task.id,
+    queueIds: held.posts.map(p => p.id), licenses,
   }, SCHEMAS.approval, 'ApprovalRequest');
   if (manifest.outDir) fs.writeFileSync(path.join(manifest.outDir, 'approval-request.json'), JSON.stringify(approval, null, 2));
   if (log) log('info', 'news-launch', `Выпуск ${ep.id} собран и ждёт утверждения. Не опубликован.`, user);
-  return { episode: ep, task, approval, files: { video, videoVertical, subs, subsVertical, audio } };
+  return {
+    episode: ep, task, approval, publisherPosts: held.posts,
+    files: { video, videoVertical, subs, subsVertical, audio },
+  };
 }
 
 function openStudio(dbPath) {
   assertLaunchPaths([dbPath]);
   const Database = require('better-sqlite3');
   const core = require('../../public/core.js');
-  const social = require('../../public/social.js');
   fs.mkdirSync(path.dirname(path.resolve(dbPath)), { recursive: true });
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
@@ -119,7 +118,7 @@ function openStudio(dbPath) {
   }
   const filesDir = path.join(path.dirname(path.resolve(dbPath)), 'files');
   const log = (level, source, message, user) => put('logs', { id: core.uid(), at: core.now(), level, source, message, user: user || null });
-  return { db, core, social, list, put, log, filesDir, get: (col, id) => { const r = q.get.get(col, id); return r ? JSON.parse(r.data) : null; } };
+  return { db, core, list, put, log, filesDir, get: (col, id) => { const r = q.get.get(col, id); return r ? JSON.parse(r.data) : null; } };
 }
 
 module.exports = { saveToStudio, openStudio, registerFile };

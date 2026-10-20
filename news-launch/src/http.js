@@ -11,10 +11,11 @@ function mountNewsLaunch(app, deps) {
     try {
       const launch = deps.runLaunch || runLaunch;
       const manifest = await launch({ prompt: text, outDir, profile: deps.profile || 'episode', ...(deps.launchOpts || {}) });
-      const saved = saveToStudio({ ...deps, user: req.user }, manifest);
+      const saved = await saveToStudio({ ...deps, user: req.user }, manifest);
       res.json({
         episodeId: saved.episode.id,
         approval: saved.approval,
+        publisher: (saved.publisherPosts || []).map(p => ({ id: p.id, accountId: p.accountId, status: p.status })),
         llm: manifest.script.llm,
         publish: false,
         qc: manifest.qc.map(q => ({

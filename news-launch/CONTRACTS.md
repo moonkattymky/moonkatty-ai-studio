@@ -1,124 +1,85 @@
 # Contracts with Studio 2
 
-Studio 2 owns the News Intelligence Engine, Video Factory, and Social Publisher on `feat/media-automation`. This branch imports those modules and calls them. It does not rewrite them, and it does not open a pull request against their branch.
-
-Nothing here is a request to merge. Proposed fields are for Studio 2 to accept or reject.
-
-Imported commits, read-only after copy:
-
-- News Engine and Video Factory v0 from `4537b7a` on `origin/feat/media-automation`.
-- `media-automation/src/jobs/port.js`, `media-automation/src/jobs/studio-adapter.js`, and `media-automation/src/host3d/index.js` from `66d4b20`.
-- `jobs/local.js` was not imported. This branch cannot point a file queue at `server/jobs`.
+Studio 2 owns the News Intelligence Engine, Video Factory, and Social Publisher on `feat/media-automation`. This branch re-imports that tree at `882cd398d191eea9dbaeef046562282ccd9a9d8c` and calls it. It does not open a pull request against their branch, and it does not merge.
 
 `server/jobs` and `server/blender` are not created and are not written. `news-launch/src/studio-boundary.js` throws `studio_owned_path` if an output path resolves under either tree.
 
-## News Engine — used as-is
+## Import
 
-`NewsEngine` in `media-automation/src/news/engine.js`.
+`git checkout 882cd39 -- media-automation docs/media-automation` on this branch only. The previous copy (`4537b7a` / `66d4b20`) is replaced.
 
-This launch constructs it with:
+Local deltas on the imported files, not pushed to `feat/media-automation`:
 
-- `sources[]`: `{ id, name, url, kind: 'rss', trust }` from `news-launch/src/sources.js`
-- `outputLang: 'en'`
-- `statePath` under the episode output directory
-- `fetchFn` only in tests
+- `media-automation/src/video/presets.js` — `targetLufs: -16` on the shared preset base. `getPreset(name, { targetLufs })` can override it.
+- `media-automation/src/video/factory2.js` — program loudness, the anchor WAV, and `qaVideo` use `preset.targetLufs`, falling back to the factory default `-16`.
+- `media-automation/assets/lexicon.json` — episode pronunciations (Muhammad Ali Pate, Wes Streeting, Houthis, Typhoon, Alberta, Abuja, and the rest of the bulletin list). `SpeechComposer` applies them.
+- `media-automation/src/jobs/local.js` — `createJob` keeps `resourceClass`, `requiresNode`, and `safeToRetry`, and rejects an `idempotencyKey` longer than 128 characters.
+- `media-automation/src/orchestrator/orchestrator.js` — the `video_render` spec now includes `resourceClass: 'gpu_heavy'` and `safeToRetry: true` beside the existing `idempotencyKey`.
 
-`engine.stories()` returns the stored story objects. The launch reads `id`, titles, summaries, source ids, and links through `candidatesFromEngine`. It does not call `publishable()` and does not set `reviewStatus` to approved.
+## News Engine
 
-The engine's own rule (two source ids, or one official source) is **not** the editorial rule. The owner follow-up requires a primary statement. Two media RSS items are not enough. The corrected episode does not use the RSS cluster as its source of truth. See `news-launch/artifacts/test-episode/FACTCHECK.md`.
+`NewsEngine` in `media-automation/src/news/engine.js` is used as imported.
 
-### Proposed for Studio 2 — not implemented on their branch
+The RSS path still fact-checks with `news-launch/src/factcheck.js`. Two publishers confirm a cluster for the RSS adapter only. That row is marked:
 
-Optional fields on a story or fact-check row, for a later engine:
+- `primarySourceUrl`, `primaryPublisher`, `primaryPublished`: `null`
+- `editorialStatus`: `confirmed-publishers`
 
-- `primarySourceUrl` (string)
-- `primaryPublisher` (string)
-- `primaryPublished` (ISO date)
-- `editorialStatus`: `confirmed-primary` | `dropped-unconfirmed`
+A cluster that fails the two-publisher rule is `dropped-unconfirmed`. The corrected episode does not come from RSS. Its rows are `editorialStatus: confirmed-primary` with the primary URL, publisher, and date filled. See `news-launch/artifacts/corrected-episode/sources.json` and `news-launch/artifacts/test-episode/FACTCHECK.md`.
 
-The launch fact-check schema today is `news-launch/schemas/fact-check-result.json`. Those four fields are not in that schema yet. Adding them on this branch without Studio 2 would fork the engine. Left as a proposal.
+Those four fields are accepted for this launch. `882cd39` does not read or store them (`verify.js` has no `primarySourceUrl`). Emitting them here does not fork their engine.
 
-## Fact-check result — launch schema
+## Voice
 
-`news-launch/schemas/fact-check-result.json`, produced by `news-launch/src/factcheck.js` for the RSS path only.
+`MasterVoice` (`media-automation/config/master-voice.json`) builds `KokoroTTS`. This launch wraps it in `SpeechComposer` and does not call `lock()`.
 
-The corrected episode stores primary rows in `news-launch/artifacts/corrected-episode/sources.json` with `role: "primary"`. That file is an editorial record. It is not a change to the News Engine store.
+- status: `candidate`
+- voice: `am_michael` (en-US, male)
+- rate: `0.95`
+- loudness pin in the voice file: `-16` LUFS
+- model sha256: `7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5`
 
-## Script — launch schema
+`am_michael` is not owner-approved. The launch refuses a different voice id rather than substituting one. `news-launch/src/kokoro.js`, `news-launch/src/lexicon.js`, and `news-launch/bin/kokoro_synth.py` are removed. The bridge is `media-automation/tools/kokoro_tts.py`.
 
-`news-launch/schemas/script.json`.
+Piper `en_US-ljspeech-high` remains comparison-only (`--tts piper` / `ensure-tts.js`). Ryan, Joe, and Lessac stay refused in `news-launch/src/voices.js`.
 
-`llm.mode` is `ollama`, `temporary-adapter`, or `editor`.
+## Video
 
-- `ollama`: loopback only, preferred model `qwen3:8b` (`news-launch/src/ollama.js`). The request body does not set `keep_alive`, so this client does not unload the daemon.
-- `temporary-adapter`: `TEMPORARY_ADAPTER:extractive-headlines`. Headlines copied from the RSS cluster. Used when Ollama is down or the draft fails the grounding check. The first episode used this mode.
-- `editor`: a person, or this editor pass, wrote the lines from primary statements. `adapter` is null. The corrected episode uses this mode. It is not sent back through RSS grounding, because primary wording is not required to appear in an RSS title.
+`NewsVideoFactory` (`media-automation/src/video/factory2.js`) renders both presets. Music is null. The host is `StubHost3D` (`name: host3d-stub`), which returns null. No substitute cat is drawn.
 
-Video Factory still receives `{ title, scenes: [{ text, heading?, background? }] }`. Phonetic hints are applied inside `KokoroTTS.synthesize` and are not written into `scene.text` or the SRT.
+Each story needs a still that `layoutFor` accepts for both 1920×1080 and 1080×1920. The corrected edition uses Commons files that `classify()` accepted. The RSS episode path throws `only N stories with licensed media` when a story has no such still. It does not fall back to a generated color card.
 
-## Voice — TTS provider interface
+Loudness target is the preset value, default `-16` LUFS. QC is `qaVideo` in `media-automation/src/video/qa.js` (tolerance 1.5 LU, true peak ≤ −0.5 dBFS, blackdetect, freezedetect). `news-launch/src/loudness.js` and `news-launch/src/qc.js` are removed. A thin record in `06-qc.json` copies `ok`, integrated LUFS, true peak, and the failed check names so the HTTP response can stay small.
 
-`async synthesize(text, outWav) -> { file, durationSec }`, as in `media-automation/src/video/tts.js`.
-
-- RSS path default remains Piper `en_US-ljspeech-high` when `--tts` is omitted.
-- `--tts kokoro` selects `KokoroTTS` (`news-launch/src/kokoro.js`). Provisional voice `am_michael`. `locked: false`. Candidates: `am_michael`, `am_adam`, `am_fenrir`.
-- Piper `en_US-ryan-high` and `en_US-joe-medium` are refused. See `news-launch/src/voices.js`.
-
-No change to the Piper or Stub classes in the factory.
-
-## Video Factory v0 — used as-is
-
-`VideoFactory.render(script, { preset, outDir, basename, music: null })`.
-
-Presets via `getPreset(name, { crf: 23 })`: `youtube` (1920×1080) and `shorts` (1080×1920). H.264, AAC, SRT beside the MP4. `RenderQueue` concurrency 1.
-
-`StubCharacter3D` (`name === 'stub-3d'`) returns null. The episode profile refuses any other character. No substitute host is rendered. The 3D plug-in shape is documented in `news-launch/HOST_3D_INTERFACE.md` and is not built here.
-
-`music: null`. The factory's music helper is not given a file.
-
-Loudness is a launch step after the factory returns (`news-launch/src/loudness.js`): EBU R128 target about −14 LUFS, true-peak headroom, video stream copied. QC is `news-launch/src/qc.js` (ffprobe, ebur128, blackdetect). That QC is not a second video factory.
+Their preset caps replace the old 30–60 second gate. Shorts max is 180 seconds. YouTube has no max in `presets.js`. Factory2 also adds a silent intro (3.6s), credits (5s), and outro (3s). Story text is what is spoken. The title card carries “MOONKATTY NEWS”. The credits card lists sources and the line that the edition is not published.
 
 ## Jobs
 
-`StudioJobQueueAdapter` expects an injected client:
+Read-only against `feat/v1.2.0`. The contract consumed is `docs/JOBS_API.md` at `00b63fc` (ancestor of `origin/feat/v1.2.0`, tip `42d3fd5`). This branch does not copy `server/jobs` or `lib/services.js`.
+
+`StudioJobQueueAdapter.createJob` forwards:
 
 ```text
-createJob({ type, agent, input, timeoutSec, maxAttempts }) -> { jobId }
-getJob(jobId) -> Job | null
-cancelJob(jobId) -> Job
-listJobs({ status }) -> Job[]
+createJob({ type, agent, input, timeoutSec, maxAttempts, resourceClass, requiresNode, idempotencyKey, safeToRetry }) → { jobId }
 ```
 
-Statuses: `queued`, `running`, `needs_approval`, `succeeded`, `failed`, `cancelled`.
+With no injected client the adapter throws `NOT_CONNECTED`. The probe result is `TEMPORARY_ADAPTER:studio-job-queue-not-connected`. The error text names `00b63fc` and states that this launch does not open their database.
 
-`runExclusive(spec, fn)` rejects an inline function. Heavy types named by the port include `render_segment`, `llm_generate`, `video_render`, `blender_template`. This launch does not enqueue those types, because no client is injected. The manifest records `TEMPORARY_ADAPTER:studio-job-queue-not-connected`.
+The VM render uses `LocalJobQueue` with `statePath` under the episode directory (`jobs-local.json`). Each `video_render` job is created with `resourceClass: 'gpu_heavy'`, an `idempotencyKey` of `{episodeId}:{preset}`, and `safeToRetry: true`. `beforeHeavy` is not set, so Ollama is not unloaded.
 
-`feat/v1.2.0` is not on origin. When that branch supplies a client, pass it as `studioJobClient`. Do not add `server/jobs` in this repo to unblock that.
+## Approval and publishing
 
-## Social Publisher and approval — used as-is
+`social.adapt` and `public/meta.js` are not called. `imageRights: 'generated'` is not written.
 
-`saveToStudio` calls `social.adapt(src, channelId)` for `fb-news` and `yt-news`.
+`ApprovalCenter.submit` stores the edition at status `pending`. The item carries one license record per still (`title`, `author`, `license`, `licenseUrl`, `pageUrl`, `attribution`). Nothing in this launch calls `approve`.
 
-Queue item fields this launch writes:
+`Publisher` is constructed with `DEFAULT_ACCOUNTS` (`live: false`) and empty live flags. `enqueue` plus `processDue` for `youtube-news` (horizontal file) and `tiktok-news` (vertical file) ends at `dry_run`. `reviewStatus` on the content is `pending`, so a live account would still be blocked.
 
-- `status: 'pending_approval'`
-- `factCheck: 'passed'`
-- `scheduledAt: null`
-- `mediaUrl: ''`
-- `imageRights: 'generated'`
-- `demo: false`
-- `publish: false`
-
-`public/meta.js` tick publishes only when a row is approved, autopublish is on, and `scheduledAt` is set. This launch does not call `meta.js` publish. Workspaces stay at their existing `autopublish: false` and `manualApproval: true`.
-
-Approval record: `news-launch/schemas/approval-request.json`. `status` is `pending_approval`. `publish` is false.
-
-Episode stages written for EN: search, factcheck, script, translate, voice, visuals, edit = `done`; review = `progress`; publish = `todo`. RU and UK are left untouched.
+The studio episode row keeps `approvalStatus: 'pending_approval'` so the existing dashboard badge (“Ждёт утверждения”) still renders. That string is the studio UI field. The Approval Center status is `pending`. The social queue is not given a row, so “Единая очередь” does not list this edition.
 
 ## Explicit non-goals
 
-- No second news engine, video factory, or publisher.
-- No Blender invocation and no substitute 3D cat.
+- No merge into `main`, `feat/media-automation`, or `feat/v1.2.0`.
 - No write to `server/jobs` or `server/blender`.
-- No edit to `feat/media-automation`, `main`, or the macOS app branch.
-- No publish.
+- No publish, and no `MasterVoice.lock()`.
+- No Stage C `/api/projects3d` calls. Those exist only on the `42d3fd5` tip of `feat/v1.2.0`.

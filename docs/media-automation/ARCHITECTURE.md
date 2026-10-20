@@ -10,9 +10,11 @@ Sources ─▶ News Intelligence ─▶ Approval Center ─▶ Video Factory ─
                                                   Character3D adapter (stub)
 ```
 
-## Status legend
-- **Implemented (v0)**: News Intelligence Engine, Video Factory v0, Render Queue, Character3D stub, JSON state store.
-- **Interface only (documented, not implemented)**: Social Media Publisher, Scheduler, Approval Center UI, Analytics, Brand Memory, Cost Control.
+## Status (phase 2)
+- **Implemented:** News Intelligence Engine + verification (`src/news`), AI editor (`src/llm`), Video Factory v1 (`src/video`), JobQueuePort + LocalJobQueue (`src/jobs`), Host3D interface (`src/host3d`), Publisher (`src/publish`, dry-run default), Scheduler (`src/schedule`), Approval Center (`src/approval`), Analytics (`src/analytics`), Secrets (`src/secrets.js`).
+- **Stub:** StudioJobQueueAdapter, StubHost3D.
+- **Interface/docs only:** Brand Memory, Cost Control.
+- See INTEGRATION.md for the contracts with the studio, and STAGES.md for per-stage verification status. The sections below describe the phase-1 design; phase-2 details are in the code headers.
 
 ## Shared: StateStore (`src/store.js`) — implemented
 `new JsonStore(file)`; `get(key)`, `set(key, value)`, `update(key, fn)`. Atomic write (tmp file + `fsync` + `rename`), so a crash never leaves a half-written file. Used for restart-safety.

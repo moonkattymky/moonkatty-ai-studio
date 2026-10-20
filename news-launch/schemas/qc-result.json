@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moonkatty.local/schemas/qc-result.json",
   "title": "QcResult",
-  "description": "Technical QC from ffprobe and ffmpeg. Loudness target is about -14 LUFS (EBU R128). No editorial claim is made here.",
+  "description": "Technical QC from media-automation qaVideo. Default loudness target is -16 LUFS. No editorial claim is made here.",
   "type": "object",
   "additionalProperties": true,
   "required": ["file", "ok", "width", "height", "durationSec", "videoCodec", "audioCodec", "audioPresent", "loudnessLUFS", "truePeakDb", "clipping", "blackFrames", "subtitleFile", "checkedAt"],

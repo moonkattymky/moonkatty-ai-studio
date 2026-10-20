@@ -3,7 +3,7 @@
 const path = require('path');
 const { runLaunch } = require('../src/pipeline');
 const { saveToStudio, openStudio } = require('../src/studio-save');
-const { KokoroTTS, PROVISIONAL } = require('../src/kokoro');
+const { masterSpeech } = require('../src/factory-render');
 
 function arg(name) {
   const i = process.argv.indexOf(name);
@@ -17,12 +17,14 @@ const stopAfter = process.argv.includes('--dry-run') ? 'factcheck' : (arg('--sto
 (async () => {
   const ttsName = arg('--tts');
   let tts;
-  if (ttsName === 'kokoro') {
-    const voice = arg('--voice') || PROVISIONAL.defaultVoice;
-    if (!PROVISIONAL.candidates.includes(voice)) throw new Error(`Voice ${voice} is not a provisional Kokoro candidate`);
-    tts = new KokoroTTS({ voice });
-  } else if (ttsName) {
-    throw new Error('Supported --tts values: kokoro. Omit --tts to use Piper en_US-ljspeech-high.');
+  if (!stopAfter) {
+    if (ttsName === 'piper') tts = undefined;
+    else if (ttsName && ttsName !== 'kokoro') throw new Error('Supported --tts values: kokoro (MasterVoice am_michael), piper (comparison only).');
+    else {
+      const voice = arg('--voice');
+      if (voice && voice !== 'am_michael') throw new Error(`Voice ${voice} is not the MasterVoice candidate am_michael`);
+      tts = masterSpeech().tts;
+    }
   }
   const manifest = await runLaunch({
     prompt, outDir, stopAfter, profile: arg('--profile') || 'episode',
@@ -50,7 +52,7 @@ const stopAfter = process.argv.includes('--dry-run') ? 'factcheck' : (arg('--sto
   const db = arg('--db');
   if (db) {
     const studio = openStudio(path.resolve(db));
-    const saved = saveToStudio({ ...studio, user: 'news-launch' }, manifest);
+    const saved = await saveToStudio({ ...studio, user: 'news-launch' }, manifest);
     console.log('saved episode', saved.episode.id);
     studio.db.close();
   }

@@ -2,7 +2,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { editorialScript, SAMPLE_TEXT } = require('../src/editorial');
-const { applyLexicon } = require('../src/lexicon');
+const { applyLexicon, loadLexicon } = require('../../media-automation/src/video/speech');
+const LEXICON = loadLexicon();
 const { rejectedForCommercial, VOICES } = require('../src/voices');
 const { assertSchema, SCHEMAS } = require('../src/schemas');
 
@@ -17,13 +18,13 @@ test('editorial script is editor-written and the stored lines stay in normal spe
   assert.match(written, /No winner is called/);
   assert.match(written, /forty-four/);
   assert.match(written, /will not conduct offensive strikes/);
-  const spoken = applyLexicon(written);
+  const spoken = applyLexicon(written, LEXICON);
   assert.match(spoken, /Moo-hah-mud Ah-lee Pah-tay/);
   assert.match(spoken, /Hoo-theez/);
   assert.match(spoken, /Wes Street-ing/);
   assert.match(spoken, /Ty-foon/);
-  assert.equal(applyLexicon('Alberta and Alberta'), 'Al-ber-tuh and Al-ber-tuh');
-  assert.match(applyLexicon(SAMPLE_TEXT), /Ah-boo-jah/);
+  assert.equal(applyLexicon('Alberta and Alberta', LEXICON), 'Al-ber-tuh and Al-ber-tuh');
+  assert.match(applyLexicon(SAMPLE_TEXT, LEXICON), /Ah-boo-jah/);
 });
 
 test('ryan, joe, and lessac are refused for commercial use', () => {

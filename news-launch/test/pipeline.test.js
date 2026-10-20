@@ -8,7 +8,6 @@ const { execFile } = require('child_process');
 const { runLaunch } = require('../src/pipeline');
 const { saveToStudio } = require('../src/studio-save');
 const core = require('../../public/core.js');
-const social = require('../../public/social.js');
 
 const recent = new Date().toUTCString();
 const rss = items => `<?xml version="1.0"?><rss version="2.0"><channel>${items.map(i =>
@@ -48,7 +47,11 @@ test('pipeline renders both frames from corroborated stories and holds approval'
   });
   assert.equal(manifest.publish, false);
   assert.equal(manifest.hostUsed, false);
-  assert.equal(manifest.character3d, 'stub-3d');
+  assert.equal(manifest.character3d, 'host3d-stub');
+  assert.equal(manifest.targetLufs, -16);
+  assert.ok(manifest.jobs.every(j => j.resourceClass === 'gpu_heavy' && j.safeToRetry === true && j.idempotencyKey));
+  assert.equal(manifest.imageLicenses.images[0].license, 'test-fixture');
+  assert.ok(manifest.sources.every(s => s.editorialStatus === 'confirmed-publishers' && s.primarySourceUrl === null));
   assert.equal(manifest.selected.length, 3);
   assert.equal(manifest.jobs.length, 2);
   assert.deepEqual(manifest.jobs.map(j => [j.width, j.height]).sort(), [[1080, 1920], [1920, 1080]]);
@@ -61,18 +64,20 @@ test('pipeline renders both frames from corroborated stories and holds approval'
   }
   assert.ok(!manifest.selected.some(s => /warehouse/i.test(s.claim)));
   const files = {};
-  const saved = saveToStudio({
-    core, social, filesDir: path.join(outDir, 'files'),
+  const saved = await saveToStudio({
+    core, filesDir: path.join(outDir, 'files'),
     put: (col, obj) => { (files[col] = files[col] || []).push(obj); return obj; },
     log: () => {}, user: 'tester',
   }, manifest);
   assert.equal(saved.approval.publish, false);
-  assert.equal(saved.approval.status, 'pending_approval');
+  assert.equal(saved.approval.status, 'pending');
+  assert.ok(saved.approval.licenses.length >= 1);
+  assert.equal(saved.approval.licenses[0].license, 'test-fixture');
   assert.equal(saved.episode.versions.EN.factcheck, 'done');
   assert.equal(saved.episode.versions.EN.publish, 'todo');
   assert.equal(saved.episode.approvalStatus, 'pending_approval');
-  const queue = files.queue;
-  assert.ok(queue.every(q => q.status === 'pending_approval' && q.scheduledAt == null && q.factCheck === 'passed'));
+  assert.equal(files.queue, undefined);
+  assert.ok(saved.publisherPosts.every(p => p.status === 'dry_run' && p.remote && p.remote.dryRun === true));
   assert.equal(files.tasks[0].status, 'waiting_approval');
 });
 
@@ -81,8 +86,9 @@ function shortTts() {
   return {
     name: 'test-tone', voiceId: 'none', license: 'test fixture, not a broadcast voice', commercialUse: false,
     async synthesize(text, outWav) {
-      await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1.2:sample_rate=22050', '-ac', '1', outWav]);
-      return { file: outWav, durationSec: 1.2 };
+      const durationSec = Math.min(8, Math.max(4, String(text).length / 24));
+      await run('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${durationSec.toFixed(2)}:sample_rate=44100`, '-ac', '1', outWav]);
+      return { file: outWav, durationSec };
     },
   };
 }
@@ -101,7 +107,7 @@ test('prepare route requires a user and does not publish', async () => {
   fs.writeFileSync(path.join(out, 'a.wav'), 'wav');
   const cols = {};
   mountNewsLaunch(app, {
-    filesDir: path.join(out, 'files'), core, social, log: () => {},
+    filesDir: path.join(out, 'files'), core, log: () => {},
     put: (col, obj) => { (cols[col] = cols[col] || []).push(obj); return obj; },
     list: col => cols[col] || [],
     runLaunch: async () => ({
@@ -132,9 +138,10 @@ test('prepare route requires a user and does not publish', async () => {
     const body = await ok.json();
     assert.equal(ok.status, 200, JSON.stringify(body));
     assert.equal(body.publish, false);
-    assert.equal(body.approval.status, 'pending_approval');
-    assert.equal(cols.queue[0].status, 'pending_approval');
-    assert.equal(cols.queue[0].scheduledAt, null);
+    assert.equal(body.approval.status, 'pending');
+    assert.equal(body.approval.publish, false);
+    assert.ok(body.publisher.every(p => p.status === 'dry_run'));
+    assert.equal(cols.queue, undefined);
   } finally { server.close(); }
 });
 

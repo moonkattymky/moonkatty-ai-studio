@@ -13,8 +13,11 @@ Checked 20 October 2026 against the git history. This branch was not booted on t
 | `origin/feat/opencode-auth` | `3f9bd9038a3245a362b355565c4ba2a860c6ba3c` (same commit as the tag) | 1.1.2 |
 | `origin/feat/studio-operations` | `a8a735930ebcc3c24058541c1e64b04918c30881` | 1.1.2, docs and ops commits **after** the tag |
 | `origin/feat/macos-app` | not the 1.1.2 tag | 1.1.1 at the time it was inspected |
+| `origin/feat/v1.2.0` | `42d3fd5` (contains `00b63fc` and the tag) | jobs contract used here is `00b63fc`, not the Stage C appendix |
 
 `v1.1.2-mac-preview` is the commit to treat as the installed preview. Its `package.json` description is "control panel (web + macOS desktop)" and `main` is `desktop/main.js`. It contains `desktop/` and `lib/opencode-auth.js`.
+
+`git merge-base --is-ancestor 3f9bd90 origin/feat/opencode-auth` and the same check against `origin/feat/v1.2.0` both succeed. The tag is contained in both. `origin/feat/opencode-auth` is the tag itself. `origin/feat/v1.2.0` continues past it: `00b63fc` is the v1.2.0 jobs/Blender contract (`docs/JOBS_API.md`), and the tip `42d3fd5` adds a v1.2.1 Stage C appendix (projects3d references, review, rerender, and job status `rejected`). This launch does not call those Stage C routes and does not write `server/jobs`.
 
 `feat/studio-operations` is ahead of that tag. One of those later commits unloads Ollama (`keep_alive: 0`) inside a resource manager. This news launch does not start that code and does not set an ops flag.
 
@@ -73,7 +76,7 @@ The session cookie is `mk_session` on `Path=/` with no port. `http://127.0.0.1:8
 
 `sqlite3 .backup` is a read of the source, including a live WAL. The script refuses to place the scratch directory in the same folder as the source. Rollback deletes only a directory that contains `news-launch-isolated-scratch`. It never deletes `SOURCE_DB`.
 
-`openStudio` / `saveToStudio` add an episode, one approval task, and two queue rows (`pending_approval`, `scheduledAt: null`, `publish: false`). They do not call the publisher.
+`openStudio` / `saveToStudio` add an episode and one approval task. They do not write a social-queue row and they do not set `imageRights`. The episode field `approvalStatus` stays `pending_approval` so the existing dashboard badge still shows. The Approval Center item (status `pending`, with per-image license records) and the Publisher posts (status `dry_run` on `youtube-news` and `tiktok-news`) live in JSON files under the episode directory. `publish` is false. `public/meta.js` is not called.
 
 ## What a future mount into 1.1.2 would need
 
@@ -96,7 +99,7 @@ SOURCE_DB="/actual/path/studio.db" DEST_DIR="$HOME/moonkatty-news-scratch" \
   news-launch/bin/mac-isolated.sh
 ```
 
-That runs News → fact-check → script (Ollama `qwen3:8b` when it answers) → Kokoro `am_michael` → both MP4s → QC → save on the copy with approval still holding. Then, if you want the UI:
+That runs News → fact-check → script (Ollama `qwen3:8b` when it answers) → MasterVoice `am_michael` through `SpeechComposer` → `NewsVideoFactory` for both frames → their QC at −16 LUFS → save on the copy. The RSS path stops if a story has no still that their license check and `layoutFor` both accept. It does not draw a color card. Approval Center status stays `pending`. Publisher stays `dry_run`. Then, if you want the UI:
 
 ```bash
 SOURCE_DB="/actual/path/studio.db" DEST_DIR="$HOME/moonkatty-news-scratch" \

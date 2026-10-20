@@ -1,8 +1,21 @@
-# media-automation (isolated module, feat/media-automation)
+# media-automation (isolated module, branch feat/media-automation)
 
-Node ≥20, CommonJS, no extra npm dependencies. Not wired into `server.js`.
+Node ≥20, CommonJS. Uses only `express`, which is already a repo dependency, and only for the Approval router. Not wired into `server.js`.
 
-- `src/news/` — News Intelligence Engine (see docs/media-automation/ARCHITECTURE.md)
-- `src/video/` — Video Factory v0, RenderQueue, TTS providers, Character3D stub
-- Tests: `node --test media-automation/test` (network mocked; the ffmpeg render test is skipped if ffmpeg is missing)
-- Sample: `node media-automation/bin/sample-render.js [outDir] [--say]` (`--say` = macOS speech; default = tone stub, not speech)
+| Dir | What |
+|---|---|
+| `src/news` | News Intelligence Engine, verification (`verify.js`) |
+| `src/llm` | Ollama adapter, fact-check, NewsEditor |
+| `src/video` | VideoFactory v1, TTS (say/piper/espeak), SRT build/validate, QA, CC0 ambient bed, RenderQueue |
+| `src/jobs` | JobQueuePort, LocalJobQueue, StudioJobQueueAdapter (stub) |
+| `src/host3d` | Host3D interface, StubHost3D, QueuedHost3D |
+| `src/publish` | Publisher + YouTube/Telegram/X/TikTok/Meta adapters (DRY-RUN default) |
+| `src/schedule` | Scheduler (Asia/Jerusalem default) |
+| `src/approval` | ApprovalCenter + express router + page |
+| `src/analytics` | Analytics adapters + recommendations |
+| `src/secrets.js` | Keychain (`security`) + env fallback |
+
+- **Tests:** `node --test media-automation/test`. The network is mocked. Real ffmpeg, espeak and Piper tests run if those tools are installed.
+- **Real news video (nothing is published):** `MA_PIPER_MODEL=... MA_PIPER_BIN=... node media-automation/bin/news-video.js /path/out 3`
+- **Approval page:** `MA_SECRET_APPROVAL_TOKEN=... node media-automation/bin/approval-server.js <stateDir> 8795 <mediaRoot>`
+- **LLM demo:** `node media-automation/bin/llm-demo.js out.json`

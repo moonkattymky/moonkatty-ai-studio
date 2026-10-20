@@ -55,7 +55,7 @@ DEST_DIR="$HOME/moonkatty-news-scratch" \
   news-launch/bin/mac-isolated.sh
 ```
 
-The command runs the reputable RSS list, fact-checks, asks Ollama `qwen3:8b` for the script, synthesizes Kokoro `am_michael`, renders 1920×1080 and 1080×1920, loudness-normalizes, runs QC, and saves the episode into the **copy** with `publish: false` and queue status `pending_approval`.
+The command runs the reputable RSS list, fact-checks, asks Ollama `qwen3:8b` for the script, synthesizes MasterVoice Kokoro `am_michael` (candidate, not locked) through `SpeechComposer`, renders 1920×1080 and 1080×1920 with `NewsVideoFactory` at −16 LUFS, runs their QC, and saves the episode into the **copy** with `publish: false`. The Approval Center item is `pending`. Publisher posts are `dry_run`. The episode badge stays `pending_approval`. The social queue is not written. A story with no licensed still fails closed.
 
 If Ollama is down, the script mode is `TEMPORARY_ADAPTER:extractive-headlines`. If fewer than three stories pass the RSS corroboration window, the command exits with `Refusing to invent news`.
 
@@ -75,7 +75,7 @@ Open `http://localhost:8791`, not `http://127.0.0.1:8791`, if the installed app 
 
 - Dashboard preview plays the 16:9 file and shows **Ждёт утверждения**.
 - News shows both aspect ratios and the source links.
-- Social → Единая очередь shows **На утверждении**. **Опубликовать** stays disabled.
+- Social → Единая очередь does not gain a row for this edition. Publisher state is `dry_run` in the episode directory. **Опубликовать** is not invoked.
 
 Do not click **Подготовить выпуск** during a short look. That POST renders another episode and takes several minutes. Anonymous calls return 401.
 

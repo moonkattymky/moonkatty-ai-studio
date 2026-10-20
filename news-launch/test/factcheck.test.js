@@ -23,11 +23,16 @@ test('two organisations confirm a story; one organisation and a lone official so
   ], { now: () => now });
   const bridge = results.find(r => /bridge/i.test(r.claim));
   assert.equal(bridge.status, 'confirmed');
+  assert.equal(bridge.editorialStatus, 'confirmed-publishers');
+  assert.equal(bridge.primarySourceUrl, null);
+  assert.equal(bridge.primaryPublisher, null);
+  assert.equal(bridge.primaryPublished, null);
   assert.equal(bridge.independentPublishers, 2);
   assert.equal(new Set(bridge.sources.map(s => s.org)).size, 2);
   assert.ok(bridge.sources.every(s => /^https:/.test(s.url)));
   const solo = results.find(r => /warehouse/i.test(r.claim));
   assert.equal(solo.status, 'rejected');
+  assert.equal(solo.editorialStatus, 'dropped-unconfirmed');
   assert.equal(solo.rejectionReason, 'fewer_than_two_independent_publishers');
   const nasa = results.find(r => /moon/i.test(r.claim));
   assert.equal(nasa.status, 'rejected');

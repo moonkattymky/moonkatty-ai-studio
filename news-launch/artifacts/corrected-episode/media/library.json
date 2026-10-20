@@ -1,0 +1,151 @@
+{
+  "assets": {
+    "bb91c90161d5": {
+      "id": "bb91c90161d5",
+      "newsId": "alberta-referendum-2026-10-19",
+      "provider": "commons",
+      "kind": "image",
+      "sourceUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/Alberta_Legislature_Building%2C_June_7%2C_2024.jpg/3840px-Alberta_Legislature_Building%2C_June_7%2C_2024.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Alberta_Legislature_Building,_June_7,_2024.jpg",
+      "title": "Alberta Legislature Building, June 7, 2024.jpg",
+      "author": "D. Benjamin Miller",
+      "credit": "Own work",
+      "description": "Alberta Legislature Building",
+      "license": "CC0-1.0",
+      "licenseRaw": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "attributionRequired": false,
+      "shareAlike": false,
+      "licenseNote": null,
+      "query": "Alberta Legislature Building",
+      "width": 3840,
+      "height": 2560,
+      "localPath": "/workspace/news-launch/artifacts/corrected-episode/media/bb91c90161d5.jpg",
+      "sha256": "8603b011898e5da54208746c49045b913884249b4464249085b40888675f0095",
+      "fetchedAt": "2026-10-20T23:36:27.299Z",
+      "attribution": "Image: D. Benjamin Miller / Own work — CC0-1.0 — “Alberta Legislature Building, June 7, 2024.jpg”"
+    },
+    "e1972296abb7": {
+      "id": "e1972296abb7",
+      "newsId": "nigeria-ebola-2026-10-20",
+      "provider": "commons",
+      "kind": "image",
+      "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Chika_Skyline.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Chika_Skyline.jpg",
+      "title": "Chika Skyline.jpg",
+      "author": "Umasoyee",
+      "credit": "Own work",
+      "description": "Chika landscape in Abuja",
+      "license": "CC-BY-SA-4.0",
+      "licenseRaw": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "attributionRequired": true,
+      "shareAlike": true,
+      "licenseNote": null,
+      "query": "Abuja Nigeria skyline",
+      "width": 4000,
+      "height": 2252,
+      "localPath": "/workspace/news-launch/artifacts/corrected-episode/media/e1972296abb7.jpg",
+      "sha256": "5245b22edb2845b39d732fe24b72e29d94569bb02e01fe52c1c550c600626f6a",
+      "fetchedAt": "2026-10-20T23:36:30.482Z",
+      "attribution": "Image: Umasoyee / Own work — CC-BY-SA-4.0 — “Chika Skyline.jpg”"
+    },
+    "e5ea270dd341": {
+      "id": "e5ea270dd341",
+      "newsId": "uk-saudi-typhoon-2026-10-20",
+      "provider": "commons",
+      "kind": "image",
+      "sourceUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Royal_Air_Force_Eurofighter_Typhoon_FGR.4_ZK344_Royal_International_Air_Tattoo_2025_01.jpg/3840px-Royal_Air_Force_Eurofighter_Typhoon_FGR.4_ZK344_Royal_International_Air_Tattoo_2025_01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Royal_Air_Force_Eurofighter_Typhoon_FGR.4_ZK344_Royal_International_Air_Tattoo_2025_01.jpg",
+      "title": "Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg",
+      "author": "Julian Herzog ( Website )",
+      "credit": "Own work",
+      "description": "Royal Air Force Eurofighter Typhoon FGR.4 (reg. ZK344, s/n BS105/384) taking off at the Royal International Air Tattoo 2025. Mach diamonds are visible as a result of the use of the afterburner.",
+      "license": "CC-BY-4.0",
+      "licenseRaw": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "attributionRequired": true,
+      "shareAlike": false,
+      "licenseNote": null,
+      "query": "Royal Air Force Typhoon",
+      "width": 3840,
+      "height": 2880,
+      "localPath": "/workspace/news-launch/artifacts/corrected-episode/media/e5ea270dd341.jpg",
+      "sha256": "1f067eabdd4c774ae6a97682ef497feb1cbb1928b108df5d911293ac781b807e",
+      "fetchedAt": "2026-10-20T23:36:36.714Z",
+      "attribution": "Image: Julian Herzog ( Website ) / Own work — CC-BY-4.0 — “Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg”"
+    }
+  },
+  "rejections": [
+    {
+      "provider": "commons",
+      "id": "File:Abuja skyline.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Abuja_skyline.jpg",
+      "reason": "fetch failed: download HTTP 429",
+      "at": "2026-10-20T23:36:29.980Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:Dakar, Senegal - Left Half (5662420768).jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Dakar,_Senegal_-_Left_Half_(5662420768).jpg",
+      "reason": "not relevant to query",
+      "at": "2026-10-20T23:36:30.606Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:Abuja-Nigeria.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Abuja-Nigeria.jpg",
+      "reason": "too small 432x557",
+      "at": "2026-10-20T23:36:31.234Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:Refuse dump in the heart of Abuja.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Refuse_dump_in_the_heart_of_Abuja.jpg",
+      "reason": "not relevant to query",
+      "at": "2026-10-20T23:36:31.641Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:RAF Typhoon inflight.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:RAF_Typhoon_inflight.jpg",
+      "reason": "unrecognized license: OGL 2",
+      "at": "2026-10-20T23:36:36.571Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:Eurofighter Typhoon FGR4 of Royal Air Force (ZJ914), Radom Air Show, 20230826 1655 9933.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Eurofighter_Typhoon_FGR4_of_Royal_Air_Force_(ZJ914),_Radom_Air_Show,_20230826_1655_9933.jpg",
+      "reason": "fetch failed: download HTTP 429",
+      "at": "2026-10-20T23:36:38.269Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:RAF Eurofighter Typhoon.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:RAF_Eurofighter_Typhoon.jpg",
+      "reason": "fetch failed: download HTTP 429",
+      "at": "2026-10-20T23:36:38.917Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:RAF Typhoon inflight.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:RAF_Typhoon_inflight.jpg",
+      "reason": "unrecognized license: OGL 2",
+      "at": "2026-10-20T23:36:38.920Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:Eurofighter Typhoon FGR4 of Royal Air Force (ZJ914), Radom Air Show, 20230826 1655 9933.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:Eurofighter_Typhoon_FGR4_of_Royal_Air_Force_(ZJ914),_Radom_Air_Show,_20230826_1655_9933.jpg",
+      "reason": "fetch failed: download HTTP 429",
+      "at": "2026-10-20T23:36:39.006Z"
+    },
+    {
+      "provider": "commons",
+      "id": "File:RAF Eurofighter Typhoon cockpit.jpg",
+      "pageUrl": "https://commons.wikimedia.org/wiki/File:RAF_Eurofighter_Typhoon_cockpit.jpg",
+      "reason": "fetch failed: download HTTP 429",
+      "at": "2026-10-20T23:36:39.034Z"
+    }
+  ]
+}

@@ -1,13 +1,5 @@
 'use strict';
-/**
- * Character3DAdapter interface (to be implemented by the 3D studio / Blender integration, separately):
- *   capabilities() -> { available:boolean, formats:string[], alpha:boolean }
- *   async renderSegment({ sceneId, text, audioFile, durationSec, preset:{width,height,fps}, outFile }) -> { file, alpha } | null
- * Returning null means "no 3D segment" and the factory falls back to the 2D background.
- */
-class StubCharacter3D {
-  constructor() { this.calls = []; this.name = 'stub-3d'; }
-  capabilities() { return { available: false, formats: [], alpha: false }; }
-  async renderSegment(req) { this.calls.push(req); return null; }
-}
+// Back-compat alias: the Character3D adapter is now the unified Host3D interface (src/host3d).
+const { StubHost3D } = require('../host3d');
+class StubCharacter3D extends StubHost3D { constructor() { super(); this.name = 'stub-3d'; } }
 module.exports = { StubCharacter3D };

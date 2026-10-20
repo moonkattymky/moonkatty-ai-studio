@@ -170,6 +170,10 @@ function factCheckItems(items, { now = () => new Date().toISOString() } = {}) {
       controversial: coherent.some(it => it.controversial) || isControversial(text),
       breaking: coherent.some(it => it.breaking),
       publishedAt: dates.length ? dates[dates.length - 1] : null,
+      primarySourceUrl: null,
+      primaryPublisher: null,
+      primaryPublished: null,
+      editorialStatus: confirmed ? 'confirmed-publishers' : 'dropped-unconfirmed',
     };
     return assertSchema(result, SCHEMAS.factCheck, 'FactCheckResult');
   }));

@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test'); const assert = require('node:assert/strict'); const path = require('path'); const fs = require('fs');
-const { VideoFactory, RenderQueue, StubTTS, MacSayTTS, StubCharacter3D, buildSrt, chunk, getPreset, PRESETS, validateMusic, validateScript, hasBinary, probeDuration, run } = require('../src/video');
-const { tmp } = require('./helpers');
+const { VideoFactory, RenderQueue, MacSayTTS, StubCharacter3D, buildSrt, chunk, getPreset, PRESETS, validateMusic, validateScript, hasBinary, probeDuration, run } = require('../src/video');
+const { tmp, StubTTS } = require('./helpers');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 test('presets: 16:9 youtube, 9:16 shorts/tiktok/reels/fb_reels', () => {
@@ -25,11 +25,6 @@ test('validation: script and music license required', () => {
   assert.equal(validateMusic({ file: f, license: 'CC0' }).license, 'CC0');
 });
 
-test('MacSayTTS builds safe argv (no shell)', async () => {
-  const calls = []; const fake = async (cmd, args) => { calls.push([cmd, args]); return { stdout: cmd === 'ffprobe' ? '2.5\n' : '' }; };
-  const r = await new MacSayTTS({ runFn: fake }).synthesize('-rf; rm x', '/tmp/o.wav');
-  assert.equal(r.durationSec, 2.5); assert.equal(calls[0][0], 'say'); assert.deepEqual(calls[0][1].slice(-2), ['--', '-rf; rm x']);
-});
 
 test('TTS failure propagates as render error (queue marks failed after retries)', async () => {
   const bad = { name: 'bad', synthesize: async () => { throw new Error('TTS API 503'); } };

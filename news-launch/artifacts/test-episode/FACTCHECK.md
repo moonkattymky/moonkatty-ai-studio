@@ -165,4 +165,4 @@ Every frame in the corrected edition is a generated colour card plus the scene h
 
 ## Pronunciation
 
-Written names in the script and the SRT stay as published. The TTS lexicon is in `news-launch/src/lexicon.js` and is applied only to audio. See `news-launch/VOICE_REPORT.md`. "Muhammad Ali Pate" is spoken as an editorial hint (Moo-hah-mud Ah-lee Pah-tay). That pronunciation was not verified with the minister's office.
+Written names in the script and the SRT stay as published. Pronunciations live in `media-automation/assets/lexicon.json` and are applied by `SpeechComposer` only to audio. See `news-launch/VOICE_REPORT.md`. "Muhammad Ali Pate" is spoken as an editorial hint (Moo-hah-mud Ah-lee Pah-tay). That pronunciation was not verified with the minister's office.

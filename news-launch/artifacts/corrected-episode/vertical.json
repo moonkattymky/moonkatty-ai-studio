@@ -4,15 +4,186 @@
   "platform": "YouTube Shorts",
   "width": 1080,
   "height": 1920,
-  "aspect": "9:16",
-  "durationSec": 53.1,
+  "fps": 30,
+  "loudnessLufs": -16,
+  "durationSec": 59.633333,
   "files": {
     "video": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
     "subtitles": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
-    "thumbnail": "/workspace/news-launch/artifacts/corrected-episode/vertical.jpg"
+    "thumbnail": "/workspace/news-launch/artifacts/corrected-episode/vertical.jpg",
+    "anchorAudio": "/workspace/news-launch/artifacts/corrected-episode/vertical.anchor.wav"
   },
-  "tts": "kokoro",
-  "character3d": "stub-3d",
+  "tts": "kokoro:am_michael",
+  "transitions": [
+    "smoothleft",
+    "circleopen",
+    "slideup",
+    "dissolve",
+    "wiperight"
+  ],
+  "segments": [
+    {
+      "kind": "intro",
+      "start": 0,
+      "duration": 3.6
+    },
+    {
+      "kind": "story",
+      "storyId": "alberta-referendum-2026-10-19",
+      "assetId": "bb91c90161d5",
+      "layout": "kenburns",
+      "start": 3.6,
+      "duration": 16.557
+    },
+    {
+      "kind": "story",
+      "storyId": "nigeria-ebola-2026-10-20",
+      "assetId": "e1972296abb7",
+      "layout": "kenburns",
+      "start": 20.157,
+      "duration": 18.243
+    },
+    {
+      "kind": "story",
+      "storyId": "uk-saudi-typhoon-2026-10-20",
+      "assetId": "e5ea270dd341",
+      "layout": "kenburns",
+      "start": 38.4,
+      "duration": 13.229
+    },
+    {
+      "kind": "credits",
+      "start": 51.629,
+      "duration": 5
+    },
+    {
+      "kind": "outro",
+      "start": 56.629,
+      "duration": 3
+    }
+  ],
+  "sources": [
+    {
+      "name": "Elections Alberta",
+      "url": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/"
+    },
+    {
+      "name": "Elections Alberta",
+      "url": "https://www.elections.ab.ca/elections/referendum/"
+    },
+    {
+      "name": "Federal Ministry of Health and Social Welfare of Nigeria",
+      "url": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf"
+    },
+    {
+      "name": "UK Ministry of Defence",
+      "url": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia"
+    }
+  ],
+  "rights": [
+    "Image: D. Benjamin Miller / Own work — CC0-1.0 — “Alberta Legislature Building, June 7, 2024.jpg”",
+    "Image: Umasoyee / Own work — CC-BY-SA-4.0 — “Chika Skyline.jpg”",
+    "Image: Julian Herzog ( Website ) / Own work — CC-BY-4.0 — “Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg”",
+    "Edition status: awaits approval and is not published."
+  ],
   "music": null,
-  "createdAt": "2026-10-20T23:01:14.382Z"
+  "subtitles": {
+    "ok": true,
+    "errors": [],
+    "cues": 14
+  },
+  "qa": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "video_stream",
+        "ok": true,
+        "actual": true,
+        "expected": true
+      },
+      {
+        "name": "video_codec",
+        "ok": true,
+        "actual": "h264",
+        "expected": "h264"
+      },
+      {
+        "name": "resolution",
+        "ok": true,
+        "actual": "1080x1920",
+        "expected": "1080x1920"
+      },
+      {
+        "name": "fps",
+        "ok": true,
+        "actual": 30,
+        "expected": 30
+      },
+      {
+        "name": "pix_fmt",
+        "ok": true,
+        "actual": "yuv420p",
+        "expected": "yuv420p"
+      },
+      {
+        "name": "audio_present",
+        "ok": true,
+        "actual": true,
+        "expected": true
+      },
+      {
+        "name": "audio_codec",
+        "ok": true,
+        "actual": "aac",
+        "expected": "aac"
+      },
+      {
+        "name": "duration",
+        "ok": true,
+        "actual": 59.63,
+        "expected": 59.63
+      },
+      {
+        "name": "av_sync_start",
+        "ok": true,
+        "actual": 0,
+        "expected": "|Δstart| <= 0.05s"
+      },
+      {
+        "name": "av_sync_duration",
+        "ok": true,
+        "actual": 0.004,
+        "expected": "|Δdur| <= 0.1s"
+      },
+      {
+        "name": "no_black_frames",
+        "ok": true,
+        "actual": [],
+        "expected": "none >= 0.5s"
+      },
+      {
+        "name": "no_frozen_frames",
+        "ok": true,
+        "actual": [],
+        "expected": "none >= 2.5s"
+      },
+      {
+        "name": "loudness_lufs",
+        "ok": true,
+        "actual": -16.2,
+        "expected": -16
+      },
+      {
+        "name": "true_peak",
+        "ok": true,
+        "actual": -1.4,
+        "expected": "<= -0.5 dBFS"
+      }
+    ],
+    "info": {
+      "durationSec": 59.633333,
+      "fps": 30
+    }
+  },
+  "createdAt": "2026-10-20T23:41:48.858Z"
 }

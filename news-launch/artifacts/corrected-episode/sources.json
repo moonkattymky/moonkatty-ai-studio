@@ -7,7 +7,11 @@
     "url": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
     "title": "Unofficial Referendum Results Reporting Process",
     "published": "2026-10-19",
-    "role": "primary"
+    "role": "primary",
+    "primarySourceUrl": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
+    "primaryPublisher": "Elections Alberta",
+    "primaryPublished": "2026-10-19",
+    "editorialStatus": "confirmed-primary"
   },
   {
     "storyId": "alberta-referendum-2026-10-19",
@@ -17,7 +21,11 @@
     "url": "https://www.elections.ab.ca/elections/referendum/",
     "title": "Referendum",
     "published": "2026-10-19",
-    "role": "primary"
+    "role": "primary",
+    "primarySourceUrl": "https://www.elections.ab.ca/elections/referendum/",
+    "primaryPublisher": "Elections Alberta",
+    "primaryPublished": "2026-10-19",
+    "editorialStatus": "confirmed-primary"
   },
   {
     "storyId": "nigeria-ebola-2026-10-20",
@@ -27,7 +35,11 @@
     "url": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf",
     "title": "FG CONFIRMS EBOLA DISEASE CASE IN FCT, ACTIVATES PUBLIC HEALTH RESPONSE",
     "published": "2026-10-20",
-    "role": "primary"
+    "role": "primary",
+    "primarySourceUrl": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf",
+    "primaryPublisher": "Federal Ministry of Health and Social Welfare of Nigeria",
+    "primaryPublished": "2026-10-20",
+    "editorialStatus": "confirmed-primary"
   },
   {
     "storyId": "uk-saudi-typhoon-2026-10-20",
@@ -37,6 +49,10 @@
     "url": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia",
     "title": "Operational update 20 October – UK military support to the Kingdom of Saudi Arabia",
     "published": "2026-10-20",
-    "role": "primary"
+    "role": "primary",
+    "primarySourceUrl": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia",
+    "primaryPublisher": "UK Ministry of Defence",
+    "primaryPublished": "2026-10-20",
+    "editorialStatus": "confirmed-primary"
   }
 ]

@@ -35,6 +35,10 @@
     },
     "category": { "type": "string" },
     "controversial": { "type": "boolean" },
-    "publishedAt": { "type": ["string", "null"] }
+    "publishedAt": { "type": ["string", "null"] },
+    "primarySourceUrl": { "type": ["string", "null"] },
+    "primaryPublisher": { "type": ["string", "null"] },
+    "primaryPublished": { "type": ["string", "null"] },
+    "editorialStatus": { "enum": ["confirmed-primary", "confirmed-publishers", "dropped-unconfirmed"] }
   }
 }

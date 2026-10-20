@@ -38,7 +38,7 @@ async function probeStudioJobs(client) {
     if (e instanceof NotConnectedError || e.code === 'NOT_CONNECTED') {
       return {
         adapter, mode: 'TEMPORARY_ADAPTER:studio-job-queue-not-connected', connected: false,
-        error: 'feat/v1.2.0 is not on origin. server/jobs and server/blender were not created or written.',
+        error: 'Studio job client is not injected. feat/v1.2.0 is on origin (00b63fc, docs/JOBS_API.md). This launch does not open that database and does not write server/jobs or server/blender.',
       };
     }
     throw e;
