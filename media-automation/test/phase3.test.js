@@ -114,3 +114,14 @@ test('facts: numbers only from source text; media queries', () => {
 test('news schedule plans: 09:00 & 19:00 video, daytime text, Asia/Jerusalem', () => {
   assert.deepEqual(NEWS_PLANS.filter(p => p.action === 'news_video_issue').flatMap(p => p.times), ['09:00', '19:00']); assert.ok(NEWS_PLANS.every(p => p.tz === 'Asia/Jerusalem'));
 });
+test('studio adapter aligned with v1.2.0 JOBS_API: extra fields, status/id normalization, render_segment failed stub -> null', async () => {
+  const { StudioJobQueueAdapter, StudioHost3D } = require('../src/jobs/studio-adapter'); let created;
+  const client = { createJob: async b => { created = b; return { jobId: 'job_1' }; }, getJob: async () => ({ id: 'job_1', status: 'done', artifacts: [{ path: '/x/seg.mov' }] }), cancelJob: async () => ({}), listJobs: async () => [] };
+  const a = new StudioJobQueueAdapter({ client, pollMs: 1 });
+  const r = await a.runExclusive({ type: 'blender_template', input: { template: 'scene_basic' }, idempotencyKey: 'k', resourceClass: 'gpu_heavy' });
+  assert.equal(created.idempotencyKey, 'k'); assert.equal(created.resourceClass, 'gpu_heavy'); assert.equal(r.videoPath, '/x/seg.mov');
+  assert.equal((await a.getJob('job_1')).status, 'succeeded');
+  const stub = new StudioJobQueueAdapter({ client: { ...client, getJob: async () => ({ jobId: 'job_2', status: 'failed', error: 'не реализовано' }) }, pollMs: 1 });
+  assert.equal(await new StudioHost3D({ adapter: stub }).renderSegment({ script: 's' }), null);
+  assert.equal(await new StudioHost3D({ adapter: new StudioJobQueueAdapter() }).renderSegment({}), null);
+});
