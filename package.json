@@ -1,6 +1,6 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "desktop": "electron .",
     "dist:mac": "electron-builder --mac zip --arm64",
     "test:policy": "node scripts/policy-test.mjs",
-    "test:3d": "node scripts/design3d-test.mjs"
+    "test:3d": "node scripts/design3d-test.mjs",
+    "test:3c": "node scripts/studio3c-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",

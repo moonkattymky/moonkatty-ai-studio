@@ -81,7 +81,7 @@ const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir
 const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
 const ws3d = require('./lib/workspace.js')(path.dirname(DB_PATH));
 const blender = require('./lib/blender.js')();
-const policy = require('./lib/policy.js');
+const policy = require('./lib/policy.js'), SP = require('./lib/scene-params.js');
 const design3d = require('./lib/executors/design3d.js')({ jobs, ws: ws3d, blender, get, put, log, sec, ollamaStatus: runner.ollamaStatus, ollamaJson: runner.ollamaJson });
 runner.register('design3d', design3d.run);
 const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log }); app.locals.services = services; module.exports = { services };
@@ -282,7 +282,8 @@ app.post('/api/studio3d/run', (req, res) => {
   const text = String(req.body?.text || '').trim().slice(0, 1000); if (!text) return res.status(400).json({ error: 'Опишите, что создать' });
   const a = get('agents', 'design3d'); if (!a || !a.enabled) return res.status(409).json({ error: 'Агент 3D DESIGN выключен' });
   put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
-  const t = put('tasks', { id: core.uid(), kind: '3d', title: text.slice(0, 120), description: text.length > 120 ? text : '', agentId: 'design3d', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' });
+  const pid = req.body?.projectId; if (pid != null && (!PID.test(pid) || !ws3d.exists(pid))) return res.status(400).json({ error: 'Проект не найден' });
+  const t = put('tasks', { id: core.uid(), kind: '3d', ...(pid ? { projectId3d: pid } : {}), title: text.slice(0, 120), description: text.length > 120 ? text : '', agentId: 'design3d', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' });
   put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: 'studio3d', text: 'Director: задача назначена агенту 3D DESIGN', taskIds: [t.id] });
   log('info', 'director', 'Задача назначена агенту 3D DESIGN: ' + t.title, req.user);
   if (a.status !== 'working') runner.start('design3d', req.user); else runner.tick(); res.status(201).json(t); });
@@ -293,16 +294,55 @@ app.put('/api/studio3d/settings', (req, res) => { const b = req.body || {};
   if ('blenderPath' in b) { if (b.blenderPath && !SAFE_PATH.test(b.blenderPath)) return res.status(400).json({ error: 'Путь к Blender: абсолютный путь' }); const it = get('integrations', 'blender') || { id: 'blender', name: 'Blender' }; it.path = b.blenderPath || ''; put('integrations', it); }
   if ('opencodeModel' in b) { if (b.opencodeModel && !SAFE_MODEL.test(b.opencodeModel)) return res.status(400).json({ error: 'Модель: provider/model, например ollama/qwen2.5-coder:7b' }); const it = ocItem(); it.model = b.opencodeModel || ''; put('integrations', it); }
   log('info', 'studio3d', 'Настройки 3D Studio изменены: ' + Object.keys(b).join(', '), req.user); res.json({ ok: true }); });
-app.get('/api/projects3d/:pid/:ver/file', (req, res) => { let f; try { f = ws3d.file(req.params.pid, req.params.ver, String(req.query.name || '')); } catch { f = null; }
+app.get('/api/projects3d/:pid/:ver/file', (req, res) => { if (!/^(scene\.blend|renders\/preview\.png|renders\/anim\/frame_\d{4}\.png|exports\/scene\.(glb|fbx))$/.test(String(req.query.name || ''))) return res.status(404).json({ error: 'not found' }); let f; try { f = ws3d.file(req.params.pid, req.params.ver, String(req.query.name || '')); } catch { f = null; }
   if (!f) return res.status(404).json({ error: 'not found' }); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Cache-Control', 'no-store');
-  if (!/\.png$/i.test(f)) res.setHeader('Content-Disposition', 'attachment; filename="' + path.basename(f).replace(/[^A-Za-z0-9._-]/g, '_') + '"'); res.sendFile(f); });
+  if (!/\.png$/i.test(f) || req.query.download === '1') res.setHeader('Content-Disposition', 'attachment; filename="' + path.basename(f).replace(/[^A-Za-z0-9._-]/g, '_') + '"'); res.sendFile(f); });
 // Deleting a version is a dangerous action: two steps (policy → confirm:true).
 app.delete('/api/projects3d/:pid/:ver', (req, res) => { let dir; try { dir = path.join(ws3d.projDir(req.params.pid), req.params.ver); } catch (e) { return res.status(400).json({ error: e.message }); }
   const d = policy.decide({ type: 'fs.delete', ws: ws3d.root, path: dir });
   if (d.decision === 'deny') return res.status(403).json({ error: d.reason, rule: d.rule });
   if (req.body?.confirm !== true) return res.status(409).json({ needsConfirmation: true, rule: d.rule, error: d.reason });
-  try { ws3d.removeVersion(req.params.pid, req.params.ver); } catch (e) { return res.status(400).json({ error: e.message }); }
-  log('warn', 'studio3d', `Удалена версия ${req.params.pid}/${req.params.ver} (подтверждено)`, req.user); res.json({ ok: true }); });
+  if (jobs.list(500).some(j => j.checkpoint?.projectId === req.params.pid && j.checkpoint?.version === req.params.ver && ['running', 'queued', 'waiting_confirmation'].includes(j.status))) return res.status(409).json({ error: 'Версия используется выполняющимся заданием' });
+  let backup; try { backup = ws3d.removeVersion(req.params.pid, req.params.ver); } catch (e) { return res.status(400).json({ error: e.message }); }
+  const m = ws3d.manifest(req.params.pid); if (m.versions?.[req.params.ver]) { m.versions[req.params.ver].deleted = { at: core.now(), by: req.user, backup: path.relative(ws3d.root, backup) }; ws3d.manifest(req.params.pid, { versions: { [req.params.ver]: m.versions[req.params.ver] } }); }
+  log('warn', 'studio3d', `Удалена версия ${req.params.pid}/${req.params.ver} (подтверждено, резервная копия ${path.relative(ws3d.root, backup)})`, req.user); res.json({ ok: true, backup: path.relative(ws3d.root, backup) }); });
+// ---- Stage C: projects, references, versions, review, re-render ----
+const PID = /^[A-Za-z0-9_-]{1,64}$/, VER = /^v\d{3}$/;
+const projOk = (req, res) => { if (!PID.test(req.params.pid) || !ws3d.exists(req.params.pid)) { res.status(404).json({ error: 'Проект не найден' }); return false; } if (req.params.ver !== undefined && (!VER.test(req.params.ver) || !fs.existsSync(path.join(ws3d.projDir(req.params.pid), req.params.ver)))) { res.status(404).json({ error: 'Версия не найдена' }); return false; } return true; };
+app.get('/api/projects3d', (req, res) => res.json(ws3d.list()));
+app.post('/api/projects3d', (req, res) => { const id = 'p_' + core.uid(); fs.mkdirSync(ws3d.projDir(id), { recursive: true, mode: 0o700 }); ws3d.manifest(id, { title: String(req.body?.title || '').slice(0, 80) || id, createdAt: core.now(), createdBy: req.user }); log('info', 'studio3d', 'Создан 3D-проект ' + id, req.user); res.status(201).json({ id }); });
+app.get('/api/projects3d/:pid', (req, res) => { if (!projOk(req, res)) return; const m = ws3d.manifest(req.params.pid);
+  res.json({ id: req.params.pid, title: m.title, references: m.references || [], versions: ws3d.versions(req.params.pid).map(v => ws3d.versionInfo(req.params.pid, v)).reverse(), deleted: Object.entries(m.versions || {}).filter(([, x]) => x.deleted).map(([v, x]) => ({ version: v, ...x.deleted })) }); });
+app.post('/api/projects3d/:pid/references', express.raw({ type: () => true, limit: ws3d.REF_MAX + 1024 }), (req, res) => { if (!projOk(req, res)) return;
+  try { const r = ws3d.addReference(req.params.pid, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), String(req.query.name || '')); log('info', 'studio3d', `Референс ${r.duplicate ? '(уже был) ' : ''}${r.name} → ${req.params.pid} (sha256 ${r.sha256.slice(0, 12)}…)`, req.user); res.status(r.duplicate ? 200 : 201).json(r); }
+  catch (e) { res.status(e.status || 400).json({ error: e.message }); } });
+app.get('/api/projects3d/:pid/references/:sha', (req, res) => { if (!projOk(req, res)) return; const f = ws3d.refFile(req.params.pid, req.params.sha); if (!f) return res.status(404).json({ error: 'not found' });
+  res.setHeader('Content-Type', f.mime); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; sandbox"); res.setHeader('Cache-Control', 'no-store'); res.sendFile(f.path); });
+function new3dTask(fields, user) { const a = get('agents', 'design3d'); if (!a || !a.enabled) throw Object.assign(new Error('Агент 3D DESIGN выключен'), { status: 409 });
+  const t = put('tasks', { id: core.uid(), kind: '3d', agentId: 'design3d', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director', ...fields });
+  if (a.status !== 'working') runner.start('design3d', user); else runner.tick(); return t; }
+// Human review of a finished 3D job. The ONLY way to approve/reject (generic CRUD cannot set status of 3D tasks).
+app.post('/api/jobs/:id/review', (req, res) => { const j = jobs.get(req.params.id); if (!j || j.kind !== '3d') return res.status(404).json({ error: 'not found' });
+  const action = req.body?.action, comment = String(req.body?.comment ?? '').trim();
+  if (!['approve', 'rework', 'reject'].includes(action)) return res.status(400).json({ error: 'action: approve | rework | reject' });
+  if (j.status !== 'waiting_approval') return res.status(409).json({ error: 'Задание не ждёт утверждения (статус ' + j.status + ')' });
+  if (action === 'rework' && (comment.length < 3 || comment.length > 500)) return res.status(400).json({ error: 'Комментарий к доработке: 3–500 символов' });
+  if (comment.length > 500) return res.status(400).json({ error: 'Комментарий: до 500 символов' });
+  const cp = j.checkpoint, t = get('tasks', j.taskId); const review = { decision: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'rework', by: req.user, at: core.now(), comment: comment || null };
+  const m = ws3d.manifest(cp.projectId); const ve = m.versions?.[cp.version] || {}; ws3d.manifest(cp.projectId, { versions: { [cp.version]: { ...ve, review } } });
+  jobs.update(j.id, { status: action === 'approve' ? 'done' : 'rejected' }); jobs.event(j.id, 'info', 'verify', `Решение человека: ${review.decision}${comment ? ' — ' + comment : ''}`, 'review.' + action);
+  if (t) { Object.assign(t, { status: action === 'approve' ? 'done' : 'cancelled', review }, action === 'approve' ? { completedAt: core.now() } : {}); put('tasks', t); }
+  let next = null;
+  if (action === 'rework') { try { next = new3dTask({ title: ('Доработка ' + cp.version + ': ' + comment).slice(0, 120), description: comment, projectId3d: cp.projectId, reworkOf: j.id, comment, baseParams: cp.params, baseVersion: cp.version }, req.user); } catch (e) { return res.status(e.status || 500).json({ error: e.message }); } }
+  log('info', 'studio3d', `Версия ${cp.projectId}/${cp.version}: ${review.decision}${comment ? ' — ' + comment : ''}`, req.user); res.json({ ok: true, review, nextTask: next }); });
+// Re-run the vetted template with new lighting/camera/animation/render params (no agent; new version from the chosen one).
+app.post('/api/projects3d/:pid/:ver/rerender', (req, res) => { if (!projOk(req, res)) return; const info = ws3d.versionInfo(req.params.pid, req.params.ver); if (!info.params) return res.status(400).json({ error: 'У версии нет проверенных параметров' });
+  const b = req.body || {}; const allowed = ['lighting', 'camera', 'animation', 'render', 'exports', 'background']; const bad = Object.keys(b).filter(k => !allowed.includes(k)); if (bad.length) return res.status(400).json({ error: 'Недопустимые поля: ' + bad.join(', ') });
+  const p = JSON.parse(JSON.stringify(info.params)); for (const k of allowed) if (k in b) p[k] = b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) ? { ...p[k], ...b[k] } : b[k];
+  const v = SP.validate(p); if (!v.ok) return res.status(400).json({ error: 'Параметры: ' + v.errors.join('; '), errors: v.errors });
+  try { const t = new3dTask({ title: `Перерендер ${req.params.ver}: свет ${v.params.lighting}, кадров ${v.params.animation.frames}`, projectId3d: req.params.pid, presetParams: v.params, skipAgent: true, baseVersion: req.params.ver }, req.user);
+    log('info', 'studio3d', `Перерендер ${req.params.pid}/${req.params.ver}`, req.user); res.status(201).json(t); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
+
 
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
@@ -317,6 +357,14 @@ app.use('/api/integrations', (req, res, next) => { if (!['POST', 'PUT'].includes
   const id = req.path.split('/')[1] || req.body.id; if (id !== 'opencode') return next();
   for (const k of ['username']) if (k in req.body && !oca.validUser(req.body[k])) return res.status(400).json({ error: 'Неверный логин' });
   if ('url' in req.body) { const v = oca.validateUrl(req.body.url); if (v.error) return res.status(400).json({ error: v.error, code: v.code }); req.body.url = v.url; } next(); });
+// 3D tasks: status/approval only through /api/jobs/:id/review|cancel|retry; pipeline fields are server-managed.
+const T3D = ['jobId', 'review', 'reworkOf', 'baseParams', 'presetParams', 'skipAgent', 'projectId3d', 'baseVersion', 'retryRequested', 'result'];
+app.use('/api/tasks', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
+  const id = req.path.split('/')[1]; const cur = id ? get('tasks', id) : null; const is3d = (cur && (cur.kind === '3d' || cur.agentId === 'design3d')) || req.body.kind === '3d' || req.body.agentId === 'design3d';
+  if (!is3d) return next(); for (const k of T3D) delete req.body[k];
+  if (req.method === 'PUT' && 'status' in req.body && req.body.status !== cur?.status) return res.status(403).json({ error: 'Статус 3D-задачи меняется только через 3D Studio (утверждение/отмена/повтор)' });
+  if (req.method === 'PUT' && ('kind' in req.body || 'agentId' in req.body)) return res.status(403).json({ error: 'Нельзя менять тип/агента 3D-задачи' });
+  if (req.method === 'POST') req.body.status = 'queued'; next(); });
 app.post('/api/:col', okCol, (req, res) => {
   const o = Object.assign({}, req.body, { id: req.body.id || core.uid(), createdAt: core.now() });
   if (req.params.col === 'tasks' && o.schedule && o.schedule.type !== 'none') o.nextRunAt = core.nextRun(o.schedule);

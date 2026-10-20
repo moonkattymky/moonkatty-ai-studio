@@ -31,3 +31,17 @@ Events: `GET /api/jobs/:id?after=<seq>` → `events[] {seq, at, level, stage, ms
 `GET /api/jobs?status=&limit=`, `POST /api/jobs` (same body as createJob), `POST /api/jobs/:id/cancel|retry|confirm {approve}`,
 `POST /api/studio3d/run {text}`, `GET /api/studio3d/status`, `PUT /api/studio3d/settings {blenderPath, opencodeModel}`,
 `GET /api/projects3d/:pid/:ver/file?name=renders/preview.png`, `DELETE /api/projects3d/:pid/:ver {confirm:true}` (two-step).
+
+## Stage C endpoints (v1.2.1)
+| Method | Path | Notes |
+|---|---|---|
+| GET/POST | `/api/projects3d` | list / create project `{title}` → `{id}` |
+| GET | `/api/projects3d/:pid` | `{id,title,references[],versions[{version,files,params,parent,comment,review,backup,animFrames}],deleted[]}` |
+| POST | `/api/projects3d/:pid/references?name=` | raw image body (png/jpeg/webp ≤15 MB) → `{sha256,file,name,size,duplicate}` |
+| GET | `/api/projects3d/:pid/references/:sha` | image, `nosniff`, sandbox CSP |
+| POST | `/api/jobs/:id/review` | `{action: approve|rework|reject, comment}`; only from `waiting_approval`; rework → `{nextTask}` |
+| POST | `/api/projects3d/:pid/:ver/rerender` | `{lighting,camera,animation,render,exports,background}` → new task (agent skipped) |
+| GET | `/api/projects3d/:pid/:ver/file?name=&download=1` | whitelisted artifacts only |
+| DELETE | `/api/projects3d/:pid/:ver` | body `{confirm:true}` required (else 409 `needsConfirmation`); moved to `_trash` |
+
+Job status `rejected` (task `cancelled`) is new. Approve sets job `done`.

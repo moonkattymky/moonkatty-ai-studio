@@ -34,7 +34,7 @@ Ollama: для доступа из Docker/браузера может понад
 Никаких выдуманных просмотров, подписчиков и статусов: всё, что не подключено, помечено «Не подключено», нереализованные функции — «в разработке» и кнопки отключены. Отчёты строятся только из реальных задач/журнала. Арт в интерфейсе (коты, превью) — из концепта, превью помечено как концепт.
 
 ## В разработке
-Автономное выполнение задач агентами, автопоиск новостей, TTS-озвучка, рендер/экспорт видео, автосубтитры, публикация в соцсети и статистика платформ, запуск рекламы, 3D Studio (кроме минимального конвейера 1.2.0: референсы, утверждение/доработка, экспорт из UI, конвейер персонажа, ролик), терминал, web push.
+Автономное выполнение задач агентами, автопоиск новостей, TTS-озвучка, рендер/экспорт видео, автосубтитры, публикация в соцсети и статистика платформ, запуск рекламы, 3D Studio (сделано в 1.2.0–1.2.1: конвейер, референсы, утверждение/доработка, версии, перерендер, экспорт, просмотр GLB; не сделано: использование референсов моделью, конвейер персонажа, ролик), терминал, web push.
 
 ## Тесты
 `node scripts/smoke.mjs <url> <prefix> <user> <pass>` — headless Chrome (playwright-core): вход, чат с Director, задачи с расписанием, старт агента, выпуск и этапы, утверждение поста, отчёт, тест Ollama, скриншоты всех разделов (десктоп + iPhone) в `screenshots/`.
@@ -63,6 +63,9 @@ Electron shell + background server (launchd LaunchAgent). Window loads only the 
 
 ### 3D Studio — Autonomous 3D Production (1.2.0, stages A+B)
 Director → agent **3D DESIGN** → real **OpenCode server API** (Basic Auth, password from Keychain, policy: no shell, workspace-only) → vetted **Blender** template headless (`-b --python-exit-code`): scene → `.blend` → reopen → PNG/GLB. Jobs are resumable after restart, with cancel/retry/timeouts and an action log. See `docs/INSTALL_MAC.md` (3D Studio), `docs/JOBS_API.md`, `docs/SECURITY_AUDIT.md`, `CHANGELOG.md`. Tests: `npm run test:policy`, `npm run test:3d` (needs `OPENCODE_BIN`, `STUDIO_BLENDER_BIN`).
+
+### 3D Studio stage C (1.2.1)
+Reference upload (magic-byte checked, SHA-256 stored), Approve / Rework (comment → new version from previous) / Reject via `POST /api/jobs/:id/review` only, version history with previews and confirmed delete-to-`_trash`, lighting/camera/turntable/render controls that re-run the template, PNG/GLB/FBX/.blend downloads, and a bundled WebGL GLB viewer (no CDN, strict CSP). Tests: `npm run test:3c`. References are stored but not yet used by the model (stage D).
 
 ### OpenCode server password (1.1.2)
 
