@@ -24,6 +24,10 @@
         ${D.tasks.current.map(t => `<div class="small">▶ ${esc(t.title)} <span class="mut">${esc(t.agentId)} · ${t.minutes ?? '?'} мин</span></div>`).join('')}
         ${D.tasks.waitingPlan.length ? `<h4>План LLM ждёт проверки</h4>${D.tasks.waitingPlan.map(t => `<div class="row small">${esc(t.title)} <button class="btn sm" data-plan="${esc(t.id)}">Утвердить</button></div>`).join('')}` : ''}</div>
     </div>
+    ${D.nodes ? `<div class="card"><h3>Узлы (Node Manager)</h3>${D.nodes.nodes.length ? D.nodes.nodes.map(n => `<div class="row small"><b>${esc(n.name)}</b> <span class="mut">${esc(n.id)} · ${esc(n.role)}</span> <span class="badge ${n.status === 'online' ? 'b-ok' : n.status === 'down' ? 'b-err' : 'b-warn'}">${esc(n.status)}</span>
+      ${n.info ? `<span class="mut">${esc(n.info.os)} · CPU ${n.info.cpus} · load ${n.info.load1 != null ? n.info.load1.toFixed(1) : '?'} · RAM своб. ${gb(n.info.memAvailable)} из ${gb(n.info.memTotal)} · диск ${gb(n.info.diskFree)}</span>` : ''} · задач ${n.running} · ошибок ${n.errors}${n.lastError ? ` <span class="mut">(${esc(n.lastError)})</span>` : ''}</div>`).join('') : '<div class="small mut">Узлы не зарегистрированы (docs/ops/NODES.md)</div>'}
+      <div class="small">Очередь узлов: ${Object.entries(D.nodes.counts).map(([k, v]) => esc(k) + ' ' + v).join(' · ') || 'пусто'}</div>
+      ${D.nodes.jobs.filter(j => j.status === 'needs_approval').map(j => `<div class="small">⚠ ${esc(j.capability)} ${esc(j.id)}: ${esc(j.error || '')}</div>`).join('')}</div>` : ''}
     <div class="grid g2">
       <div class="card"><h3>Последние ошибки</h3>${D.errors.map(e => `<div class="small"><span class="mut">${esc(e.at.slice(5, 16))}</span> <b>${esc(e.source)}</b> ${esc(e.message)}</div>`).join('') || '<div class="small mut">Нет</div>'}</div>
       <div class="card"><h3>Уведомления</h3>${D.notifications.map(n => `<div class="small"><span class="badge ${n.level === 'info' ? 'b-ok' : 'b-warn'}">${esc(n.level)}</span> ${esc(n.source)}: ${esc(n.message)}</div>`).join('') || '<div class="small mut">Нет</div>'}</div>

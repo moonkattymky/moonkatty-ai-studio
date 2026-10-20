@@ -12,8 +12,10 @@
     "desktop": "electron .",
     "dist:mac": "electron-builder --mac zip --arm64",
     "test:ops": "node --test test/ops/",
-    "test": "node --test test/ops/ && node scripts/security-test.mjs && node scripts/runner-test.mjs && node scripts/opencode-auth-test.mjs",
-    "watchdog": "node ops/watchdog.js"
+    "test": "node --test test/ops/ test/contract/ && node scripts/security-test.mjs && node scripts/runner-test.mjs && node scripts/opencode-auth-test.mjs",
+    "watchdog": "node ops/watchdog.js",
+    "test:contract": "node --test test/contract/",
+    "node-agent": "node node-agent/agent.js"
   },
   "keywords": [],
   "author": "MOONKATTY",

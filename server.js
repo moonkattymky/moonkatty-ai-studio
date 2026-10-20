@@ -78,7 +78,7 @@ const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
 const meta = require('./meta.js')(app, metaCtx);
 // ---- Studio Operations (feature flags, off by default; see docs/ops/) ----
 const ops = require('./lib/ops/index.js')({ env: process.env, dataDir: path.dirname(DB_PATH), log, q });
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, admit: ops.admit, release: ops.release, can: ops.can, wrapUntrusted: ops.wrapUntrusted });
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, admit: ops.admit, release: ops.release, runViaNode: ops.runViaNode, can: ops.can, wrapUntrusted: ops.wrapUntrusted });
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
 const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });

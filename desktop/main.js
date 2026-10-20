@@ -23,7 +23,7 @@ const cfgFile = () => path.join(dataDir(), 'desktop.json');
 const DEF = { port: 8787, autoStartServer: true, startAtLogin: false, checkUpdates: true };
 const cfg = () => { let c = {}; try { c = JSON.parse(fs.readFileSync(cfgFile(), 'utf8')); } catch {}
   const port = Number.isInteger(c.port) && c.port >= 1024 && c.port <= 65535 ? c.port : DEF.port;
-  return { port, autoStartServer: c.autoStartServer !== false, startAtLogin: c.startAtLogin === true, checkUpdates: c.checkUpdates !== false, enableOpenCode: c.enableOpenCode === true, opsResources: c.opsResources === true, opsMobile: c.opsMobile === true,
+  return { port, autoStartServer: c.autoStartServer !== false, startAtLogin: c.startAtLogin === true, checkUpdates: c.checkUpdates !== false, enableOpenCode: c.enableOpenCode === true, opsResources: c.opsResources === true, opsMobile: c.opsMobile === true, opsSecurity: c.opsSecurity === true, opsBackup: c.opsBackup === true, opsCosts: c.opsCosts === true, opsDashboard: c.opsDashboard === true, opsNodes: c.opsNodes === true, opsNodesBind: typeof c.opsNodesBind === 'string' ? c.opsNodesBind : '',
     allowedHosts: (Array.isArray(c.allowedHosts) ? c.allowedHosts : []).filter(h => typeof h === 'string' && /^[a-z0-9.-]+\.ts\.net(:\d+)?$/i.test(h)).slice(0, 5) }; }; // only Tailscale names
 const saveCfg = c => { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 2), { mode: 0o600 }); };
 // Packaged: official Node binary (Resources/node/node) runs server.js from app.asar.unpacked → the RunAsNode fuse stays OFF.
@@ -31,7 +31,7 @@ const saveCfg = c => { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFil
 const serverRuntime = () => app.isPackaged
   ? { execPath: path.join(process.resourcesPath, 'node', 'node'), serverJs: path.join(process.resourcesPath, 'app.asar.unpacked', 'server.js'), runAsNode: false }
   : { execPath: process.execPath, serverJs: path.join(ROOT, 'server.js'), runAsNode: true };
-const svcOpts = c => ({ ...serverRuntime(), dataDir: dataDir(), port: c.port, startAtLogin: c.startAtLogin, logDir: logDir(), enableOpenCode: c.enableOpenCode, allowedHosts: c.allowedHosts, opsResources: c.opsResources, opsMobile: c.opsMobile });
+const svcOpts = c => ({ ...serverRuntime(), dataDir: dataDir(), port: c.port, startAtLogin: c.startAtLogin, logDir: logDir(), enableOpenCode: c.enableOpenCode, allowedHosts: c.allowedHosts, opsResources: c.opsResources, opsMobile: c.opsMobile, opsSecurity: c.opsSecurity, opsBackup: c.opsBackup, opsCosts: c.opsCosts, opsDashboard: c.opsDashboard, opsNodes: c.opsNodes, opsNodesBind: c.opsNodesBind });
 const panelOrigin = c => `http://127.0.0.1:${c.port}`;
 const STARTUP = path.join(__dirname, 'startup.html');
 const STARTUP_URL = pathToFileURL(STARTUP).href;

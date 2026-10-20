@@ -14,7 +14,7 @@
   const V = {
     async summary() { const s = await api('GET', '/summary'); const w = s.watchdog;
       return `<div class="card"><div class="row"><b>Система</b><span class="mut">${esc(new Date(s.at).toLocaleTimeString())}</span></div>
-        <div class="mut">${memLine(s.system.memory)}</div><div class="mut">load ${s.system.loadavg.map(x => x.toFixed(1)).join(' ')}</div>
+        <div class="mut">${memLine(s.system.memory)}</div>${s.nodes ? s.nodes.map(n => `<div class="mut">Узел ${esc(n.name)}: <b class="${n.status === 'online' ? 'ok' : 'err'}">${esc(n.status)}</b> · задач ${n.running} · ошибок ${n.errors}${n.memTotal ? ` · RAM своб. ${gb(n.memAvailable)}/${gb(n.memTotal)}` : ''}</div>`).join('') : ''}<div class="mut">load ${s.system.loadavg.map(x => x.toFixed(1)).join(' ')}</div>
         <div class="mut">Tick: ${esc(s.system.lastTick || '—')}</div>${s.resources ? `<div class="mut">Ресурсы: ${esc(s.resources.mode)}, Ollama ${s.resources.ollama.totalGB} ГБ, задач ${s.resources.running.length}</div>` : ''}</div>
         ${w ? `<div class="card"><b>Watchdog</b> <span class="mut">${esc(w.lastCycleAt || '')}</span>${Object.entries(w.checks).map(([k, v]) => `<div class="${v.ok ? 'ok' : 'err'}">${v.ok ? '●' : '▲'} ${esc(k)} <span class="mut">${esc(v.detail)}</span></div>`).join('')}</div>` : ''}
         <div class="card"><b>Задачи</b><div class="mut">${Object.entries(s.tasks.byStatus).map(([k, v]) => esc(k) + ': ' + v).join(' · ') || 'нет'}</div>
