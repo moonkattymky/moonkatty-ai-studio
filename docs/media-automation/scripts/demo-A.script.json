@@ -1,0 +1,60 @@
+{
+  "lines": [
+    {
+      "role": "hook",
+      "text": "An intense storm has been making its way past Iceland.",
+      "emotion": "SERIOUS"
+    },
+    {
+      "role": "body",
+      "text": "NASA reports an extratropical cyclone has formed over the North Atlantic.",
+      "emotion": "SERIOUS"
+    },
+    {
+      "role": "body",
+      "text": "It originated from the remnants of Hurricane Isaias.",
+      "emotion": "SERIOUS"
+    },
+    {
+      "role": "body",
+      "text": "The system is quite powerful.",
+      "emotion": "SERIOUS"
+    },
+    {
+      "role": "signoff",
+      "text": "Stay safe, and stay curious. This is MOONKATTY NEWS.",
+      "emotion": "SERIOUS"
+    }
+  ],
+  "spoken": "An intense storm has been making its way past Iceland. NASA reports an extratropical cyclone has formed over the North Atlantic. It originated from the remnants of Hurricane Isaias. The system is quite powerful. Stay safe, and stay curious. This is MOONKATTY NEWS.",
+  "provider": "ollama:qwen2.5:7b",
+  "attempts": 2,
+  "rejections": [
+    {
+      "attempt": 1,
+      "draft": "A powerful storm just whipped past Iceland, and NASA has the scoop. NASA reports an extratropical cyclone formed from Hurricane Isaias remnants over the North Atlantic. It's a low-pressure system, quite the force. And it just sped past Iceland, bringing strong winds in its wake.",
+      "unsupported": [
+        {
+          "type": "relative-date",
+          "value": "just whipped"
+        }
+      ]
+    }
+  ],
+  "humorLog": [],
+  "humorTag": null,
+  "factCheck": {
+    "ok": true,
+    "unsupported": []
+  },
+  "sources": [
+    {
+      "name": "NASA",
+      "url": "https://science.nasa.gov/earth/earth-observatory/extratropical-cyclone-whips-past-iceland/",
+      "published": "Wed, 21 Oct 2026 04:01:00 +0000"
+    }
+  ],
+  "generatedMs": 37048,
+  "storyId": "e33e2e94106c",
+  "headline": "Extratropical Cyclone Whips Past Iceland"
+}

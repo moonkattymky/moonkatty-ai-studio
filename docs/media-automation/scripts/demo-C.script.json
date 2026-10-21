@@ -1,0 +1,60 @@
+{
+  "lines": [
+    {
+      "role": "hook",
+      "text": "Wow, imagine the Sun's surface creating these mysterious magnetic switchbacks!",
+      "emotion": "CURIOUS"
+    },
+    {
+      "role": "body",
+      "text": "Solar Orbiter tracked an S-shaped kink in the solar wind's magnetic field.",
+      "emotion": "CURIOUS"
+    },
+    {
+      "role": "body",
+      "text": "By analyzing particles within it, the spacecraft traced the switchback back to the Sun’s surface.",
+      "emotion": "CURIOUS"
+    },
+    {
+      "role": "body",
+      "text": "This helps us understand the unruly solar magnetism behind dangerous storms.",
+      "emotion": "CURIOUS"
+    },
+    {
+      "role": "signoff",
+      "text": "The Sun still has secrets. We will keep watching. Stay curious.",
+      "emotion": "NEUTRAL"
+    }
+  ],
+  "spoken": "Wow, imagine the Sun's surface creating these mysterious magnetic switchbacks! Solar Orbiter tracked an S-shaped kink in the solar wind's magnetic field. By analyzing particles within it, the spacecraft traced the switchback back to the Sun’s surface. This helps us understand the unruly solar magnetism behind dangerous storms. The Sun still has secrets. We will keep watching. Stay curious.",
+  "provider": "ollama:qwen2.5:7b",
+  "attempts": 2,
+  "rejections": [
+    {
+      "attempt": 1,
+      "draft": "Imagine the Sun's surface whispering secrets to us from millions of miles away! Solar Orbiter just flew through a mysterious S-shaped kink in the solar wind’s magnetic field. It’s called a switchback, and it’s like the solar wind’s version of a rollercoaster loop. By studying the particles inside, we’ve traced its origin back to the Sun’s surface. Now we’re unraveling the mysteries of solar magnetism, the source of those dangerous solar storms.",
+      "unsupported": [
+        {
+          "type": "number-word",
+          "value": "millions"
+        }
+      ]
+    }
+  ],
+  "humorLog": [],
+  "humorTag": null,
+  "factCheck": {
+    "ok": true,
+    "unsupported": []
+  },
+  "sources": [
+    {
+      "name": "ESA",
+      "url": "https://www.esa.int/Science_Exploration/Space_Science/Solar_Orbiter/Solar_Orbiter_tracks_origin_of_mysterious_magnetic_switchbacks",
+      "published": "Thu, 08 Oct 2026 11:00:00 +0200"
+    }
+  ],
+  "generatedMs": 42294,
+  "storyId": "5144e2b0d809",
+  "headline": "Solar Orbiter tracks origin of mysterious magnetic switchbacks"
+}

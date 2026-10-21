@@ -14,9 +14,9 @@ const TRANSITIONS = ['smoothleft', 'circleopen', 'slideup', 'dissolve', 'wiperig
  * episode: { title, dateLabel, stories:[{ id, category, headline, text (spoken, may contain [pause]), asset:{localPath,width,height,attribution,...}, fact?:{value,label,source} }], sources:[{name,url}], rights:[attribution lines] }
  */
 class NewsVideoFactory {
-  constructor({ tts, host3d = new StubHost3D(), runFn = run, transitionSec = 0.6, targetLufs = -16, workRoot = null } = {}) {
+  constructor({ tts, host3d = new StubHost3D(), runFn = run, transitionSec = 0.6, targetLufs = -16, workRoot = null, emotionPitch = true, voiceOverride = null } = {}) {
     if (!tts || typeof tts.synthesize !== 'function') throw new Error('NewsVideoFactory: real TTS required');
-    Object.assign(this, { tts, host3d, runFn, T: transitionSec, targetLufs, workRoot });
+    Object.assign(this, { tts, host3d, runFn, T: transitionSec, targetLufs, workRoot, emotionPitch, voiceOverride });
   }
   _ff(args, cwd) { return this.runFn('ffmpeg', ['-y', '-v', 'error', ...args], cwd ? { cwd } : {}); }
   async _clip({ out, L, W, H, fps, bg, overlays }) {
@@ -68,7 +68,9 @@ class NewsVideoFactory {
     for (const [i, s] of segs.entries()) {
       s.wav = path.join(work, `a${i}.wav`);
       if (s.kind === 'story' && this.tts.constructor.name === 'KokoroBlendTTS') { // emotion-aware master voice with measured sentence times
-        const emo = s.story.emotion || 'NEUTRAL'; const raw = s.wav + '.tts.wav'; const r = await this.tts.synthesize(applyLexicon(stripMarkup(s.story.text), this.lexicon || (this.lexicon = loadLexicon())), raw, { emotion: emo });
+        const emo = s.story.emotion || 'NEUTRAL'; const raw = s.wav + '.tts.wav'; const lex = this.lexicon || (this.lexicon = loadLexicon());
+        const lines = s.story.lines ? s.story.lines.map(l => ({ ...l, text: applyLexicon(l.text, lex) })) : null;
+        const r = await this.tts.synthesize(applyLexicon(stripMarkup(s.story.text), lex), raw, { emotion: emo, lines, pitch: this.emotionPitch !== false });
         await this._ff(['-i', raw, '-af', 'adelay=250,apad=pad_dur=0.35', '-ar', '44100', '-ac', '1', s.wav]); fs.rmSync(raw, { force: true });
         s.duration = r.durationSec + 0.6; s.speech = s.duration; s.sentences = r.sentences.map(x => ({ ...x, start: x.start + 0.25, end: x.end + 0.25, text: x.text })); s.emotion = emo; }
       else if (s.kind === 'story') { const r = await this.tts.synthesize(`[pause 250] ${s.story.text} [pause 350]`, s.wav); s.duration = r.durationSec; s.speech = r.durationSec; }
@@ -76,7 +78,7 @@ class NewsVideoFactory {
       s.start = t; t += s.duration;
       if (s.kind === 'story' && s.sentences) { // captions from word timestamps; displayed text = original script words (lexicon only affects pronunciation)
         const doc = buildCues({ segmentId: `${basename}-${i}`, audio: { file: s.wav, sha256: crypto.createHash('sha256').update(fs.readFileSync(s.wav)).digest('hex'), durationSec: +s.duration.toFixed(3), sampleRate: 44100 },
-          text: stripMarkup(s.story.text), emotion: s.emotion, sentences: s.sentences.map((x, k) => ({ ...x, text: splitSentences(stripMarkup(s.story.text))[k] || x.text })), offset: s.start, humorTag: s.story.humorTag || null });
+          text: stripMarkup(s.story.text), emotion: s.emotion, sentences: s.sentences.map((x, k) => ({ ...x, text: s.story.lines ? s.story.lines[k].text : (splitSentences(stripMarkup(s.story.text))[k] || x.text) })), offset: s.start, humorTag: s.story.humorTag || null });
         const chk = checkCues(doc, { offset: s.start }); if (!chk.ok) throw new Error('animation cues invalid: ' + chk.errors.slice(0, 5).join('; ')); s.cues = doc;
         cues.push(...wordCaptions(doc.words, V ? 26 : 42, s.emotion)); /* <= validateSrt limits (28/46) */ }
       else if (s.kind === 'story') { const srt = buildSrt([{ text: stripMarkup(s.story.text), start: s.start + 0.25, duration: s.speech - 0.6 }], { maxChars: V ? 28 : 46 }); cues.push(...parseSrt(srt).map(c => ({ start: c.start, end: c.end, text: c.lines.join('\n') }))); }
@@ -144,7 +146,7 @@ class NewsVideoFactory {
     await this._ff(['-i', joined, '-i', norm, '-filter_complex', `[0:v]ass='${path.basename(ass)}',scale=out_range=tv,format=yuv420p[v]`, '-map', '[v]', '-map', '1:a', '-c:v', 'libx264', '-preset', 'medium', '-crf', String(P.crf), '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-t', total.toFixed(3), '-movflags', '+faststart', out], work);
     const thumb = path.join(outDir, `${basename}.jpg`); await this._ff(['-ss', (segs[1].start + 1.6).toFixed(2), '-i', out, '-frames:v', '1', '-q:v', '2', thumb]);
     const qa = await qaVideo(out, { width: W, height: H, fps, durationSec: total, targetLufs: lufs, runFn: this.runFn, visual: true });
-    const manifest = { loudness: loud, cuesFile, title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
+    const manifest = { voiceOverride: this.voiceOverride, comparisonRender: !!this.voiceOverride, loudness: loud, cuesFile, title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
       tts: this.tts.name, transitions: used, segments: segs.map(s => ({ kind: s.kind, storyId: s.story?.id, assetId: s.story?.asset.id, layout: s.layout?.mode, start: +s.start.toFixed(3), duration: +s.duration.toFixed(3) })),
       sources: ep.sources, rights: ep.rights, music: m && { title: m.title, artist: m.artist, license: m.license }, subtitles: check, qa, createdAt: new Date().toISOString() };
     fs.writeFileSync(path.join(outDir, `${basename}.json`), JSON.stringify(manifest, null, 2)); if (!process.env.MA_KEEP_WORK) fs.rmSync(work, { recursive: true, force: true });
@@ -157,7 +159,7 @@ const CAP_STYLE = { SERIOUS: 'Serious', EMPATHETIC: 'Serious', NEUTRAL: 'Default
 /** Caption chunks from word timestamps: <= maxChars, split at sentence ends, 2 lines max handled by ASS wrap. */
 function wordCaptions(words, maxChars, emotion) {
   const out = []; let cur = []; const lines = ws => { const L = [[]]; for (const w of ws) { const l = L[L.length - 1]; if (l.length && [...l, w].map(x => x.w).join(' ').length > maxChars) L.push([w]); else l.push(w); } return L; };
-  const flush = () => { if (!cur.length) return; out.push({ start: cur[0].start, end: Math.max(cur[cur.length - 1].end, cur[0].start + 0.8), text: lines(cur).map(l => l.map(w => w.w).join(' ')).join('\n'), style: CAP_STYLE[emotion] || 'Default' }); cur = []; };
+  const flush = () => { if (!cur.length) return; const L = lines(cur); out.push({ start: cur[0].start, end: Math.max(cur[cur.length - 1].end, cur[0].start + 0.8), text: L.map(l => l.map(w => w.w).join(' ')).join('\n'), words: L, style: CAP_STYLE[emotion] || 'Default' }); cur = []; };
   for (const w of words) { if (cur.length && lines([...cur, w]).length > 2) flush(); cur.push(w); if (/[.!?]["')]?$/.test(w.w)) flush(); }
   flush(); for (let i = 0; i < out.length - 1; i++) { out[i].end = Math.max(out[i].start + 0.8, Math.min(out[i].end, out[i + 1].start - 0.02)); out[i + 1].start = Math.max(out[i + 1].start, out[i].end + 0.02); out[i + 1].end = Math.max(out[i + 1].end, out[i + 1].start + 0.8); } return out;
 }

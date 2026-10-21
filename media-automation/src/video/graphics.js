@@ -13,7 +13,7 @@ async function svgToPng(svg, outPng, runFn = run) { const f = outPng.replace(/\.
 /** Lower-third: gold category chip + headline on translucent navy panel. */
 function lowerThirdSvg({ W, H, category, headline }) {
   const vertical = H > W; const pw = Math.round(W * (vertical ? 0.92 : 0.66)); const fs1 = Math.round(Math.min(W, H) * (vertical ? 0.058 : 0.054)); // readable on phones
-  const lines = wrapWords(headline, vertical ? 22 : 36, vertical ? 3 : 2); const ph = Math.round(fs1 * (1.25 * lines.length + 1.9)); const chipW = Math.round(fs1 * 0.62 * (category.length + 2));
+  const lines = wrapWords(headline, vertical ? 22 : 36, vertical ? 4 : 2); const ph = Math.round(fs1 * (1.25 * lines.length + 1.9)); const chipW = Math.round(fs1 * 0.62 * (category.length + 2));
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${pw + 20}" height="${ph + 20}">
   <defs><linearGradient id="p" x1="0" x2="1"><stop offset="0" stop-color="${PALETTE.navy}" stop-opacity=".94"/><stop offset="1" stop-color="${PALETTE.purple}" stop-opacity=".82"/></linearGradient>
   <linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="${PALETTE.gold}"/><stop offset="1" stop-color="${PALETTE.goldDeep}"/></linearGradient></defs>

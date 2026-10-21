@@ -22,4 +22,29 @@ function checkAgainstSources(output, sources, { allow = ['MOONKATTY'], checkName
   if (checkNames) for (const n of f.names) if (!allowed.has(norm(n)) && !src.includes(norm(n))) unsupported.push({ type: 'name', value: n });
   return { ok: unsupported.length === 0, unsupported };
 }
-module.exports = { extractFacts, checkAgainstSources };
+const NUM_WORDS = 'zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|hundreds|thousand|thousands|million|millions|billion|billions|dozen|dozens|half|double|triple|first|second|third|percent';
+const REL_TIME = "just (?:whipped|hit|swept|passed|landed|launched|happened)|(?:is|are|was) now|now (?:whipping|sweeping|moving|heading)|developing|stay tuned|updates?|recently|currently|right now|just now|this weekend|yesterday|tomorrow|tonight|last week|next week|last month|next month|last year|next year|this morning|this week|this year|earlier today|years? ago|decades? ago|centur(?:y|ies)";
+let DICT = null, PROPER = null; function isDictWord(w) { if (!DICT) { DICT = new Set(); PROPER = new Set(); try { for (const l of require('fs').readFileSync(process.env.MA_DICT || '/usr/share/dict/words', 'utf8').split('\n')) (/^[a-z]/.test(l) ? DICT : PROPER).add(l.trim()); } catch { /* no dictionary -> OPENERS only */ } }
+  if (PROPER.has(w.replace(/[’'].*$/, ''))) return false; // also a proper noun (Smith, Paris) -> must be in SOURCE
+  const x = w.toLowerCase().replace(/[’']/g, "'"); return DICT.has(x) || DICT.has(x.replace(/'(re|s|ll|ve|d|t)$/, '')) || DICT.has(x.replace(/n't$/, '')); }
+/** Sentence-initial discourse words an anchor may use (not names). */
+const OPENERS = new Set(('So Now Picture Imagine Well Okay Ok Folks Friends Meanwhile Hold Get Let Let\'s Buckle Big Hello Hi Hey Our Your Up Next First Finally Turns Think Just Not Yes No Wow Speaking Back Stay Ever Ready Time Even Still Yet Plus Fun Here\'s It\'s That\'s What\'s There\'s Who\'s Talk Grab Keep Coming Right Oh Alright All Quick Kind Bottom Short Long Good Great Sounds Looks Seems Engineers Spacecraft Rotorcraft Using By Instead Because While If Once Whether Their His Her One Some Many Most Every Each Both Another Such Only Then Than Until Unless Science Researchers').split(' '));
+/**
+ * Strict fact-preservation check for anchor scripts: everything checkAgainstSources checks PLUS spelled-out numbers / ordinals,
+ * relative dates ("yesterday", "last week") and capitalised words anywhere (sentence-initial words only exempt if in OPENERS).
+ */
+function strictFactCheck(output, sources, { allow = ['MOONKATTY', 'NEWS', 'Katty'] } = {}) {
+  const src = norm([].concat(sources).join(' \n ')); const base = checkAgainstSources(output, sources, { allow, checkNames: false }); const unsupported = [...base.unsupported];
+  for (const m of String(output).matchAll(new RegExp(`\\b(${NUM_WORDS})\\b`, 'gi'))) if (!new RegExp(`\\b${m[1].toLowerCase()}\\b`).test(src)) unsupported.push({ type: 'number-word', value: m[1] });
+  for (const m of String(output).matchAll(new RegExp(`\\b(${REL_TIME})\\b`, 'gi'))) if (!src.includes(m[1].toLowerCase())) unsupported.push({ type: 'relative-date', value: m[1] });
+  const allowed = new Set(allow.map(norm));
+  for (const sent of String(output).split(/(?<=[.!?…])\s+|\n+/)) {
+    const toks = [...sent.matchAll(/\b([A-Z][\w'’-]*)/g)];
+    toks.forEach((m, i) => { const w = m[1].replace(/[’']s?$/, ''); const initial = m.index === sent.search(/[A-Za-z]/);
+      if (initial && (OPENERS.has(m[1].replace('’', "'")) || isDictWord(m[1]))) return; /* sentence-initial ordinary English word */ if (COMMON.has(w) && !initial) return; if (initial && COMMON.has(w)) return;
+      if (allowed.has(norm(w)) || src.includes(norm(w))) return; unsupported.push({ type: 'name', value: w }); });
+  }
+  const seen = new Set(); const uniq = unsupported.filter(u => { const k = u.type + u.value.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+  return { ok: uniq.length === 0, unsupported: uniq };
+}
+module.exports = { extractFacts, checkAgainstSources, strictFactCheck };

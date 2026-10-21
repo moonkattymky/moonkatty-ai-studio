@@ -13,8 +13,8 @@ class OllamaProvider {
     const wrapped = async (url, opts) => this.fetchFn(url, { ...opts, method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     return JSON.parse(await fetchWithRetry(this.baseUrl + pathname, { fetchFn: wrapped, retries: this.retries, backoffMs: 500, timeoutMs: this.timeoutMs }));
   }
-  async generate({ prompt, system, temperature = 0.1, maxTokens = 400, json = false }) {
-    const body = { model: this.model, prompt, system, stream: false, keep_alive: this.keepAlive, options: { temperature, num_predict: maxTokens, seed: 42 } };
+  async generate({ prompt, system, temperature = 0.1, maxTokens = 400, json = false, seed = 42 }) {
+    const body = { model: this.model, prompt, system, stream: false, keep_alive: this.keepAlive, options: { temperature, num_predict: maxTokens, seed } };
     if (json) body.format = 'json';
     const call = async () => { const r = await this._post('/api/generate', body); if (typeof r.response !== 'string') throw new Error('ollama: bad response'); return { text: r.response.trim(), model: r.model || this.model }; };
     // Heavy generations go through the shared heavy-job queue when one is configured (see INTEGRATION.md).

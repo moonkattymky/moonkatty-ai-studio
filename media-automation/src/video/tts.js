@@ -95,15 +95,20 @@ class KokoroBlendTTS {
     if (!model || !voices || !blend) throw new Error('kokoro-blend: model, voices and blend required');
     Object.assign(this, { python, model, voices, blend, speed, pitchSemitones, lang, runFn, spawnFn }); this.name = name || `kokoro-blend:${Object.entries(blend).map(([v, w]) => `${v}@${w}`).join('+')}`;
   }
-  async synthesize(text, outWav, { emotion = 'NEUTRAL' } = {}) {
+  /** opts.lines: [{text, emotion, role}] -> per-line speed + pause (line-level emotional accents); opts.pitch=false disables emotion pitch shift (pure-voice comparison renders). */
+  async synthesize(text, outWav, { emotion = 'NEUTRAL', lines = null, pitch = true } = {}) {
     assertText(text); const { prosody, pitchFilter } = require('../anchor/emotion'); const p = prosody(emotion);
-    const sents = String(text).match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g).map(x => x.trim()).filter(Boolean);
-    const segments = sents.map((t, i) => ({ text: t, pauseAfterMs: i < sents.length - 1 ? (emotion === 'WITTY' && i === sents.length - 2 ? p.punchlinePauseMs : p.sentencePauseMs) : 0 }));
+    let segments;
+    if (lines && lines.length) segments = lines.map((l, i) => { const lp = prosody(l.emotion || emotion); const next = lines[i + 1];
+      const pause = i === lines.length - 1 ? 0 : next && next.role === 'tag' ? Math.max(lp.sentencePauseMs, prosody('WITTY').punchlinePauseMs) : next && next.role === 'signoff' ? lp.sentencePauseMs + 250 : l.role === 'hook' ? lp.sentencePauseMs + 120 : lp.sentencePauseMs;
+      return { text: l.text, speed: +(this.speed * lp.speed).toFixed(3), pauseAfterMs: pause }; });
+    else { const sents = String(text).match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g).map(x => x.trim()).filter(Boolean);
+      segments = sents.map((t, i) => ({ text: t, pauseAfterMs: i < sents.length - 1 ? (emotion === 'WITTY' && i === sents.length - 2 ? p.punchlinePauseMs : p.sentencePauseMs) : 0 })); }
     const raw = outWav + '.raw.wav'; const script = path.join(__dirname, '..', '..', 'tools', 'kokoro_cast.py');
     const res = await new Promise((ok, rej) => { const pr = this.spawnFn(this.python, [script]); let out = '', err = ''; pr.stdout?.on('data', d => { out += d; }); pr.stderr?.on('data', d => { err += d; }); pr.on('error', rej);
       pr.on('close', c => c ? rej(new Error(`kokoro-blend exit ${c}: ${err.slice(-400)}`)) : ok(JSON.parse(out.trim().split('\n').pop())));
       pr.stdin.end(JSON.stringify({ segments, blend: this.blend, speed: +(this.speed * p.speed).toFixed(3), lang: this.lang, out: raw, model: this.model, voices: this.voices })); });
-    const pf = pitchFilter(+(this.pitchSemitones + p.pitchSemitones).toFixed(2), res.sr || 24000);
+    const pf = pitchFilter(+(this.pitchSemitones + (pitch ? p.pitchSemitones : 0)).toFixed(2), res.sr || 24000);
     const af = [pf, p.gainDb ? `volume=${p.gainDb}dB` : null].filter(Boolean);
     await this.runFn('ffmpeg', ['-y', '-v', 'error', '-i', raw, ...(af.length ? ['-af', af.join(',')] : []), '-ar', '44100', '-ac', '1', '-c:a', 'pcm_s16le', outWav]); fs.rmSync(raw, { force: true });
     return { file: outWav, durationSec: await probeDuration(outWav, this.runFn), sentences: res.segments, emotion };
