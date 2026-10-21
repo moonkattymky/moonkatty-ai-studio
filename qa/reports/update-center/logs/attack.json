@@ -1,0 +1,354 @@
+{
+  "commit": "9ffad98cd8ceae7d94ad82a7aeb44bbfa8c70a7a",
+  "src": "/tmp/mk-update",
+  "controls": 69,
+  "failed": [],
+  "node": "v22.23.3",
+  "rows": [
+    {
+      "id": "worktree-commit",
+      "ok": true,
+      "detail": "9ffad98cd8ceae7d94ad82a7aeb44bbfa8c70a7a"
+    },
+    {
+      "id": "worktree-clean-before",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "id": "url-policy-blocks-ssrf",
+      "ok": true,
+      "detail": "http:NOT_HTTPS metadata-ip:URL_NOT_ALLOWED localhost:URL_NOT_ALLOWED userinfo:BAD_URL foreign-repo:REPO_NOT_ALLOWED port:BAD_URL"
+    },
+    {
+      "id": "redirect-to-metadata-blocked",
+      "ok": true,
+      "detail": "NOT_HTTPS"
+    },
+    {
+      "id": "sig-good-key-accepts",
+      "ok": true,
+      "detail": "keyId=9901ec05563dd2df"
+    },
+    {
+      "id": "sig-flipped-rejected",
+      "ok": true,
+      "detail": "подпись не прошла проверку закреплённым ключом"
+    },
+    {
+      "id": "sig-tampered-manifest-rejected",
+      "ok": true,
+      "detail": "подпись не прошла проверку закреплённым ключом"
+    },
+    {
+      "id": "sig-other-key-rejected",
+      "ok": true,
+      "detail": "подпись не прошла проверку закреплённым ключом"
+    },
+    {
+      "id": "sig-placeholder-rejects-real",
+      "ok": true,
+      "detail": "подпись не прошла проверку закреплённым ключом"
+    },
+    {
+      "id": "sig-any-loaded-key-passes",
+      "ok": true,
+      "detail": "OR across loaded keys, keyId=9901ec05563dd2df"
+    },
+    {
+      "id": "no-private-key-in-tree",
+      "ok": true,
+      "detail": "pub only"
+    },
+    {
+      "id": "tampered-not-in-this-list",
+      "ok": true,
+      "detail": "control release verified"
+    },
+    {
+      "id": "downgrade-blocked",
+      "ok": true,
+      "detail": "версия 1.1.9 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца"
+    },
+    {
+      "id": "same-version-blocked",
+      "ok": true,
+      "detail": "версия 1.2.0 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца"
+    },
+    {
+      "id": "suffix-ignored-by-cmp",
+      "ok": true,
+      "detail": "pre-release suffix does not order"
+    },
+    {
+      "id": "tag-suffix-still-verifies",
+      "ok": true,
+      "detail": "problems="
+    },
+    {
+      "id": "historical-newer-still-allowed-by-version",
+      "ok": true,
+      "detail": "publishedAt=2020-06-01T00:00:00Z reasons=нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца"
+    },
+    {
+      "id": "signed-manifest-replay-has-no-nonce",
+      "ok": true,
+      "detail": "second check of the same bytes still verified"
+    },
+    {
+      "id": "tampered-manifest-not-verified",
+      "ok": true,
+      "detail": "problems=manifest: неверные поля sourceCommit | подпись не прошла проверку закреплённым ключом download=UNVERIFIED"
+    },
+    {
+      "id": "zip-slip-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"../outside.txt\""
+    },
+    {
+      "id": "absolute-path-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"/tmp/abs.txt\""
+    },
+    {
+      "id": "backslash-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"..\\\\outside.txt\""
+    },
+    {
+      "id": "symlink-accepted",
+      "ok": true,
+      "detail": "ok=true symlinks=1 problems="
+    },
+    {
+      "id": "symlink-download-verified",
+      "ok": true,
+      "detail": "{\"entries\":2,\"symlinks\":1}"
+    },
+    {
+      "id": "symlink-plan-and-ditto",
+      "ok": true,
+      "detail": "/usr/bin/ditto -x -k /tmp/mk-uc-BEmJiK/downloads/v1.3.0/MOONKATTY-AI-STUDIO-1.3.0-arm64-mac.zip /Applications"
+    },
+    {
+      "id": "symlink-points-outside-extract-root",
+      "ok": true,
+      "detail": "/etc/passwd -> /etc/passwd"
+    },
+    {
+      "id": "zip-slip-download-deleted",
+      "ok": true,
+      "detail": "BAD_ARCHIVE:архив отклонён: опасный путь в архиве: \"../outside.txt\" leftover=false"
+    },
+    {
+      "id": "identity-hardcoded-prod",
+      "ok": true,
+      "detail": "{\"bundleId\":\"com.moonkatty.aistudio\",\"dataDirName\":\"MOONKATTY AI STUDIO\",\"launchdLabel\":\"com.moonkatty.aistudio.server\",\"keychainServicePrefix\":\"MOONKATTY AI STUDIO\",\"appName\":\"MOONKATTY AI STUDIO\",\"defaultPort\":8787}"
+    },
+    {
+      "id": "partial-identity-blocked",
+      "ok": true,
+      "detail": "идентичность сборки частично совпадает с установленной (различаются: bundleId, launchdLabel, keychainServicePrefix; isolated=true) — конфликт, установка запрещена | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца"
+    },
+    {
+      "id": "isolated-side-by-side-without-approval",
+      "ok": true,
+      "detail": "side-by-side approved=false"
+    },
+    {
+      "id": "test-channel-prod-identity-replaces-prod-app",
+      "ok": true,
+      "detail": "channel=test mode=replace"
+    },
+    {
+      "id": "prod-manifest-against-test-install-is-partial-or-blocked",
+      "ok": true,
+      "detail": "идентичность сборки частично совпадает с установленной (различаются: bundleId, dataDirName, launchdLabel, keychainServicePrefix; isolated=false) — конфликт, установка запрещена | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio.test) — только с явного согласия владельца mode=blocked"
+    },
+    {
+      "id": "toctou-plan-ignores-replaced-bytes",
+      "ok": true,
+      "detail": "before=56cffa44f85d after=4f14f5b7a2af allowed=true /usr/bin/ditto -x -k /tmp/mk-uc-vgUl3W/downloads/v1.3.0/MOONKATTY-AI-STUDIO-1.3.0-arm64-mac.zip /Applications"
+    },
+    {
+      "id": "approval-sticks-to-tag-after-resign",
+      "ok": true,
+      "detail": "new sha=4f14f5b7a2af"
+    },
+    {
+      "id": "autoinstall-off-without-flags",
+      "ok": true,
+      "detail": "AUTO_INSTALL_DISABLED"
+    },
+    {
+      "id": "autoinstall-refuses-non-mac",
+      "ok": true,
+      "detail": "NOT_MAC"
+    },
+    {
+      "id": "rollback-function-dry-run-on-linux",
+      "ok": true,
+      "detail": "NOT_MAC dry=true"
+    },
+    {
+      "id": "legacy-plan-contains-rm-rf",
+      "ok": true,
+      "detail": "Закройте приложение || rm -rf \"/Applications/MOONKATTY AI STUDIO.app\" && mv \"/Applications/MOONKATTY AI STUDIO-previous.app\" \"/Applications/MOONKATTY AI STUDIO.app\" || Если менялась схема данных — восстановите бэкап в пустую папку: node ops/backup.js restore <id> --to <папка> и замените папку данных"
+    },
+    {
+      "id": "shown-plan-has-no-xattr-spctl-rm",
+      "ok": true,
+      "detail": "displayed steps clean; legacy field still contains rm -rf"
+    },
+    {
+      "id": "schema-cap-does-not-block-gate",
+      "ok": true,
+      "detail": "schemaCheck.ok=false v=3 compat=схема без изменений (3, определена по таблицам) gate=replace"
+    },
+    {
+      "id": "schema-downgrade-blocked",
+      "ok": true,
+      "detail": "схема релиза (1) старше текущей (3) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "id": "schema-99-compat-allows",
+      "ok": true,
+      "detail": "миграция схемы 4 → 99 (текущая из meta.schemaVersion; откат только восстановлением бэкапа)"
+    },
+    {
+      "id": "schema-v1-ok",
+      "ok": true,
+      "detail": "совместимо"
+    },
+    {
+      "id": "non-darwin-codesign-reported-ok",
+      "ok": true,
+      "detail": "codesign:true"
+    },
+    {
+      "id": "health-url-not-on-allowlist",
+      "ok": true,
+      "detail": "http://169.254.169.254/latest/meta-data/ result={\"ok\":false,\"status\":500,\"body\":{}}"
+    },
+    {
+      "id": "update-center-has-no-interval",
+      "ok": true,
+      "detail": "no setInterval in update-center.js"
+    },
+    {
+      "id": "wiring-has-no-update-timer",
+      "ok": true,
+      "detail": "index.js does not schedule a check"
+    },
+    {
+      "id": "ui-check-is-a-button",
+      "ok": true,
+      "detail": "POST /check is the button handler"
+    },
+    {
+      "id": "electron-autocheck-on-launch",
+      "ok": true,
+      "detail": "DEF.checkUpdates true; timer 5000"
+    },
+    {
+      "id": "electron-check-does-not-install",
+      "ok": true,
+      "detail": "dialog + openExternal only"
+    },
+    {
+      "id": "no-electron-updater-dep",
+      "ok": true,
+      "detail": "package.json has no electron-updater"
+    },
+    {
+      "id": "gatekeeper-assess-false-in-builder",
+      "ok": true,
+      "detail": "{\"identity\":null,\"gatekeeperAssess\":false,\"hardenedRuntime\":false}"
+    },
+    {
+      "id": "backup-verified-and-test-restore",
+      "ok": true,
+      "detail": "id=20261021T121740Z integrity=ok countsMatch=true"
+    },
+    {
+      "id": "backup-omits-plaintext-secrets",
+      "ok": true,
+      "detail": "MANIFEST.sha256,files,manifest.json,secret.key.enc,studio.db"
+    },
+    {
+      "id": "schema-rollback-restores-snapshot",
+      "ok": true,
+      "detail": "restored schema=1 tables=items,meta items=1"
+    },
+    {
+      "id": "restore-refuses-nonempty",
+      "ok": true,
+      "detail": "Целевая папка не пуста — восстановление только в пустую папку"
+    },
+    {
+      "id": "servers-started",
+      "ok": true,
+      "detail": "off=true on=true STUDIO: http://127.0.0.1:18951 (pid 35015, db node:sqlite)\n(node:35016) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nMOONKATTY AI STUDIO: http://127.0.0.1:18952 (pid 35016, db node:sqlite)\n"
+    },
+    {
+      "id": "session-cookie-httponly-strict",
+      "ok": true,
+      "detail": " HttpOnly; SameSite=Strict; Path=/ status=200"
+    },
+    {
+      "id": "flag-off-is-404",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "id": "unauthenticated-is-401",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "csrf-missing-header-403",
+      "ok": true,
+      "detail": "CSRF check failed (missing X-Studio-Request header)"
+    },
+    {
+      "id": "csrf-evil-origin-403",
+      "ok": true,
+      "detail": "Cross-origin request rejected"
+    },
+    {
+      "id": "csrf-cross-site-403",
+      "ok": true,
+      "detail": "Cross-site request rejected"
+    },
+    {
+      "id": "autoinstall-http-disabled",
+      "ok": true,
+      "detail": "{\"error\":\"автоустановка выключена: не заданы OPS_UPDATE_AUTO_INSTALL, OPS_UPDATE_SIGNATURE_READY, OPS_UPDATE_BACKUP_VERIFIED_READY, OPS_UPDATE_ROLLBACK_TESTED_ON_MAC\",\"code\":\"AUTO_INSTALL_DISABLED\"}"
+    },
+    {
+      "id": "rollback-http-stays-dry-run",
+      "ok": true,
+      "detail": "{\"dryRun\":true,\"commands\":[\"/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server\",\"/bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-failed-1792585061468.app\",\"/bin/mv /Applications/MOONKATTY AI STUDIO"
+    },
+    {
+      "id": "approve-wrong-password-403",
+      "ok": true,
+      "detail": "Неверный пароль владельца"
+    },
+    {
+      "id": "authed-check-does-not-touch-applications",
+      "ok": true,
+      "detail": "status=200 applicationsApp=false body={\"current\":\"1.1.2\",\"identity\":{\"bundleId\":\"com.moonkatty.aistudio\",\"dataDirName\":\"MOONKATTY AI STUDIO\",\"launchdLabel\":\"com.moonkatty.aistudio.server\",\"keychainServicePrefix\":\"MOONK"
+    },
+    {
+      "id": "loopback-app-token-can-read-update-center",
+      "ok": true,
+      "detail": "status=200 current=1.1.2"
+    },
+    {
+      "id": "worktree-clean-after",
+      "ok": true,
+      "detail": "clean"
+    }
+  ]
+}
