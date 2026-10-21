@@ -4,7 +4,7 @@ const fs = require('fs'), os = require('os'), path = require('path'), crypto = r
 const N = require('../../lib/ops/nodes.js'); const A = require('../../lib/ops/jobs-adapter.js');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'nodes-'));
 const GB = 1024 ** 3; const sha = b => crypto.createHash('sha256').update(b).digest('hex');
-const info = (o = {}) => ({ hostname: 'x', os: 'macOS 12.5.1', cpus: 4, memTotal: 8 * GB, memAvailable: 4 * GB, diskFree: 100 * GB, load1: 0.5, ...o });
+const info = (o = {}) => ({ hostname: 'x', os: 'macOS 13.7.1', cpus: 4, memTotal: 8 * GB, memAvailable: 4 * GB, diskFree: 100 * GB, load1: 0.5, ...o });
 function setup(o = {}) { let t = 1e12; const alerts = []; const m = N.createNodeManager({ dir: tmp(), now: () => t, leaseMs: 1000, nodeDownMs: 5000, notify: async a => alerts.push(a), ...o });
   const im = m.registerNode({ id: 'imac', role: 'imac', name: 'iMac 27' }); const mb = m.registerNode({ id: 'macbook', role: 'macbook', name: 'MacBook 13' });
   return { m, im, mb, alerts, adv: ms => { t += ms; }, auth: tok => m.authNode('Bearer ' + tok) }; }

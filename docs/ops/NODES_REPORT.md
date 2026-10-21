@@ -8,7 +8,7 @@
 - **Сборка Intel macOS**: `scripts/node/build-node-pkg.sh` → `moonkatty-node-0.1.0-darwin-x64.tar.gz` (+ `.sha256`, `MANIFEST.sha256`, BUILDINFO), `js-only` запасной; `install.sh --verify-only|--autostart`, `uninstall.sh --rollback|--purge`; `scripts/node/detect-specs.sh` (bash 3.2, только чтение).
 
 ## Совместимость macOS / рантайм
-Node 22 LTS x64: официально macOS ≥ 11 (Tier 1), поддержка до апреля 2027 → iMac Monterey 12.5.1 ✓, MacBook 2015 (макс. Monterey 12) ✓ после обновления до 11/12. Node 24 требует 13.5 ✗. При macOS 10.15 — обновить до 12 или временно `js-only` + Node 18 (EOL). SEA/pkg не используется (переподпись бинарника), вместо этого официальный подписанный Node + MANIFEST SHA-256.
+**Исправлено 2026-10-21:** iMac — Retina 5K 27" 2017, i5 3.4 GHz 4 ядра, 8 ГБ, Radeon Pro 570 4 ГБ, **macOS Ventura 13.7.1** (ранее ошибочно указывалась другая версия macOS). iMac → Node 24 LTS x64 (мин. macOS 13.5, поддержка до 04.2028), пакет `darwin-x64`; MacBook 2015 (макс. Monterey 12) → Node 22 LTS x64 (мин. macOS 11), пакет `darwin-x64-macos11`. Подробно: [NEWS_NODE_IMAC.md](NEWS_NODE_IMAC.md). При macOS 10.15 — обновить до 12 или временно `js-only` + Node 18 (EOL). SEA/pkg не используется (переподпись бинарника), вместо этого официальный подписанный Node + MANIFEST SHA-256.
 
 ## Тесты (локальная симуляция, мульти-процесс)
 - `test/ops/nodes.test.js` — 10: токены/хеши/отзыв, allowlist, локальные типы и секреты не уходят, маршрутизация/ресурсы, идемпотентность, повторный ack, потеря узла (safe→requeue, unsafe→needs_approval+alert), heartbeat/таймаут, мало ресурсов, файлы (422 при подмене, 403 чужие), запрет 0.0.0.0/публичных IP, runViaNode + отмена, команды pause/drain/stop/run, профили.

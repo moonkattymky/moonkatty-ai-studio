@@ -1,0 +1,24 @@
+{
+ "node": "v24.22.0",
+ "platform": "linux/x64",
+ "heapFlagMB": 192,
+ "jobs": 20,
+ "feedsPerJob": 50,
+ "itemsPerFeed": 200,
+ "feedBytes": 351522,
+ "rawItemsPerJob": 10000,
+ "uniqueItemsPerJob": 5000,
+ "resultAsArtifact": true,
+ "artifactOnCoordinator": true,
+ "truncated": "maxItemsPerJob 5000",
+ "restarts": 0,
+ "backpressureEvents": 0,
+ "succeeded": 20,
+ "seconds": 2.4,
+ "rssMB": {
+  "idle": 58,
+  "p50": 151.4,
+  "p95": 164.3,
+  "peak": 167.2
+ }
+}

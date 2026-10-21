@@ -26,8 +26,9 @@ echo "-- firewall: $(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobal
 echo "-- battery/power: $(pmset -g batt 2>/dev/null | tail -1 | sed 's/^ *//')"
 v=$(sw_vers -productVersion 2>/dev/null); maj=${v%%.*}; rest=${v#*.}; min=${rest%%.*}; [ "$maj" = "10" ] && maj="10.$min"
 case "$maj" in
-  1[3-9]|2[0-9]) echo "verdict: macOS $v → Node.js 24 LTS или 22 LTS (рекомендуется встроенный в пакет Node 22 x64)";;
-  11|12) echo "verdict: macOS $v → Node.js 22 LTS x64 (официально поддерживается macOS ≥ 11). Пакет MOONKATTY NODE содержит его.";;
+  1[4-9]|2[0-9]) echo "verdict: macOS $v → пакет darwin-x64 (Node.js 24 LTS, мин. macOS 13.5)";;
+  13) if [ "${min:-0}" -ge 5 ] 2>/dev/null; then echo "verdict: macOS $v → пакет darwin-x64 (Node.js 24 LTS, мин. macOS 13.5) — iMac 2017 на Ventura 13.7.1 сюда"; else echo "verdict: macOS $v (< 13.5) → пакет darwin-x64-macos11 (Node.js 22 LTS) или обновите Ventura до 13.7.x"; fi;;
+  11|12) echo "verdict: macOS $v → пакет darwin-x64-macos11 (Node.js 22 LTS x64, мин. macOS 11)";;
   10.15) echo "verdict: macOS 10.15 → Node 22 официально НЕ поддерживается; запасной вариант — Node 18 (EOL) или обновление macOS до 12 (MacBook 2015 поддерживает Monterey)";;
   *) echo "verdict: macOS $v слишком старая → обновите до macOS 12 Monterey (поддерживается MacBook Pro/Air 2015) через App Store";;
 esac
