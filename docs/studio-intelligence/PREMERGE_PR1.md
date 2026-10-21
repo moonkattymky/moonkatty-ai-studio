@@ -200,3 +200,38 @@ node --disable-warning=ExperimentalWarning --test studio-intelligence/test/*.tes
 Переход 2 → 3 пересобирает `si_records`, `si_assets`, `si_approvals`, `si_approval_events`, если в `CHECK` нет новых значений. Это копирование строк, не `ALTER` ограничения. `items` и `meta` не меняются.
 
 Обратного SQL нет. Откат — замена файла `data/studio.db`. Скрипты `studio-intelligence/scripts/backup-db.js` и `rollback-db.js` лежат в PR #3, не в этом PR. Без `--apply` они ничего не пишут. С `--apply` откат удаляет соседние `-wal` и `-shm`, затем копирует файл. JSON-копии `backup-*.json` таблицы `si_*` не содержат и память не откатывают. Копия — `copyFileSync` закрытого файла, не онлайн-backup. На открытой базе работающего сервера WAL может быть несогласован. На Mac это не проверялось.
+
+На этой ветке после того абзаца добавлены `persistence.snapshot` (`VACUUM INTO` открытой базы) и JSON `persistence.exportSi` / `importSi`. `server.js` не менялся. Текст, который панель может вставить сама: `docs/studio-intelligence/patches/server-dump-include-si.md`. Проверка на временной базе — пункт 7.
+
+## 7. Чеклист владельца
+
+Слияние не выполнялось. `server.js`, `server/jobs*`, `server/blender*`, `main` и чужие ветки не менялись. `feat/v1.2.2-test-isolated` не открывалась.
+
+Прогон после этих правок, Node v22.23.3:
+
+```bash
+node --disable-warning=ExperimentalWarning --test studio-intelligence/test/*.test.js
+```
+
+```
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 505.65437
+```
+
+| # | Проверка | Статус | Что выяснилось |
+|---|---|---|---|
+| 1 | Ветка `feature/world-class-revenue` на origin | PASS | Ветки нет. `git ls-remote --heads` не нашёл имён с `revenue`, `world`, `feature/` и `integ/` |
+| 2 | `integ/v1.3.0-test` | BLOCKED | Ветки ещё нет. База, которую назвала Studio, — `322023f`. `scripts/check-compat.sh` без аргумента печатает `BLOCKED` и выходит с кодом 2. Ветку скрипт не создаёт |
+| 3 | Резервная копия и восстановление на временной базе | PASS | JSON в форме `dump()` панели сохраняет строку `workspaces` и не содержит профиль голоса. `VACUUM INTO` и копия закрытого файла сохраняют счётчики `si_*` и строку `MOONKATTY_NEWS_MASTER_VOICE` |
+| 4 | Выживают ли `si_*` и профили голоса | PASS | Через JSON панели — нет. Через `persistence.snapshot` и через копию закрытого файла — да, включая черновик голоса. `importSi` возвращает ту же строку голоса в новую базу и `items` не пишет |
+| 5 | Добавка к бэкапу без правки `main` | PASS | Модули `si-export.js` и `db-snapshot.js`. Версия пакета не менялась. Правка `server.js` лежит файлом-предложением и не применена |
+| 6 | Импорт голоса, чужое утверждение, замок и снятие | PASS | Импорт остаётся черновиком. Не-владелец получает `PERMISSION_DENIED`. Владелец утверждает, `executed: false`. Второй черновик переводит первый в `superseded`. Снятую строку утвердить снова нельзя. `locked` из экспорта студии 2 в статусы базы не пишется |
+| 7 | `INTERFACES-STUDIO-STUDIO2.md` | PASS | Основная студия и студия 2 отмечены как согласовавшие поправки. Схема cues не скопирована. Валидатор сверяет только объект `voice` с утверждённым профилем |
+
+Пункт 2 остаётся BLOCKED, пока Studio не создаст `integ/v1.3.0-test`. Слияние из-за этого не предлагается.

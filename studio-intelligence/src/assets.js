@@ -536,14 +536,18 @@ function createAssets(db, { now, permissions, transaction, approval, voices, cha
       throw new StudioError('VALIDATION', 'Нужна утверждённая мастер-модель кота из реестра бренда', { retryable: false });
     }
     const master = character.approved({ principal });
-    if (!master.locked || master.sha256 !== model.asset.contentHash) {
+    if (!master.locked || master.status !== 'approved' || master.sha256 !== model.asset.contentHash) {
       throw new StudioError('VALIDATION', 'Хеш заблокированной версии не совпадает с карточкой модели', { retryable: false });
     }
-    if (clean.masterAssetVersion != null && clean.masterAssetVersion !== master.version) {
-      throw new StudioError('VALIDATION', 'Версия мастер-модели не совпадает с заблокированной', { retryable: false });
+    const known = character.history({ principal }).find(row => row.version === clean.masterAssetVersion);
+    if (!known) {
+      throw new StudioError('NOT_FOUND', 'Версия мастер-модели не найдена в реестре', { retryable: false });
+    }
+    if (known.locked !== true || known.status !== 'approved' || known.version !== master.version) {
+      throw new StudioError('VALIDATION', 'Нужна заблокированная утверждённая версия мастер-модели, подстановка запрещена', { retryable: false });
     }
     const voice = voices.approved({ principal });
-    if (clean.voiceProfileId !== voice.voiceProfileId) {
+    if (voice.approved !== true || clean.voiceProfileId !== voice.voiceProfileId) {
       throw new StudioError('VALIDATION', 'Нужен утверждённый профиль голоса ведущего', { retryable: false });
     }
     const audio = get({ principal, id: clean.audioAssetId });

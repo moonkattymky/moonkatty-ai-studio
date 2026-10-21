@@ -16,7 +16,7 @@
 | `sampleRate` | 48000. В файле `voice.sampleRateHz` = 24000, а строка доставки — wav 48 кГц. В базу кладётся частота доставки |
 | `recognizer` | `tts-timing`. В экспорте такого поля нет |
 | `gain` | 1. В экспорте числа нет, `gain` только в списке `emotionControls` |
-| `mouthScale` | 1. В экспорте поля нет |
+| `mouthScale` | 1. В экспорте поля нет. Если число задано, допустимо только 0.5–2.0: диапазон задаёт основная студия. Пустое значение у черновика остаётся |
 | `modelSha256` | `engine.model.sha256` |
 | `voicesSha256` | `engine.voicesPack.sha256` |
 | `status` | всегда `draft` при импорте. `status: locked` и блок `approval` не переносятся |

@@ -55,6 +55,15 @@ function createVoices(db, { now, permissions, transaction }) {
     return text.toLowerCase();
   }
 
+  /** Диапазон задаёт основная студия. Пустое значение остаётся у незаполненного черновика. */
+  function mouthScaleOrNull(value) {
+    if (value == null || value === '') return null;
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0.5 || value > 2) {
+      throw new StudioError('VALIDATION', 'mouthScale задаёт Studio: допустимый диапазон 0.5–2.0', { retryable: false });
+    }
+    return value;
+  }
+
   function define({ principal, profile }) {
     const actor = permissions.normalize(principal);
     const input = {
@@ -67,7 +76,7 @@ function createVoices(db, { now, permissions, transaction }) {
       sampleRate: profile.sampleRate ?? null,
       recognizer: profile.recognizer ?? null,
       gain: profile.gain ?? null,
-      mouthScale: profile.mouthScale ?? null,
+      mouthScale: mouthScaleOrNull(profile.mouthScale),
       engine: profile.engine ?? null,
       voice: profile.voice ?? null,
       speed: profile.speed ?? null,

@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moonkatty.local/schemas/facial-animation-request.schema.json",
   "title": "FacialAnimationRequest",
-  "description": "Запрос на использование утверждённой модели. Кадры здесь не считаются.",
+  "description": "Запрос на использование утверждённой модели. masterAssetVersion обязателен: версия по умолчанию не подставляется. Кадры здесь не считаются.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["namespace", "characterModelAssetId", "audioAssetId", "voiceProfileId", "channels", "idempotencyKey"],
+  "required": ["namespace", "characterModelAssetId", "audioAssetId", "voiceProfileId", "masterAssetVersion", "channels", "idempotencyKey"],
   "properties": {
     "namespace": { "const": "moonkatty_news" },
     "characterModelAssetId": { "type": "string", "minLength": 1, "maxLength": 64 },

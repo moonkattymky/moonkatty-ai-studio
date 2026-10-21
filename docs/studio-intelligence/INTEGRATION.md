@@ -268,7 +268,7 @@ si.assets.approvedCharacterModel({ principal: videoAgent });
 
 Агент новостей не читает произвольные файлы проекта: `assets.get` на модель вернёт `NOT_FOUND`. Узкое исключение — `approvedCharacterModel`: её видит тот, кто читает новости или проект. Использование этой модели в выпуске пишется в `moonkatty_news`.
 
-`prepareFacialUse` проверяет, что в запросе именно эта модель и что аудио — актив `moonkatty_news` вида `audio`, затем пишет `whereUsed: 'facial_animation'` с каналами `lip`, `eye`, `head`, `ear`, id выпуска и версией. Возврат всегда `executed: false`. Кадры не считаются, Blender не вызывается. Запись делает агент с правом записи в новости (`video`). `design3d` модель видит, чужое аудио новостей — нет.
+`prepareFacialUse` проверяет, что в запросе именно эта модель и что аудио — актив `moonkatty_news` вида `audio`, затем пишет `whereUsed: 'facial_animation'` с каналами `lip`, `eye`, `head`, `ear`, id выпуска и версией. `masterAssetVersion` обязателен: отсутствующий номер не заменяется заблокированной версией, неизвестный номер и неутверждённая версия запрос отклоняют. Возврат всегда `executed: false`. Кадры не считаются, Blender не вызывается. Запись делает агент с правом записи в новости (`video`). `design3d` модель видит, чужое аудио новостей — нет. `mouthScale` — от 0.5 до 2.0. Объект `voice` в файле cues сверяет `animationCues.assertVoice` с утверждённым профилем. Граница: `docs/studio-intelligence/contracts/INTERFACES-STUDIO-STUDIO2.md`.
 
 `brand.check` по-прежнему `NOT_IMPLEMENTED`: сходство и подмена не исполняются.
 

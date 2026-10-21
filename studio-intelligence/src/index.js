@@ -22,6 +22,9 @@ const { createAuditFeed } = require('./audit-feed');
 const { createProjects, resolveProject } = require('./projects');
 const { createLedgerAdapter } = require('./ledger-adapter');
 const { createCharacterRegistry } = require('./character-registry');
+const { createAnimationCues } = require('./animation-cues');
+const { exportSi, importSi } = require('./si-export');
+const { snapshotDatabase } = require('./db-snapshot');
 const { schemas, validate, schemaNames } = require('./validate');
 
 function envelope({ type, principal, namespace, payload, at, id }) {
@@ -76,6 +79,7 @@ function openStudioIntelligence(options = {}) {
   const editorial = createEditorial(db, { now, permissions, transaction: tx });
   const versions = createVersions(db, { now, permissions, transaction: tx });
   const notices = createNotices(db, { now, permissions });
+  const animationCues = createAnimationCues({ voices });
   return {
     schemaVersion: SCHEMA_VERSION,
     driver: db.driver || 'injected',
@@ -100,6 +104,12 @@ function openStudioIntelligence(options = {}) {
     versions,
     notices,
     audit,
+    animationCues,
+    persistence: {
+      exportSi: () => exportSi(db),
+      importSi: payload => importSi(db, payload),
+      snapshot: dest => snapshotDatabase({ db, dest })
+    },
     contracts: { schemas, validate, schemaNames, envelope },
     tableNames: () => tableNames(db),
     close() { if (owned) db.close(); }

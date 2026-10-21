@@ -161,3 +161,60 @@ test('импорт MOONKATTY_NEWS_MASTER_VOICE из экспорта 551f361 с�
   assert.equal(si.voices.forStudio({ principal: agent('video') }).voice, 'am_fenrir');
   si.close();
 });
+
+test('mouthScale принимается только в диапазоне 0.5–2.0', () => {
+  const { si, owner } = setup();
+  function profile(id, mouthScale) {
+    return {
+      voiceProfileId: id, label: id, note: null, sampleAssetId: null,
+      sampleRate: 48000, recognizer: 'tts-timing', gain: 1, mouthScale
+    };
+  }
+  assert.equal(si.voices.define({ principal: owner, profile: profile('scale_lo', 0.5) }).mouthScale, 0.5);
+  assert.equal(si.voices.define({ principal: owner, profile: profile('scale_hi', 2) }).mouthScale, 2);
+  assert.equal(si.voices.define({ principal: owner, profile: profile('scale_empty', null) }).mouthScale, null);
+  assert.throws(
+    () => si.voices.define({ principal: owner, profile: profile('scale_under', 0.4) }),
+    err => err.code === 'VALIDATION'
+  );
+  assert.throws(
+    () => si.voices.define({ principal: owner, profile: profile('scale_over', 2.1) }),
+    err => err.code === 'VALIDATION'
+  );
+  assert.equal(si.db.prepare('SELECT COUNT(*) AS n FROM si_voice_profiles').get().n, 3);
+  si.close();
+});
+
+test('новое утверждение снимает предыдущее, снятый профиль снова не утверждается', () => {
+  const { si, owner, agent } = setup();
+  function profile(id) {
+    return {
+      voiceProfileId: id, label: id, note: null, sampleAssetId: null,
+      sampleRate: 48000, recognizer: 'tts-timing', gain: 1, mouthScale: 1,
+      engine: 'kokoro', voice: 'am_fenrir', speed: 1, pitchShift: 0,
+      modelSha256: MODEL_SHA, voicesSha256: VOICES_SHA
+    };
+  }
+  si.voices.define({ principal: agent('video'), profile: profile('voice_a') });
+  si.voices.define({ principal: agent('video'), profile: profile('voice_b') });
+  const first = si.voices.approve({ principal: owner, voiceProfileId: 'voice_a' });
+  assert.equal(first.executed, false);
+  assert.equal(first.profile.status, 'approved');
+  assert.throws(
+    () => si.voices.approve({ principal: agent('video'), voiceProfileId: 'voice_b' }),
+    err => err.code === 'PERMISSION_DENIED'
+  );
+  const second = si.voices.approve({ principal: owner, voiceProfileId: 'voice_b' });
+  assert.equal(second.executed, false);
+  assert.equal(second.profile.status, 'approved');
+  assert.equal(si.db.prepare(`SELECT status FROM si_voice_profiles WHERE voice_profile_id = 'voice_a'`).get().status, 'superseded');
+  assert.throws(
+    () => si.voices.approve({ principal: owner, voiceProfileId: 'voice_a' }),
+    err => err.code === 'INVALID_STATE'
+  );
+  const again = si.voices.approve({ principal: owner, voiceProfileId: 'voice_b' });
+  assert.equal(again.executed, false);
+  assert.equal(again.profile.status, 'approved');
+  assert.equal(si.voices.forStudio({ principal: agent('video') }).id, 'voice_b');
+  si.close();
+});

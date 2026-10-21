@@ -115,6 +115,7 @@ test('мимика читает утверждённую модель и пиш�
       characterModelAssetId: 'not-the-model',
       audioAssetId: audio.asset.id,
       voiceProfileId: 'anchor_male',
+      masterAssetVersion: 1,
       channels: ['lip'],
       idempotencyKey: 'facial/ep1/wrong'
     }
@@ -133,9 +134,72 @@ test('без утверждённой мастер-модели мимика н�
       characterModelAssetId: 'missing',
       audioAssetId: 'missing-audio',
       voiceProfileId: 'anchor_male',
+      masterAssetVersion: 1,
       channels: ['head'],
       idempotencyKey: 'facial/none'
     }
+  }), err => err.code === 'NOT_FOUND');
+  si.close();
+});
+
+test('мимика не подставляет версию и не берёт неутверждённую', () => {
+  const { si, owner, agent } = setup();
+  const registered = si.brand.register({ principal: owner, asset: modelAsset() });
+  lockMaster(si, owner);
+  const audio = si.assets.register({ principal: agent('video'), asset: audioAsset({ idempotencyKey: 'news/audio/ep-ver' }) });
+  const omitted = facialRequest(registered.asset.id, audio.asset.id, 'facial/omit');
+  delete omitted.masterAssetVersion;
+  assert.throws(() => si.assets.prepareFacialUse({ principal: agent('video'), request: omitted }), err => err.code === 'VALIDATION');
+  assert.throws(() => si.assets.prepareFacialUse({
+    principal: agent('video'),
+    request: Object.assign(facialRequest(registered.asset.id, audio.asset.id, 'facial/unknown-ver'), { masterAssetVersion: 99 })
+  }), err => err.code === 'NOT_FOUND');
+  si.character.registerVersion({
+    principal: owner,
+    version: {
+      file: 'assets/character/moonkatty_master_v002.blend',
+      sha256: 'd'.repeat(64),
+      voiceProfileId: null,
+      sourceRefs: [{ path: 'references/cat-side.png', sha256: 'e'.repeat(64), basis: 'own', license: 'owned-by-studio', holder: 'MOONKATTY' }]
+    }
+  });
+  assert.throws(() => si.assets.prepareFacialUse({
+    principal: agent('video'),
+    request: Object.assign(facialRequest(registered.asset.id, audio.asset.id, 'facial/draft-ver'), { masterAssetVersion: 2 })
+  }), err => err.code === 'VALIDATION');
+  const still = si.assets.prepareFacialUse({
+    principal: agent('video'),
+    request: facialRequest(registered.asset.id, audio.asset.id, 'facial/locked-ver')
+  });
+  assert.equal(still.executed, false);
+  assert.equal(still.master.version, 1);
+  si.close();
+});
+
+test('черновик голоса не открывает мимику', () => {
+  const { si, owner, agent } = setup();
+  si.brand.register({ principal: owner, asset: modelAsset() });
+  si.voices.define({
+    principal: owner,
+    profile: {
+      voiceProfileId: 'anchor_male', label: 'Мужской голос ведущего', note: null, sampleAssetId: null,
+      sampleRate: 48000, recognizer: 'phonetic', gain: 1, mouthScale: 1
+    }
+  });
+  const draft = si.character.registerVersion({
+    principal: owner,
+    version: {
+      file: 'assets/character/moonkatty_master_v001.blend',
+      sha256: 'a'.repeat(64),
+      voiceProfileId: null,
+      sourceRefs: [{ path: 'references/cat-front.png', sha256: 'c'.repeat(64), basis: 'own', license: 'owned-by-studio', holder: 'MOONKATTY' }]
+    }
+  });
+  si.character.approve({ principal: owner, id: draft.id, voiceProfileId: null });
+  const audio = si.assets.register({ principal: agent('video'), asset: audioAsset({ idempotencyKey: 'news/audio/draft-voice' }) });
+  assert.throws(() => si.assets.prepareFacialUse({
+    principal: agent('video'),
+    request: facialRequest(modelAsset().id, audio.asset.id, 'facial/draft-voice')
   }), err => err.code === 'NOT_FOUND');
   si.close();
 });
