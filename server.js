@@ -84,7 +84,7 @@ const blender = require('./lib/blender.js')();
 const policy = require('./lib/policy.js'), SP = require('./lib/scene-params.js');
 const design3d = require('./lib/executors/design3d.js')({ jobs, ws: ws3d, blender, get, put, log, sec, ollamaStatus: runner.ollamaStatus, ollamaJson: runner.ollamaJson });
 runner.register('design3d', design3d.run);
-const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log }); app.locals.services = services; module.exports = { services };
+const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log, mediaRoot: path.join(DATA_DIR, 'media') }); app.locals.services = services; module.exports = { services };
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
   q.setMeta.run('mig_120_design3d', core.now()); }
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
@@ -267,13 +267,14 @@ const jobView = j => j && { ...j, pid: undefined, publicStatus: services.PUBLIC[
 app.get('/api/jobs', (req, res) => { const s = req.query.status; res.json(jobs.list(Math.min(+req.query.limit || 30, 200)).filter(j => !s || j.status === s || services.PUBLIC[j.status] === s).map(jobView)); });
 app.post('/api/jobs', (req, res) => { const b = req.body || {}; try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/api/jobs/:id', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); res.json({ ...jobView(j), events: jobs.events(j.id, +req.query.after || 0) }); });
-app.post('/api/jobs/:id/cancel', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); if (j.kind === 'blender_template') { jobs.update(j.id, { status: 'cancelled' }); services.jobsApi.cancelJob(j.id); return res.json(jobView(jobs.get(j.id))); }
+app.post('/api/jobs/:id/cancel', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); if (['blender_template', 'video_render'].includes(j.kind)) { jobs.update(j.id, { status: 'cancelled' }); services.jobsApi.cancelJob(j.id); return res.json(jobView(jobs.get(j.id))); }
   const t = get('tasks', j.taskId); if (t && !['done', 'cancelled'].includes(t.status)) { t.status = 'cancelled'; put('tasks', t); }
   design3d.cancelJob(j.id); runner.cancelTask(j.taskId); log('warn', 'design3d', 'Задание отменено: ' + (t?.title || j.id), req.user); res.json(jobView(jobs.get(j.id))); });
 app.post('/api/jobs/:id/retry', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' });
   if (!['failed', 'blocked', 'cancelled'].includes(j.status)) return res.status(400).json({ error: 'Повтор возможен только для заданий с ошибкой, блокировкой или отменённых' });
   if (j.retries >= j.maxRetries) return res.status(400).json({ error: `Лимит повторов исчерпан (${j.maxRetries})` });
   jobs.update(j.id, { status: 'queued', retries: j.retries + 1, error: null }); jobs.event(j.id, 'info', j.stage, `Повтор запрошен человеком (${j.retries + 1}/${j.maxRetries})`);
+  if (j.kind === 'video_render') { const t = get('tasks', j.taskId); if (t) { Object.assign(t, { status: 'in_progress', error: null }); put('tasks', t); } services.startVideoJob(j.id); return res.json(jobView(jobs.get(j.id))); }
   const t = get('tasks', j.taskId); Object.assign(t, { status: 'queued', retryRequested: true, blockedReason: null, error: null }); put('tasks', t);
   const a = get('agents', t.agentId); if (a && a.status !== 'working') runner.start(a.id, req.user); res.json(jobView(jobs.get(j.id))); });
 app.post('/api/jobs/:id/confirm', (req, res) => { const ok = design3d.confirm(req.params.id, req.body?.approve === true); if (!ok) return res.status(409).json({ error: 'Задание не ждёт подтверждения' });

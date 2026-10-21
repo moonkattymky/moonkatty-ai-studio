@@ -13,7 +13,8 @@
     "dist:mac": "electron-builder --mac zip --arm64",
     "test:policy": "node scripts/policy-test.mjs",
     "test:3d": "node scripts/design3d-test.mjs",
-    "test:3c": "node scripts/studio3c-test.mjs"
+    "test:3c": "node scripts/studio3c-test.mjs",
+    "test:video": "node scripts/video-render-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
