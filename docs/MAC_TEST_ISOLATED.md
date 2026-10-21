@@ -1,10 +1,12 @@
-# Изолированная тестовая сборка v1.2.3-test на Mac mini
+# Изолированная тестовая сборка v1.2.4-test на Mac mini
+
+> **v1.2.4-test:** добавлены узлы iMac/MacBook (Node API на 127.0.0.1 и адресе Tailscale, порт 8690). Подключение и откат узлов описаны в `docs/MAC_TEST_NODES_v1.2.4.md`. Пункт «Проверить обновления…» в TEST убран.
 
 > **ТЕСТОВАЯ СБОРКА, НЕ ДЛЯ РАБОТЫ.** Она ставится **рядом** с рабочей v1.1.2 и ничего в ней не меняет. Установленную v1.1.2 не заменяем и не обновляем.
 
 ## 0. Чем тестовая сборка отличается от v1.1.2
 
-| | v1.1.2 (рабочая) | v1.2.3-test |
+| | v1.1.2 (рабочая) | v1.2.4-test |
 |---|---|---|
 | Приложение | `/Applications/MOONKATTY AI STUDIO.app` | `~/Applications/MOONKATTY AI STUDIO TEST.app` |
 | Bundle ID | `com.moonkatty.aistudio` | `com.moonkatty.aistudio.test` |
@@ -69,9 +71,9 @@ D="$HOME/Library/Application Support/MOONKATTY AI STUDIO"
 
 ## 2. Скачивание и проверка тестовой сборки
 
-Скачайте ассеты релиза **v1.2.3-test**: zip, `.sha256` и `release-manifest.json` в папку «Загрузки».
+Скачайте ассеты релиза **v1.2.4-test**: zip, `.sha256` и `release-manifest.json` в папку «Загрузки».
 ```bash
-cd ~/Downloads && shasum -a 256 -c "MOONKATTY-AI-STUDIO-TEST-1.2.3-test-arm64-mac.zip.sha256"   # → OK
+cd ~/Downloads && shasum -a 256 -c "MOONKATTY-AI-STUDIO-TEST-1.2.4-test-arm64-mac.zip.sha256"   # → OK
 ```
 Значение должно совпасть с SHA-256 в описании релиза.
 
@@ -127,7 +129,7 @@ MK_FLAVOR=test ~/Applications/"MOONKATTY AI STUDIO TEST.app"/Contents/Resources/
 - Если Ollama занята или в это время рендерит Blender, чат Director отвечает «Студия занята … запрос поставлен в очередь». Это ожидаемое поведение.
 
 **Пришлите скриншоты:**
-1. стартовое окно тестового приложения (версия 1.2.3-test, порт 8687);
+1. стартовое окно тестового приложения (версия 1.2.4-test, порт 8687);
 2. вывод команд из п. 5.3;
 3. «Настройки → OpenCode server» после «Проверить»;
 4. 3D Studio с завершённым заданием и превью;

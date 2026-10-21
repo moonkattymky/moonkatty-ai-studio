@@ -15,6 +15,8 @@ const egress = require('./lib/egress.js'), heavy = require('./lib/heavy-lock.js'
 
 const PORT = +process.env.PORT || CFG.defaultPort;
 const HOST = process.env.HOST || '127.0.0.1';
+// v1.2.4: the main panel listens on loopback ONLY (never 0.0.0.0, LAN or a public address). Nodes use their own TLS listener.
+if (!/^(127\.\d+\.\d+\.\d+|::1|localhost)$/.test(HOST)) { console.error(`ОТКАЗ: HOST=${HOST} — панель слушает только 127.0.0.1/::1`); process.exit(78); }
 const DATA_DIR = process.env.STUDIO_DATA_DIR || path.join(__dirname, 'data');
 const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'studio.db');
 // Startup guard: the TEST build refuses to open anything inside the production data folder (symlinks resolved).
@@ -99,6 +101,8 @@ if (!q.meta.get('seeded')) {
 const app = express();
 app.disable('x-powered-by');
 app.use(sec.headers);
+// v1.2.4: defence in depth — only loopback / Tailscale source addresses are served (the listener is loopback anyway).
+app.use((req, res, next) => require('./lib/ops/nodes.js').isTailscaleOrLoopback(req.socket.remoteAddress) ? next() : res.status(403).end());
 app.use(sec.hostCheck(PORT));          // DNS-rebinding protection (STUDIO_ALLOWED_HOSTS for a Tailscale name)
 app.use('/api', sec.csrfCheck(PORT));  // Origin + X-Studio-Request on state-changing calls
 const jsonSmall = express.json({ limit: '2mb' });
@@ -133,7 +137,8 @@ const metaCtx = { q, get, put, list, log, DB_PATH, express, db, sealPublication 
 // The master key (Keychain «MOONKATTY AI STUDIO.test») is still created/loaded so key storage stays exercised.
 const meta = CFG.IS_TEST ? (() => { metaCtx.keySource = require('./lib/keystore.js').loadKey(path.dirname(DB_PATH)).source; return { mountProtected() {}, tick: async () => ({ disabled: true }), disabled: true }; })()
   : (() => { try { return require('./meta.js')(app, metaCtx); } catch (e) { console.error('ОТКАЗ: модуль публикации недоступен для prod-сборки (' + e.message + ')'); process.exit(78); } })();
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND });
+const nodeHooks = {}; // v1.2.4: Node Manager (lib/ops/nodes-server.js) is mounted after auth; runner reaches it late-bound
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, runViaNode: (a, t, s) => nodeHooks.runViaNode ? nodeHooks.runViaNode(a, t, s) : Promise.reject(Object.assign(new Error('Node Manager выключен'), { blocked: true })) });
 // ---- v1.2.0: job engine + 3D DESIGN agent (OpenCode server + Blender) ----
 const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
 const ws3d = require('./lib/workspace.js')(path.dirname(DB_PATH));
@@ -184,6 +189,9 @@ app.post('/api/auth/password', (req, res) => {
 
 if (CFG.IS_TEST) app.use(['/api/queue/:id/publish', '/api/comments/:id/reply'], (req, res) => res.status(403).json({ error: 'Тестовая сборка: публикация отключена', code: 'publishing_disabled' })); // TEST build: no publishing at all
 meta.mountProtected();
+// v1.2.4: distributed nodes (Studio 3 Node Manager) — admin API here (owner session), node API on its own TLS listener.
+{ const nodes = require('./lib/ops/nodes-server.js').mountNodes(app, { CFG, dataDir: path.dirname(DB_PATH), log, q, heavy, checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
+  nodeHooks.runViaNode = nodes.runViaNode; }
 
 // ---- Backup / restore ----
 // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
@@ -458,6 +466,8 @@ const stripProtected = (col, b) => { const o = Object.assign({}, b); for (const 
 //  • published ONLY via the internal publisher (sealPublication) after a verified platform response; any HTTP attempt → 403.
 //  • TEST build: publishing is disabled entirely (no meta.tick, no /publish, no reply).
 const QUEUE_ENTRY = 'pending_approval', QUEUE_GATED = ['approved', 'retry'];
+// v1.2.4 (Studio 4): a new comment can never arrive 'approved'/'replied' — approval is a separate owner action (PUT, UI button).
+app.post('/api/comments', (req, res, next) => { if (req.body && typeof req.body === 'object' && !['new', 'drafted'].includes(req.body.status)) req.body.status = 'new'; next(); });
 app.use('/api/queue', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
   if (req.method === 'POST' && req.path === '/') { req.body.status = QUEUE_ENTRY; delete req.body.nextRetryAt; return next(); }
   // Security recheck v1.2.2-test: NO HTTP route can set "published"/externalId — on every flavor.

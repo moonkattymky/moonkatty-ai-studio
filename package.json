@@ -1,6 +1,6 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.2.3-test",
+  "version": "1.2.4-test",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
@@ -18,7 +18,10 @@
     "test:video": "node scripts/video-render-test.mjs",
     "test:publish-guard": "node scripts/publish-guard-test.mjs",
     "test:isolation": "node scripts/isolation-test.mjs",
-    "test:e2e-test-build": "node scripts/e2e-test-build.mjs"
+    "test:e2e-test-build": "node scripts/e2e-test-build.mjs",
+    "test:nodes": "node scripts/nodes-test.mjs",
+    "test:ops": "node --test --test-concurrency=1 test/ops/*.test.js",
+    "test:ops:studio": "COORD_HELPER=studio node --test test/ops/nodes.multiprocess.test.js"
   },
   "keywords": [],
   "author": "MOONKATTY",
@@ -80,7 +83,7 @@
       "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "minimumSystemVersion": "12.0",
+      "minimumSystemVersion": "13.0",
       "extendInfo": {
         "LSApplicationCategoryType": "public.app-category.productivity",
         "CFBundleDevelopmentRegion": "ru",

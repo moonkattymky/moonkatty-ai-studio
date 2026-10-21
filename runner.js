@@ -96,6 +96,7 @@ module.exports = function createRunner(ctx) {
       let r;
       if (t.kind === 'code') { if (!t.codeApproved) throw blocked('Задача для OpenCode ждёт явного подтверждения (кнопка «Разрешить OpenCode»)');
         const o = await runOpencode(t, ac.signal); r = { status: 'waiting_approval', result: `OpenCode (песочница ${o.dir}):\n${o.text}` }; }
+      else if (t.node && t.node.capability) { if (!ctx.runViaNode) throw blocked('Задача для узла, но Node Manager выключен'); r = await ctx.runViaNode(a, t, ac.signal); } // v1.2.4 (Studio 3): light task on a node, still via this runner
       else r = await (HANDLERS[a.id] || llmTask)(a, t, ac.signal);
       const cur = get('tasks', t.id); if (!cur || cur.status !== 'in_progress') return; // stopped meanwhile
       Object.assign(cur, { status: r.status, result: r.result, model: r.model || null, finishedAt: core.now() }, r.jobId ? { jobId: r.jobId } : {}); if (r.status === 'done') cur.completedAt = core.now(); put('tasks', cur);

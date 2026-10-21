@@ -115,6 +115,7 @@ handle('open-path', which => { if (which !== 'logs' && which !== 'data') throw n
 const verNum = t => String(t).replace(/^v/, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
 const newer = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
 async function checkUpdates(manual) {
+  if (CFG.IS_TEST) return; // v1.2.4: the TEST flavor never contacts GitHub (no automatic or manual update check)
   const c = cfg(); if (!manual && !c.checkUpdates) return;
   const msg = (o) => dialog.showMessageBox(win || undefined, o);
   try {
@@ -138,7 +139,7 @@ async function checkUpdates(manual) {
 function menu() {
   const c = cfg(); const startup = () => win ? win.loadFile(STARTUP, { hash: 'status' }) : createWindow();
   const tpl = [
-    ...(process.platform === 'darwin' ? [{ label: PRODUCT, submenu: [{ role: 'about', label: 'О программе' }, { type: 'separator' }, { label: 'Проверить обновления…', click: () => checkUpdates(true) }, { type: 'separator' }, { role: 'hide', label: 'Скрыть' }, { role: 'hideOthers', label: 'Скрыть остальные' }, { type: 'separator' }, { role: 'quit', label: 'Выйти (сервер продолжит работу)' }] }] : []),
+    ...(process.platform === 'darwin' ? [{ label: PRODUCT, submenu: [{ role: 'about', label: 'О программе' }, ...(CFG.IS_TEST ? [] : [{ type: 'separator' }, { label: 'Проверить обновления…', click: () => checkUpdates(true) }]), { type: 'separator' }, { role: 'hide', label: 'Скрыть' }, { role: 'hideOthers', label: 'Скрыть остальные' }, { type: 'separator' }, { role: 'quit', label: 'Выйти (сервер продолжит работу)' }] }] : []),
     { label: 'Сервер', submenu: [
       { label: 'Статус компонентов', click: startup },
       { label: 'Запускать сервер при входе в систему', type: 'checkbox', checked: c.startAtLogin, enabled: process.platform === 'darwin', click: async i => { const n = { ...cfg(), startAtLogin: i.checked }; saveCfg(n); const r = await svc.setStartAtLogin(svcOpts(n)); if (r && r.ok === false) dialog.showMessageBox({ type: 'warning', message: 'Не удалось изменить автозапуск', detail: r.out || '' }); } },

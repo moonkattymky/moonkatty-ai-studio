@@ -138,7 +138,7 @@ const NAV = [
   ['dashboard', '◈', 'Dashboard'], ['agents', '✦', 'AI Agents'], ['news', '◉', 'MOONKATTY NEWS'], ['project', '☾', 'MOONKATTY PROJECT'],
   ['video', '▶', 'Video Production'], ['studio3d', '⬡', '3D Studio'], ['social', '◎', 'Social Media'], ['pr', '✶', 'PR & Marketing'],
   ['calendar', '▦', 'Calendar'], ['analytics', '▤', 'Analytics'], ['reports', '▧', 'Reports'], ['files', '▣', 'Files & Projects'],
-  ['logs', '›_', 'Terminal & Logs'], ['settings', '⚙', 'Settings']
+  ['nodes', '⌬', 'Узлы (Nodes)'], ['logs', '›_', 'Terminal & Logs'], ['settings', '⚙', 'Settings']
 ];
 let ROUTE = 'dashboard'; const SUB = {};
 function navTo(r) { location.hash = r; }
@@ -459,6 +459,45 @@ async function s3upload(files) {
     const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); toast(j.duplicate ? 'Референс уже загружен' : 'Референс загружен'); } catch (e) { toast('Ошибка: ' + f.name + ' — ' + e.message, true); } }
   await s3refresh(true);
 }
+// v1.2.4: distributed nodes (Studio 3 Node Manager). Owner-only; tokens are shown ONCE right after register/rotate and never stored in the UI.
+const NODES = { st: null, issued: null };
+VIEWS.nodes = () => {
+  if (MODE !== 'server') return '<div class="devbox">Узлы работают только в приложении (серверный режим).</div>';
+  const st = NODES.st; if (!st) return '<div class="card">Загрузка…</div>'; const I = NODES.issued;
+  const row = n => `<tr><td><b>${esc(n.id)}</b><div class="small mut">${esc(n.name || '')} · ${esc(n.role)}</div></td><td>${esc(n.revoked ? 'отозван' : n.status || '—')}</td><td class="small">${esc(n.info ? `${n.info.agentVersion || ''} · ${n.info.os || ''} · CPU ${n.info.cpuPct ?? '—'}%` : '—')}</td><td class="small">${esc(n.lastSeen || '—')}</td>
+    <td>${n.revoked ? '' : `<button class="btn sm" data-ncmd="${esc(n.id)}" data-c="pause">Пауза</button> <button class="btn sm" data-ncmd="${esc(n.id)}" data-c="drain">Drain</button> <button class="btn sm" data-ncmd="${esc(n.id)}" data-c="run">Run</button> <button class="btn sm" data-nrot="${esc(n.id)}">Сменить токен</button> <button class="btn sm" data-nrev="${esc(n.id)}">Отозвать</button>`}</td></tr>`;
+  return `<div class="grid g2"><div class="card"><h3>Node API (TLS)</h3>
+    <p class="small">${st.enabled ? 'Включено' : '<b>Выключено</b>'} · слушает: ${esc((st.listening || []).join(', ') || '—')} · порт ${esc(st.port)}</p>
+    <p class="small">Отпечаток сертификата (SHA-256, его закрепляют узлы):<br><code style="word-break:break-all">${esc(st.fingerprint || '—')}</code></p>
+    ${st.fingerprint ? '<p class="small"><a href="/api/ops/nodes/cert" download="coordinator.crt">Скачать сертификат координатора (coordinator.crt, публичный)</a></p>' : ''}
+    ${(st.errors || []).length ? `<p class="small" style="color:#ef4444">${st.errors.map(esc).join('<br>')}</p>` : ''}
+    <label>Адрес Tailscale этого Mac (100.x.y.z), пусто = только 127.0.0.1</label><input id="nbind" value="${esc(st.settings?.bind || '')}" placeholder="100.x.y.z">
+    <label><input type="checkbox" id="nen" ${st.settings?.enabled ? 'checked' : ''}> Включить Node API (после перезапуска сервера)</label>
+    <p class="small mut">Никогда 0.0.0.0, LAN или публичный адрес; Tailscale Serve/Funnel не используются.</p></div>
+    <div class="card"><h3>Зарегистрировать узел</h3>
+    <label>ID (оканчивается на «${esc(st.idSuffix || '')}»)</label><input id="nid" placeholder="imac${esc(st.idSuffix || '')}">
+    <label>Роль</label><select id="nrole">${Object.keys(st.roles || {}).map(r => `<option value="${esc(r)}">${esc(r)} — ${esc(st.roles[r].title || '')}</option>`).join('')}</select>
+    <label>Название</label><input id="nname" placeholder="iMac NEWS NODE">
+    <p class="small mut">Для выдачи/смены токена и сохранения настроек нужен пароль владельца и ввод слова-подтверждения.</p></div></div>
+    <div class="card" style="margin-top:14px"><label>Пароль владельца</label><input type="password" id="npw" autocomplete="current-password">
+    <label>Подтверждение (ВЫДАТЬ — регистрация, СМЕНИТЬ — новый токен, ОТОЗВАТЬ — отзыв, СОХРАНИТЬ — настройки)</label><input id="nconf">
+    <div class="row" style="margin-top:8px"><button class="btn" id="nreg">Зарегистрировать</button><button class="btn sm" id="nsave">Сохранить настройки</button></div></div>
+    ${I ? `<div class="card" style="margin-top:14px;border-color:#f59e0b"><h3>Токен узла ${esc(I.id)} — показан ОДИН раз</h3><code style="word-break:break-all">${esc(I.token)}</code>
+      <p class="small">Keychain на узле: service <code>${esc(I.keychainService)}</code>, account <code>${esc(I.keychainAccount)}</code> (install.sh записывает через stdin). Отпечаток: <code style="word-break:break-all">${esc(I.fingerprint)}</code>${I.coordinatorUrl ? `<br>COORDINATOR_URL: <code>${esc(I.coordinatorUrl)}</code>` : ''}</p>
+      <button class="btn sm" id="nhide">Я сохранил — скрыть</button></div>` : ''}
+    <div class="card" style="margin-top:14px"><h3>Узлы</h3><table class="tbl"><tr><th>Узел</th><th>Статус</th><th>Агент</th><th>Последний контакт</th><th></th></tr>${(st.nodes || []).map(row).join('') || '<tr><td colspan="5" class="mut">нет узлов</td></tr>'}</table></div>`;
+};
+BIND.nodes = v => {
+  const load = async () => { try { NODES.st = await api('GET', '/api/ops/nodes'); } catch (e) { toast('Ошибка: ' + e.message, true); } if (ROUTE === 'nodes') { v.innerHTML = VIEWS.nodes(); BIND.nodes(v); } };
+  if (!NODES.st) return load(); const pw = () => v.querySelector('#npw').value, cf = () => v.querySelector('#nconf').value.trim();
+  const run = async (fn, msg) => { try { const r = await fn(); if (msg) toast(msg); NODES.st = null; return r; } catch (e) { toast('Ошибка: ' + e.message, true); } finally { if (!NODES.st) load(); } };
+  v.querySelector('#nreg').onclick = () => run(async () => { NODES.issued = await api('POST', '/api/ops/nodes', { id: v.querySelector('#nid').value.trim(), role: v.querySelector('#nrole').value, name: v.querySelector('#nname').value.trim(), password: pw(), confirm: cf() }); }, 'Узел зарегистрирован');
+  v.querySelector('#nsave').onclick = () => run(() => api('POST', '/api/ops/nodes/settings', { enabled: v.querySelector('#nen').checked, bind: v.querySelector('#nbind').value.trim(), password: pw(), confirm: cf() }), 'Сохранено — перезапустите сервер');
+  v.querySelectorAll('[data-nrot]').forEach(b => b.onclick = () => run(async () => { NODES.issued = await api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrot)}/rotate`, { password: pw(), confirm: cf() }); }, 'Токен сменён'));
+  v.querySelectorAll('[data-nrev]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrev)}/revoke`, { confirm: cf() }), 'Токен отозван'));
+  v.querySelectorAll('[data-ncmd]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.ncmd)}/command`, { command: b.dataset.c }), 'Команда отправлена'));
+  const h = v.querySelector('#nhide'); if (h) h.onclick = () => { NODES.issued = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
+};
 VIEWS.studio3d = () => {
   if (MODE !== 'server') return '<div class="devbox">3D Studio работает только в приложении (серверный режим): нужен локальный Blender и OpenCode server.</div>';
   const st = S3.status; const b = st?.blender, oc = st?.opencode; const P = S3.project;
