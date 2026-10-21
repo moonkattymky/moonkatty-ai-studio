@@ -101,7 +101,7 @@ ok('policy: write outside workspace blocked (no file created, tool errored)', !f
 const tb = await run('Кот MOCK_BASH'); const jb = await waitJob(tb.id, terminal);
 ok('policy: bash never executes (tool not available / denied)', !fs.existsSync('/tmp/mk-pwned-by-agent') && /пытался вызвать инструменты/.test(evText(jb)), jb?.error);
 const tv = await run('Кот MOCK_BADPARAMS'); const jv = await waitJob(tv.id, terminal);
-ok('agent output violating schema rejected (1 retry, then failed, no Blender run)', jv?.status === 'failed' && jv.stage === 'agent' && /не вернул корректный JSON/.test(jv.error) && !fs.existsSync(jv.checkpoint.vdir + '/scene.blend'), jv?.error);
+ok('agent output violating schema → fallback to validated params, Blender still runs', jv?.status === 'waiting_approval' && /\+fallback$/.test(jv.checkpoint?.paramsBy || '') && /не записал scene_params\.json/.test(evText(jv)) && /запасн/.test(evText(jv)) && fs.existsSync(jv.checkpoint.vdir + '/scene.blend') && !/import os/.test(fs.readFileSync(jv.checkpoint.vdir + '/scene_params.json', 'utf8')), (jv?.error || '') + '\n' + evText(jv).slice(-400));
 const tn = await run('Кот MOCK_FIXRETRY'); const jn = await waitJob(tn.id, terminal);
 ok('real OpenCode: malformed JSON → one retry → success', jn?.status === 'waiting_approval' && /Повторный запрос/.test(evText(jn)), jn?.error);
 await api('PUT', '/api/opencode/auth', { url: `http://127.0.0.1:${OCPERM}` });

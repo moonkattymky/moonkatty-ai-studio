@@ -174,7 +174,12 @@ async function setTaskStatus(id, status) {
     if (a && status !== 'in_progress' && a.currentTaskId === id) await api('PUT', '/api/agents/' + a.id, { status: status === 'failed' ? 'error' : 'idle', currentTaskId: null });
   }, 'Статус обновлён');
 }
-async function testIntegration(id, btn) { if (btn) { btn.disabled = true; btn.textContent = 'Проверка…'; } const r = await act(() => api('POST', `/api/integrations/${id}/test`)); if (r) toast(r.ok ? 'Подключено ✓' : 'Нет соединения: ' + r.detail, !r.ok); }
+async function testIntegration(id, btn) {
+  const prev = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Проверка…'; }
+  try { const r = await act(() => api('POST', `/api/integrations/${id}/test`)); if (r) toast(r.ok ? 'Подключено ✓' : 'Нет соединения: ' + (r.detail || r.error || ''), !r.ok); }
+  finally { if (btn && btn.isConnected) { btn.disabled = false; if (prev) btn.textContent = prev; } }
+}
 
 function taskForm(t, defaults = {}) {
   t = t || Object.assign({ title: '', description: '', agentId: '', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' } }, defaults);
@@ -396,11 +401,12 @@ function s3job() {
   return `<div class="card"><h3>Задание ${j ? jBadge(j.status) : ''}</h3>
     ${j ? `<div class="small"><b>${esc(j.task?.title || '')}</b></div><div style="margin:8px 0">${stages}</div>
       ${j.error ? `<div class="small" style="color:#ef4444;white-space:pre-wrap">${esc(j.error)}</div>` : ''}
+      ${j.outputs ? `<div class="small" style="margin-top:6px">Файлы:<div data-notr>${[['scene_params.json', j.outputs.sceneParams, j.outputs.sceneParamsReady], ['.blend', j.outputs.blend, j.outputs.blendReady], ['PNG', j.outputs.preview, j.outputs.previewReady]].map(([, p, ready]) => `${ready ? '✓' : '·'} ${esc(p)}`).join('<br>')}</div></div>` : ''}
       ${j.pending ? `<div class="devbox small">Требуется подтверждение: ${esc(j.pending.reason)} <button class="btn sm" data-s3confirm="1">Разрешить</button> <button class="btn sm danger" data-s3confirm="0">Отклонить</button></div>` : ''}
       <div class="row" style="margin-top:8px">${live ? '<button class="btn sm danger" id="s3cancel">Отменить</button>' : ''}${['failed', 'blocked', 'cancelled'].includes(j.status) ? '<button class="btn sm" id="s3retry">Повторить</button>' : ''}
       ${j.status === 'waiting_approval' ? '<button class="btn sm" data-s3rev="approve">Утвердить</button><button class="btn sm" data-s3rev="rework">Доработать</button><button class="btn sm danger" data-s3rev="reject">Отклонить</button>' : ''}</div>
       ${j.task?.review?.comment ? `<div class="small mut">Комментарий: ${esc(j.task.review.comment)}</div>` : ''}
-      <div class="small mut" style="margin-top:6px">Попытка ${j.attempt}, повторов ${j.retries}/${j.maxRetries}${cp.version ? ` · проект ${esc(cp.projectId)} / ${esc(cp.version)}` : ''}${cp.paramsBy ? ' · параметры: ' + esc(cp.paramsBy === 'rules' ? 'по правилам (без ИИ)' : cp.paramsBy) : ''}</div>` : '<div class="empty">Заданий пока нет</div>'}</div>`;
+      <div class="small mut" style="margin-top:6px">Попытка ${j.attempt}, повторов ${j.retries}/${j.maxRetries}${cp.version ? ` · проект ${esc(cp.projectId)} / ${esc(cp.version)}` : ''}${cp.paramsBy ? ' · параметры: ' + esc(cp.paramsBy === 'rules' ? 'по правилам (без ИИ)' : /\+fallback$/.test(cp.paramsBy) ? 'запасной путь (проверенные параметры студии)' : cp.paramsBy) : ''}</div>` : '<div class="empty">Заданий пока нет</div>'}</div>`;
 }
 function s3version() {
   const P = S3.project; if (!P || !P.versions.length) return `<div class="card"><h3>Версия</h3><div class="empty">Превью появится после рендера</div></div>`;
@@ -539,12 +545,16 @@ VIEWS.studio3d = () => {
       <label>Референсы (PNG/JPEG/WEBP, до 15 МБ)</label><input type="file" id="s3refs" accept="image/png,image/jpeg,image/webp" multiple>
       ${P?.references?.length ? `<div class="row" style="flex-wrap:wrap;margin-top:6px">${P.references.map(r => `<img src="/api/projects3d/${encodeURIComponent(P.id)}/references/${r.sha256}" alt="${esc(r.name)}" title="${esc(r.name)} · sha256 ${r.sha256.slice(0, 12)}…" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`).join('')}</div><div class="small mut">Референсы сохранены в папке проекта (SHA-256). Использование референсов моделью — этап D, ${DEV('В разработке')}</div>` : ''}
       <div class="row" style="margin-top:8px"><button class="btn" id="s3run">Создать 3D-модель</button>${P ? '<button class="btn sm" id="s3new">Новый проект</button>' : ''}</div>
-      <p class="small mut">Director назначает задачу агенту 3D DESIGN → агент OpenCode записывает параметры сцены → Blender (без окна) собирает сцену, сохраняет .blend, открывает её заново и рендерит PNG. Произвольные команды и файлы вне папки проекта запрещены политикой.</p></div>
+      <p class="small mut">Director назначает задачу агенту 3D DESIGN → студия проверяет параметры и сама записывает scene_params.json. Если OpenCode недоступен или не вернул JSON, берутся уже проверенные параметры. Дальше Blender (без окна) собирает сцену, сохраняет .blend, открывает её заново и рендерит PNG. Пути к файлам видны в задании. Произвольные команды и файлы вне папки проекта запрещены политикой.</p></div>
     <div class="card"><h3>Окружение <button class="btn sm" id="s3ref">Проверить</button></h3>
       <div class="small">Blender: ${b ? (b.ok ? `<span class="badge b-ok">${esc(b.version)}</span> <span class="mut">${esc(b.bin)}</span>` : `<span class="badge b-err">Не найден</span> <span class="mut">${esc(b.error || '')}</span>`) : '…'}</div>
-      <div class="small">OpenCode server: ${oc ? `<span class="badge ${oc.lastTest?.ok ? 'b-ok' : 'b-warn'}">${esc(oc.status)}</span> <span class="mut">${esc(oc.url)} · пароль: ${oc.hasPassword ? 'в Keychain' : 'не задан'}</span>` : '…'}</div>
+      <div class="small">OpenCode server: ${oc ? `<span class="badge ${oc.lastTest?.ok ? 'b-ok' : 'b-warn'}">${esc(oc.status)}</span> <span class="mut">${esc(oc.url)} · пароль: ${oc.hasPassword ? 'в Keychain' : 'не задан'}${oc.modelEffective ? ' · модель ' + esc(oc.modelEffective) : ''}</span>` : '…'}</div>
+      <div class="small" id="s3check">${oc?.lastTest ? esc((oc.lastTest.ok ? '✓ ' : '✗ ') + (oc.lastTest.detail || '')) : ''}</div>
+      ${oc?.keychain?.service ? `<div class="small mut" data-notr>Keychain Access: service «${esc(oc.keychain.service)}», account «${esc(oc.keychain.account)}», название «${esc(oc.keychain.label || '')}».</div>` : ''}
+      ${oc?.serve?.allowed ? `<div class="row" style="margin-top:6px"><button class="btn sm" id="s3ocstart" ${oc.hasPassword && !oc.serve.running ? '' : 'disabled'}>${oc.serve.running ? 'OpenCode запущен' : 'Запустить OpenCode'}</button></div>` : ''}
       <label>Путь к Blender (необязательно)</label><input id="s3bp" value="${esc(st?.blenderPath || '')}" placeholder="/Applications/Blender.app/Contents/MacOS/Blender">
-      <label>Модель OpenCode (provider/model)</label><input id="s3model" value="${esc(st?.opencodeModel || '')}" placeholder="ollama/qwen2.5-coder:7b">
+      <label>Модель OpenCode (provider/model)</label><input id="s3model" value="${esc(st?.opencodeModel || '')}" placeholder="ollama/qwen3:8b">
+      <p class="small mut">Пустое поле — ollama/qwen3:8b. Модель ollama/qwen2.5-coder:7b часто не возвращает JSON, если у Ollama контекст 4096.</p>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="s3save">Сохранить</button></div></div></div>
     <div id="s3live">${s3live()}</div>`;
 };
@@ -555,7 +565,13 @@ BIND.studio3d = v => {
     try { await api('POST', '/api/studio3d/run', { text, ...(S3.proj ? { projectId: S3.proj } : {}) }); toast('Задача назначена агенту 3D DESIGN'); v.querySelector('#s3text').value = ''; S3.sel = null; S3.ver = null; await s3refresh(); } catch (e) { toast('Ошибка: ' + e.message, true); } };
   v.querySelector('#s3refs').onchange = e => s3upload([...e.target.files]);
   const nw = v.querySelector('#s3new'); if (nw) nw.onclick = () => { S3.proj = null; S3.project = null; S3.sel = null; S3.job = null; S3.ver = null; render(); };
-  v.querySelector('#s3ref').onclick = () => api('GET', '/api/studio3d/status?refresh=1').then(s => { S3.status = s; render(); }).catch(e => toast('Ошибка: ' + e.message, true));
+  v.querySelector('#s3ref').onclick = async () => { const btn = v.querySelector('#s3ref'); if (btn) { btn.disabled = true; btn.textContent = 'Проверка…'; }
+    try { const r = await api('POST', '/api/opencode/test'); S3.status = await api('GET', '/api/studio3d/status?refresh=1');
+      toast(r.ok ? 'Подключено ✓' : (r.detail || 'Нет соединения'), !r.ok); render(); }
+    catch (e) { toast('Ошибка: ' + e.message, true); if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = 'Проверить'; } } };
+  const ocStart = v.querySelector('#s3ocstart'); if (ocStart) ocStart.onclick = async () => { ocStart.disabled = true;
+    try { const r = await api('POST', '/api/opencode/serve'); toast(r.ok ? 'OpenCode запущен' : (r.detail || r.error), !r.ok); S3.status = null; await s3refresh(true); }
+    catch (e) { toast('Ошибка: ' + e.message, true); if (ocStart.isConnected) ocStart.disabled = false; } };
   v.querySelector('#s3save').onclick = () => api('PUT', '/api/studio3d/settings', { blenderPath: v.querySelector('#s3bp').value.trim(), opencodeModel: v.querySelector('#s3model').value.trim() })
     .then(() => { toast('Сохранено'); S3.status = null; s3refresh(true); }).catch(e => toast('Ошибка: ' + e.message, true));
 };
@@ -673,8 +689,8 @@ VIEWS.settings = () => `<div class="grid g2"><div class="card" style="grid-colum
       <label style="flex:2;min-width:200px">URL сервера<input name="url" id="ocUrl" placeholder="http://127.0.0.1:4096" required></label>
       <label style="flex:1;min-width:120px">Логин<input name="username" id="ocUser" placeholder="opencode" autocomplete="off"></label>
       <label style="flex:1;min-width:160px">Пароль<input type="password" name="password" id="ocPw" autocomplete="new-password" placeholder="не задан" maxlength="256"></label></div>
-      <div class="row" style="margin-top:10px;gap:8px"><button class="btn" id="ocSave">Сохранить</button><button type="button" class="btn primary" id="ocTest">Проверить подключение</button><button type="button" class="btn danger" id="ocClear">Удалить пароль</button></div>
-      <p class="small mut" id="ocInfo"></p><p class="small" id="ocResult"></p></form></div>
+      <div class="row" style="margin-top:10px;gap:8px"><button class="btn" id="ocSave">Сохранить</button><button type="button" class="btn primary" id="ocTest">Проверить подключение</button><button type="button" class="btn" id="ocStart" hidden>Запустить OpenCode</button><button type="button" class="btn danger" id="ocClear">Удалить пароль</button></div>
+      <p class="small mut" id="ocInfo"></p><p class="small mut" id="ocKc" data-notr></p><p class="small" id="ocResult"></p></form></div>
   <div class="card"><h3>Резервное копирование</h3><div class="row"><button class="btn" id="bkExp">Экспорт JSON</button><label class="btn" style="margin:0;color:var(--text);font-size:13px">Импорт<input type="file" id="bkImp" accept=".json,application/json" hidden></label>${MODE === 'server' ? '<button class="btn" id="bkRun">Бэкап на сервере сейчас</button>' : ''}</div>
     <p class="small mut">${MODE === 'server' ? 'Сервер автоматически сохраняет копию раз в сутки в data/backups (хранятся 14 последних).' : 'Браузерный режим: автобэкап на сервере недоступен — используйте экспорт.'}</p><div id="bkList" class="small mut"></div></div>
   <div class="card"><h3>Учётная запись: ${esc(USER)}</h3><form id="pwForm"><label>Старый пароль</label><input type="password" name="oldPassword" required autocomplete="current-password"><label>Новый пароль</label><input type="password" name="newPassword" minlength="8" required autocomplete="new-password"><button class="btn" style="margin-top:10px">Сменить пароль</button></form></div>
@@ -697,7 +713,9 @@ async function bindOpencode(v) {
   const show = s => { v.querySelector('#ocUrl').value = s.url || ''; v.querySelector('#ocUser').value = s.username || 'opencode'; pw.value = '';
     pw.placeholder = s.hasPassword ? '•••••• сохранён в Keychain' : 'не задан';
     const off = !s.keychain?.available; badge.textContent = s.status || 'Не подключено'; badge.className = 'badge' + (s.status === 'Подключено' ? ' b-ok' : '');
-    info.textContent = off ? 'Не подключено — ' + (s.keychain?.reason || 'Keychain недоступна') : 'Пароль: ' + (s.hasPassword ? 'сохранён в macOS Keychain' : 'не задан') + ' · разрешены только локальные адреса';
+    info.textContent = off ? 'Не подключено — ' + (s.keychain?.reason || 'Keychain недоступна') : 'Пароль: ' + (s.hasPassword ? 'сохранён в macOS Keychain' : 'не задан') + ' · разрешены только локальные адреса' + (s.modelEffective ? ' · модель ' + s.modelEffective : '');
+    const kc = v.querySelector('#ocKc'); if (kc) kc.textContent = s.keychain?.service ? `Keychain Access: service «${s.keychain.service}», account «${s.keychain.account}», название «${s.keychain.label || ''}». Поиск по «MOONKATTY AI STUDIO TEST» или account «opencode» эту запись не находит.` : '';
+    const start = v.querySelector('#ocStart'); if (start) { const allow = !!s.serve?.allowed; start.hidden = !allow; start.disabled = !allow || !s.hasPassword || !!s.serve?.running; start.textContent = i18n.tr(s.serve?.running ? 'OpenCode запущен' : 'Запустить OpenCode'); }
     [pw, v.querySelector('#ocClear')].forEach(x => x.disabled = off); if (off) pw.placeholder = 'недоступно без Keychain';
     if (s.lastTest) res.textContent = (s.lastTest.ok ? '✓ ' : '✗ ') + s.lastTest.detail; };
   try { show(await api('GET', '/api/opencode/auth')); } catch (e) { info.textContent = 'Не подключено — ' + e.message; }
@@ -707,6 +725,9 @@ async function bindOpencode(v) {
   v.querySelector('#ocTest').onclick = async () => { const btn = v.querySelector('#ocTest'); btn.disabled = true; res.textContent = 'Проверка…';
     try { const r = await api('POST', '/api/opencode/test'); res.textContent = (r.ok ? '✓ ' : '✗ ') + r.detail; toast(r.ok ? 'Подключено ✓' : r.detail, !r.ok); show(await api('GET', '/api/opencode/auth')); }
     catch (er) { res.textContent = '✗ ' + er.message; } finally { btn.disabled = false; } };
+  const start = v.querySelector('#ocStart'); if (start) start.onclick = async () => { start.disabled = true; res.textContent = 'Запуск…';
+    try { const r = await api('POST', '/api/opencode/serve'); res.textContent = r.ok ? '✓ OpenCode запущен на ' + (r.url || '') : '✗ ' + (r.detail || r.error || ''); toast(r.ok ? 'OpenCode запущен' : (r.detail || r.error), !r.ok); show(await api('GET', '/api/opencode/auth')); }
+    catch (er) { res.textContent = '✗ ' + er.message; toast('Ошибка: ' + er.message, true); start.disabled = false; } };
 }
 
 // ================= Director chat =================
