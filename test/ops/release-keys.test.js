@@ -223,3 +223,52 @@ test('dev run without build-info: status says "проверка возраста
   assert.match(fs.readFileSync(path.join(ROOT, 'public/update-ui.js'), 'utf8'), /ucBuildAge/);
   for (const f of ['scripts/build-mac.sh', 'scripts/package-mac-on-linux.sh']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8'), /write-build-info\.mjs/);
 });
+
+// ---------- QA-UC-008: packaged server runs from app.asar.unpacked ----------
+function unpackedLayout({ withBuildInfo, epoch }) {
+  const pkg = require('../../package.json'); assert.ok(pkg.build.asarUnpack.includes('lib/**') && pkg.build.asarUnpack.includes('desktop/build-info.json'), 'asarUnpack must contain lib/** and desktop/build-info.json');
+  const res = path.join(tmp(), 'MOONKATTY AI STUDIO.app/Contents/Resources'), un = path.join(res, 'app.asar.unpacked'); fs.mkdirSync(path.join(un, 'desktop'), { recursive: true });
+  fs.cpSync(path.join(ROOT, 'lib'), path.join(un, 'lib'), { recursive: true }); fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(un, 'package.json')); // only asarUnpack entries
+  if (withBuildInfo) execFileSync(process.execPath, [path.join(ROOT, 'scripts/write-build-info.mjs'), '--builder', 'test', '--out', path.join(un, 'desktop/build-info.json')], { env: { ...process.env, SOURCE_DATE_EPOCH: String(epoch), COMMIT: 'b'.repeat(40) }, stdio: 'pipe' });
+  return require(path.join(un, 'lib/ops/update-center.js'));
+}
+test('QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt', async () => {
+  const epoch = Math.floor(Date.now() / 1000) - 86400; const P = unpackedLayout({ withBuildInfo: true, epoch }); const k = keygen();
+  const uc = P.createUpdateCenter({ dir: tmp(), current: '1.2.2', fetchImpl: fake(release({ signWith: k, builtAt: new Date((epoch - 3600) * 1000).toISOString() })), identity: PROD, env: { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) }, healthUrl: 'http://127.0.0.1:1/api/health' });
+  const s = uc.status(); assert.equal(s.buildAge.packaged, true); assert.equal(s.buildAge.available, true);
+  const rel = (await uc.check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /старше сборки текущего/);
+});
+test('QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified', async () => {
+  const P = unpackedLayout({ withBuildInfo: false }); const k = keygen();
+  const uc = P.createUpdateCenter({ dir: tmp(), current: '1.2.2', fetchImpl: fake(release({ signWith: k, builtAt: '2026-01-01T00:00:00Z' })), identity: PROD, env: { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) }, healthUrl: 'http://127.0.0.1:1/api/health' });
+  const s = uc.status(); assert.equal(s.buildAge.packaged, true); assert.equal(s.buildAge.failClosed, true); assert.match(s.buildAge.message, /^BLOCKED/);
+  const rel = (await uc.check()).releases[0]; assert.equal(rel.verified, false); assert.ok(rel.problems.includes(P.BUILD_INFO_BLOCKED)); assert.throws(() => uc.prepareDownload(rel.tag), { code: 'UNVERIFIED' });
+  assert.equal(UC.isPackagedPath(path.join(ROOT, 'lib/ops')), false, 'dev checkout is not packaged (warning only)');
+});
+
+// ---------- QA-UC-009: TOCTOU race — swapping symlinks during checks never yields READY ----------
+async function race(setup, swapScript, n = 300) {
+  const { target, a, b } = setup(); const { spawn } = require('child_process');
+  const sw = spawn(process.execPath, ['-e', swapScript, target, a, b], { stdio: 'ignore' }); await new Promise(r => setTimeout(r, 100));
+  let ready = 0, blocked = 0; try { for (let i = 0; i < n; i++) { const st = UC.signatureStatus(UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: target }, uid: UID })).state; if (st === 'READY') ready++; else blocked++; if (i % 20 === 0) await new Promise(r => setImmediate(r)); } }
+  finally { sw.kill('SIGKILL'); } return { ready, blocked };
+}
+// alternately rename(a→target) and rename(b→target) with hard copies: target is a symlink half the time, an unsafe real entry the other half
+const SWAP = `const fs=require('fs');const [t,a,b]=process.argv.slice(1);const end=Date.now()+20000;let i=0;
+while(Date.now()<end){const src=(i++%2)?a:b;try{fs.rmSync(t+'.n',{recursive:true,force:true});fs.cpSync(src,t+'.n',{recursive:true,verbatimSymlinks:true});fs.renameSync(t+'.n',t);}catch{}}`;
+test('QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY', async () => {
+  const k = keygen(); const r = await race(() => { const d = ownerKeyringDir(k); const pub = path.join(d, path.basename(k.publicKeyFile)); const store = tmp();
+    const a = path.join(store, 'link'); fs.symlinkSync(k.publicKeyFile, a); const b = path.join(store, 'garbage'); fs.writeFileSync(b, 'not a key', { mode: 0o600 }); fs.rmSync(pub); fs.copyFileSync(b, pub); return { target: pub, a, b }; }, SWAP);
+  assert.equal(r.ready, 0, JSON.stringify(r)); assert.ok(r.blocked > 0);
+});
+test('QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY', async () => {
+  const k = keygen(); const r = await race(() => { const good = ownerKeyringDir(k); const store = tmp(); const a = path.join(store, 'link'); fs.symlinkSync(good, a);
+    const b = path.join(store, 'bad'); fs.cpSync(good, b, { recursive: true }); fs.chmodSync(b, 0o755); const target = path.join(tmp(), 'kr'); fs.cpSync(b, target, { recursive: true }); fs.chmodSync(target, 0o755); return { target, a, b }; }, SWAP.replace("fs.renameSync(t+'.n',t)", "fs.rmSync(t,{recursive:true,force:true});fs.renameSync(t+'.n',t);try{if(!fs.lstatSync(t).isSymbolicLink())fs.chmodSync(t,0o755)}catch{}"));
+  assert.equal(r.ready, 0, JSON.stringify(r)); assert.ok(r.blocked > 0);
+});
+test('QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine', () => {
+  const k = keygen(); const parent = tmp(); const d = path.join(parent, 'kr'); fs.cpSync(ownerKeyringDir(k), d, { recursive: true }); fs.chmodSync(d, 0o700);
+  fs.chmodSync(parent, 0o1777); assert.equal(UC.signatureStatus(UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: d }, uid: UID })).state, 'READY');
+  fs.chmodSync(parent, 0o777); const st = UC.signatureStatus(UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: d }, uid: UID })); fs.chmodSync(parent, 0o700);
+  assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /без sticky/);
+});

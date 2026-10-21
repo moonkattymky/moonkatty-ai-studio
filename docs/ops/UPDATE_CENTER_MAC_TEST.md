@@ -61,5 +61,6 @@
 `scripts/build-mac.sh` записывает `desktop/build-info.json` (`scripts/write-build-info.mjs`, `builtAt` = время последнего коммита),
 файл упаковывается в `app.asar` (`build.files: desktop/**`). Update Center собранного приложения отклоняет релизы с версией ≤ текущей и
 с подписанным `builtAt` старше сборки. **Проверка:** Настройки › «Центр обновлений» — строки «проверка возраста сборки недоступна» **нет**;
-`npx asar list "/Applications/MOONKATTY AI STUDIO.app/Contents/Resources/app.asar" | grep build-info` → `/desktop/build-info.json`.
+`ls "/Applications/MOONKATTY AI STUDIO.app/Contents/Resources/app.asar.unpacked/desktop/build-info.json"` — файл существует
+(сервер читает его оттуда; без него собранное приложение отклоняет все релизы: `BLOCKED: собранное приложение без читаемого desktop/build-info.json`).
 В dev-запуске (без сборки) статус показывает `⚠ проверка возраста сборки недоступна …` — это ожидаемо.
