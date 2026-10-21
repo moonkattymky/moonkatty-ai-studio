@@ -39,8 +39,8 @@ cancel(nodeJobId)    → обновление со status 'cancelled'
 ## E. Admin API (сессия владельца, основное приложение)
 `GET /api/ops/nodes` · `POST /api/ops/nodes {id, role: news|monitor, name, caps?}` → токен (один раз) · `POST /api/ops/nodes/:id/command {command}` · `POST /api/ops/nodes/:id/revoke` · `POST /api/ops/nodes/jobs {capability, input, idempotencyKey, safeToRetry, maxAttempts, timeoutSec, requires, preferNode, files}` · `POST /api/ops/nodes/jobs/:id/cancel|retry` · `GET /api/ops/nodes/route?capability=`.
 
-## F. 0.2.1 — подключение по одноразовому коду (enrollment), `protocol: 1`
-Версионирование: `protocol: 1`; поддерживаемые агенты `agentVersion` **>=0.2.0 <0.3.0**. `hello` возвращает `protocol` и `agentVersionRange`; версия вне диапазона в `hello`/`pull` → **426 `E_AGENT_VERSION`**; отсутствие версии (старые агенты) допускается.
+## F. 0.2.1/0.2.2 — подключение по одноразовому коду (enrollment), `protocol: 2` (0.2.2)
+Версионирование: `protocol: 2` (0.2.2; в 0.2.1 был 1); поддерживаемые агенты `agentVersion` **>=0.2.0 <0.3.0**. `hello` возвращает `protocol` и `agentVersionRange`; версия вне диапазона в `hello`/`pull` → **426 `E_AGENT_VERSION`**; отсутствие версии (старые агенты) допускается.
 
 **Владелец (сессия панели, `cache-control: no-store`):**
 | Метод | Путь | Ответ |
@@ -54,10 +54,14 @@ cancel(nodeJobId)    → обновление со status 'cancelled'
 
 **Узел (порт 8790, только TLS — по HTTP → 426 `E_TLS_REQUIRED`; лимит 30 запросов/мин с IP):**
 - `POST /api/nodes/enroll` `{code, deviceId: "dev_<32hex>", devicePubKey: PEM Ed25519, proof: sig("enroll:<rid>:<deviceId>"), info}` → `{requestId, status:"pending", requestSecret, pollMs, nodeId, role}`.
-- `POST /api/nodes/enroll/status` `{requestId, requestSecret, ts, sig: sig("status:<rid>:<ts>")}` (±120 с) → `{status:"pending"|"rejected"}` или один раз `{status:"enrolled", nodeId, role, token:"nk_<id>.<secret>", protocol:1}`.
-- Подключённый узел подписывает **каждый** запрос: `x-node-ts`, `x-node-sig` = Ed25519 над `METHOD\nPATH\nts\nsha256hex(body)` (±120 с). Без подписи/чужим ключом → 401. Узлы 0.2.0 (прямой токен, без ключа устройства) работают как раньше.
-- `POST /api/nodes/rotate` (только enrolled; иначе 409 `E_NOT_ENROLLED`) → `{token}`; старый токен сразу недействителен. `pull` возвращает `rotate: true`, когда владелец запросил ротацию.
+- `POST /api/nodes/enroll/status` `{requestId, requestSecret, ts, nonce, sig: sig("status:<rid>:<ts>:<nonce>")}` (±30 с, nonce одноразовый) → `{status:"pending"|"rejected"}` или один раз `{status:"enrolled", nodeId, role, token:"nk_<id>.<secret>", protocol:1}`.
+- Подключённый узел подписывает **каждый** запрос: `x-node-ts`, `x-node-nonce` (одноразовый, 22–64 символа base64url), `x-node-sig` = Ed25519 над `METHOD\nPATH\nts\nnonce\nsha256hex(body)`; окно **±30 с**; повтор nonce → 401 `E_REPLAY`. Подписанный запрос без nonce (агент 0.2.1) → 426 `E_AGENT_VERSION` — обновить до 0.2.2. Проверка токена и подписи — фиксированный объём работы (без тайминг-оракула). Узлы 0.2.0 (прямой токен) работают как раньше; новые прямые токены панель выдаёт только при `STUDIO_NODES_LEGACY_TOKENS=1`.
+- `POST /api/nodes/rotate` (только enrolled — иначе 409 `E_NOT_ENROLLED`; только после кнопки владельца — иначе 409 `E_ROTATE_NOT_REQUESTED`) → `{token}`; старый токен сразу недействителен. `pull` возвращает `rotate: true`, когда владелец запросил ротацию.
 
-**Коды ошибок:** `E_BAD_REQUEST` 400 · `E_BAD_SIGNATURE` 401 · `E_UNAUTHORIZED` 401 · `E_CODE_INVALID` 403 · `E_NOT_FOUND` 404 · `E_METHOD` 405 · `E_CODE_USED` 409 · `E_NOT_ENROLLED` 409 · `E_CODE_EXPIRED` 410 · `E_REQUEST_LOCKED` 423 (5 неверных попыток) · `E_TLS_REQUIRED` 426 · `E_AGENT_VERSION` 426 · `E_RATE_LIMIT` 429 · `E_IP_LOCKED` 429 (10 ошибок за 15 мин → блок 15 мин).
+**Лимиты по источнику (0.2.2):** счётчик ведётся по устройству Tailscale (`tailscale whois` адреса пира; за `tailscale serve` — по `X-Forwarded-For`, только если сокет loopback), иначе по `Tailscale-User-Login` (только loopback), иначе по IP; без идентификатора за serve — общий bucket `loopback`. Счётчики и блокировки сохраняются в `nodes.json` (0600) и переживают перезапуск. Один процесс координатора на каталог (`nodes.lock`).
+
+**Подтверждение паролем (428 → `/api/ops/confirm`):** `node-confirm`, `node-revoke`, `node-rotate`, `node-legacy-token` — и без флага Security Center. `POST /api/ops/nodes` (прямой токен 0.2.0) → 403 `E_LEGACY_DISABLED`, если `STUDIO_NODES_LEGACY_TOKENS≠1`.
+
+**Коды ошибок:** `E_BAD_REQUEST` 400 · `E_BAD_SIGNATURE` 401 · `E_REPLAY` 401 · `E_ROTATE_NOT_REQUESTED` 409 · `E_LEGACY_DISABLED` 403 · `E_UNAUTHORIZED` 401 · `E_CODE_INVALID` 403 · `E_NOT_FOUND` 404 · `E_METHOD` 405 · `E_CODE_USED` 409 · `E_NOT_ENROLLED` 409 · `E_CODE_EXPIRED` 410 · `E_REQUEST_LOCKED` 423 (5 неверных попыток) · `E_TLS_REQUIRED` 426 · `E_AGENT_VERSION` 426 · `E_RATE_LIMIT` 429 · `E_IP_LOCKED` 429 (10 ошибок за 15 мин → блок 15 мин).
 
 **Хранение:** код — HMAC(серверный ключ, rid:код), TTL 5 мин, одноразовый; `requestSecret` и токен — только SHA-256 на сервере; на узле токен, секрет запроса и закрытый ключ устройства — только в Keychain.
