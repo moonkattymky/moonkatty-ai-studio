@@ -54,3 +54,17 @@ test('security audit flags Docker integration and loose file permissions', () =>
   const by = Object.fromEntries(r.checks.map(c => [c.id, c])); assert.equal(by['integration-url:docker'].ok, false); assert.equal(by['integration-url:ollama'].ok, true);
   assert.equal(by['perm:secret.key'].ok, false); assert.equal(by['upload-svg-attachment'].ok, true); assert.equal(r.ok, false);
 });
+
+test('Funnel check is real: parses serve/funnel status JSON; on → critical fail; unknown → warn (never ok by default)', () => {
+  const F = SC.funnelCheck; assert.equal(F({ serve: '{}', funnel: '{}' }).ok, true); assert.equal(F({ serve: '', funnel: null }).ok, true);
+  const on = F({ serve: JSON.stringify({ TCP: { 443: { HTTPS: true } }, Web: { 'mac-mini.t.ts.net:443': { Handlers: { '/': { Proxy: 'http://127.0.0.1:8790' } } } }, AllowFunnel: { 'mac-mini.t.ts.net:443': true } }), funnel: null });
+  assert.equal(on.ok, false); assert.equal(on.severity, 'critical'); assert.match(on.detail, /ВКЛЮЧЁН.*mac-mini/);
+  assert.equal(F({ serve: JSON.stringify({ Foreground: { s1: { AllowFunnel: { 'x.ts.net:8443': true } } } }) }).ok, false);
+  assert.equal(F({ serve: JSON.stringify({ AllowFunnel: { 'x.ts.net:443': false } }) }).ok, true);
+  const unk = F({ serve: null, funnel: null }); assert.equal(unk.ok, false); assert.equal(unk.severity, 'warn'); assert.equal(F({ serve: 'garbage', funnel: undefined }).severity, 'warn');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'sa-')); const q = memQ(); const caps = SC.capsStore({ q }); const list = c => c === 'integrations' ? [] : [{ id: 'news' }];
+  const run = st => SC.securityAudit({ env: {}, list, q, dataDir: d, sec: require('../../lib/security.js'), caps, tailscaleStatus: () => st }).checks.find(c => c.id === 'funnel-not-used');
+  assert.equal(run({ serve: null, funnel: null }).ok, false); assert.equal(run({ serve: JSON.stringify({ AllowFunnel: { 'h:443': true } }) }).ok, false); assert.equal(run({ serve: '{}', funnel: '{}' }).ok, true);
+  assert.equal(SC.classify({ method: 'POST', path: '/api/ops/nodes/enroll/ABCDE/confirm' }), 'node-confirm'); assert.equal(SC.classify({ method: 'POST', path: '/api/ops/nodes/enroll/ABCDE/reject' }), null);
+  assert.equal(SC.classify({ method: 'POST', path: '/api/ops/nodes/imac/revoke' }), 'node-revoke'); assert.equal(SC.classify({ method: 'POST', path: '/api/ops/nodes/imac/rotate' }), 'node-rotate');
+});
