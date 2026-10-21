@@ -32,7 +32,7 @@ async function enrollReal(role, name, home) { const r = (await call('POST', '/ap
   const p = EN.enroll({ url, fingerprint: fp, code: r.code, home, env: kc, info: { hostname: name, agentVersion: '0.2.2' }, pollMs: 100, onState: s => states.push(s) });
   let q; for (let i = 0; i < 100 && !(q = ((await call('GET', '/api/ops/nodes/enroll')).body.requests || []).find(x => x.requestId === r.requestId && x.state === 'pending')); i++) await sleep(100);
   const nodeFp = states.map(s => s.deviceFingerprint || s.fingerprint || s.pubKeyShort || s.short).find(Boolean) || null;
-  const conf = await call('POST', `/api/ops/nodes/enroll/${r.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW }); const res = await p; return { r, q, conf, res, states, nodeFp }; }
+  const conf = await call('POST', `/api/ops/nodes/enroll/${r.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW, acknowledgeUnverifiedPeer: true }); const res = await p; return { r, q, conf, res, states, nodeFp }; }
 const homeA = fs.mkdtempSync(path.join(os.tmpdir(), 'homeA-')), homeB = fs.mkdtempSync(path.join(os.tmpdir(), 'homeB-'));
 const ea = await enrollReal('news', 'iMac-test', homeA);
 ok('NEWS NODE: real agent enrolls by code (pending → owner confirm → enrolled imac-test)', ea.q && ea.conf.status === 200 && ea.res.nodeId === 'imac-test', JSON.stringify({ node: ea.res.nodeId, steps: [...new Set(ea.states.map(s => s.step))] }));

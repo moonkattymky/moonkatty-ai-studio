@@ -11,12 +11,13 @@ const sha = b => crypto.createHash('sha256').update(b).digest('hex');
 const sign = (key, msg) => crypto.sign(null, Buffer.from(msg), key).toString('base64');
 const devKeys = () => { const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519'); return { id: 'dev_' + crypto.randomBytes(16).toString('hex'), pub: publicKey.export({ type: 'spki', format: 'pem' }), key: privateKey }; };
 const ridOf = code => code.slice(0, 5);
+const ACK = { acknowledgeUnverifiedPeer: true }; // plain-IP peers in unit tests are not Tailscale-verified (Studio 3 e86382b)
 const nn = () => crypto.randomBytes(18).toString('base64url'); // 0.2.2 nonce (24 chars base64url)
 const stBody = (key, rid, ts, nonce = nn()) => ({ ts, nonce, sig: sign(key, `status:${rid}:${ts}:${nonce}`) });
 const enBody = (code, d, ver = '0.2.2') => ({ code, deviceId: d.id, devicePubKey: d.pub, proof: sign(d.key, `enroll:${ridOf(code)}:${d.id}`), info: { hostname: 'iMac-test', model: 'iMac18,3', os: 'macOS 13.7.1', arch: 'x64', agentVersion: ver } });
 const errCode = fn => { try { fn(); } catch (e) { return e.code; } return null; };
 const mgr = (o = {}) => { const logs = []; const m = N.createNodeManager({ dir: tmp(), now, log: (...x) => logs.push(x.join(' ')), idSuffix: '-test', ...o }); m._logs = logs; return m; };
-function enrollFully(m, d = devKeys(), role = 'news') { const r = m.enrollment.create({ role, name: 'iMac 27' }); const e = m.enrollment.enroll(enBody(r.code, d), '100.70.0.2'); m.enrollment.confirm(e.requestId);
+function enrollFully(m, d = devKeys(), role = 'news') { const r = m.enrollment.create({ role, name: 'iMac 27' }); const e = m.enrollment.enroll(enBody(r.code, d), '100.70.0.2'); m.enrollment.confirm(e.requestId, ACK);
   const ts = clock; const s = m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ...stBody(d.key, e.requestId, ts) }, '100.70.0.2'); return { r, e, s, d }; }
 
 test('code: 15 chars from 31-symbol alphabet, TTL 300 s, HMAC only (code never in state/list/logs), default node id carries -test', () => {
@@ -49,11 +50,11 @@ test('owner confirmation required: pending/rejected get no token; wrong device k
   const st = (dk = d) => { const ts = clock; return m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ...stBody(dk.key, e.requestId, ts) }, '100.70.0.5'); };
   assert.deepEqual(st(), { status: 'pending' }); assert.equal(errCode(() => st(devKeys())), 'E_BAD_SIGNATURE'); assert.equal(m._state.nodes['imac-test'], undefined);
   const v = m.enrollment.list()[0]; assert.equal(v.device.deviceId, d.id); assert.match(v.device.pubKeyShort, /^[A-F0-9]{4}(-[A-F0-9]{4}){3}$/);
-  m.enrollment.confirm(e.requestId); const got = st(); assert.equal(got.status, 'enrolled'); assert.equal(got.protocol, 2); assert.match(got.token, /^nk_imac-test\./);
+  m.enrollment.confirm(e.requestId, ACK); const got = st(); assert.equal(got.status, 'enrolled'); assert.equal(got.protocol, 2); assert.match(got.token, /^nk_imac-test\./);
   assert.equal(errCode(() => st()), 'E_NOT_FOUND'); // token handed out once; request secret consumed
   const m2 = mgr(); const r2 = m2.enrollment.create({ role: 'monitor' }); const e2 = m2.enrollment.enroll(enBody(r2.code, d), '100.70.0.6'); m2.enrollment.reject(e2.requestId);
   const ts = clock; assert.deepEqual(m2.enrollment.status({ requestId: e2.requestId, requestSecret: e2.requestSecret, ...stBody(d.key, e2.requestId, ts) }, '100.70.0.6'), { status: 'rejected' });
-  assert.equal(errCode(() => m2.enrollment.confirm(e2.requestId)), 'E_BAD_REQUEST');
+  assert.equal(errCode(() => m2.enrollment.confirm(e2.requestId, ACK)), 'E_BAD_REQUEST');
   assert.ok(!fs.readFileSync(path.join(m.filesDir, '..', 'nodes.json'), 'utf8').includes(got.token) && !m._logs.join('\n').includes(got.token));
 });
 test('signed requests: enrolled (0.2.1) token useless without a valid Ed25519 signature; 0.2.0 bearer tokens keep working', () => {
@@ -107,7 +108,7 @@ test('end-to-end over real TLS (pinned): enroll → owner confirm → signed hel
   try { const r = m.enrollment.create({ role: 'news', name: 'iMac 27' });
     const e = await call('/api/nodes/enroll', enBody(r.code, d)); assert.equal(e.status, 200); assert.equal(e.body.status, 'pending');
     const poll = () => { const ts = Date.now(); return call('/api/nodes/enroll/status', { requestId: e.body.requestId, requestSecret: e.body.requestSecret, ...stBody(d.key, e.body.requestId, ts) }); };
-    assert.equal((await poll()).body.status, 'pending'); m.enrollment.confirm(e.body.requestId); const done = await poll(); assert.equal(done.body.status, 'enrolled'); const tok = done.body.token;
+    assert.equal((await poll()).body.status, 'pending'); m.enrollment.confirm(e.body.requestId, ACK); const done = await poll(); assert.equal(done.body.status, 'enrolled'); const tok = done.body.token;
     assert.equal((await call('/api/nodes/hello', { info: { agentVersion: '0.2.2' } }, { token: tok })).status, 401, 'unsigned → 401');
     const h = await call('/api/nodes/hello', { info: { agentVersion: '0.2.2' } }, { token: tok, sign: true }); assert.equal(h.status, 200); assert.equal(h.body.protocol, 2); assert.equal(h.body.enrolled, true);
     m.requestRotate('imac-test'); const p = await call('/api/nodes/pull', { info: { agentVersion: '0.2.2' } }, { token: tok, sign: true }); assert.equal(p.body.rotate, true);
@@ -171,4 +172,38 @@ test('0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, node
   const { spawnSync } = require('child_process'); const cp = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(require.resolve('../../lib/ops/nodes.js'))}).createNodeManager({ dir: ${JSON.stringify(dir)} })`], { encoding: 'utf8' });
   assert.notEqual(cp.status, 0); assert.match(cp.stderr, /второй координатор запрещён/);
   const stale = tmp('stale-'); fs.writeFileSync(path.join(stale, 'nodes.lock'), '999999'); N.createNodeManager({ dir: stale }); assert.equal(+fs.readFileSync(path.join(stale, 'nodes.lock'), 'utf8'), process.pid, 'stale lock taken over');
+});
+
+// ---------------- Studio 3 d38c682..fe8e4ab: Computers/Nodes fixes ----------------
+test('peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)', async () => {
+  clock = Date.now(); const W = { '100.80.0.1': { id: 'nA', name: 'imac', login: 'igor@' } }; const m = N.createNodeManager({ dir: tmp(), now, idSuffix: '-test', whois: async ip => W[ip] || null });
+  const req = (ra, h = {}) => ({ socket: { remoteAddress: ra }, headers: h });
+  const pv = await m.peerOf(req('127.0.0.1', { 'x-forwarded-for': '100.80.0.1' })); assert.equal(pv.verified, true); assert.equal(pv.ip, '100.80.0.1'); assert.equal(pv.name, 'imac');
+  const lo = await m.peerOf(req('127.0.0.1')); assert.equal(lo.verified, false); assert.equal(lo.ip, null); assert.ok(!/127\.0\.0\.1/.test(lo.label));
+  const ul = await m.peerOf(req('::1', { 'tailscale-user-login': 'igor@x' })); assert.equal(ul.verified, false, 'login header alone is not a verified device'); assert.ok(!/::1|127\./.test(ul.label));
+  assert.equal((await m.peerOf(req('100.99.0.9'))).verified, false);
+  const d = devKeys(); const a = m.enrollment.create({ role: 'news' }); const ea = m.enrollment.enroll(enBody(a.code, d), pv);
+  assert.equal(m.enrollment.confirm(ea.requestId).state, 'confirmed', 'verified peer: no extra ack'); assert.equal(m.enrollment.list().find(q => q.requestId === ea.requestId).device.peerInfo.name, 'imac');
+  const b = m.enrollment.create({ role: 'monitor' }); const eb = m.enrollment.enroll(enBody(b.code, devKeys()), lo);
+  let err; try { m.enrollment.confirm(eb.requestId); } catch (e) { err = e; } assert.equal(err.code, 'E_PEER_UNVERIFIED'); assert.equal(err.status, 409);
+  assert.equal(m.enrollment.list().find(q => q.requestId === eb.requestId).state, 'pending');
+  assert.equal(m.enrollment.confirm(eb.requestId, ACK).state, 'confirmed'); assert.ok(m.audit().some(x => x.type === 'peer_unverified_acknowledged'));
+});
+test('statuses: connection errors in memory (revoked / 426 / unauthorized), cleared on success; unauthenticated requests never write nodes.json; node goes down after nodeDownMs', async () => {
+  clock = Date.now(); const dir = tmp(); const m = N.createNodeManager({ dir, now, idSuffix: '-test', nodeDownMs: 2000 }); const { s, d } = enrollFully(m);
+  const srv = await N.listen(m, { host: '127.0.0.1', port: 0, insecureHttpForTests: true }); const port = srv.address().port; const f = path.join(dir, 'nodes.json');
+  const call = (p, body, { token = s.token, signed = true, ver } = {}) => new Promise((res, rej) => { const b = Buffer.from(JSON.stringify(body)); const ts = Date.now(); clock = ts; const nonce = nn();
+    const r = http.request({ host: '127.0.0.1', port, method: 'POST', path: p, headers: { authorization: 'Bearer ' + token, ...(signed ? { 'x-node-ts': String(ts), 'x-node-nonce': nonce, 'x-node-sig': sign(d.key, `POST\n${p}\n${ts}\n${nonce}\n${sha(b)}`) } : {}) } }, x => { let t = ''; x.on('data', z => t += z); x.on('end', () => res({ status: x.statusCode, body: JSON.parse(t) })); }); r.on('error', rej); r.end(b); });
+  const pn = () => m.status().nodes.find(n => n.id === 'imac-test');
+  try { assert.equal((await call('/api/nodes/hello', { info: { agentVersion: '0.2.2' } })).status, 200); assert.equal(pn().status, 'online'); assert.equal(pn().lastConnError, null); assert.match(pn().deviceKeyShort, /^[A-F0-9]{4}-/);
+    const before = fs.readFileSync(f); const mt = fs.statSync(f).mtimeMs;
+    for (let i = 0; i < 5; i++) assert.equal((await call('/api/nodes/hello', {}, { token: s.token.slice(0, -2) + 'xx' })).status, 401);
+    assert.equal((await call('/api/nodes/hello', {}, { signed: false })).status, 401);
+    assert.ok(fs.readFileSync(f).equals(before) && fs.statSync(f).mtimeMs === mt, 'unauthenticated requests did not write state');
+    assert.equal(pn().lastConnError.code, 'E_UNAUTHORIZED');
+    assert.equal((await call('/api/nodes/hello', { info: { agentVersion: '0.3.0' } })).status, 426); assert.equal(pn().lastConnError.code, 'E_AGENT_VERSION');
+    assert.equal((await call('/api/nodes/hello', { info: { agentVersion: '0.2.2' } })).status, 200); assert.equal(pn().lastConnError, null, 'cleared on success');
+    clock += 2500; m.sweep(); assert.equal(pn().status, 'down');
+    m.revokeNode('imac-test'); await call('/api/nodes/hello', {}); assert.equal(pn().lastConnError.code, 'E_REVOKED');
+  } finally { srv.close(); }
 });

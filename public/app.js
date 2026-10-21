@@ -461,15 +461,27 @@ async function s3upload(files) {
 }
 // v1.2.4: distributed nodes (Studio 3 Node Manager). Owner-only; tokens are shown ONCE right after register/rotate and never stored in the UI.
 const NODES = { st: null, issued: null, enroll: [], audit: [], code: null }; // v1.2.4: + NODE 0.2.2 «Подключить компьютер» (Studio 3 42fed26/6027876)
+// Studio 3 e86382b/8b50ce6: node status Online / Offline / Ошибка (426, revoked, auth, TLS) from the coordinator; peer shown as Tailscale device, never 127.0.0.1
+const NODE_CE = { E_AGENT_VERSION: 'версия агента вне диапазона (426) — обновите до 0.2.2', E_REVOKED: 'токен отозван', E_REPLAY: 'повтор запроса (nonce)', E_UNAUTHORIZED: 'неверный токен или подпись', E_RATE_LIMIT: 'слишком часто' };
+const nodeTm = t => t ? new Date(t).toLocaleString('ru-RU') : '—';
+function nodeStatus(n) { const ce = n.lastConnError;
+  if (n.revoked) return { label: 'Отозван', detail: 'токен и ключ устройства аннулированы' + (ce ? ' · последняя попытка ' + nodeTm(ce.at) : ''), key: 'revoked' };
+  if (ce && ce.code === 'E_AGENT_VERSION') return { label: 'Ошибка: версия (426)', detail: (ce.detail || NODE_CE.E_AGENT_VERSION) + ' · ' + nodeTm(ce.at), key: 'error' };
+  if (n.status === 'online') return n.command && n.command !== 'run' ? { label: 'Online · ' + n.command, detail: 'команда ' + n.command, key: 'paused' } : { label: 'Online', detail: 'на связи · ' + nodeTm(n.lastSeen), key: 'online' };
+  if (ce) return { label: 'Ошибка подключения', detail: (NODE_CE[ce.code] || ce.code) + ' · ' + nodeTm(ce.at), key: 'error' };
+  if (n.status === 'down') return { label: 'Offline', detail: 'нет heartbeat с ' + nodeTm(n.lastSeen), key: 'offline' };
+  return { label: 'Не подключался', detail: 'ещё ни одного запроса от узла', key: 'never' }; }
+const nodePeer = dv => { const pi = dv.peerInfo || {}; return dv.peerVerified ? `Tailscale: ${pi.name || ''} · ${pi.ip || ''}${pi.login ? ' · ' + pi.login : ''}` : `⚠ адрес Tailscale не определён (${dv.peer || ''})`; };
 VIEWS.nodes = () => {
   if (MODE !== 'server') return '<div class="devbox">Узлы работают только в приложении (серверный режим).</div>';
   const st = NODES.st; if (!st) return '<div class="card">Загрузка…</div>'; const I = NODES.issued;
-  const row = n => `<tr><td><b>${esc(n.id)}</b><div class="small mut">${esc(n.name || '')} · ${esc(n.role)}</div></td><td>${esc(n.revoked ? 'отозван' : n.status || '—')}</td><td class="small">${esc(n.info ? `${n.info.agentVersion || ''} · ${n.info.os || ''} · CPU ${n.info.cpuPct ?? '—'}%` : '—')}</td><td class="small">${esc(n.lastSeen || '—')}</td>
+  const row = n => `<tr><td><b>${esc(n.id)}</b><div class="small mut">${esc(n.name || '')} · ${esc(n.role)}</div></td><td data-status="${nodeStatus(n).key}"><b>${esc(nodeStatus(n).label)}</b><div class="small mut">${esc(nodeStatus(n).detail)}</div></td><td class="small">${esc(n.info ? `${n.info.agentVersion || ''} · ${n.info.os || ''} · CPU ${n.info.cpuPct ?? '—'}%` : '—')}</td><td class="small">${esc(n.lastSeen || '—')}</td>
     <td>${n.revoked ? '' : `<button class="btn sm" data-ncmd="${esc(n.id)}" data-c="pause">Пауза</button> <button class="btn sm" data-ncmd="${esc(n.id)}" data-c="drain">Drain</button> <button class="btn sm" data-ncmd="${esc(n.id)}" data-c="run">Run</button> <button class="btn sm" data-nrot="${esc(n.id)}">Сменить токен</button> <button class="btn sm" data-nrev="${esc(n.id)}">Отозвать</button>`}</td></tr>`;
   return `<div class="grid g2"><div class="card"><h3>Node API (TLS)</h3>
     <p class="small">${st.enabled ? 'Включено' : '<b>Выключено</b>'} · слушает: ${esc((st.listening || []).join(', ') || '—')} · порт ${esc(st.port)}</p>
     <p class="small">Отпечаток сертификата (SHA-256, его закрепляют узлы):<br><code style="word-break:break-all">${esc(st.fingerprint || '—')}</code></p>
     ${st.fingerprint ? '<p class="small"><a href="/api/ops/nodes/cert" download="coordinator.crt">Скачать сертификат координатора (coordinator.crt, публичный)</a></p>' : ''}
+    ${(st.tlsErrors || []).length ? `<p class="small mut">Ошибки TLS (последние): ${st.tlsErrors.slice(0, 5).map(e => esc(e.addr + ' ' + e.code)).join(', ')}</p>` : ''}
     ${(st.errors || []).length ? `<p class="small" style="color:#ef4444">${st.errors.map(esc).join('<br>')}</p>` : ''}
     <label>Адрес Tailscale этого Mac (100.x.y.z), пусто = только 127.0.0.1</label><input id="nbind" value="${esc(st.settings?.bind || '')}" placeholder="100.x.y.z">
     <label><input type="checkbox" id="nen" ${st.settings?.enabled ? 'checked' : ''}> Включить Node API (после перезапуска сервера)</label>
@@ -491,7 +503,7 @@ VIEWS.nodes = () => {
     ${NODES.code ? `<div class="card" style="margin-top:8px;border-color:#f59e0b">Код (одноразовый, до ${esc(NODES.code.expiresAt)}): <b style="font-size:18px;letter-spacing:2px">${esc(NODES.code.code)}</b> → узел <b>${esc(NODES.code.nodeId)}</b><br><span class="small">Адрес: ${esc(NODES.code.coordinatorUrl || 'https://<адрес Tailscale этого Mac>:' + NODES.code.port)}<br>Отпечаток сертификата: <code style="word-break:break-all">${esc(NODES.code.fingerprint || '—')}</code> · коротко <b>${esc(NODES.code.fingerprintShort || '—')}</b></span><br><button class="btn sm" id="enHide">Скрыть код</button></div>` : ''}
     ${(NODES.enroll || []).filter(q => ['pending', 'awaiting_code', 'locked'].includes(q.state)).map(q => `<div class="small" style="margin-top:8px;border-top:1px solid #333;padding-top:6px"><b>${esc(q.name)}</b> <span class="mut">${esc(q.nodeId)} · ${esc(q.role)} · ${esc(q.state)}${q.reenroll ? ' · повторное подключение' : ''}</span>
       ${q.device ? `<div><b>Ключ устройства: ${esc(q.device.pubKeyShort)}</b> — должен совпасть с экраном узла<br><span class="mut" style="word-break:break-all">SHA-256 ключа: ${esc(q.device.pubKeyFingerprint)} · deviceId ${esc(q.device.deviceId)}</span><br>
-        <span class="mut">Сеть: ${esc(q.device.peer)} ${q.device.peerVerified ? '(подтверждено Tailscale)' : '(не подтверждено)'}</span><br><span class="mut">Сообщено устройством (не проверено): ${esc(q.device.hostname)} · ${esc(q.device.model)} · ${esc(q.device.os)} · ${esc(q.device.arch)} · агент ${esc(q.device.agentVersion)}</span></div>` : ''}
+        <span class="${q.device.peerVerified ? 'mut' : ''}" ${q.device.peerVerified ? '' : 'style="color:#ef4444"'}>Сеть: ${esc(nodePeer(q.device))}</span><br><span class="mut">Сообщено устройством (не проверено): ${esc(q.device.hostname)} · ${esc(q.device.model)} · ${esc(q.device.os)} · ${esc(q.device.arch)} · агент ${esc(q.device.agentVersion)}</span></div>` : ''}
       ${q.state === 'pending' ? `<button class="btn sm" data-enc="${esc(q.requestId)}">Подтвердить устройство</button> <button class="btn sm" data-enr="${esc(q.requestId)}">Отклонить</button>` : ''}</div>`).join('')}
     <details class="small" style="margin-top:8px"><summary>Журнал событий узлов</summary>${(NODES.audit || []).slice(0, 50).map(e => `<div class="mut">${esc(e.at)} · ${esc(e.type)} · ${esc(e.nodeId || e.requestId || e.peer || e.ip || '')}</div>`).join('')}</details></div>
     <div class="card" style="margin-top:14px"><h3>Узлы</h3><table class="tbl"><tr><th>Узел</th><th>Статус</th><th>Агент</th><th>Последний контакт</th><th></th></tr>${(st.nodes || []).map(row).join('') || '<tr><td colspan="5" class="mut">нет узлов</td></tr>'}</table></div>`;
@@ -508,8 +520,9 @@ BIND.nodes = v => {
   const en = v.querySelector('#enNew'); if (en) en.onclick = () => run(async () => { NODES.code = await api('POST', '/api/ops/nodes/enroll', { role: v.querySelector('#enRole').value, name: v.querySelector('#enName').value.trim(), password: pw(), confirm: cf() }); }, 'Код создан — введите его на узле');
   const eh = v.querySelector('#enHide'); if (eh) eh.onclick = () => { NODES.code = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
   v.querySelectorAll('[data-enc]').forEach(b => b.onclick = () => { const q = (NODES.enroll || []).find(x => x.requestId === b.dataset.enc) || {}; const dv = q.device || {};
-    if (!confirm(`Подтвердить устройство для узла ${q.nodeId} (${q.role})?\n\nКлюч устройства: ${dv.pubKeyShort}\nSHA-256: ${dv.pubKeyFingerprint}\ndeviceId: ${dv.deviceId}\nСеть: ${dv.peer}${dv.peerVerified ? ' (Tailscale)' : ' (не подтверждено)'}\n\nКлюч должен совпадать с экраном узла. Имя/модель сообщены устройством и не проверены.`)) return;
-    run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, { password: pw(), confirm: cf() }), 'Устройство подтверждено — узел получит токен'); });
+    if (!confirm(`Подтвердить устройство для узла ${q.nodeId} (${q.role})?\n\nКлюч устройства: ${dv.pubKeyShort}\nSHA-256: ${dv.pubKeyFingerprint}\ndeviceId: ${dv.deviceId}\nСеть: ${nodePeer(dv)}\n\nКлюч должен совпадать с экраном узла. Имя/модель сообщены устройством и не проверены.`)) return;
+    let ack = false; if (!dv.peerVerified) { ack = confirm('ВНИМАНИЕ: координатор не смог определить устройство Tailscale, с которого пришёл запрос.\nПодтверждайте, только если вы САМИ сейчас ввели этот код на своём компьютере и ключ устройства совпадает с его экраном.\n\nПодтвердить без проверки адреса Tailscale?'); if (!ack) return; }
+    run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, { password: pw(), confirm: cf(), acknowledgeUnverifiedPeer: ack }), 'Устройство подтверждено — узел получит токен'); });
   v.querySelectorAll('[data-enr]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enr)}/reject`, {}), 'Отклонено'));
   const h = v.querySelector('#nhide'); if (h) h.onclick = () => { NODES.issued = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
 };

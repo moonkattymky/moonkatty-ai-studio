@@ -5,7 +5,7 @@
 # rest of the tree (tests, fixtures, scripts, docs) = Studio 3 at <studio3-ref>; only lib/ops/{nodes,node-enroll,state}.js are ours. Nothing is installed; fake Keychain only.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-PKG="${1:-/workspace/dist-node/moonkatty-node-0.2.2-js-only.tar.gz}"; REF="${2:-db4720b}"
+PKG="${1:-/workspace/dist-node/moonkatty-node-0.2.2-js-only.tar.gz}"; REF="${2:-fe8e4ab}"
 ( cd "$(dirname "$PKG")" && sha256sum -c "$(basename "$PKG").sha256" )
 H=$(mktemp -d /tmp/node022-compat-XXXX); trap 'rm -rf "$H"' EXIT
 tar --no-same-owner -xzf "$PKG" -C "$H"; P=$(ls -d "$H"/moonkatty-node-*/); ( cd "$P" && sha256sum -c --quiet MANIFEST.sha256 )

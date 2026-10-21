@@ -34,7 +34,8 @@ const poll = () => { const ts = Date.now(), nonce = crypto.randomBytes(18).toStr
 ok('no token before owner confirmation', (await poll()).body.status === 'pending');
 const lst = (await call('GET', '/api/ops/nodes/enroll')).body.requests || []; ok('GET /api/ops/nodes/enroll lists device (deviceId + short key), never the code', lst[0]?.device?.deviceId === dev.id && !JSON.stringify(lst).includes(en.body.code.slice(6)));
 ok('confirm without owner password → 403', (await call('POST', `/api/ops/nodes/enroll/${e.body.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: 'x' })).status === 403);
-ok('confirm → 200', (await call('POST', `/api/ops/nodes/enroll/${e.body.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW })).status === 200);
+{ const u = await call('POST', `/api/ops/nodes/enroll/${e.body.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW }); ok('loopback peer is unverified (no 127.0.0.1 identity) → 409 E_PEER_UNVERIFIED without second ack', u.status === 409 && u.body.code === 'E_PEER_UNVERIFIED'); }
+ok('confirm with acknowledgeUnverifiedPeer → 200', (await call('POST', `/api/ops/nodes/enroll/${e.body.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW, acknowledgeUnverifiedPeer: true })).status === 200);
 const done = await poll(); const tok = done.body.token; ok('enrolled: token once, protocol 1', done.body.status === 'enrolled' && done.body.protocol === 2 && /^nk_imac-test\./.test(tok || ''));
 ok('unsigned request with enrolled token → 401', (await ncall('/api/nodes/hello', { info: { agentVersion: '0.2.2' } }, { token: tok })).status === 401);
 const h = await ncall('/api/nodes/hello', { info: { agentVersion: '0.2.2' } }, { token: tok, signed: true }); ok('signed hello → protocol 2, range >=0.2.0 <0.3.0', h.status === 200 && h.body.protocol === 2 && h.body.agentVersionRange === '>=0.2.0 <0.3.0');
