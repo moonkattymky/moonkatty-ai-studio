@@ -1,0 +1,19 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MOONKATTY NODE — подключение</title>
+<style>body{margin:0;background:#0a0f1f;color:#e8ecff;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;place-items:center;min-height:100vh}
+.c{background:#152043;border:1px solid #22305a;border-radius:14px;padding:26px;width:min(520px,92vw)}h1{margin:0 0 6px;font-size:20px;color:#7fb0ff}p{color:#8b96bf;margin:4px 0 14px}
+label{display:block;margin:10px 0 4px;color:#c9d2f5}input{width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #22305a;background:#0c1328;color:#fff;font:15px ui-monospace,Menlo,monospace}
+button{margin-top:16px;padding:10px 18px;border:0;border-radius:8px;background:#3d8bff;color:#fff;font-weight:600;cursor:pointer}#st{margin-top:14px;white-space:pre-wrap}.ok{color:#22c55e}.err{color:#ef4444}</style></head>
+<body><div class="c"><h1>MOONKATTY NODE — подключение к Mac mini</h1><p>Введите данные из панели Mac mini (кнопка «Подключить компьютер»). Код одноразовый и действует 5 минут.</p>
+<label>Код подключения</label><input id="code" placeholder="R7K2Q-ABCDE-FGHJK" autocomplete="off" maxlength="20">
+<label>Адрес Mac mini</label><input id="url" placeholder="https://mac-mini.tailnet.ts.net:8443 или https://100.x.y.z:8790">
+<label>Отпечаток сертификата (SHA-256, 64 символа; для *.ts.net не нужен)</label><input id="fp" placeholder="3f2a91c0…">
+<button id="go">Подключить</button><div id="st"></div></div>
+<script>
+const T='__TOKEN__',$=i=>document.getElementById(i);
+const msg={pin:'Проверяю сертификат Mac mini…',device:'Создаю ключ устройства (Keychain)…',pending:'Ждём подтверждения владельцем на Mac mini…',enrolled:'Готово! Токен сохранён в Keychain. Агент перезапускается.',error:'Ошибка'};
+async function poll(){const s=await (await fetch('/enroll/state')).json();$('st').className=s.step==='enrolled'?'ok':s.step==='error'?'err':'';
+$('st').textContent=(msg[s.step]||s.step)+(s.requestId?'\nЗапрос: '+s.requestId:'')+(s.deviceId?'\nУстройство: '+s.deviceId:'')+(s.nodeId?'\nУзел: '+s.nodeId:'')+(s.error?'\n'+s.error:'');
+if(s.step!=='enrolled'&&s.step!=='error'&&s.step!=='idle')setTimeout(poll,1500);}
+$('go').onclick=async()=>{const r=await fetch('/enroll',{method:'POST',headers:{'content-type':'application/json','x-node-local':T},body:JSON.stringify({code:$('code').value.trim(),url:$('url').value.trim(),fingerprint:$('fp').value.trim()})});if(r.status===202)setTimeout(poll,300);else $('st').textContent='Не удалось начать: '+r.status;};
+poll();
+</script></body></html>

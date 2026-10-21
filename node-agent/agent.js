@@ -9,7 +9,8 @@
 'use strict';
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto'), https = require('https'), http = require('http');
 const { execFile } = require('child_process');
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
+const EN = require('./enroll.js');
 // Device-profile policy, enforced HERE on the node (not only in docs / on the coordinator): even if a coordinator
 // were compromised and leased a forbidden capability, the agent refuses it. NEWS NODE: no heavy AI, no Blender, no render.
 const FORBIDDEN = /^(opencode|blender|render|ollama|llm|ai\.|model\.|whisper|sd\.|comfy|x\.(post|like|follow|repost|dm|reply)(\.|$))/;
@@ -35,7 +36,8 @@ const run = (cmd, args, opt = {}) => new Promise((res, rej) => execFile(cmd, arg
 function loadEnvFile(f) { if (!f || !fs.existsSync(f)) return {}; const st = fs.statSync(f);
   if (process.platform !== 'win32' && (st.mode & 0o077)) throw new Error(`${f}: права ${(st.mode & 0o777).toString(8)} — выполните chmod 600 ${f}`);
   const o = {}; for (const l of fs.readFileSync(f, 'utf8').split('\n')) { const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(l); if (m && !l.trim().startsWith('#')) o[m[1]] = m[2].replace(/^['"]|['"]$/g, ''); } return o; }
-async function keychainToken(service) { if (process.platform !== 'darwin') return null; try { return (await run('/usr/bin/security', ['find-generic-password', '-s', service, '-a', 'node-token', '-w'])).trim() || null; } catch { return null; } }
+async function keychainToken(service, env = process.env) { return EN.keychain(env).get(service, 'node-token'); }
+async function keychainTokenLegacy(service) { if (process.platform !== 'darwin') return null; try { return (await run('/usr/bin/security', ['find-generic-password', '-s', service, '-a', 'node-token', '-w'])).trim() || null; } catch { return null; } }
 // ---------- system self-report ----------
 async function memAvailable() {
   if (process.platform === 'darwin') { try { const t = await run('/usr/bin/vm_stat', []); const ps = +(/page size of (\d+)/.exec(t) || [0, 4096])[1]; const g = k => +((new RegExp(k + ':\\s+(\\d+)').exec(t) || [0, 0])[1]);
@@ -53,6 +55,8 @@ async function sysInfo(cfg) { const d = await disk(cfg.workDir); const tl = awai
 let lastCpu = null; function cpuPct() { const c = os.cpus().reduce((a, x) => { const t = x.times; a.idle += t.idle; a.total += t.user + t.nice + t.sys + t.idle + t.irq; return a; }, { idle: 0, total: 0 }); const p = lastCpu ? 100 * (1 - (c.idle - lastCpu.idle) / Math.max(1, c.total - lastCpu.total)) : null; lastCpu = c; return p == null ? null : Math.round(p); }
 let modelCache; async function hwModel() { if (modelCache !== undefined) return modelCache; try { modelCache = process.platform === 'darwin' ? (await run('/usr/sbin/sysctl', ['-n', 'hw.model'])).trim() : null; } catch { modelCache = null; } return modelCache; }
 // ---------- coordinator client (pinned TLS) ----------
+// 0.2.1: an enrolled node signs every request with its device Ed25519 key (token is bound to that key on the coordinator)
+function signHeaders(cfg, method, p, data) { if (!cfg.deviceKey) return {}; const ts = Date.now(); return { 'x-node-ts': String(ts), 'x-node-sig': EN.sign(cfg.deviceKey, `${method}\n${p}\n${ts}\n${sha256(data || Buffer.alloc(0))}`) }; }
 function client(cfg) {
   const u = new URL(cfg.url); const isHttps = u.protocol === 'https:';
   if (!isHttps && !cfg.allowHttpForTests) throw new Error('COORDINATOR_URL должен быть https:// (TLS с закреплённым сертификатом)');
@@ -65,7 +69,7 @@ function client(cfg) {
   return function req(method, p, body, { raw = false, timeout = 30000, toFile = null, maxBytes = Infinity } = {}) { return new Promise((res, rej) => {
     const data = body == null ? null : Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
     const r = (isHttps ? https : http).request({ method, hostname: u.hostname, port: u.port || (isHttps ? 443 : 80), path: '/api/nodes' + p, agent, timeout,
-      headers: { authorization: 'Bearer ' + cfg.token, 'content-type': Buffer.isBuffer(body) ? 'application/octet-stream' : 'application/json', ...(data ? { 'content-length': data.length } : {}) } }, resp => {
+      headers: { authorization: 'Bearer ' + cfg.token, ...signHeaders(cfg, method, '/api/nodes' + p, data), 'content-type': Buffer.isBuffer(body) ? 'application/octet-stream' : 'application/json', ...(data ? { 'content-length': data.length } : {}) } }, resp => {
       if (toFile && resp.statusCode === 200) { const h = crypto.createHash('sha256'); let n = 0; const w = fs.createWriteStream(toFile, { mode: 0o600 }); // streamed: big videos never sit in RAM
         resp.on('data', d => { n += d.length; if (n > maxBytes) { resp.destroy(new Error('файл больше лимита')); return; } h.update(d); }); resp.on('error', rej); resp.pipe(w); w.on('error', rej); w.on('finish', () => res({ status: 200, sha256: h.digest('hex'), size: n })); return; }
       const c = []; resp.on('data', d => c.push(d)); resp.on('end', () => { const b = Buffer.concat(c); if (raw && resp.statusCode === 200) return res({ status: 200, buf: b, headers: resp.headers }); let j = null; try { j = JSON.parse(b.toString()); } catch {} res({ status: resp.statusCode, body: j }); }); });
@@ -168,6 +172,8 @@ async function main(cfg) {
       if (localPause) { ctx.state = 'paused'; ctx.info = await sysInfo(cfg); await sleep(cfg.pollMs); continue; }
       const r = await req('POST', '/pull', { info: (ctx.info = await sysInfo(cfg)), state: ctx.state }); sample(ctx);
       if (!cfg.profile) { const hh = await req('POST', '/hello', { info: ctx.info }); if (hh.status === 200) { cfg.profile = hh.body.title || hh.body.role; } } if (r.status === 401) { log('токен отклонён (отозван?) — пауза 60 с'); await sleep(60000); continue; }
+      if (r.status === 426) { log('координатор: ' + ((r.body && r.body.error) || 'несовместимая версия')); await sleep(60000); continue; }
+      if (r.status === 200 && r.body.rotate) await rotate(cfg, req, act);
       if (r.status !== 200) throw new Error('pull HTTP ' + r.status); backoff = 1000; const job = r.body.job; ctx.command = r.body.command || 'run'; ctx.online = true;
       if (ctx.command === 'stop') { act('остановка по команде координатора'); log('команда stop — выхожу'); break; }
       if (ctx.command !== 'run') { if (ctx.state !== ctx.command) act('команда ' + ctx.command); ctx.state = ctx.command === 'drain' ? 'drained' : 'paused'; await sleep(cfg.pollMs); continue; } ctx.state = job ? 'busy' : 'idle';
@@ -217,21 +223,41 @@ function makeOutbox(cfg, { maxAgeMs = 24 * 3600e3 } = {}) { const d = cfg.outbox
       if (Date.now() - (e.at || 0) > maxAgeMs) { drop('offline-результат старше 24 ч — удалён'); continue; }
       if (e.blob && fs.existsSync(B)) { const buf = fs.readFileSync(B); const u = await req('PUT', '/files/' + sha256(buf), buf); if (u.status !== 200) break; fs.rmSync(B, { force: true }); e.blob = false; put(F, JSON.stringify(e)); }
       const r = await req('POST', `/jobs/${id}/complete`, e.body); if (r.status === 200) drop('offline-результат доставлен'); else if (r.status === 409 || r.status === 404 || r.status === 413 || r.status === 400) drop('offline-результат отклонён координатором (' + r.status + ')'); else break; } } }; }
+// token rotation (owner pressed "Ротация" or policy): new token → Keychain only; old one stops working immediately
+async function rotate(cfg, req, act = () => {}) { const r = await req('POST', '/rotate', {}); if (r.status !== 200 || !r.body || !r.body.token) { act('ротация не удалась: HTTP ' + r.status); return false; }
+  await EN.keychain(cfg.env).set('moonkatty-node-' + cfg.nodeId, 'node-token', r.body.token); cfg.token = r.body.token; act('токен обновлён (ротация)'); return true; }
 async function config(env = process.env) {
   const fileEnv = loadEnvFile(env.NODE_AGENT_ENV || path.join(os.homedir(), '.moonkatty-node', 'node-agent.env')); const e = { ...fileEnv, ...env };
   const nodeId = e.NODE_ID; if (!/^[a-z0-9-]{2,32}$/.test(nodeId || '')) throw new Error('NODE_ID обязателен');
-  const token = e.NODE_TOKEN || await keychainToken('moonkatty-node-' + nodeId); if (!token) throw new Error('нет токена: Keychain (moonkatty-node-' + nodeId + ') или NODE_TOKEN в node-agent.env (chmod 600)');
+  const token = e.NODE_TOKEN || await keychainToken('moonkatty-node-' + nodeId, e); if (!token) throw new Error('нет токена: Keychain (moonkatty-node-' + nodeId + ') или NODE_TOKEN в node-agent.env (chmod 600)');
   const home = path.join(os.homedir(), '.moonkatty-node');
   const profileKey = profileOf(e.NODE_PROFILE || (nodeId === 'imac' ? 'news' : nodeId === 'macbook' ? 'monitor' : ''));
   if (profileKey && (e.NODE_ALLOW_HEAVY_AI === '1' || e.NODE_ALLOW_BLENDER === '1')) throw new Error(`профиль ${PROFILES[profileKey].title}: heavy AI / Blender запрещены профилем и не включаются переменными окружения`);
   const base = (PROFILES[profileKey] || PROFILES.news).limits; const limits = { ...base, ...(e.NODE_MAX_RSS_MB ? { maxRssMB: Math.min(1024, +e.NODE_MAX_RSS_MB) } : {}), ...(e.NODE_SOFT_RSS_MB ? { softRssMB: +e.NODE_SOFT_RSS_MB } : {}) };
   const xGrowth = profileKey === 'monitor' && e.NODE_X_GROWTH === '1';
   const tlsMode = e.NODE_TLS_MODE === 'tailscale' ? 'tailscale' : 'pinned';
-  return { profileKey, limits, tlsMode, xGrowth, outboxDir: e.NODE_OUTBOX_DIR || path.join(e.NODE_WORK_DIR ? path.dirname(e.NODE_WORK_DIR) : home, 'outbox'), nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
+  let deviceKey = null; try { const d = await EN.deviceIdentity(path.join(os.homedir(), '.moonkatty-node'), EN.keychain(e), { create: false }); if (d) deviceKey = d.key; } catch {}
+  return { env: e, deviceKey, profileKey, limits, tlsMode, xGrowth, outboxDir: e.NODE_OUTBOX_DIR || path.join(e.NODE_WORK_DIR ? path.dirname(e.NODE_WORK_DIR) : home, 'outbox'), nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
     workDir: e.NODE_WORK_DIR || path.join(home, 'work'), actionLog: e.NODE_ACTION_LOG || path.join(e.NODE_WORK_DIR || path.join(home, 'work'), '..', 'actions.log'), statusPort: e.NODE_STATUS_PORT === '0' ? 0 : +(e.NODE_STATUS_PORT || 8791), profile: e.NODE_PROFILE || '', archiveDir: e.NODE_ARCHIVE_DIR || path.join(home, 'archive'), pollMs: +(e.NODE_POLL_MS || 5000), ntfyUrl: e.NODE_NTFY_URL || '', fault: e.NODE_AGENT_FAULT || '', slowMs: +(e.NODE_AGENT_SLOW_MS || 0) };
 }
 if (require.main === module) {
   if (process.argv.includes('--info')) config().catch(() => ({ workDir: os.tmpdir() })).then(c => sysInfo(c)).then(i => { console.log(JSON.stringify(i, null, 2)); });
-  else config().then(main).catch(e => { console.error('node-agent:', e.message); process.exit(1); });
+  else if (process.argv.includes('--enroll')) { const a = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : process.env['NODE_ENROLL_' + k.toUpperCase()]; };
+    sysInfo({ workDir: os.homedir() }).then(info => EN.enroll({ url: a('url'), fingerprint: a('fingerprint'), code: a('code'), info, onState: s => console.log('enroll:', s.step, s.requestId || '', s.nodeId || '', s.deviceId || '') }))
+      .then(r => { console.log(`Подключено: узел ${r.nodeId} (${r.role}), устройство ${r.deviceId}. Токен сохранён в Keychain. Запустите агент или включите автозапуск.`); process.exit(0); })
+      .catch(e => { console.error('enroll:', e.message); process.exit(2); }); }
+  else config().then(main).catch(e => { if (/NODE_ID обязателен|нет токена/.test(e.message) && !process.argv.includes('--no-enroll-ui')) return enrollUi(); console.error('node-agent:', e.message); process.exit(1); });
 }
-module.exports = { hashFile, parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };
+// Enrollment screen on 127.0.0.1:8791 (only when the node is not configured yet). Same-origin token, Host check, no external access.
+function enrollUi(port = +(process.env.NODE_STATUS_PORT || 8791)) { const tok = crypto.randomBytes(16).toString('hex'); let state = { step: 'idle' };
+  const page = fs.readFileSync(path.join(__dirname, 'enroll.html'), 'utf8').replace('__TOKEN__', tok);
+  const srv = http.createServer((q, s) => { if (!/^(127\.0\.0\.1|localhost):\d+$/.test(String(q.headers.host || ''))) { s.writeHead(421); return s.end(); }
+    if (q.method === 'GET' && q.url === '/') { s.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'", 'x-frame-options': 'DENY' }); return s.end(page); }
+    if (q.method === 'GET' && q.url === '/enroll/state') { s.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return s.end(JSON.stringify(state)); }
+    if (q.method === 'POST' && q.url === '/enroll') { if (q.headers['x-node-local'] !== tok) { s.writeHead(403); return s.end(); } let b = ''; q.on('data', d => { b += d; if (b.length > 4096) q.destroy(); }); q.on('end', async () => {
+      let i; try { i = JSON.parse(b); } catch { s.writeHead(400); return s.end(); } if (state.step !== 'idle' && state.step !== 'error') { s.writeHead(409); return s.end('{}'); } s.writeHead(202); s.end('{}');
+      state = { step: 'start' }; try { const info = await sysInfo({ workDir: os.homedir() }); const r = await EN.enroll({ url: i.url, fingerprint: i.fingerprint, code: i.code, info, onState: x => { state = x; } }); state = { step: 'enrolled', ...r }; console.log('Подключено:', r.nodeId, '— перезапуск агента'); setTimeout(() => process.exit(75), 1500); }
+      catch (e) { state = { step: 'error', error: e.message, code: e.code || null }; console.error('enroll:', e.message); } }); return; }
+    s.writeHead(404); s.end(); });
+  srv.listen(port, '127.0.0.1', () => console.log(`Узел не подключён. Откройте http://127.0.0.1:${port} и введите код из панели Mac mini (или: agent.js --enroll --url … --fingerprint … --code …)`)); return srv; }
+module.exports = { enrollUi, rotate, signHeaders, hashFile, parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };
