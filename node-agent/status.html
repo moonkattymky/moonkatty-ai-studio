@@ -1,0 +1,49 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MOONKATTY NODE</title>
+<style>
+:root{--bg:#0a0f1f;--panel:#111a33;--card:#152043;--line:#22305a;--txt:#e8ecff;--mut:#8b96bf;--blue:#3d8bff;--green:#22c55e;--amber:#f59e0b;--red:#ef4444;--violet:#8b5cf6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{display:grid;grid-template-columns:200px 1fr;min-height:100vh}.side{background:#0c1328;border-right:1px solid var(--line);padding:16px 10px}
+.logo{display:flex;align-items:center;gap:8px;margin:0 6px 18px}.logo b{font-size:16px;letter-spacing:.5px}.logo small{display:block;color:var(--blue);font-weight:700;letter-spacing:2px;font-size:10px}
+.cat{width:34px;height:34px;border-radius:50%;object-fit:cover;background:radial-gradient(circle at 35% 35%,#9fb7ff,#3d5bd8);display:grid;place-items:center;font-size:18px}
+.nav a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;color:#c9d2f5;text-decoration:none;margin-bottom:2px}.nav a.on,.nav a:hover{background:#1c3a8a;color:#fff}
+.nav .b{margin-left:auto;background:var(--red);border-radius:10px;padding:0 6px;font-size:11px}
+.main{padding:18px 22px}.hdr{display:flex;align-items:center;gap:14px;margin-bottom:14px}.hdr h1{margin:0;font-size:22px;color:#7fb0ff;letter-spacing:.5px}.hdr .sub{color:var(--mut)}
+.pill{margin-left:auto;padding:5px 12px;border-radius:14px;font-weight:600;font-size:12px}.pill.on{background:#0f3d24;color:#4ade80}.pill.off{background:#3d1212;color:#f87171}.pill.p{background:#3d2e0f;color:#fbbf24}
+.grid{display:grid;gap:12px}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1.2fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}.card h3{margin:0 0 10px;font-size:14px}
+.met{display:flex;justify-content:space-between;font-weight:600}.bar{height:7px;background:#0b1430;border-radius:4px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;border-radius:4px}
+.row{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #1a2547}.row:last-child{border:0}.mut{color:var(--mut);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}.st{margin-left:auto;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}.st.ok{background:#0f3d24;color:#4ade80}.st.run{background:#10295e;color:#7fb0ff}.st.err{background:#3d1212;color:#f87171}.st.pend{background:#3d2e0f;color:#fbbf24}
+.cur{display:flex;align-items:center;gap:14px;margin-top:12px}.cur .bar{flex:1}button{background:#1b2a55;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.empty{color:var(--mut);font-size:13px;padding:10px 0}svg{width:100%;height:46px}
+</style></head><body><div class="app"><aside class="side"><div class="logo"><img class="cat" src="/logo.jpg" alt=""><div><b>MOONKATTY</b><small>AI STUDIO</small></div></div><nav class="nav" id="nav"></nav></aside>
+<main class="main"><div class="hdr"><div><h1 id="title">MOONKATTY NODE</h1><div class="sub" id="sub"></div></div><span class="pill" id="pill">…</span></div>
+<div class="grid g3" id="mets"></div><div class="grid g2" style="margin-top:12px" id="body"></div>
+<div class="card cur" id="cur"></div><div class="mut" style="margin-top:10px" id="foot"></div></main></div>
+<script>
+const TOK='__TOKEN__';const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const gb=b=>b==null?'—':(b/1073741824).toFixed(1)+' ГБ';const col=p=>p==null?'#334':p<60?'var(--blue)':p<85?'var(--amber)':'var(--red)';
+const met=(n,p,c)=>`<div class="card"><div class="met"><span>${n}</span><span>${p==null?'—':p+'%'}</span></div><div class="bar"><i style="width:${p||0}%;background:${c||col(p)}"></i></div></div>`;
+const spark=(h,k,c)=>{const v=h.map(x=>x[k]).filter(x=>x!=null);if(v.length<2)return '<div class="empty">мало данных</div>';const w=300,H=46;const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(H-y/100*H).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${w} ${H}" preserveAspectRatio="none"><polyline fill="none" stroke="${c}" stroke-width="2" points="${pts}"/></svg>`};
+const ago=t=>{const s=(Date.now()-Date.parse(t))/1000;return s<60?Math.round(s)+' с назад':s<3600?Math.round(s/60)+' мин назад':Math.round(s/3600)+' ч назад'};
+async function load(){let s;try{s=await (await fetch('/status',{cache:'no-store'})).json()}catch{return}
+ const news=/NEWS/.test(s.profile||'');const mon=/MONITOR/.test(s.profile||'');
+ $('title').textContent=s.profile||'MOONKATTY NODE';$('sub').textContent=`${s.info&&s.info.model||s.info&&s.info.hostname||''} — ${news?'News Collection':mon?'Quality Control & Monitoring':'узел'} · ${s.node}`;
+ const pill=$('pill');pill.className='pill '+(s.state==='paused'||s.state==='drained'?'p':s.online?'on':'off');pill.textContent=s.state==='paused'?'Пауза':s.state==='drained'?'Drain':s.online?'Online':'Offline';
+ const N=news?['Dashboard','News Sources','Collected News','Processing','Archive','Tasks','System','Settings']:['Dashboard','Quality Check','System Monitor','Task Results','Notifications','Logs','Settings'];
+ $('nav').innerHTML=N.map((n,i)=>`<a href="#" class="${i?'':'on'}">${n}${n==='Notifications'&&s.stats.failed?`<span class="b">${s.stats.failed}</span>`:''}</a>`).join('');
+ const i=s.info||{};const mem=i.memTotal?Math.round(100*(1-i.memAvailable/i.memTotal)):null,dsk=i.diskTotal?Math.round(100*(1-i.diskFree/i.diskTotal)):null;
+ $('mets').innerHTML=met('CPU',i.cpuPct,'var(--blue)')+met('RAM',mem,'var(--amber)')+met('Disk',dsk,'var(--violet)');
+ const recent=s.recent.filter(r=>/^(готово|ошибка|задача)/.test(r.a)).slice(0,6).map(r=>`<div class="row"><div>${esc(r.a)}<div class="mut">${esc(r.job||'')}</div></div><span class="st ${/^готово/.test(r.a)?'ok':/^ошибка/.test(r.a)?'err':'run'}">${/^готово/.test(r.a)?'Completed':/^ошибка/.test(r.a)?'Error':'In Progress'}</span><span class="mut">${ago(r.at)}</span></div>`).join('')||'<div class="empty">Задач пока не было</div>';
+ if(news){const ln=s.lastNews;const src=ln&&ln.bySource?Object.entries(ln.bySource).sort((a,b)=>b[1]-a[1]):[];
+  $('body').innerHTML=`<div class="card"><h3>News Collection</h3>${src.length?src.map(([k,v],j)=>`<div class="row"><span class="dot" style="background:${['#3d8bff','#22c55e','#f59e0b','#8b5cf6','#ef4444','#14b8a6'][j%6]}"></span>${esc(k)}<span class="st ok">${v} new</span></div>`).join('')+`<div class="mut" style="margin-top:8px">Собрано за сеанс: ${s.stats.collected} · последний сбор ${ago(ln.at)}</div>`:'<div class="empty">Сбор ещё не выполнялся — источники задаются в задаче news.collect с Mac mini</div>'}</div>
+  <div class="card"><h3>Recent Headlines</h3>${ln&&ln.headlines.length?ln.headlines.map(h=>`<div class="row"><div>${esc(h.title)}<div class="mut">${esc(h.source||'')}${h.date?' · '+esc(h.date):''}</div></div></div>`).join(''):'<div class="empty">Нет заголовков</div>'}</div>`;}
+ else{const qc=s.qc||[];const h=s.history||[];
+  $('body').innerHTML=`<div class="card"><h3>Recent Tasks</h3>${recent}<h3 style="margin-top:14px">Quality Check</h3>${qc.length?qc.slice(0,5).map(q=>`<div class="row"><div>${esc(q.name)}<div class="mut">${esc([q.codec,q.width&&q.width+'×'+q.height,q.durationSec&&(+q.durationSec).toFixed(1)+' с'].filter(Boolean).join(' · '))}${q.problems&&q.problems.length?' · '+esc(q.problems.join(', ')):''}</div></div><span class="st ${q.ok?'ok':'err'}">${q.ok?'OK':'Problem'}</span></div>`).join(''):'<div class="empty">Проверок ещё не было</div>'}</div>
+  <div class="card"><h3>System Monitor</h3><div class="met"><span class="mut">CPU Usage</span><span>${i.cpuPct??'—'}%</span></div>${spark(h,'cpu','#3d8bff')}<div class="met"><span class="mut">Memory Usage</span><span>${mem??'—'}%</span></div>${spark(h,'mem','#8b5cf6')}<div class="met"><span class="mut">Disk Usage</span><span>${dsk??'—'}%</span></div>${spark(h,'disk','#22c55e')}</div>`;}
+ if(news)$('body').insertAdjacentHTML('beforeend',`<div class="card" style="grid-column:1/-1"><h3>Tasks</h3>${recent}</div>`);
+ const c=s.current;$('cur').innerHTML=`<div style="font-size:22px">📋</div><div style="min-width:180px"><b>Current Task</b><div class="mut">${c?esc(c.capability):s.state==='paused'?'на паузе':'нет активной задачи'}</div></div><div class="bar"><i style="width:${c&&c.progress!=null?c.progress:0}%;background:var(--blue)"></i></div><span>${c&&c.progress!=null?c.progress+'%':''}</span><button id="pb">${s.localPause?'▶ Resume':'❚❚ Pause'}</button>`;
+ $('pb').onclick=async()=>{await fetch(s.localPause?'/resume':'/pause',{method:'POST',headers:{'x-node-local':TOK}});load()};
+ $('foot').textContent=`MOONKATTY NODE ${s.version} · координатор ${s.coordinator} · выполнено ${s.stats.done}, ошибок ${s.stats.failed}${s.lastError?' · последняя ошибка: '+s.lastError:''} · команда центра: ${s.command}`;}
+load();setInterval(load,3000);
+</script></body></html>
