@@ -88,9 +88,9 @@ test('i18n dictionaries have the same keys in ru and en', async ({ page }) => {
 });
 
 test('reduced motion is honoured', async ({ browser }) => {
-  const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 393, height: 852 } });
+  const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 402, height: 874 } });
   const page = await ctx.newPage();
-  await page.goto('http://127.0.0.1:8690/#/agents');
+  await page.goto('http://127.0.0.1:8697/#/agents');
   const d = await page.locator('#view .screen').evaluate((n) => getComputedStyle(n).animationDuration);
   expect(parseFloat(d)).toBeLessThan(0.01);
   await ctx.close();
@@ -106,4 +106,24 @@ test('tap targets are at least 44px', async ({ page }) => {
   }
   // chips are 36px tall visually but sit in a 44px row; we assert nothing is below 28px and report the rest
   expect(small).toEqual([]);
+});
+
+test('iPhone 16 Pro (402×874): every screen fits — no horizontal overflow, header clears the Dynamic Island, tab bar above the home indicator', async ({ page }) => {
+  for (const h of ['#/home', '#/agents', '#/tasks', '#/content', '#/analytics', '#/finance', '#/games', '#/news', '#/social', '#/notifications', '#/settings', '#/more']) {
+    await fresh(page, h);
+    await page.evaluate(() => document.documentElement.classList.add('preview-safe', 'reduce-motion')); // safe-area 62/34 px like the real device
+    await page.waitForTimeout(100);
+    await expect.poll(() => page.evaluate(() => document.querySelector('#view h1, .hero .top').getBoundingClientRect().top + scrollY), { message: h + ' header below the Dynamic Island' }).toBeGreaterThanOrEqual(48);
+    const m = await page.evaluate(() => {
+      document.querySelectorAll('#view .screen').forEach((n) => { n.style.animation = 'none'; }); // freeze out the 14px screen-enter slide (motion, not layout)
+      const vw = innerWidth, over = [...document.querySelectorAll('#view *')].filter((n) => { const r = n.getBoundingClientRect(); return r.width && (r.right > vw + 1 || r.left < -1) && !n.closest('.chips, .seg, .plats, .hero'); }).map((n) => n.tagName + "." + n.className + "@" + Math.round(n.getBoundingClientRect().left) + "-" + Math.round(n.getBoundingClientRect().right)).slice(0, 5);
+      const head = document.querySelector('#view h1, .hero .top'); const tb = document.querySelector('.tabbar').getBoundingClientRect();
+      return { vw, sw: document.documentElement.scrollWidth, over, headTop: head.getBoundingClientRect().top + scrollY, sat: getComputedStyle(document.documentElement).getPropertyValue("--sat"), tbBottom: tb.bottom, tbH: tb.height, ih: innerHeight };
+    });
+    expect(m.vw, h).toBe(402);
+    expect(m.sw, `${h} horizontal scroll`).toBeLessThanOrEqual(402);
+    expect(m.over, `${h} overflowing elements`).toEqual([]);
+    expect(m.headTop, `${h} sat=${m.sat} header below the Dynamic Island (11+37 px)`).toBeGreaterThanOrEqual(48);
+    expect(m.tbBottom, h).toBeLessThanOrEqual(m.ih + 1);
+  }
 });

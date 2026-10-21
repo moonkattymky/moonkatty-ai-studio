@@ -15,7 +15,7 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
   color-scheme: dark;
 }
-html.preview-safe { --sat: 54px; --sab: 34px; } /* used only by screenshot tooling to emulate iPhone insets */
+html.preview-safe { --sat: 62px; --sab: 34px; } /* used only by screenshot/test tooling to emulate iPhone 16 Pro insets */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { overflow-x: hidden; margin: 0; background: var(--bg0); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
 body { min-height: 100dvh; overscroll-behavior-y: none; }
@@ -480,3 +480,19 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .stat .meta.green { color: var(--green); font-weight: 600; }
 .newscard .round-btn { background: radial-gradient(circle at 50% 40%, #3b8cff, #1d4fb8); color: #fff; }
 .newscard .round-btn svg { width: 20px; height: 20px; }
+
+/* ---------- Stage 2 (LIVE, read-only): data-state chips, login ---------- */
+.demo-chip.tag-confirmed { color: var(--green, #34d399); border-color: rgba(52,211,153,.55); background: rgba(52,211,153,.08); }
+.demo-chip.tag-estimate { color: #7cc4ff; border-color: rgba(124,196,255,.55); background: rgba(124,196,255,.08); }
+.demo-chip.tag-demo { color: var(--gold); border-color: rgba(245,196,81,.55); background: rgba(245,196,81,.08); }
+.demo-chip.tag-nodata { color: var(--text3, #8892b0); border-color: rgba(136,146,176,.45); background: rgba(136,146,176,.06); }
+.live-note { margin-top: 12px; text-align: center; }
+.fin-split { margin-top: 10px; font-size: 12.5px; }
+.online.off .dot { background: #64748b; box-shadow: none; }
+body.login-mode .tabbar { display: none; }
+.login-screen .login-card { display: grid; gap: 12px; margin-top: 8px; }
+.login-screen .field input { width: 100%; }
+.login-msg { min-height: 18px; margin: 0; font-size: 13px; color: #fca5a5; }
+.login-screen .field input { font-size: 16px; }
+.nd { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .03em; line-height: 1.25; color: var(--text3, #8892b0); white-space: nowrap; vertical-align: middle; }
+.val .nd, .gstat .val .nd, .kpi .val .nd { font-size: 13px; }

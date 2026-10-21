@@ -19,4 +19,4 @@ export const SUBS = [
   '#/notifications/n1', '#/settings/profile', '#/settings/devices', '#/settings/notif', '#/settings/integr', '#/settings/mac',
   '#/settings/look', '#/settings/help', '#/settings/about', '#/more/ideas', '#/more/docs', '#/more/team', '#/more/exp', '#/more/backup', '#/home/request',
 ];
-export const BASE = process.env.AIC_URL || 'http://127.0.0.1:8690/';
+export const BASE = process.env.AIC_URL || 'http://127.0.0.1:8697/';
