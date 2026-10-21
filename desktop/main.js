@@ -20,10 +20,10 @@ const BUILD = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirna
 const dataDir = () => app.getPath('userData');
 const logDir = () => process.platform === 'darwin' ? path.join(app.getPath('home'), 'Library', 'Logs', PRODUCT) : path.join(dataDir(), 'logs');
 const cfgFile = () => path.join(dataDir(), 'desktop.json');
-const DEF = { port: 8787, autoStartServer: true, startAtLogin: false, checkUpdates: true };
+const DEF = { port: 8787, autoStartServer: true, startAtLogin: false, checkUpdates: false }; // QA-UC-004: no automatic network check; only the explicit menu item / Update Center button
 const cfg = () => { let c = {}; try { c = JSON.parse(fs.readFileSync(cfgFile(), 'utf8')); } catch {}
   const port = Number.isInteger(c.port) && c.port >= 1024 && c.port <= 65535 ? c.port : DEF.port;
-  return { port, autoStartServer: c.autoStartServer !== false, startAtLogin: c.startAtLogin === true, checkUpdates: c.checkUpdates !== false, enableOpenCode: c.enableOpenCode === true, opsResources: c.opsResources === true, opsMobile: c.opsMobile === true, opsSecurity: c.opsSecurity === true, opsBackup: c.opsBackup === true, opsCosts: c.opsCosts === true, opsDashboard: c.opsDashboard === true, opsNodes: c.opsNodes === true, opsMoney: c.opsMoney === true, opsNodesBind: typeof c.opsNodesBind === 'string' ? c.opsNodesBind : '',
+  return { port, autoStartServer: c.autoStartServer !== false, startAtLogin: c.startAtLogin === true, checkUpdates: c.checkUpdates === true, enableOpenCode: c.enableOpenCode === true, opsResources: c.opsResources === true, opsMobile: c.opsMobile === true, opsSecurity: c.opsSecurity === true, opsBackup: c.opsBackup === true, opsCosts: c.opsCosts === true, opsDashboard: c.opsDashboard === true, opsNodes: c.opsNodes === true, opsMoney: c.opsMoney === true, opsNodesBind: typeof c.opsNodesBind === 'string' ? c.opsNodesBind : '',
     allowedHosts: (Array.isArray(c.allowedHosts) ? c.allowedHosts : []).filter(h => typeof h === 'string' && /^[a-z0-9.-]+\.ts\.net(:\d+)?$/i.test(h)).slice(0, 5) }; }; // only Tailscale names
 const saveCfg = c => { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 2), { mode: 0o600 }); };
 // Packaged: official Node binary (Resources/node/node) runs server.js from app.asar.unpacked → the RunAsNode fuse stays OFF.
@@ -106,7 +106,7 @@ handle('open-path', which => { if (which !== 'logs' && which !== 'data') throw n
 const verNum = t => String(t).replace(/^v/, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
 const newer = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
 async function checkUpdates(manual) {
-  const c = cfg(); if (!manual && !c.checkUpdates) return;
+  if (!manual) return; const c = cfg(); // QA-UC-004: never automatic
   const msg = (o) => dialog.showMessageBox(win || undefined, o);
   try {
     const r = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=20`, { headers: { accept: 'application/vnd.github+json', 'user-agent': PRODUCT }, signal: AbortSignal.timeout(10000), redirect: 'error' });
@@ -151,7 +151,7 @@ app.whenReady().then(() => {
   session.defaultSession.on('will-download', (e, item) => { if (!isPanel(item.getURL())) e.preventDefault(); }); // only panel backups/exports
   app.setAboutPanelOptions({ applicationName: PRODUCT, applicationVersion: app.getVersion(), version: `commit ${String(BUILD.commit).slice(0, 12)}`, copyright: 'MOONKATTY', credits: BUILD.builtAt ? 'Сборка: ' + BUILD.builtAt : 'Сборка из исходников (dev)' });
   if (process.platform === 'darwin' && app.dock) app.dock.setIcon(nativeImage.createFromPath(path.join(ROOT, 'build', 'icon.png')));
-  menu(); createWindow(); setTimeout(() => checkUpdates(false), 5000);
+  menu(); createWindow(); // QA-UC-004: no automatic update check at launch
 });
 app.on('activate', () => { if (!win) createWindow(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); }); // macOS: app stays in Dock; server keeps running either way
