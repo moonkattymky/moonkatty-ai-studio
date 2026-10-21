@@ -23,7 +23,8 @@
     "test:nodes": "node scripts/nodes-test.mjs",
     "test:world": "node scripts/world-class-test.mjs",
     "test:ops": "node --test --test-concurrency=1 test/ops/*.test.js",
-    "test:ops:studio": "COORD_HELPER=studio node --test test/ops/nodes.multiprocess.test.js"
+    "test:ops:studio": "COORD_HELPER=studio node --test test/ops/nodes.multiprocess.test.js",
+    "test:update-center": "node --test --test-concurrency=1 test/ops/release-keys.test.js test/ops/update-center.test.js test/ops/update.test.js test/ops/update-center.integration.test.js"
   },
   "keywords": [],
   "author": "MOONKATTY",
@@ -89,7 +90,15 @@
       "!node_modules/bindings/**",
       "!node_modules/prebuild-install/**",
       "!node_modules/file-uri-to-path/**",
-      "!**/*.map"
+      "!**/*.map",
+      "!**/*.key",
+      "!**/*.p8",
+      "!**/*.p12",
+      "!**/*.pfx",
+      "!**/*.priv",
+      "!**/*.priv.pem",
+      "!**/*private*.pem",
+      "!**/*secret*.pem"
     ],
     "mac": {
       "target": [
