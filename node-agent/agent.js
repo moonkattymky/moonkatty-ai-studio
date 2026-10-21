@@ -21,7 +21,7 @@ const PROFILES = {
   // only analytics/drafts (never post/like/follow/repost/dm/reply; FORBIDDEN above). Limits from scripts/node/monitor-load-sim.mjs.
   monitor: { title: 'MONITOR NODE', heavyAI: false, blender: false, xGrowthDefault: false, xCaps: ['x.analytics', 'x.draft'],
     caps: ['monitor.check', 'site.check', 'studio.health', 'result.verify', 'ffprobe.check', 'stats.compute', 'notify.send', 'queue.inspect', 'backup.light', 'x.analytics', 'x.draft'],
-    limits: { maxRssMB: 256, softRssMB: 160, maxHeapMB: 128, maxFeeds: 20, maxFeedBytes: 2e6, maxItemsPerJob: 2000, maxConcurrent: 1, outboxMax: 200, maxInlineResultBytes: 256 * 1024, bpRestartMs: 30000, maxUrls: 20, ffprobeTimeoutMs: 120000, maxFileBytes: 4 * 1024 ** 3 } },
+    limits: { maxRssMB: 256, softRssMB: 160, maxHeapMB: 128, maxFeeds: 20, maxFeedBytes: 2e6, maxItemsPerJob: 2000, maxConcurrent: 1, outboxMax: 200, maxInlineResultBytes: 256 * 1024, bpRestartMs: 30000, maxUrls: 20, ffprobeTimeoutMs: 120000, dutyCycle: 0.5, maxFileBytes: 4 * 1024 ** 3 } },
 };
 const PROFILE_ALIAS = { imac: 'news', 'news node': 'news', macbook: 'monitor', 'monitor node': 'monitor' };
 function profileOf(name) { const k = String(name || '').toLowerCase(); return PROFILES[PROFILE_ALIAS[k] || k] ? (PROFILE_ALIAS[k] || k) : null; }
@@ -198,7 +198,9 @@ async function main(cfg) {
         if (fault === 'duplicate-complete') c = await req('POST', `/jobs/${job.id}/complete`, body);
         log('завершено', job.id, c.status, c.body && c.body.duplicate ? '(повтор подтверждения)' : ''); ctx.stats.done++; act('готово ' + job.capability, { job: job.id, status: c.status });
       } catch (e) { log('ошибка', job.id, e.message); ctx.stats.failed++; ctx.lastError = e.message; act('ошибка ' + job.capability, { job: job.id, error: e.message }); await req('POST', `/jobs/${job.id}/fail`, { leaseId: job.leaseId, error: e.message, retryable: !!e.retryable }).catch(() => {}); }
-      finally { clearInterval(hb); ctx.current = null; if (global.gc) global.gc(); }
+      finally { clearInterval(hb); const busyMs = Date.now() - Date.parse(ctx.current ? ctx.current.startedAt : new Date().toISOString()); ctx.current = null; if (global.gc) global.gc();
+        // CPU budget (2-core MacBook): duty cycle — after a job of T ms rest T×(1/duty−1) ms, so the agent averages ≤ duty of one core
+        const duty = cfg.limits.dutyCycle || 1; if (duty < 1 && busyMs > 50) await sleep(Math.min(60000, Math.round(busyMs * (1 / duty - 1)))); }
     } catch (e) { if (ctx.online !== false) act('нет связи: ' + e.message); ctx.online = false; ctx.state = 'offline'; log('нет связи с координатором:', e.message, `— повтор через ${backoff / 1000} с`); await sleep(backoff); backoff = Math.min(backoff * 2, 60000); }
   }
   log('остановлен');

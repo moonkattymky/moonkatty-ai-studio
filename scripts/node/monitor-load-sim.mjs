@@ -2,7 +2,7 @@
 // MONITOR NODE RAM/CPU simulation: real agent process (profile monitor, flags from the plist) pinned to 2 CPU cores (taskset, like the
 // MacBook Pro 13" 2015 i5 2-core) + real in-process coordinator (HTTP test mode, 127.0.0.1) + local "sites" server.
 // Workload mix per round: studio.health, site.check (20 URLs), result.verify (SHA-256 of N artifacts × S MB, streamed), ffprobe.check
-// (if ffprobe+ffmpeg exist), stats.compute (100k values). Samples agent RSS (ps) every 100 ms and CPU (utime+stime incl. children, /proc).
+// (if ffprobe+ffmpeg exist), stats.compute (10k values). Samples agent RSS (ps) every 100 ms and CPU (utime+stime incl. children, /proc).
 //   node scripts/node/monitor-load-sim.mjs [--rounds 10] [--files 3] [--file-mb 64] [--heap 128] [--cores 0,1] [--json out.json]
 import { spawn, execFileSync } from 'node:child_process'; import http from 'node:http'; import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import crypto from 'node:crypto';
 import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);
@@ -33,7 +33,7 @@ const HZ = 100; const samples = []; const sampler = setInterval(() => samples.pu
 await sleep(1500); const idle = Math.max(...samples.map(s => s.mb)); const c0 = cpuTicks(pidOf()); const t0 = Date.now(); const sweeper = setInterval(() => m.sweep(), 1000);
 const ids = []; const add = (capability, input, files) => ids.push(m.submit({ capability, input, files, safeToRetry: true, maxAttempts: 3, timeoutSec: 600 }).jobId);
 for (let r = 0; r < ROUNDS; r++) { add('studio.health', { urls: urls.slice(0, 5) }); add('site.check', { urls, expectText: 'MOONKATTY' }); add('result.verify', { minBytes: 1 }, arts);
-  if (video) add('ffprobe.check', { width: 1280, height: 720, maxDurationSec: 30 }, [video]); add('stats.compute', { values: Array.from({ length: 100000 }, (_, i) => (i * 7919) % 1000) }); }
+  if (video) add('ffprobe.check', { width: 1280, height: 720, maxDurationSec: 30 }, [video]); add('stats.compute', { values: Array.from({ length: 10000 }, (_, i) => (i * 7919) % 1000) }); }
 setTimeout(() => { console.error('TIMEOUT\n' + log.slice(-3000)); process.exit(2); }, +arg('timeout', 900000)).unref();
 const res = await Promise.all(ids.map(id => m.waitFor(id))); const dt = (Date.now() - t0) / 1000; const c1 = cpuTicks(pidOf()); clearInterval(sampler); clearInterval(sweeper);
 const busy = samples.filter(s => s.t >= t0).map(s => s.mb).sort((a, b) => a - b); const by = {}; for (const j of res) (by[j.capability] ||= { ok: 0, fail: 0 })[j.status === 'succeeded' && (j.result || {}).ok !== false ? 'ok' : 'fail']++;

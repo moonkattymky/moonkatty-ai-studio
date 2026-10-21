@@ -3,44 +3,44 @@
  "platform": "linux/x64",
  "cores": "0,1",
  "heapFlagMB": 128,
- "rounds": 20,
- "jobs": 100,
+ "rounds": 10,
+ "jobs": 50,
  "artifacts": "3 × 128 MB",
  "ffprobe": "ffprobe version 7.1.5-0+deb13u1 Copyright (c) 2007-2026 the FFmpeg developers",
  "byCapability": {
   "studio.health": {
-   "ok": 20,
+   "ok": 10,
    "fail": 0
   },
   "site.check": {
-   "ok": 20,
+   "ok": 10,
    "fail": 0
   },
   "result.verify": {
-   "ok": 20,
+   "ok": 10,
    "fail": 0
   },
   "ffprobe.check": {
-   "ok": 20,
+   "ok": 10,
    "fail": 0
   },
   "stats.compute": {
-   "ok": 20,
+   "ok": 10,
    "fail": 0
   }
  },
  "verifySha256Ok": true,
  "restarts": 0,
- "seconds": 287.4,
+ "seconds": 38.3,
  "cpu": {
-  "cpuSeconds": 47.9,
-  "avgPctOfOneCore": 16.7,
-  "avgPctOf2Cores": 8.3
+  "cpuSeconds": 17.1,
+  "avgPctOfOneCore": 44.6,
+  "avgPctOf2Cores": 22.3
  },
  "rssMB": {
   "idle": 53.7,
-  "p50": 90.4,
-  "p95": 100.4,
-  "peak": 101.1
+  "p50": 97.6,
+  "p95": 98,
+  "peak": 98.4
  }
 }

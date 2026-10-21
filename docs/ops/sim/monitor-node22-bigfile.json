@@ -31,16 +31,16 @@
  },
  "verifySha256Ok": true,
  "restarts": 0,
- "seconds": 9.5,
+ "seconds": 16.3,
  "cpu": {
-  "cpuSeconds": 6.2,
-  "avgPctOfOneCore": 64.7,
-  "avgPctOf2Cores": 32.3
+  "cpuSeconds": 7.2,
+  "avgPctOfOneCore": 44.2,
+  "avgPctOf2Cores": 22.1
  },
  "rssMB": {
-  "idle": 53.8,
-  "p50": 96.7,
-  "p95": 99.6,
-  "peak": 105
+  "idle": 53.7,
+  "p50": 92.2,
+  "p95": 97.3,
+  "peak": 97.7
  }
 }
