@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T14:21:13.544Z",
+  "updatedAt": "2026-10-21T14:49:23.275Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -1051,7 +1051,8 @@
         "qa/reports/azure-tts/REPORT.md",
         "qa/reports/azure-tts/logs/attack.json",
         "qa/reports/azure-tts/logs/lengths.json",
-        "qa/reports/azure-tts-v2/REPORT.md"
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v3/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
@@ -1067,6 +1068,11 @@
           "at": "2026-10-21T14:21:13.543Z",
           "status": "open",
           "note": "Still open at 148ff2b. reconcile stores a pasted key in usage.json. A preview with no local engine is stored voice fallback and final true."
+        },
+        {
+          "at": "2026-10-21T14:49:23.143Z",
+          "status": "open",
+          "note": "At cbc9c70 a raw reconciliation note is refused and the usage file is unchanged. A preview with no local engine is stored final false. Still open: a local engine that throws is stored final true, and a note broken into runs shorter than 12 of the refused class is stored. The 30-second lock takeover and the Han count were not re-measured."
         }
       ]
     },
@@ -1074,7 +1080,7 @@
       "id": "QA-AZR-007",
       "title": "The local Azure dollar cap resets or rises for the same user",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "At 148ff2b the ledger hash chain refuses a missing usage file while any ledger line exists, a spentMicro below the reserved sum, and a broken prev link. Deleting both usage.json and the ledger starts the next reserve at the new charge, and a second synthesize then calls the mock once. Rewriting the ledger as one valid genesis line and setting spentMicro to 15000 dropped a file from 800010 to a later 30000. setCandidate can set stateFile, which is not an owner-only field, and a full $1 file then left the mock call on an empty directory at 2670 micro-dollars. writeOwnerPrice accepts monthlyBudgetUsd 1000 at mode 0600, and a 100000-character reserve succeeded at 1500000 micro-dollars. The Azure portal spending limit is the control that still applies. This process cannot set it.",
@@ -1088,17 +1094,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts-v2/REPORT.md",
-        "qa/reports/azure-tts-v2/logs/attack.json"
+        "qa/reports/azure-tts-v2/logs/attack.json",
+        "qa/reports/azure-tts-v3/REPORT.md"
       ],
       "foundAt": "2026-10-21T14:20:00.000Z",
       "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T14:21:13.328Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:49:23.183Z",
+          "status": "qa_verified",
+          "note": "At cbc9c70 a budget above $1 without an owner-signed grant is refused, including a hand-written mode 0600 price file, and setCandidate cannot set stateFile. The delete-both reset, the rewritten ledger, and a hand-edited stateFile are QA-AZR-010, rated low given the Azure portal spending limit."
         }
       ]
     },
@@ -1106,7 +1118,7 @@
       "id": "QA-AZR-008",
       "title": "Azure owner signatures do not expire and the signing key is same-user",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "S0 at 148ff2b requires an Ed25519 signature over at, by, voice, and region, checked with the public key passed to MasterVoice. A signature dated 2020-01-01 still verifies. Writing paidEnabled true plus that record called the mock, paidEnabled false refused, and writing the same record back called the mock again. readKey on service MOONKATTY AI STUDIO.azure-speech-owner and account azure-speech-owner returned PKCS8 material that signApproval turned into a verifying signature. store-owner writes that item with add-generic-password and no -T flag. provider.js does not name the service. setCandidate keyService makes createTTS call security on the owner service with the speech account azure-speech, which is not the owner account. A provider constructed with the owner account does read that item. macOS ACL was not run.",
@@ -1120,15 +1132,84 @@
       ],
       "evidence": [
         "qa/reports/azure-tts-v2/REPORT.md",
-        "qa/reports/azure-tts-v2/logs/attack.json"
+        "qa/reports/azure-tts-v2/logs/attack.json",
+        "qa/reports/azure-tts-v3/REPORT.md"
       ],
       "foundAt": "2026-10-21T14:20:00.000Z",
       "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T14:21:13.361Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:49:23.214Z",
+          "status": "qa_verified",
+          "note": "At cbc9c70 a signature expires at 31 days, a serial at or below the watermark sends nothing, store-owner sends -T \"\", readKey refuses the owner item and does not spawn, and setCandidate cannot set keyService. factory-render and bin/master-voice load the public key from owner.json. A self-signed replacement and a byte rollback of that file are QA-AZR-009. macOS ACL was not run."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-009",
+      "title": "An agent-written owner.json replaces the Azure approval key",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "loadOwnerConfig verifies state/owner.json with the public key inside that file. An agent-written mode 0600 file, signed by a key the agent generated, loaded as the approval public key at serial 0. An approval from that key does not verify against the owner public key. MasterVoice given the loaded key called the mock once on an S0 voice file. writeOwnerConfig refuses a lower serial. Overwriting the file with an older owner-signed copy returned serial 2, and a signature at serial 3 then verified. Unsigned JSON and mode 0644 throw. A missing file has no public key. readKey does not spawn for the owner item. The portal spending limit still caps the invoice.",
+      "expected": "The approval public key is the owner's key, and the watermark only moves forward.",
+      "actual": "A same-user write of a self-signed owner.json installs a new key. A byte copy of an older signed owner.json lowers the watermark. writeOwnerConfig refuses a decrease and signs whatever public key it is given.",
+      "repro": [
+        "Write a mode 0600 owner.json whose signature verifies under the publicKeyPem in the same file, serial 0",
+        "loadOwnerConfig and sign an S0 approval with that private key at serial 1",
+        "Construct MasterVoice with the loaded public key and synthesize against a mock",
+        "writeOwnerConfig serial 2, then serial 5, overwrite the file with the serial 2 bytes, chmod 0600, and verify serial 3"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v3/REPORT.md",
+        "qa/reports/azure-tts-v3/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:50:00.000Z",
+      "foundIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:49:23.244Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-010",
+      "title": "Deleting both Azure counter files resets the local dollar guard",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "At cbc9c70 a budget above $1 without an owner-signed grant is refused, and setCandidate cannot set stateFile. Deleting usage.json while the ledger remains refuses. Deleting both files starts the next begin at 15000 micro-dollars for 1000 characters. A second synthesize after both files were removed called the mock again and the new file showed 2670. Rewriting the ledger as one valid reserved line and setting spentMicro to 15000 dropped a file from 800010 to 30000. A hand-edited voice JSON stateFile, which setCandidate refuses, selected an empty ledger: the filled file stayed at 999990 and the new file showed 2670. The voice file keyService was ignored. Eight processes stayed at 800010. Rated low because an Azure portal spending limit of $1 is the invoice cap. This repository cannot set that limit. On a real F0 resource the reset does not create an invoice.",
+      "expected": "The local counter survives deletion of both files, a rewritten ledger, and a hand-edited stateFile.",
+      "actual": "Those three same-user writes start a new counter. Honest processes and setCandidate stay inside the file they were given. A portal spending limit of $1 still bounds the invoice.",
+      "repro": [
+        "Reserve on UsdBudget, delete usage.json and the ledger, and reserve 1000 characters",
+        "Set spentMicro to 800010, replace the ledger with one valid reserved line of 0.015000 and set spentMicro to 15000, then reserve again",
+        "Fill a state file to 66666 characters, write a new stateFile into the voice JSON by hand, and synthesize"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v3/REPORT.md",
+        "qa/reports/azure-tts-v3/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:50:00.000Z",
+      "foundIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:49:23.274Z",
           "status": "open",
           "note": "added"
         }

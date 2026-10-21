@@ -1,0 +1,313 @@
+{
+  "controls": 46,
+  "failed": [],
+  "findings": [
+    "deleting usage.json and the ledger starts the counter at the new charge",
+    "a second synthesize after both files are gone calls the mock again for one charge",
+    "a rewritten ledger with a matching spentMicro lowers the counter",
+    "a hand-edited stateFile still selects an empty ledger",
+    "replacing owner.json with an older signed copy lowers the watermark",
+    "an agent-written owner.json becomes the public key and the mock is called",
+    "reconcile stores a key broken into runs shorter than 12",
+    "a local-engine failure is stored final true"
+  ],
+  "results": [
+    {
+      "kind": "hold",
+      "name": "a budget of 1000 without a grant is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "UsdBudget refuses a budget above 1 without a grant",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a hand-written price file above 1 sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an owner-signed grant allows a budget of 1000",
+      "ok": true,
+      "detail": {
+        "spent": 1500000
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a grant from another key is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a grant older than 31 days is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a grant 10 days old still verifies and ignores the approval serial",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a budget of 1 does not need a grant",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "deleting usage.json while the ledger remains refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "deleting usage.json and the ledger starts the counter at the new charge",
+      "ok": true,
+      "detail": {
+        "spent": 15000
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "a second synthesize after both files are gone calls the mock again for one charge",
+      "ok": true,
+      "detail": {
+        "fetches": 2,
+        "spent": 2670
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "a rewritten ledger with a matching spentMicro lowers the counter",
+      "ok": true,
+      "detail": {
+        "before": 800010,
+        "after": 30000
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "setCandidate cannot set stateFile or keyService",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a hand-edited stateFile still selects an empty ledger",
+      "ok": true,
+      "detail": {
+        "filled": 999990,
+        "fresh": 2670,
+        "service": "MOONKATTY AI STUDIO.azure-speech"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "eight processes stay inside one dollar",
+      "ok": true,
+      "detail": {
+        "successes": 2,
+        "total": 800010
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a serial above the watermark verifies",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a serial equal to the watermark is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a signature at the 31-day mark is refused and one millisecond inside is accepted",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a signature more than five minutes ahead is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "swapping the voice or region fails",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "replaying a signature at the watermark sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "writeOwnerConfig refuses a lower serial",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "replacing owner.json with an older signed copy lowers the watermark",
+      "ok": true,
+      "detail": {
+        "serial": 2
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "an agent-written owner.json becomes the public key and the mock is called",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an unsigned owner.json refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a mode 0644 owner.json refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a missing owner config has no public key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "readKey refuses the owner item and does not spawn",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "store-owner keeps the key off argv and sends -T empty",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a provider pointed at the owner service sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "factory-render and bin/master-voice load the owner config",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "provider.js does not name the owner service",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a cache sealed with the speech key is a miss",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the cache MAC key is not the speech key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a cache hit whose ledger mac matches is final",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a valid cache MAC without the ledger mac is a miss",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "final is false when a cache hit has no ledger request id",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a mode 0644 cache key sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "reconcile refuses a pasted key and leaves the file",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "reconcile keeps a short note",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "reconcile refuses a key with one dot while a 12-character run remains",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "reconcile stores a key broken into runs shorter than 12",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a preview with no local engine is final false and voice fallback",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a local-engine failure is stored final true",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "paidEnabled false sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "F0 still reserves USD and calls the mock once",
+      "ok": true,
+      "detail": {
+        "spent": 2670
+      }
+    }
+  ]
+}
