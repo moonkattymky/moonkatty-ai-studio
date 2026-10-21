@@ -5,7 +5,8 @@
 const { app, BrowserWindow, Menu, shell, dialog, session, ipcMain, nativeImage } = require('electron');
 const fs = require('fs'), path = require('path'), { pathToFileURL } = require('url');
 const svc = require('./service.js');
-const PRODUCT = 'MOONKATTY AI STUDIO';
+const CFG = require('../lib/studio-config.js'); // all names/ids/paths/labels/ports (prod vs isolated TEST build)
+const PRODUCT = CFG.product;
 const REPO = 'moonkattymky/moonkatty-ai-studio'; // pinned: update checks never use a configurable repo
 const EXTERNAL_HOSTS = new Set(['www.facebook.com', 'facebook.com', 'business.facebook.com', 'developers.facebook.com', 'www.instagram.com', 'instagram.com',
   'github.com', 'moonkatty.com', 'www.moonkatty.com', 't.me', 'ollama.com', 'tailscale.com', 'opencode.ai', 'nodejs.org', 'support.apple.com']);
@@ -13,6 +14,9 @@ app.setName(PRODUCT);
 app.commandLine.appendSwitch('lang', 'ru');
 app.enableSandbox();
 if (process.env.STUDIO_USER_DATA && !app.isPackaged) app.setPath('userData', process.env.STUDIO_USER_DATA); // tests only (dev runs)
+else if (process.platform === 'darwin') app.setPath('userData', CFG.macDataDir()); // explicit: ~/Library/Application Support/<product>/
+// Startup guard (TEST build): refuse to run if userData would resolve into the production data folder.
+try { CFG.assertTestPath(app.getPath('userData'), 'userData'); } catch (e) { dialog.showErrorBox(PRODUCT, e.message); app.exit(78); }
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 const ROOT = path.join(__dirname, '..');
@@ -20,10 +24,10 @@ const BUILD = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirna
 const dataDir = () => app.getPath('userData');
 const logDir = () => process.platform === 'darwin' ? path.join(app.getPath('home'), 'Library', 'Logs', PRODUCT) : path.join(dataDir(), 'logs');
 const cfgFile = () => path.join(dataDir(), 'desktop.json');
-const DEF = { port: 8787, autoStartServer: true, startAtLogin: false, checkUpdates: true };
+const DEF = { port: CFG.defaultPort, autoStartServer: CFG.autoStartServer, startAtLogin: false, checkUpdates: CFG.checkUpdates }; // TEST: 8687, no autostart, no update checks
 const cfg = () => { let c = {}; try { c = JSON.parse(fs.readFileSync(cfgFile(), 'utf8')); } catch {}
-  const port = Number.isInteger(c.port) && c.port >= 1024 && c.port <= 65535 ? c.port : DEF.port;
-  return { port, autoStartServer: c.autoStartServer !== false, startAtLogin: c.startAtLogin === true, checkUpdates: c.checkUpdates !== false, enableOpenCode: c.enableOpenCode === true,
+  let port = Number.isInteger(c.port) && c.port >= 1024 && c.port <= 65535 ? c.port : DEF.port; if (CFG.IS_TEST && port === CFG.PROD.defaultPort) port = DEF.port; // test never uses the production port
+  return { port, autoStartServer: typeof c.autoStartServer === 'boolean' ? c.autoStartServer : DEF.autoStartServer, startAtLogin: c.startAtLogin === true, checkUpdates: typeof c.checkUpdates === 'boolean' ? c.checkUpdates : DEF.checkUpdates, enableOpenCode: c.enableOpenCode === true,
     allowedHosts: (Array.isArray(c.allowedHosts) ? c.allowedHosts : []).filter(h => typeof h === 'string' && /^[a-z0-9.-]+\.ts\.net(:\d+)?$/i.test(h)).slice(0, 5) }; }; // only Tailscale names
 const saveCfg = c => { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 2), { mode: 0o600 }); };
 // Packaged: official Node binary (Resources/node/node) runs server.js from app.asar.unpacked → the RunAsNode fuse stays OFF.

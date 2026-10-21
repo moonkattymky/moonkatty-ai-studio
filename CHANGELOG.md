@@ -1,11 +1,34 @@
 # Changelog
 
 ## Unreleased
+(см. 1.2.2-test ниже; video_render из этого раздела вошёл в 1.2.2-test)
 - Новый тип задания **`video_render`** (запрос Studio 2, feat/media-automation INTEGRATION.md §10): `resourceClass:'gpu_heavy'`, `requiresNode:'mac-mini'`, `safeToRetry:true`, `idempotencyKey:'<runId>:<preset>'` (повторное создание возвращает то же задание). Вход `{runId, preset:'youtube'|'shorts', episodeRef}` проверяется строго: лишние поля, неизвестные значения и опасные символы отклоняются.
 - Задание выполняется только под общей блокировкой тяжёлых операций (`withHeavy`): строго по одному и никогда одновременно с Blender (design3d/blender_template) и Ollama.
 - Результат: ровно mp4, srt и обложка jpg, каждый `{path,size,sha256,kind}`; пути только внутри `<dataDir>/media`, размер и sha256 сверяются с файлом.
 - **Ограничение:** исполнитель рендера пока не подключён — задание завершается ошибкой «Не подключено», файлы не создаются (точка подключения `services.videoRender.setExecutor`).
 - Тесты: `npm run test:video` (45 проверок).
+
+## 1.2.2-test — изолированная ТЕСТОВАЯ сборка для первого теста на Mac mini (не для работы, 2026-10-21)
+**Изоляция (на этапе сборки, `lib/studio-config.js`, `FLAVOR=test scripts/package-mac-on-linux.sh`)**
+- Все имена и идентификаторы собраны в одном модуле `lib/studio-config.js`. Ни одного жёстко прописанного значения больше нет, тест `test:isolation` проверяет это через grep.
+- Тестовая сборка: имя «MOONKATTY AI STUDIO TEST», bundle id `com.moonkatty.aistudio.test`, папка `~/Library/Application Support/MOONKATTY AI STUDIO TEST/`, журналы `~/Library/Logs/MOONKATTY AI STUDIO TEST/`, launchd `com.moonkatty.aistudio.test.server`, Keychain service `MOONKATTY AI STUDIO.test` (мастер-ключ и пароль OpenCode), порт 8687 вместо 8787 у v1.1.2, OpenCode 4097. Автозапуск и проверка обновлений выключены.
+- Признак сборки (`"studioFlavor":"test"` в упакованном `package.json`) задаётся только при сборке. `STUDIO_FLAVOR` учитывается только в тестах на чистом Node (`NODE_ENV=test`).
+- Защита при запуске: тестовая сборка отказывается открывать любой путь внутри папки production-версии. Проверка работает и через символические ссылки, без учёта регистра на macOS, в сервере, Electron и генераторе plist. Если серверу встретится сервер production-версии на тестовом порту, он считается чужим.
+- `opencode/serve.sh`: `MK_FLAVOR=test` читает тестовый элемент Keychain и слушает порт 4097.
+**Исправления рисков**
+- Восстановление БД теперь в два шага: `POST /api/restore/prepare` возвращает одноразовый токен (5 мин), затем `POST /api/restore {token, confirm:"ЗАМЕНИТЬ"}`. Перед заменой сервер автоматически делает копию SQLite (`VACUUM INTO`, `.sha256`). Старый одношаговый вызов отклоняется.
+- SSRF при проверке интеграций (`lib/egress.js`): для каждой интеграции свой белый список хостов и портов. Локальные службы доступны только по loopback и на известном порту, внешние — только хосты из списка и только по https:443. Сервер разрешает DNS и проверяет каждый адрес. Блокируются частные сети, CGNAT, link-local, метаданные облака (169.254.169.254, fd00:ec2::254, 100.100.100.200), ULA, multicast и IPv4-mapped. Соединение идёт на проверенный адрес (нет окна для DNS-rebinding), редиректы не выполняются.
+- `lib/keystore.js`: мастер-ключ больше не передаётся в argv. Он уходит hex-строкой (`-X`) через stdin `security -i`. Тест проверяет журнал argv.
+**Контроль нагрузки**
+- Чат Director (Ollama `/api/chat`) идёт через общую блокировку тяжёлых операций (`tryHeavy`), как Blender и video_render. Ollama никогда не работает одновременно с ними. Блокировку ждём `STUDIO_CHAT_WAIT_MS` (15 с). Если не дождались, ответ `202 {status:"busy_queued"}`, а запрос завершается в фоне (не дольше 10 мин). Если в очереди больше `STUDIO_CHAT_MAX_QUEUED` (3) запросов, ответ `429 queue_full`. Статический тест проверяет, что все вызовы `/api/chat` и `/api/generate` идут под блокировкой.
+**Находки QA (Studio 4)**
+- QA-APR-001: новые элементы очереди публикаций всегда получают `pending_approval`. Статусы `approved` и `retry` ставятся только через PUT после fact-check и проверки дневных лимитов. В TEST-сборке `meta.tick`, `/publish` и ответы на комментарии отключены.
+- QA-APR-002: статус `published` требует непустой `externalId`, иначе 400. В TEST-сборке такой запрос получает 403.
+- QA-DB-001: перед любой миграцией существующей БД автоматически создаётся копия SQLite с SHA-256. Версия схемы записывается в `meta.schemaVersion`: v1.1.2 = 1, v1.2.1 = 3, сейчас 4. `/api/backup` теперь включает `jobs`, `job_events` и пользователей (только scrypt-хеши).
+- QA-OC-001: профиль sandbox для OpenCode больше не разрешает запись в `/private/tmp` и `/private/var/folders`, только во временную подпапку задачи (`TMPDIR`).
+- QA-INFO-001: в BUILD-INFO больше нет «undefined» для fuse №8: используется закреплённая версия `@electron/fuses@2.1.3` (WasmTrapHandlers).
+- Совместимость с Studio 2: добавлен `services.videoRender.hasExecutor()`, `isStub()` остаётся псевдонимом. Исполнитель Studio 2 не подключался.
+**Релиз**: новый ассет `release-manifest.json` (формат в `docs/RELEASE_MANIFEST.md`). Инструкция для Mac: `docs/MAC_TEST_ISOLATED.md`. Тесты: `npm run test:isolation`, E2E: `npm run test:e2e-test-build`.
 
 ## 1.2.1-mac-preview — 3D Studio, этап C: ревью, версии, перерендер, экспорт (2026-10-21)
 - **Референсы**: загрузка PNG/JPEG/WEBP в проект 3D Studio. Тип проверяется по сигнатуре файла, а не по расширению (SVG/HTML отклоняются). Лимиты: до 15 МБ на файл и до 20 файлов на проект. Файл хранится как `references/<sha256>.<ext>`, исходное имя очищается, повторная загрузка того же файла распознаётся. Файлы отдаются с `nosniff` и `CSP: sandbox`. **Ограничение:** референсы пока только хранятся и показываются; модель их не использует (это этап D).

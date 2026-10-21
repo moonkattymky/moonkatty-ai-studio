@@ -32,10 +32,12 @@ module.exports = function createRunner(ctx) {
     return null;
   }
   const sbq = p => '"' + String(p).replace(/[\\"]/g, '\\$&') + '"';
+  // QA-OC-001: an app-specific temp dir per sandbox (<sandbox>/.tmp); TMPDIR points there, nothing else is writable.
+  const tmpDir = dir => { const t = path.join(dir, '.tmp'); fs.mkdirSync(t, { recursive: true, mode: 0o700 }); return t; };
   function sandboxProfile(dir) {
     const home = os.homedir();
     return ['(version 1)', '(allow default)', '(deny file-write*)',
-      `(allow file-write* (subpath ${sbq(fs.realpathSync(dir))}) (subpath "/private/tmp") (subpath "/private/var/folders") (literal "/dev/null") (literal "/dev/tty")`,
+      `(allow file-write* (subpath ${sbq(fs.realpathSync(dir))}) (subpath ${sbq(fs.realpathSync(tmpDir(dir)))}) (literal "/dev/null") (literal "/dev/tty")`, // QA-OC-001: no /private/tmp, no /private/var/folders
       `  (subpath ${sbq(path.join(home, '.local', 'share', 'opencode'))}) (subpath ${sbq(path.join(home, '.local', 'state', 'opencode'))}) (subpath ${sbq(path.join(home, '.cache', 'opencode'))}) (subpath ${sbq(path.join(home, '.config', 'opencode'))}))`,
       `(deny file-read* (subpath ${sbq(path.join(home, '.ssh'))}) (subpath ${sbq(path.join(home, 'Library', 'Keychains'))})`,
       `  (literal ${sbq(path.join(dataDir, 'studio.db'))}) (literal ${sbq(path.join(dataDir, 'secret.key'))}) (literal ${sbq(path.join(dataDir, 'app-token'))}) (subpath ${sbq(path.join(dataDir, 'backups'))}))`].join('\n');
@@ -46,7 +48,7 @@ module.exports = function createRunner(ctx) {
       const bin = opencodePath(); if (!bin) return reject(Object.assign(new Error('OpenCode CLI не найден в PATH'), { blocked: true }));
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(task.id)) return reject(new Error('Недопустимый id задачи'));
       const dir = path.join(dataDir, 'opencode-sandbox', task.id); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-      const env = { PATH: process.env.PATH, HOME: os.homedir(), LANG: 'en_US.UTF-8', OPENCODE_DISABLE_AUTOUPDATE: '1',
+      const env = { PATH: process.env.PATH, HOME: os.homedir(), LANG: 'en_US.UTF-8', TMPDIR: tmpDir(dir) + '/', OPENCODE_DISABLE_AUTOUPDATE: '1',
         OPENCODE_PERMISSION: JSON.stringify({ edit: 'allow', bash: 'deny', webfetch: 'deny', external_directory: 'deny' }) }; // no studio env/secrets passed
       const prompt = `${task.title}\n\n${task.description || ''}`.replace(/^-+/, '');
       let cmd = bin, args = ['run', '--dir', dir, '--title', String(task.title).replace(/^-+/, '').slice(0, 60), '--', prompt];

@@ -1,6 +1,6 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.2.1",
+  "version": "1.2.2-test",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
@@ -14,7 +14,9 @@
     "test:policy": "node scripts/policy-test.mjs",
     "test:3d": "node scripts/design3d-test.mjs",
     "test:3c": "node scripts/studio3c-test.mjs",
-    "test:video": "node scripts/video-render-test.mjs"
+    "test:video": "node scripts/video-render-test.mjs",
+    "test:isolation": "node scripts/isolation-test.mjs",
+    "test:e2e-test-build": "node scripts/e2e-test-build.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",

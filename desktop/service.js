@@ -2,13 +2,15 @@
 // optional start at login). Other OS (dev/test): detached child process.
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), { spawn, execFile } = require('child_process');
-const LABEL = 'com.moonkatty.aistudio.server';
+const CFG = require('../lib/studio-config.js');
+const LABEL = CFG.launchdLabel; // TEST build: com.moonkatty.aistudio.test.server
 // Start at login ON → plist in ~/Library/LaunchAgents (launchd loads it at login).
 // OFF → plist in the data folder: loaded by the app only for this session (KeepAlive implies RunAtLoad).
 const loginPlist = () => path.join(os.homedir(), 'Library', 'LaunchAgents', LABEL + '.plist');
 const plistPath = o => o && !o.startAtLogin ? path.join(o.dataDir, 'launchd', LABEL + '.plist') : loginPlist();
 const xml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 function serverEnv({ dataDir, port, runAsNode, enableOpenCode, allowedHosts }) {
+  CFG.assertTestPath(dataDir, 'data dir');
   const env = { STUDIO_DATA_DIR: dataDir, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'production',
     PATH: [path.join(os.homedir(), '.opencode', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':') };
   if (runAsNode) env.ELECTRON_RUN_AS_NODE = '1'; // dev only; packaged builds use the bundled Node binary (RunAsNode fuse off)
@@ -37,7 +39,7 @@ function plist(o) {
 }
 const run = (cmd, args) => new Promise(res => execFile(cmd, args, { timeout: 15000 }, (e, so, se) => res({ ok: !e, code: e ? e.code : 0, out: String(so || '') + String(se || '') })));
 const uid = () => process.getuid ? process.getuid() : 0;
-async function health(port) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2500) }); const j = await r.json(); return j.app === 'moonkatty-ai-studio' ? j : { foreign: true }; } catch (e) { return null; } }
+async function health(port) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2500) }); const j = await r.json(); return j.app === 'moonkatty-ai-studio' && (j.flavor || 'prod') === CFG.flavor ? j : { foreign: true }; } catch (e) { return null; } }
 async function waitHealthy(port, ms = 20000) { const end = Date.now() + ms; while (Date.now() < end) { const h = await health(port); if (h && !h.foreign) return h; await new Promise(r => setTimeout(r, 500)); } return null; }
 async function installAndStart(o) {
   fs.mkdirSync(o.logDir, { recursive: true }); fs.mkdirSync(o.dataDir, { recursive: true });

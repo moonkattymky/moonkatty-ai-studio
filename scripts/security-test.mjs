@@ -57,7 +57,9 @@ await fetch(B + '/api/logs', { method: 'POST', headers: A, body: JSON.stringify(
 await fetch(B + '/api/tasks', { method: 'POST', headers: A, body: JSON.stringify({ title: 'token test access_token=EAAFAKEFAKEFAKEFAKEFAKEFAKE123 client_secret=FAKE' }) });
 const logs = JSON.stringify(await (await fetch(B + '/api/logs', { headers: A })).json());
 ok('logs redact tokens/secrets', !/EAAFAKEFAKE|client_secret=FAKE/.test(logs) && /REDACTED/.test(logs));
-const backup = await (await fetch(B + '/api/backup', { headers: A })).text(); ok('backup export has no secrets/password hashes', !backup.includes('FAKE-SECRET') && !/scrypt|"users"/.test(backup));
+const backup = await (await fetch(B + '/api/backup', { headers: A })).text(); { const bj = JSON.parse(backup); // v1.2.2 (QA-DB-001): users exported as scrypt HASHES only; no plaintext password, no sessions, no app token, no secrets
+  ok('backup export has no secrets / plaintext passwords / sessions', !backup.includes('FAKE-SECRET') && !backup.includes('fake-password-123') && !/"sessions"|mk_session|app-token/.test(backup));
+  ok('backup export: users = password hashes only, jobs tables included', Array.isArray(bj.users) && bj.users.length > 0 && bj.users.every(u => Object.keys(u).sort().join() === 'passwordHash,username' && /^[a-f0-9]{32}:[a-f0-9]{128}$/.test(u.passwordHash)) && Array.isArray(bj.jobs) && Array.isArray(bj.jobEvents)); }
 // app token rules
 const tok = fs.readFileSync(UD + '/app-token', 'utf8').trim(); ok('app-token file is 0600', (fs.statSync(UD + '/app-token').mode & 0o777) === 0o600);
 ok('app token accepted from loopback without Origin', (await fetch(B + '/api/tasks', { headers: { 'x-studio-app-token': tok } })).status === 200);

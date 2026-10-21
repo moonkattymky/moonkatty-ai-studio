@@ -9,12 +9,20 @@ const core = require('./public/core.js');
 const S = MKSocial;
 const crypto = require('crypto');
 const sec = require('./lib/security.js');
+const CFG = require('./lib/studio-config.js'); // build flavor: prod | isolated TEST (names, ports, Keychain, data dir)
+const egress = require('./lib/egress.js'), heavy = require('./lib/heavy-lock.js');
 
-const PORT = +process.env.PORT || 8787;
+const PORT = +process.env.PORT || CFG.defaultPort;
 const HOST = process.env.HOST || '127.0.0.1';
 const DATA_DIR = process.env.STUDIO_DATA_DIR || path.join(__dirname, 'data');
 const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'studio.db');
+// Startup guard: the TEST build refuses to open anything inside the production data folder (symlinks resolved).
+try { CFG.assertTestPath(DATA_DIR, 'STUDIO_DATA_DIR'); CFG.assertTestPath(DB_PATH, 'DB_PATH'); } catch (e) { console.error(e.message); process.exit(78); }
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+// QA-DB-001: schema version + automatic SQLite backup (VACUUM INTO, SHA-256) BEFORE any migration of an existing DB.
+const DB_SCHEMA_VERSION = 4; // 1 = items/meta (v1.0–v1.1.x) · 2 = jobs/job_events (v1.2.0) · 3 = jobs v1.2.0 extra cols + mig_120 · 4 = schemaVersion meta + v1.2.2
+const PRE_MIG = require('./lib/db-backup.js');
+const preMigration = PRE_MIG.backupBeforeMigration(DB_PATH, DB_SCHEMA_VERSION, openDb);
 const db = openDb(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.exec(`CREATE TABLE IF NOT EXISTS items (col TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (col, id));
@@ -51,6 +59,7 @@ app.use('/api', sec.csrfCheck(PORT));  // Origin + X-Studio-Request on state-cha
 const jsonSmall = express.json({ limit: '2mb' });
 app.use((req, res, next) => req.path === '/api/restore' ? next() : jsonSmall(req, res, next));
 const STARTED = Date.now();
+if (preMigration) log('warn', 'backup', `Перед миграцией схемы ${preMigration.from} → ${DB_SCHEMA_VERSION} создана копия ${path.basename(preMigration.file)} (SHA-256 ${preMigration.sha256})`);
 
 
 const FILES_DIR = path.join(path.dirname(DB_PATH), 'files');
@@ -87,6 +96,8 @@ runner.register('design3d', design3d.run);
 const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log, mediaRoot: path.join(DATA_DIR, 'media') }); app.locals.services = services; module.exports = { services };
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
   q.setMeta.run('mig_120_design3d', core.now()); }
+q.setMeta.run('schemaVersion', String(DB_SCHEMA_VERSION)); // all migrations above are done
+if (CFG.IS_TEST && !q.meta.get('test_oc_url')) { const oc = get('integrations', 'opencode'); if (oc && oc.url === CFG.PROD.opencodeUrl) { oc.url = CFG.opencodeUrl; put('integrations', oc); } q.setMeta.run('test_oc_url', core.now()); }
 // Local desktop-app token: lets the app window authenticate without a password. Accepted only from loopback.
 const APP_TOKEN_FILE = path.join(path.dirname(DB_PATH), 'app-token');
 if (!fs.existsSync(APP_TOKEN_FILE)) fs.writeFileSync(APP_TOKEN_FILE, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -123,10 +134,14 @@ app.post('/api/auth/password', (req, res) => {
   u[req.user] = hashPw(newPassword); setUsers(u); log('info', 'auth', 'Пароль изменён', req.user); res.json({ ok: true });
 });
 
+if (CFG.IS_TEST) app.use(['/api/queue/:id/publish', '/api/comments/:id/reply'], (req, res) => res.status(403).json({ error: 'Тестовая сборка: публикация отключена', code: 'publishing_disabled' })); // TEST build: no publishing at all
 meta.mountProtected();
 
 // ---- Backup / restore ----
-const dump = () => ({ app: 'moonkatty-ai-studio', version: 1, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])) });
+// QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
+const dump = () => ({ app: 'moonkatty-ai-studio', version: 2, flavor: CFG.flavor, schemaVersion: DB_SCHEMA_VERSION, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])),
+  jobs: db.prepare('SELECT * FROM jobs ORDER BY created_at').all(), jobEvents: db.prepare('SELECT * FROM job_events ORDER BY seq').all(),
+  users: Object.entries(getUsers()).map(([username, hash]) => ({ username, passwordHash: hash })) });
 function scheduledBackup() {
   const f = path.join(BACKUP_DIR, 'backup-' + core.now().replace(/[:.]/g, '-') + '.json'); fs.writeFileSync(f, JSON.stringify(dump()));
   const all = fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort(); for (const x of all.slice(0, Math.max(0, all.length - 14))) fs.unlinkSync(path.join(BACKUP_DIR, x));
@@ -135,10 +150,28 @@ function scheduledBackup() {
 app.get('/api/backup', (req, res) => { log('info', 'backup', 'Экспорт резервной копии', req.user); res.setHeader('Content-Disposition', 'attachment; filename="moonkatty-studio-backup.json"'); res.json(dump()); });
 app.get('/api/backups', (req, res) => res.json(fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort().reverse()));
 app.post('/api/backups/run', (req, res) => { scheduledBackup(); res.json({ ok: true }); });
-app.post('/api/restore', express.json({ limit: '50mb' }), (req, res) => {
-  const d = req.body?.data; if (!d || typeof d !== 'object') return res.status(400).json({ error: 'Неверный файл резервной копии' });
+// Risk fix (a): restore is two-step. 1) /api/restore/prepare uploads the file → server keeps it in memory and returns a
+// one-time confirmation token (5 min) + a summary. 2) /api/restore with {token, confirm:"ЗАМЕНИТЬ"} → the server FIRST
+// makes an automatic SQLite copy (VACUUM INTO, SHA-256 sidecar) and only then replaces the data.
+const DBB = require('./lib/db-backup.js'); const pendingRestore = new Map(); const RESTORE_TTL = 5 * 60000;
+app.post('/api/restore/prepare', express.json({ limit: '50mb' }), (req, res) => {
+  const d = req.body?.data; if (!d || typeof d !== 'object' || Array.isArray(d)) return res.status(400).json({ error: 'Неверный файл резервной копии' });
+  for (const [k, v] of pendingRestore) if (v.exp < Date.now()) pendingRestore.delete(k);
+  const token = crypto.randomBytes(24).toString('hex'); const counts = Object.fromEntries(core.COLLECTIONS.filter(c => Array.isArray(d[c])).map(c => [c, d[c].length]));
+  pendingRestore.set(hashTok(token), { data: d, user: req.user, exp: Date.now() + RESTORE_TTL, sha256: crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex') });
+  res.json({ token, expiresInSec: RESTORE_TTL / 1000, counts, confirm: 'ЗАМЕНИТЬ' });
+});
+app.post('/api/restore', express.json({ limit: '1mb' }), (req, res) => {
+  const { token, confirm } = req.body || {}; if (req.body?.data) return res.status(400).json({ error: 'Восстановление в два шага: сначала /api/restore/prepare, затем подтверждение токеном', code: 'confirm_required' });
+  const k = typeof token === 'string' && /^[a-f0-9]{48}$/.test(token) ? hashTok(token) : null; const p = k && pendingRestore.get(k);
+  if (!p || p.exp < Date.now() || p.user !== req.user) return res.status(403).json({ error: 'Нет действительного токена подтверждения', code: 'confirm_required' });
+  if (confirm !== 'ЗАМЕНИТЬ') return res.status(400).json({ error: 'Подтвердите замену: confirm = «ЗАМЕНИТЬ»', code: 'confirm_required' });
+  pendingRestore.delete(k);
+  let bk; try { bk = DBB.snapshot(db, BACKUP_DIR, 'pre-restore'); } catch (e) { log('error', 'backup', 'Восстановление отменено: не удалось сделать копию — ' + e.message, req.user); return res.status(500).json({ error: 'Не удалось сделать резервную копию — данные НЕ заменены' }); }
+  const d = p.data;
   db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o of d[c]) if (o && o.id) put(c, o); } })();
-  log('info', 'backup', 'Данные восстановлены из резервной копии', req.user); res.json({ ok: true });
+  log('info', 'backup', `Данные восстановлены из резервной копии (предварительная копия ${path.basename(bk.file)}, SHA-256 ${bk.sha256})`, req.user);
+  res.json({ ok: true, backup: { file: path.basename(bk.file), sha256: bk.sha256, size: bk.size } });
 });
 
 // ---- Files (uploads for episodes/video) ----
@@ -151,30 +184,46 @@ app.post('/api/files/upload', express.raw({ type: '*/*', limit: '500mb' }), (req
 app.use('/files', (req, res, next) => { const s = getSession(req) || appTokenUser(req); if (!s) return res.status(401).end(); next(); }, sec.filesHeaders, express.static(FILES_DIR, { dotfiles: 'deny', index: false, redirect: false }));
 
 // ---- Director chat ----
-async function llmPlan(text) {
+// Load control (v1.2.2): the Director's Ollama generation goes through the global heavy lock (same as Blender / video_render),
+// so it never runs concurrently with a heavy job. The HTTP request waits at most STUDIO_CHAT_WAIT_MS for the lock; if it is
+// still held, the answer is 202 {status:'busy_queued'} and the request stays queued in the background (bounded: at most
+// STUDIO_CHAT_MAX_QUEUED waiting chats, at most STUDIO_CHAT_QUEUE_MS total) — the result appears in the chat later.
+const CHAT_WAIT = () => +process.env.STUDIO_CHAT_WAIT_MS || 15000, CHAT_QUEUE = () => +process.env.STUDIO_CHAT_QUEUE_MS || 10 * 60000, CHAT_MAXQ = () => +process.env.STUDIO_CHAT_MAX_QUEUED || 3;
+async function llmPlan(text, onStart) {
   const it = get('integrations', 'ollama'); const model = (it && it.model) || 'qwen3:8b';
   const agents = list('agents').filter(a => a.enabled).map(a => `${a.id}: ${a.role}`).join('\n');
   const prompt = `Ты Director студии MOONKATTY. Разбей запрос на задачи для агентов. Агенты:\n${agents}\nОтветь ТОЛЬКО JSON: {"summary":"...","tasks":[{"title":"...","agentId":"...","priority":"low|normal|high|urgent","description":"..."}]}\nЗапрос: ${text}`;
-  const r = await fetch(it.url.replace(/\/$/, '') + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(120000),
-    body: JSON.stringify({ model, stream: false, format: 'json', messages: [{ role: 'user', content: prompt }] }) });
-  if (!r.ok) throw new Error('Ollama HTTP ' + r.status);
-  const j = JSON.parse((await r.json()).message.content); const ids = new Set(list('agents').map(a => a.id));
+  const content = await heavy.tryHeavy('ollama:director', async () => { onStart && onStart();
+    const r = await fetch(it.url.replace(/\/$/, '') + '/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(120000),
+      body: JSON.stringify({ model, stream: false, format: 'json', messages: [{ role: 'user', content: prompt }] }) });
+    if (!r.ok) throw new Error('Ollama HTTP ' + r.status); return (await r.json()).message.content; }, { waitMs: CHAT_QUEUE(), maxWaiting: CHAT_MAXQ() });
+  const j = JSON.parse(content); const ids = new Set(list('agents').map(a => a.id));
   return { planner: 'llm:' + model, summary: j.summary || '', tasks: (j.tasks || []).map(t => ({ ...t, agentId: ids.has(t.agentId) ? t.agentId : 'director' })) };
+}
+function finishPlan(text, user, plan, llmError) {
+  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), ...(t.agentId === 'design3d' ? { kind: '3d' } : {}), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
+    status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
+  const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
+  log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, user); return { message: msg, tasks: created };
 }
 app.post('/api/director/chat', async (req, res) => {
   const text = String(req.body?.text || '').trim(); if (!text) return res.status(400).json({ error: 'empty' });
   put('chat', { id: core.uid(), role: 'user', text, at: core.now(), user: req.user });
-  let plan, llmError = null;
-  try { plan = await llmPlan(text); } catch (e) { llmError = String(e.cause?.code || e.message); plan = core.rulePlan(text); }
-  const created = plan.tasks.map(t => put('tasks', { id: core.uid(), ...(t.agentId === 'design3d' ? { kind: '3d' } : {}), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
-    status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
-  const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
-  log('info', 'director', `Запрос разобран (${plan.planner}), задач: ${created.length}`, req.user); res.json({ message: msg, tasks: created });
+  const user = req.user; let started; const acquired = new Promise(r => started = r);
+  const work = llmPlan(text, () => started({ acquired: true })).then(plan => ({ plan, llmError: null }), e => e.busy && e.code === 'queue_full' ? { full: e } : ({ plan: core.rulePlan(text), llmError: e.busy ? 'busy: ' + e.message : String(e.cause?.code || e.message) }));
+  const timer = new Promise(r => setTimeout(() => r({ waiting: true }), CHAT_WAIT()));
+  let first = await Promise.race([work, acquired, timer]); if (first.acquired) first = await work; // lock taken in time → wait for the answer
+  if (first.full) { const hs = heavy.status(); res.setHeader('Retry-After', '30'); return res.status(429).json({ status: 'busy', code: 'queue_full', error: `Студия занята (${hs.holder || 'тяжёлая задача'}), очередь чата заполнена — повторите позже`, heavy: hs }); }
+  if (first.waiting) { const hs = heavy.status();
+    const note = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: 'queued', text: `Студия занята (${hs.holder || 'тяжёлая задача'}) — запрос поставлен в очередь, ответ появится здесь после её завершения.` });
+    res.status(202).json({ status: 'busy_queued', message: note, heavy: hs, tasks: [] });
+    const r = await work; if (r.full) return; finishPlan(text, user, r.plan, r.llmError); return; }
+  res.json(finishPlan(text, user, first.plan, first.llmError));
 });
 
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
-  res.json({ ok: dbOk, app: 'moonkatty-ai-studio', mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
-app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
+  res.json({ ok: dbOk, app: 'moonkatty-ai-studio', flavor: CFG.flavor, product: CFG.product, schemaVersion: DB_SCHEMA_VERSION, mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
+app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, heavy: heavy.status(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
 app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', req.params.id); if (!t || t.kind !== 'code') return res.status(400).json({ error: 'Не задача OpenCode' });
@@ -196,7 +245,7 @@ app.get('/api/system', (req, res) => {
 
 // ---- OpenCode server Basic Auth (password only in macOS Keychain; see lib/opencode-auth.js) ----
 const oca = require('./lib/opencode-auth.js');
-const ocItem = () => get('integrations', 'opencode') || { id: 'opencode', name: 'OpenCode', url: 'http://127.0.0.1:4096', testPath: '/global/health' };
+const ocItem = () => get('integrations', 'opencode') || { id: 'opencode', name: 'OpenCode', url: CFG.opencodeUrl, testPath: '/global/health' };
 async function ocView() { const it = ocItem(); const ks = oca.keychainStatus();
   return { url: it.url, username: it.username || oca.DEFAULT_USER, hasPassword: ks.available ? await oca.hasPassword() : false, keychain: ks, lastTest: it.lastTest || null, status: !ks.available ? 'Не подключено' : (it.lastTest?.ok ? 'Подключено' : 'Не подключено') }; }
 app.get('/api/opencode/auth', async (req, res) => res.json(await ocView()));
@@ -223,22 +272,18 @@ async function ocTest(req, res) {
 }
 app.post('/api/opencode/test', ocTest);
 // Integration test — real HTTP request from the server.
+// Risk fix (b): SSRF-safe integration test — per-integration host allowlist, DNS resolved + every address checked,
+// connect pinned to the vetted address, private/link-local/metadata IPs blocked, redirects never followed (lib/egress.js).
 app.post('/api/integrations/:id/test', async (req, res) => {
   if (req.params.id === 'opencode') return ocTest(req, res);
   const it = get('integrations', req.params.id);
   if (!it) return res.status(404).json({ error: 'not found' });
   const url = String(it.url || '').replace(/\/$/, '') + (it.testPath || '/');
-  if (!/^https?:\/\//i.test(url)) return res.status(400).json({ error: 'Разрешены только http(s) URL' });
-  const t0 = Date.now(); let result;
-  try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const text = await r.text();
-    let detail = text.slice(0, 300);
-    if (it.id === 'ollama' && r.ok) { try { detail = 'Модели: ' + (JSON.parse(text).models || []).map(m => m.name).join(', ') || 'нет моделей'; } catch {} }
-    result = { ok: r.ok, status: r.status, ms: Date.now() - t0, url, detail, at: core.now(), via: 'server' };
-  } catch (e) {
-    result = { ok: false, status: null, ms: Date.now() - t0, url, detail: String(e.cause?.code || e.name || e.message), at: core.now(), via: 'server' };
-  }
+  const t0 = Date.now(); const r = await egress.safeGet(it.id, url, { timeoutMs: 5000 });
+  if (r.code === 'blocked_url' || r.code === 'blocked_ip') { log('warn', 'integration:' + it.id, `Проверка заблокирована (SSRF-защита): ${r.error}`, req.user); return res.status(400).json({ error: r.error, code: r.code }); }
+  let detail = r.text !== undefined ? String(r.text).slice(0, 300) : r.error;
+  if (it.id === 'ollama' && r.ok) { try { detail = 'Модели: ' + (JSON.parse(r.text).models || []).map(m => m.name).join(', ') || 'нет моделей'; } catch {} }
+  const result = { ok: !!r.ok, status: r.status ?? null, ms: Date.now() - t0, url, detail: sec.redact(String(detail || '')), code: r.code, at: core.now(), via: 'server' };
   it.lastTest = result; put('integrations', it);
   log(result.ok ? 'info' : 'error', 'integration:' + it.id, `Проверка ${it.name} (${url}): ${result.ok ? 'OK' : 'ошибка — ' + result.detail}`);
   res.json(result);
@@ -352,7 +397,20 @@ app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, re
 // Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).
 const PROTECTED = { integrations: ['password', 'authorization', 'lastTest'], tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId'], comments: ['repliedAt', 'replyId'] };
 const stripProtected = (col, b) => { const o = Object.assign({}, b); for (const k of PROTECTED[col] || []) delete o[k]; if (col === 'tasks' && 'kind' in o) o.codeApproved = false; return o; };
-app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); next(); });
+// QA-APR-001/002: publishing queue status rules (server-enforced; the UI cannot bypass them).
+//  • new items always start as pending_approval (POST cannot create approved/retry/published items);
+//  • approved/retry only via PUT, and only after fact-check guardrails + daily limits pass;
+//  • published only with a non-empty externalId (manual publication record); otherwise 400.
+//  • TEST build: publishing is disabled entirely (no meta.tick, no /publish, no reply).
+const QUEUE_ENTRY = 'pending_approval', QUEUE_GATED = ['approved', 'retry'];
+app.use('/api/queue', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
+  if (req.method === 'POST' && req.path === '/') { req.body.status = QUEUE_ENTRY; delete req.body.nextRetryAt; return next(); }
+  if (req.method === 'PUT' && req.body.status === 'published') { const x = req.body.externalId;
+    if (typeof x !== 'string' || !/^[A-Za-z0-9_:.\-]{1,128}$/.test(x.trim())) return res.status(400).json({ error: 'Статус «опубликовано» требует externalId (ID публикации на платформе)', code: 'external_id_required' });
+    if (CFG.IS_TEST) return res.status(403).json({ error: 'Тестовая сборка: публикация отключена', code: 'publishing_disabled' });
+    req.queueExternalId = x.trim(); }
+  next(); });
+app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); if (req.queueExternalId) req.body.externalId = req.queueExternalId; next(); });
 // OpenCode URL must pass the same loopback validation when written through generic CRUD.
 app.use('/api/integrations', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
   const id = req.path.split('/')[1] || req.body.id; if (id !== 'opencode') return next();
@@ -374,7 +432,7 @@ app.post('/api/:col', okCol, (req, res) => {
 });
 app.put('/api/:col/:id', okCol, (req, res) => {
   const cur = get(req.params.col, req.params.id); if (!cur) return res.status(404).json({ error: 'not found' });
-  if (req.params.col === 'queue' && req.body.status === 'approved') {
+  if (req.params.col === 'queue' && QUEUE_GATED.includes(req.body.status)) {
     const cand = Object.assign({}, cur, req.body); const data = { queue: list('queue'), episodes: list('episodes') };
     const issues = [...S.guardrails(cand, data), ...S.dailyCheck(cand, data.queue, list('workspaces'))];
     if (issues.length) { log('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`, req.user); return res.status(400).json({ error: issues.join('; '), issues }); }
@@ -411,7 +469,7 @@ function tick() {
       const rep = core.buildReport(data, 3); rep.trigger = 'auto'; put('reports', rep);
       q.setMeta.run('lastAutoReport', rep.createdAt); log('info', 'analytics', 'Автоматический отчёт за 3 дня сформирован');
     }
-    meta.tick().catch(e => log('error', 'publishing', e.message));
+    if (!CFG.IS_TEST) meta.tick().catch(e => log('error', 'publishing', e.message)); // TEST build never publishes
     runner.tick();
     const lb = q.meta.get('lastBackup')?.v; if (!lb || Date.now() - new Date(lb) >= 86400000) scheduledBackup();
     q.setMeta.run('lastTick', core.now());
@@ -422,7 +480,7 @@ function startBackground() { const rj = jobs.recover(); if (rj.length) log('warn
 process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
 // Single instance: if the port is taken by our own server, exit cleanly (launchd will not restart on success).
 const PID_FILE = path.join(path.dirname(DB_PATH), 'server.pid');
-const srv = app.listen(PORT, HOST, err => { if (err) return; startBackground(); fs.writeFileSync(PID_FILE, String(process.pid)); console.log(`MOONKATTY AI STUDIO: http://${HOST}:${PORT} (pid ${process.pid}, db ${db.driver || 'better-sqlite3'})`); });
+const srv = app.listen(PORT, HOST, err => { if (err) return; startBackground(); fs.writeFileSync(PID_FILE, String(process.pid)); console.log(`${CFG.product}: http://${HOST}:${PORT} (pid ${process.pid}, db ${db.driver || 'better-sqlite3'})`); });
 srv.on('error', async e => {
   if (e.code !== 'EADDRINUSE') throw e;
   let ours = false; try { ours = (await (await fetch(`http://127.0.0.1:${PORT}/api/health`, { signal: AbortSignal.timeout(3000) })).json()).app === 'moonkatty-ai-studio'; } catch {}
