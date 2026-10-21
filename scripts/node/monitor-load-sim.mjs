@@ -16,7 +16,7 @@ const m = N.createNodeManager({ dir: path.join(dir, 'coord'), leaseMs: 120000, m
 const srv = await N.listen(m, { host: '127.0.0.1', port: 0, insecureHttpForTests: true }); const port = srv.address().port;
 // artifacts: random data files (content-addressed) + a short real video if ffmpeg is present
 const arts = []; for (let k = 0; k < FILES; k++) { const f = path.join(dir, 'a' + k); const fd = fs.openSync(f, 'w'); const chunk = crypto.randomBytes(1 << 20); for (let i = 0; i < FMB; i++) fs.writeSync(fd, chunk); fs.closeSync(fd);
-  const h = crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex'); fs.renameSync(f, path.join(m.filesDir, h)); arts.push({ sha256: h, name: `artifact-${k}.bin` }); }
+  const h = execFileSync('sha256sum', [f]).toString().split(' ')[0]; fs.renameSync(f, path.join(m.filesDir, h)); arts.push({ sha256: h, name: `artifact-${k}.bin` }); }
 let video = null; const hasFF = (() => { try { execFileSync('ffprobe', ['-version'], { stdio: 'ignore' }); execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); return true; } catch { return false; } })();
 if (hasFF) { const v = path.join(dir, 'clip.mp4'); execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=1280x720:rate=30:duration=20', '-f', 'lavfi', '-i', 'sine=duration=20', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-shortest', v]);
   video = { sha256: m.putLocalFile(fs.readFileSync(v)), name: 'clip.mp4' }; }
