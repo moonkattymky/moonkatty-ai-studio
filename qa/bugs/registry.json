@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T17:49:54.659Z",
+  "updatedAt": "2026-10-21T18:10:12.814Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -1274,7 +1274,7 @@
       "id": "QA-UC-008",
       "title": "A missing build-info does not fail the release age check",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "readBuildInfoBuiltAt returns null when desktop/build-info.json is missing or the date does not parse. signedVersionProblems then warns and still marks a newer release verified, and prepareDownload allows it. The packaged server starts from app.asar.unpacked. asarUnpack includes lib/** and does not include desktop/**, so the reader looks for app.asar.unpacked/desktop/build-info.json. An asar that contains /desktop/build-info.json was not visible to that copy. An older signed 1.3.0 stayed verified. Deleting a build-info.json that sat beside the module did the same. When the file sits beside the module, the older builtAt is unverified. A dev run shows the warning on purpose. The packaged miss uses the same warning and the same allow.",
@@ -1287,17 +1287,23 @@
       ],
       "evidence": [
         "qa/reports/update-center-v4/REPORT.md",
-        "qa/reports/update-center-v4/logs/attack.json"
+        "qa/reports/update-center-v4/logs/attack.json",
+        "qa/reports/update-center-v5/REPORT.md"
       ],
       "foundAt": "2026-10-21T17:45:00.000Z",
       "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T17:45:00.000Z",
           "status": "open",
           "note": "The extracted-asar test passes because lib and desktop land in one directory. The packaged server does not run from that layout. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T18:10:12.749Z",
+          "status": "qa_verified",
+          "note": "Packaged path with a missing, asar-only, or unreadable build-info leaves the release unverified. Env does not select dev mode. A readable file still rejects an older builtAt. Owner approval is not set."
         }
       ]
     },
@@ -1305,7 +1311,7 @@
       "id": "QA-UC-009",
       "title": "A parent symlink is checked on one path and read on another",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "externalKeyringProblem stats the given path, then realpaths it and checks the files there. loadKeyring reads the original path, so a parent symlink is followed again. Replacing the symlink after the keyring.json check and before that second read loaded an attacker key and signatureStatus was READY. The attacker directory was mode 0755 and a load that starts on it is BLOCKED. nobody cannot replace a symlink in a sticky 1777 directory. nobody can replace one in a mode 0777 directory without the sticky bit. A live race on that directory won 1 of 21077 loads, then 0 of 32815. macOS /var is not a symlink a normal user can replace.",
@@ -1318,17 +1324,55 @@
       ],
       "evidence": [
         "qa/reports/update-center-v4/REPORT.md",
-        "qa/reports/update-center-v4/logs/attack.json"
+        "qa/reports/update-center-v4/logs/attack.json",
+        "qa/reports/update-center-v5/REPORT.md"
       ],
       "foundAt": "2026-10-21T17:45:00.000Z",
       "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T17:45:00.000Z",
           "status": "open",
           "note": "A stable parent symlink in the /var shape is READY. The hole is a symlink another user can replace between the check and the second read. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T18:10:12.785Z",
+          "status": "qa_verified",
+          "note": "Parent-symlink double read is closed. World-writable parent without sticky is BLOCKED. 20-second race: 0 attacker keys in 341623 loads. Same-user path open remains QA-UC-010. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-010",
+      "title": "Keyring files are opened by path after the directory fd is checked",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "readExternalKeyring opens the directory with O_RDONLY|O_NOFOLLOW|O_DIRECTORY and fstats that fd, then opens keyring.json and each pem with path.join(realpath, name) and O_RDONLY|O_NOFOLLOW. The file open is not openat on the directory fd. A same-user hook swapped a second mode 0700 directory into that path for the file reads and restored the original inode before the trailing lstat. signatureStatus was READY and the attacker key was loaded. A live same-user rename won 488 of 185057 loads in 12 seconds. Leaving the swap in place returns папка была подменена and does not merge the key. nobody retargeting a parent symlink for 20 seconds produced 0 attacker keys in 341623 loads. A process running as the directory owner can already rewrite a mode 0700 keyring.",
+      "expected": "Bytes read for keyring.json and each pem come from the directory inode that was fstat'd.",
+      "actual": "A same-user rename during the path open, restored before the trailing lstat, loads the other directory's public key and the state is READY.",
+      "repro": [
+        "Create two mode 0700 keyrings owned by the same uid, with different prod public keys",
+        "During open of keyring.json, rename the checked directory aside and rename the other directory into its place",
+        "Before the trailing lstat, rename the original directory back",
+        "signatureStatus is READY and the second key is the one in prod"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v5/REPORT.md",
+        "qa/reports/update-center-v5/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T18:10:02.000Z",
+      "foundIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T18:10:02.000Z",
+          "status": "open",
+          "note": "Same-user only. The parent-symlink race in QA-UC-009 loaded 0 attacker keys in 341623 loads. Owner approval is not set."
         }
       ]
     }
