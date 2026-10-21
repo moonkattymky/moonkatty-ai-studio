@@ -92,13 +92,20 @@ node ~/moonkatty-ai-studio/scripts/release-sign.mjs --key /Volumes/MK-KEYS/moonk
 ```bash
 KR="$HOME/Library/Application Support/MOONKATTY AI STUDIO/update-keys"
 mkdir -p "$KR" && chmod 700 "$KR"
-cp /путь/к/release-prod-<keyId>.pub.pem "$KR/"
+cp /путь/к/release-prod-<keyId>.pub.pem "$KR/"   # обычный файл, НЕ символическая ссылка
 cat > "$KR/keyring.json" <<'JSON'
 { "version": 1,
   "keys": { "<keyId>": { "file": "release-prod-<keyId>.pub.pem", "set": "prod", "status": "active" } },
   "revoked": [] }
 JSON
+chmod 700 "$KR" && chmod 600 "$KR/keyring.json" "$KR"/*.pub.pem
 ```
+**Проверка прав (обязательно, иначе BLOCKED):** `ls -ld "$KR"` → `drwx------` и ваш пользователь;
+`ls -l "$KR"` → оба файла `-rw-------`, ваш пользователь, без `->` (ссылок). Update Center **отклоняет** внешний keyring
+(статус `BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — <причина>`), если: права папки не 700; владелец не текущий
+пользователь; папка, `keyring.json` или любой `.pub.pem` — символическая ссылка; файл доступен на запись группе/другим;
+имя файла ключа содержит путь. Путь в `OPS_UPDATE_KEYRING_DIR` указывайте без символических ссылок.
+
 Добавьте в окружение launchd-агента (plist `EnvironmentVariables`) `OPS_UPDATE_KEYRING_DIR` = путь `$KR` (полный, без `~`)
 и перезапустите: `launchctl kickstart -k gui/$UID/com.moonkatty.aistudio.server`.
 Эта папка только **добавляет** публичные ключи и отзывы к встроенному `lib/ops/update-keys/keyring.json`.
@@ -113,6 +120,12 @@ JSON
 (`"set": "prod"`, `"status": "next"`, после первого релиза — `"active"`), сделайте коммит **только** этих двух файлов.
 **Проверка:** `git diff --cached --name-only` → только `.pub.pem` и `keyring.json`; `npm run test:ops` проходит
 (тест `release-keys.test.js` проверяет, что в git и в списке файлов сборки нет приватных ключей).
+
+## Шаг 8в. Подпись релиза и `builtAt`
+`release-manifest.json` **обязан** содержать подписанное поле `builtAt` (дата сборки ISO 8601). `scripts/release-sign.mjs` сам добавляет
+`builtAt` (текущее время), если его нет, и только потом подписывает. Manifest без `builtAt` Update Center считает непроверенным и не
+даёт скачать (QA-UC-006). **Проверка:** после подписи `grep builtAt release-manifest.json` показывает дату; файл manifest после подписи
+не редактировать (иначе подпись не пройдёт).
 
 ## Шаг 9. Что остаётся выключенным
 Автоустановка остаётся выключенной: все четыре флага `OPS_UPDATE_AUTO_INSTALL`, `OPS_UPDATE_SIGNATURE_READY`,

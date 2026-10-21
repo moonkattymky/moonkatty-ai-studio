@@ -14,7 +14,7 @@ const PROD = AI.resolveIdentity({ env: { STUDIO_APP_BUNDLE_ID: 'com.moonkatty.ai
 function keygen(channel = 'prod') { const out = path.join(tmp(), 'keys');
   const j = JSON.parse(execFileSync(process.execPath, [path.join(ROOT, 'scripts/release-keygen.mjs'), '--channel', channel, '--out', out, '--json'], { env: { ...process.env, RELEASE_KEY_PASSPHRASE: PASS } }));
   assert.equal(fs.statSync(j.privateKeyFile).mode & 0o777, 0o600, 'private key must be chmod 600'); return j; }
-function ownerKeyringDir(k, extra = {}) { const d = tmp(); fs.copyFileSync(k.publicKeyFile, path.join(d, path.basename(k.publicKeyFile)));
+function ownerKeyringDir(k, extra = {}) { const d = tmp(); fs.chmodSync(d, 0o700); fs.copyFileSync(k.publicKeyFile, path.join(d, path.basename(k.publicKeyFile)));
   fs.writeFileSync(path.join(d, 'keyring.json'), JSON.stringify({ version: 1, keys: { [k.keyId]: { ...k.keyringEntry, status: 'active' } }, revoked: [], ...extra })); return d; }
 function sign(k, manifestBuf) { const d = tmp(), mf = path.join(d, 'release-manifest.json'); fs.writeFileSync(mf, manifestBuf);
   execFileSync(process.execPath, [path.join(ROOT, 'scripts/release-sign.mjs'), '--key', k.privateKeyFile, '--manifest', mf], { env: { ...process.env, RELEASE_KEY_PASSPHRASE: PASS }, stdio: 'pipe' });
@@ -26,11 +26,11 @@ function zip(names) { const locals = [], cds = []; let off = 0;
     c.writeUInt32LE((0o100644 << 16) >>> 0, 38); c.writeUInt32LE(off, 42); locals.push(l, nb, data); cds.push(c, nb); off += 30 + nb.length + data.length; }
   const cd = Buffer.concat(cds), e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(names.length, 8); e.writeUInt16LE(names.length, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
   return Buffer.concat([...locals, cd, e]); }
-function release({ version = '1.3.0', signWith, tamperArchive = false, tamperManifest = false, sigOverride } = {}) {
+function release({ version = '1.3.0', noBuiltAt = false, signWith, tamperArchive = false, tamperManifest = false, sigOverride } = {}) {
   const archive = zip([APP + '.app/', APP + '.app/Contents/', APP + '.app/Contents/Info.plist']); const name = `MOONKATTY-AI-STUDIO-${version}-arm64-mac.zip`, tag = `v${version}-mac-preview`;
   const m = { manifestVersion: 1, version, channel: 'preview', sourceCommit: 'a'.repeat(40), arch: 'arm64', platform: 'darwin', bundleId: 'com.moonkatty.aistudio', appName: APP, dataDirName: APP,
     launchdLabel: 'com.moonkatty.aistudio.server', keychainServicePrefix: APP, defaultPort: 8787, dbSchemaVersion: 3, minUpgradeFrom: '1.1.2', isolated: false, isolatedFrom: [], signing: 'adhoc', notarized: false,
-    builtAt: new Date().toISOString(), assets: [{ name, size: archive.length, sha256: sha(archive) }] };
+    ...(noBuiltAt ? {} : { builtAt: new Date().toISOString() }), assets: [{ name, size: archive.length, sha256: sha(archive) }] };
   let mb = Buffer.from(JSON.stringify(m)); const sig = sigOverride || (signWith ? sign(signWith, mb) : Buffer.alloc(0));
   if (tamperManifest) mb = Buffer.from(JSON.stringify({ ...m, minUpgradeFrom: '1.0.0' })); // bytes changed after signing
   const arc = tamperArchive ? Buffer.from(archive) : archive; if (tamperArchive) arc[arc.length - 30] ^= 0xff; // modified package bytes
@@ -114,4 +114,41 @@ test('no private key material in git or in the packaged file list; ignore/exclud
   const packaged = ['ops', 'lib', 'public', 'desktop'].flatMap(d => walk(path.join(ROOT, d))).concat(['package.json', 'server.js', 'meta.js', 'runner.js'].map(f => path.join(ROOT, f)));
   assert.deepEqual(packaged.filter(f => fs.statSync(f).size < 5e6 && PRIV.test(fs.readFileSync(f, 'latin1'))).map(f => path.relative(ROOT, f)), []);
   for (const f of fs.readdirSync(path.join(ROOT, 'lib/ops/update-keys'))) assert.ok(/\.pub\.pem$|^keyring\.json$|^README\.md$/.test(f), 'unexpected file in update-keys: ' + f);
+});
+
+// ---------- QA-UC-007: external keyring dir is fail-closed ----------
+const UID = typeof process.getuid === 'function' ? process.getuid() : 0;
+const ext = (d, uid = UID) => UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: d }, uid });
+test('QA-UC-007: correct 0700 dir owned by current uid -> READY', () => {
+  const k = keygen(); const d = ownerKeyringDir(k); fs.chmodSync(d, 0o700); const kr = ext(d); assert.equal(UC.signatureStatus(kr).state, 'READY', kr.problems.join('; '));
+});
+test('QA-UC-007: 0777 / 0750 dir -> BLOCKED', () => {
+  const k = keygen(); for (const mode of [0o777, 0o750, 0o701]) { const d = ownerKeyringDir(k); fs.chmodSync(d, mode); const st = UC.signatureStatus(ext(d));
+    assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /права папки .* нужны 700/); }
+});
+test('QA-UC-007: wrong owner (injected uid) -> BLOCKED', () => {
+  const k = keygen(); const d = ownerKeyringDir(k); const st = UC.signatureStatus(ext(d, UID + 4242)); assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /владелец папки/);
+});
+test('QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED', () => {
+  const k = keygen(); const d = ownerKeyringDir(k); const pub = path.join(d, path.basename(k.publicKeyFile)); fs.rmSync(pub); fs.symlinkSync(k.publicKeyFile, pub);
+  let st = UC.signatureStatus(ext(d)); assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /символическая ссылка/);
+  const d2 = ownerKeyringDir(k); const outside = path.join(tmp(), 'keyring.json'); fs.renameSync(path.join(d2, 'keyring.json'), outside); fs.symlinkSync(outside, path.join(d2, 'keyring.json'));
+  st = UC.signatureStatus(ext(d2)); assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /keyring\.json: символическая ссылка/);
+});
+test('QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature', async () => {
+  const k = keygen(); const d = ownerKeyringDir(k); const link = path.join(tmp(), 'kr-link'); fs.symlinkSync(d, link);
+  const st = UC.signatureStatus(ext(link)); assert.equal(st.state, 'BLOCKED'); assert.match(st.message, /символическая ссылка/);
+  const r = release({ signWith: k }); const uc = center(r, { OPS_UPDATE_KEYRING_DIR: link }); assert.equal(uc.status().signature.state, 'BLOCKED');
+  const rel = (await uc.check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /BLOCKED: внешний keyring/);
+});
+test('QA-UC-006: manifest without signed builtAt is not verified and download is refused', async () => {
+  const k = keygen(); const r = release({ signWith: k, noBuiltAt: true }); const uc = center(r, { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) });
+  const rel = (await uc.check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /builtAt/); assert.throws(() => uc.prepareDownload(r.tag), { code: 'UNVERIFIED' });
+  assert.ok(UC.validateManifest({ ...JSON.parse(release().files['release-manifest.json']), builtAt: 'not-a-date' }).some(x => /builtAt/.test(x)));
+});
+test('release-sign.mjs writes builtAt into the manifest before signing (signature covers it)', () => {
+  const k = keygen(); const d = tmp(), mf = path.join(d, 'release-manifest.json'); fs.writeFileSync(mf, JSON.stringify({ channel: 'preview', version: '1.3.0' }));
+  execFileSync(process.execPath, [path.join(ROOT, 'scripts/release-sign.mjs'), '--key', k.privateKeyFile, '--manifest', mf], { env: { ...process.env, RELEASE_KEY_PASSPHRASE: PASS }, stdio: 'pipe' });
+  const mb = fs.readFileSync(mf); const m = JSON.parse(mb); assert.ok(Number.isFinite(Date.parse(m.builtAt)));
+  const s = JSON.parse(fs.readFileSync(mf + '.sig')); assert.ok(crypto.verify(null, mb, crypto.createPublicKey(fs.readFileSync(k.publicKeyFile)), Buffer.from(s.sig, 'base64')));
 });
