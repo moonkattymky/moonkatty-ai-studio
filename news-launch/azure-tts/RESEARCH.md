@@ -69,6 +69,8 @@ Microsoft requires customers to disclose that TTS voices are synthetic. The note
 
 The transparency note's disclosure requirement is a product requirement. It is not an attribution line of the kind the translation clause uses, and the Product Terms sentence quoted above does not itself say "no attribution." What is clear: synthetic disclosure is required. What is not in these pages: a special YouTube or TikTok credit line.
 
+The episode path in this repo appends `Voice: AI-generated (Microsoft Azure)` to the description when Azure speaks, and can repeat it as an on-screen caption. That wording is this project's disclosure. These pages do not prescribe it. Kokoro episodes are not labeled as Azure.
+
 ## Free tier and paid prices
 
 Source: [Azure Speech pricing](https://azure.microsoft.com/en-us/pricing/details/speech/), accessed 21 October 2026.
@@ -88,6 +90,8 @@ F0 monthly allowances are on the pricing page. F0 quotas are not adjustable. Swi
 
 Maximum audio length is 10 minutes on both tiers. Maximum SSML message size per WebSocket turn is 64 KB on both. The same table lists a maximum of 50 distinct tags of two SSML element types; the element names were blank in the rendered markdown, so they are not named here. Batch synthesis REST is "Not available for F0" (S0: 100 requests per 10 seconds). The Audio Content Creation tool, which is a separate limit from the API quota: F0 plain text in SSML 3,000 characters per file (tags excluded) and 15,000 billable characters per file; S0 20,000 and 100,000. Lexicon file characters are not charged. Lexicon elements in SSML count as billable characters. The worked example on that page says to multiply by **$15 per million characters**. That matches the neural retail meter below. It is not the HD meter.
 
+The "tags excluded" figure is a limit of the Audio Content Creation tool's file size. It is not documentation that the REST meter ignores tags. The pricing FAQ says usage is billed per character and points at a definition in the pricing note. That definition was not in the pricing page fetched 21 October 2026. The local guard therefore counts the full SSML payload. See the guard section below.
+
 The real-time row says "standard voices and custom voices." It does not say whether HD transactions draw on the F0 allowance or on that 20-per-60-seconds limit. Whether an F0 resource can call an HD voice at all is not stated. The provider refuses F0 plus an HD voice id because that price class is unknown.
 
 Source: [Retail Prices API](https://prices.azure.com/api/retail/prices), queried 21 October 2026. `serviceName` is `Foundry Tools`, `productName` is `Azure Speech`, currency USD, type Consumption.
@@ -102,7 +106,7 @@ Source: [Retail Prices API](https://prices.azure.com/api/retail/prices), queried
 
 These are retail list prices in USD. The pricing page says actual prices can vary by agreement, date, and currency. The quotas article calls the paid tier **Standard (S0)**. The retail meter above is labeled **S1**. None of these queries returned a sku named S0. An exhaustive list of every Speech meter was not pulled. Whether the portal's S0 resource bills on the meter named S1 is **not stated** by either page. The code accepts only the portal tier strings `F0` and `S0`, and it refuses `S1` as a config value so an unrecognized label cannot run.
 
-HD at $22 per 1M is a different meter from neural at $15 per 1M. A paid cap in this repo counts characters. It does not convert HD characters into the $15 meter.
+HD at $22 per 1M is a different meter from neural at $15 per 1M. The S0 guard prices an HD voice id at $22 per million unless the owner sets `pricePerMillionChars`. It does not convert HD characters into the $15 meter. The initial budget in the example config is **$1.00 per UTC month**.
 
 ## Israel: account, billing, and where Andrew can be called
 
@@ -129,13 +133,19 @@ The official call is an Azure Speech resource in a region. `POST https://{region
 
 `edge-tts` is not that API. It is a third-party client. The voice lab used it to reach Microsoft Edge read-aloud **without** an Azure resource, key, or region. The REST article does not mention Edge read-aloud or `edge-tts`. The Product Terms sentence above grants paid-tier use of audio from **the TTS Service**. These pages do not extend that sentence to Edge read-aloud, and they do not say that the Edge voice and the Azure voice that share the id `en-US-AndrewMultilingualNeural` are the same model. The id string matches the catalog. Acoustic identity is not documented.
 
-## What the local counter does, and what is still unclear
+## What the local guard counts
 
-The counter stores UTC `YYYY-MM` and the caller's JavaScript string length (UTF-16 code units) in `news-launch/azure-tts/state/`. It adds that length **before** the HTTP call. It is a guard so a run stops at the configured cap. It is not a claim that the number equals the invoice.
+F0 stores UTC `YYYY-MM` and a character total. S0 stores the same month and `spentMicro` (1 USD = 1,000,000). The example budget is $1.00. The price defaults are $15 per million characters (standard neural) and $22 per million (HD), from the Retail Prices API rows above, accessed 21 October 2026. An owner can set `pricePerMillionChars` and `monthlyBudgetUsd`.
+
+The count added before each HTTP attempt is `ssml.length`, the UTF-16 length of the SSML document that would be posted, not the length of the script. That is the conservative reading of the pages above: the character definition was missing, lexicon elements inside SSML are described as billable, and the tool limit that excludes tags is not the API meter. If a later document shows that Microsoft ignores tags, the count can be tightened. Counting the script alone would let the local total sit under the invoice.
+
+Each attempt, including a retry, a timeout, and an HTTP error, adds its estimated cost before the socket call. Nothing is refunded locally. A cache hit on sha256(voice, rate, SSML, text) adds zero and does not call the network. The month ledger is `ledger-YYYY-MM.jsonl` with timestamp, characters, estimated cost, status, and request id. It does not store the script or the key. `reconcile` can raise the local total to an owner-entered usage figure. It does not lower it. Writes are a temp file plus rename under an exclusive lock file.
+
+S0 calls also require `paidEnabled: true` and `paidApproval` (`at`, `by`). The example leaves both unset. No account was created for this note, and no request was sent.
 
 Unclear on the pages fetched 21 October 2026:
 
-- The billable-character definition (the pricing FAQ points at a pricing note that was not in the fetched pricing page). SSML tags, `sub` alias text, and breaks may or may not be billed differently from the script length.
+- Whether the invoice ignores SSML tags, `sub` alias text, or breaks. The guard counts the full payload because the pricing note's character definition was not on the fetched page.
 - What language-table footnotes 1, 2, and 4 mean.
 - Whether portal tier S0 is the retail sku labeled S1.
 - Whether F0 includes HD voices, and whether HD calls count against the F0 20-transactions-per-60-seconds row.

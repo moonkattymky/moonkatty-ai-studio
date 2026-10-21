@@ -21,10 +21,10 @@ function warnThreshold(limit, percent) {
 }
 
 /**
- * Decide the hard cap before any key lookup or HTTP call.
- * F0 cannot be raised. S0 does not run unless the owner set allowPaid and a cap.
+ * Decide the guard before any key lookup or HTTP call.
+ * F0 stays on the free character quota. S0 needs paidEnabled and an owner approval record.
  */
-function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice = DEFAULT_VOICE } = {}) {
+function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice = DEFAULT_VOICE, paidEnabled = false, paidApproval = null, monthlyBudgetUsd = null, pricePerMillionChars = null } = {}) {
   if (tier !== 'F0' && tier !== 'S0') {
     const shown = tier == null || tier === '' ? 'missing' : String(tier);
     throw new Error(`Azure Speech pricing tier is unknown (${shown}). Refusing to run. Accepted values are F0 and S0.`);
@@ -36,13 +36,13 @@ function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice =
     throw new Error(`Azure Speech voice ${voice} is an HD voice. The F0 allowance on the pricing page is labeled Neural, not Neural HD. Refusing to run.`);
   }
   if (tier === 'S0') {
-    if (allowPaid !== true) {
-      throw new Error('Azure Speech tier S0 is the paid Standard tier. No request was sent. Set allowPaid=true and a paidCapChars per-month cap only after the owner accepts paid use.');
+    if (paidEnabled !== true || !paidApproval || !paidApproval.at || !paidApproval.by) {
+      throw new Error('Azure Speech S0 calls are refused. paidEnabled and an owner approval record (timestamp and who) are both required. No request was sent.');
     }
-    if (!Number.isInteger(paidCapChars) || paidCapChars < 1) {
-      throw new Error('Azure Speech allowPaid requires a positive integer paidCapChars per-month cap. Refusing to run.');
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(String(paidApproval.at)) || !String(paidApproval.by).trim()) {
+      throw new Error('Azure Speech S0 calls are refused. paidEnabled and an owner approval record (timestamp and who) are both required. No request was sent.');
     }
-    return { tier, limitChars: paidCapChars, voice };
+    return { tier, voice, monthlyBudgetUsd, pricePerMillionChars, paidApproval };
   }
   if (allowPaid === true) {
     throw new Error('Azure Speech allowPaid does not apply to tier F0. The free tier stays inside its published quota. Refusing to run.');
@@ -78,6 +78,37 @@ function writeState(file, data) {
   }
 }
 
+function pause(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** Exclusive lock file so two processes cannot reserve the same month together. */
+function withFileLock(lockFile, fn) {
+  fs.mkdirSync(path.dirname(lockFile), { recursive: true });
+  const start = Date.now();
+  for (;;) {
+    let fd;
+    try {
+      fd = fs.openSync(lockFile, 'wx');
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let stale = false;
+      try { stale = Date.now() - fs.statSync(lockFile).mtimeMs > 30000; } catch { stale = true; }
+      if (stale) { try { fs.rmSync(lockFile, { force: true }); } catch { /* retry */ } continue; }
+      if (Date.now() - start > 2000) throw new Error('Azure Speech budget lock is held. Refusing to run.');
+      pause(15);
+      continue;
+    }
+    try {
+      fs.writeSync(fd, String(process.pid));
+      return fn();
+    } finally {
+      try { fs.closeSync(fd); } catch { /* ignore */ }
+      try { fs.rmSync(lockFile, { force: true }); } catch { /* ignore */ }
+    }
+  }
+}
+
 /**
  * Persistent monthly character counter. The month is the UTC calendar month.
  * reserve() counts BEFORE the HTTP call. A blocked request is not added.
@@ -93,6 +124,9 @@ class CharacterBudget {
     this.now = now;
   }
   reserve(chars) {
+    return withFileLock(`${this.stateFile}.lock`, () => this._reserve(chars));
+  }
+  _reserve(chars) {
     if (!Number.isInteger(chars) || chars < 1) throw new Error('Azure Speech character count must be a positive integer. Refusing to run.');
     const month = utcMonth(this.now());
     const loaded = readState(this.stateFile);
@@ -114,4 +148,4 @@ class CharacterBudget {
   }
 }
 
-module.exports = { F0_FREE_CHARS, DEFAULT_VOICE, isHdVoice, utcMonth, warnThreshold, resolveCap, CharacterBudget };
+module.exports = { F0_FREE_CHARS, DEFAULT_VOICE, isHdVoice, utcMonth, warnThreshold, resolveCap, CharacterBudget, withFileLock, writeState };

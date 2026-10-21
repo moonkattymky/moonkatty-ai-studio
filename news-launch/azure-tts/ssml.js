@@ -13,7 +13,11 @@ function escapeXml(s) {
   return String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[ch]));
 }
 
-/** UTF-16 code units of the caller text. A local guard, not Microsoft's meter. */
+/**
+ * UTF-16 code units. For a billable guard, pass the SSML payload.
+ * The pricing FAQ points at a character definition that was not on the fetched pricing page,
+ * so the payload length is the conservative count. See RESEARCH.md.
+ */
 function countChars(text) {
   return String(text).length;
 }

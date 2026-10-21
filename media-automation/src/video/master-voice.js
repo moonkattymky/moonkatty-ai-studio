@@ -24,7 +24,9 @@ class MasterVoice {
       const { AzureSpeechProvider } = require('../../../news-launch/azure-tts/provider');
       const provider = new AzureSpeechProvider({
         enabled: true, voice: c.voice, region: c.region, tier: c.tier, rate: c.rate,
-        allowPaid: c.allowPaid === true, paidCapChars: c.paidCapChars, limitChars: c.limitChars,
+        allowPaid: c.allowPaid === true, paidEnabled: c.paidEnabled === true, paidApproval: c.paidApproval || null,
+        monthlyBudgetUsd: c.monthlyBudgetUsd, pricePerMillionChars: c.pricePerMillionChars,
+        paidCapChars: c.paidCapChars, limitChars: c.limitChars, maxAttempts: c.maxAttempts,
         stateFile: expand(c.stateFile, this.env) || undefined, keyService: c.keyService,
       });
       provider.assertConfig();
