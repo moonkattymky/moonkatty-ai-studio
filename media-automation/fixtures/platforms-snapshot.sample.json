@@ -1,0 +1,573 @@
+{
+  "schemaVersion": "1.0.0",
+  "readApiVersion": "1.0.0",
+  "generatedAt": "2026-10-21T17:00:00.000Z",
+  "note": "SAMPLE: every platform is dataMode=mock. No accounts are connected; no real publishing or revenue.",
+  "platforms": {
+    "youtube-news": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "youtube-news",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "youtube-news",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-youtube-news-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-youtube-news-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "youtube-news",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 1000,
+          "likes": 50,
+          "comments": 10,
+          "shares": 5,
+          "reach": 800,
+          "followers": 100
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "youtube-news",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {
+            "USD": 12.5
+          },
+          "entries": [
+            {
+              "platform": "youtube-news",
+              "amount": 12.5,
+              "currency": "USD",
+              "status": "confirmed",
+              "source": "adsense:payment_statement(mock)",
+              "payoutId": "MOCK-PAYOUT-0001",
+              "period": "2026-09"
+            }
+          ]
+        },
+        "unconfirmed": {
+          "totals": {
+            "USD": 1.1
+          },
+          "entries": [
+            {
+              "platform": "youtube-news",
+              "amount": 1.1,
+              "currency": "USD",
+              "status": "estimated",
+              "source": "youtube:estimatedRevenue(mock)",
+              "payoutId": null,
+              "period": "2026-10"
+            }
+          ]
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "youtube-project": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "youtube-project",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "youtube-project",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-youtube-project-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-youtube-project-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "youtube-project",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 2000,
+          "likes": 100,
+          "comments": 20,
+          "shares": 10,
+          "reach": 1600,
+          "followers": 137
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "youtube-project",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {
+            "USD": 1.1
+          },
+          "entries": [
+            {
+              "platform": "youtube-project",
+              "amount": 1.1,
+              "currency": "USD",
+              "status": "estimated",
+              "source": "youtube:estimatedRevenue(mock)",
+              "payoutId": null,
+              "period": "2026-10"
+            }
+          ]
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "tiktok": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "tiktok",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "tiktok",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-tiktok-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-tiktok-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "tiktok",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 3000,
+          "likes": 150,
+          "comments": 30,
+          "shares": 15,
+          "reach": 2400,
+          "followers": 174
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "tiktok",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "x": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "x",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "x",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-x-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-x-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "x",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 4000,
+          "likes": 200,
+          "comments": 40,
+          "shares": 20,
+          "reach": 3200,
+          "followers": 211
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "x",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "telegram": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "telegram",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "telegram",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-telegram-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-telegram-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "telegram",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": null,
+          "likes": null,
+          "comments": null,
+          "shares": null,
+          "reach": 4000,
+          "followers": 248
+        },
+        "unavailable": [
+          "views",
+          "likes",
+          "comments",
+          "shares"
+        ]
+      },
+      "revenue": {
+        "platformId": "telegram",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "moonkatty-web": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "moonkatty-web",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "not implemented"
+        },
+        "connected": false,
+        "postCounts": {},
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "moonkatty-web",
+        "dataMode": "mock",
+        "items": []
+      },
+      "analytics": {
+        "platformId": "moonkatty-web",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": null,
+        "unavailable": [
+          "views",
+          "likes",
+          "comments",
+          "shares",
+          "reach",
+          "followers"
+        ]
+      },
+      "revenue": {
+        "platformId": "moonkatty-web",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "instagram": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "instagram",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "instagram",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-instagram-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-instagram-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "scheduled",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "instagram",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 7000,
+          "likes": 350,
+          "comments": 70,
+          "shares": 35,
+          "reach": 5600,
+          "followers": 322
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "instagram",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "viewsAreRevenue": false
+      }
+    },
+    "facebook": {
+      "dataMode": "mock",
+      "status": {
+        "platformId": "facebook",
+        "dataMode": "mock",
+        "mode": "DRY-RUN",
+        "liveGate": {
+          "live": false,
+          "reason": "owner flag off"
+        },
+        "connected": false,
+        "postCounts": {
+          "dry_run": 2,
+          "queued": 1
+        },
+        "asOf": "2026-10-21T17:00:00.000Z"
+      },
+      "pipeline": {
+        "platformId": "facebook",
+        "dataMode": "mock",
+        "items": [
+          {
+            "postId": "mock-facebook-1",
+            "contentId": "news-2026-10-21-a",
+            "status": "dry_run",
+            "reviewStatus": "approved"
+          },
+          {
+            "postId": "mock-facebook-2",
+            "contentId": "news-2026-10-21-b",
+            "status": "queued",
+            "reviewStatus": "pending"
+          }
+        ]
+      },
+      "analytics": {
+        "platformId": "facebook",
+        "dataMode": "mock",
+        "range": {
+          "since": "2026-10-14",
+          "until": "2026-10-21"
+        },
+        "totals": {
+          "views": 8000,
+          "likes": 400,
+          "comments": 80,
+          "shares": 40,
+          "reach": 6400,
+          "followers": 359
+        },
+        "unavailable": []
+      },
+      "revenue": {
+        "platformId": "facebook",
+        "dataMode": "mock",
+        "confirmed": {
+          "totals": {},
+          "entries": []
+        },
+        "unconfirmed": {
+          "totals": {
+            "USD": 3.42
+          },
+          "entries": [
+            {
+              "platform": "facebook",
+              "amount": 3.42,
+              "currency": "USD",
+              "status": "estimated",
+              "source": "meta:monetization_approximate_earnings",
+              "payoutId": null,
+              "period": "2026-10-14..2026-10-21"
+            }
+          ]
+        },
+        "viewsAreRevenue": false
+      }
+    }
+  }
+}

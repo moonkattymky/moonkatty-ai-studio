@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonkatty/studio5/voice-profile/v1",
+  "title": "Studio 5 voice profile export (PROVISIONAL v1, additive-only changes within 1.x)",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "id", "status", "engine", "voice", "policy", "approval"],
+  "properties": {
+    "schema": { "type": "string" }, "schemaVersion": { "enum": ["1.0.0"] }, "provisional": { "type": "boolean" },
+    "id": { "type": "string" }, "status": { "enum": ["locked", "draft"] },
+    "engine": { "type": "object", "required": ["name", "model"], "properties": { "name": { "type": "string" }, "model": { "type": "object", "required": ["sha256"], "properties": { "sha256": { "type": "string" } } } } },
+    "voice": { "type": "object", "required": ["blend", "speed"], "properties": { "blend": { "type": "object", "additionalProperties": { "type": "number" } }, "speed": { "type": "number" } } },
+    "policy": { "type": "object", "required": ["autoReplace"], "properties": { "autoReplace": { "type": "boolean" } } },
+    "approval": { "type": "object", "required": ["approvedBy"], "properties": { "approvedBy": { "type": "string" } } }
+  }
+}

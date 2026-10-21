@@ -1,0 +1,93 @@
+{
+  "schema": "moonkatty.studio5.voice-profile/v1 (proposal)",
+  "schemaVersion": "1.0.0",
+  "provisional": true,
+  "id": "MOONKATTY_NEWS_MASTER_VOICE",
+  "displayName": "MOONKATTY NEWS anchor",
+  "status": "locked",
+  "owner": "moonkatty-news (media-automation)",
+  "engine": {
+    "name": "kokoro",
+    "model_family": "kokoro-82m",
+    "runtime": "kokoro-onnx",
+    "runtimeVersion": "0.6.1",
+    "model": {
+      "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+      "license": "Apache-2.0"
+    },
+    "voicesPack": {
+      "file": "voices-v1.0.bin",
+      "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
+    }
+  },
+  "voice": {
+    "type": "stock-voice",
+    "blend": {
+      "am_fenrir": 1
+    },
+    "speed": 1,
+    "pitchSemitones": 0,
+    "emotionPitch": false,
+    "emotionControls": [
+      "speed",
+      "pauses",
+      "gain"
+    ],
+    "lang": "en-us",
+    "sampleRateHz": 24000,
+    "deliveryFormat": "wav 48kHz mono s16, -16 LUFS"
+  },
+  "character": {
+    "gender": "male",
+    "accent": "en-US",
+    "perceivedAge": "25-35",
+    "description": "Kokoro stock US male voice am_fenrir; synthetic, imitates no real person"
+  },
+  "emotionModes": [
+    "SERIOUS",
+    "NEUTRAL",
+    "EXCITED",
+    "CURIOUS",
+    "PLAYFUL",
+    "WITTY",
+    "EMPATHETIC"
+  ],
+  "policy": {
+    "autoReplace": false,
+    "failIfUnavailable": true,
+    "changeRequires": "owner unlock(by, reason)"
+  },
+  "approval": {
+    "approvedBy": "Igor",
+    "approvedAt": "2026-10-21",
+    "supersedes": {
+      "castingVariant": "B-energetic-playful",
+      "blend": {
+        "am_puck": 0.6,
+        "am_michael": 0.4
+      },
+      "speed": 1.06,
+      "pitchSemitones": 0.4,
+      "voice": "blend:am_puck@0.6+am_michael@0.4",
+      "approvedAt": "2026-10-21",
+      "supersededAt": "2026-10-21",
+      "supersededBy": "Igor",
+      "reason": "Owner chose am_fenrir after the 3-voice comparison renders (news2-voicecmp)."
+    },
+    "audit": [
+      {
+        "at": "2026-10-21",
+        "by": "Igor",
+        "action": "approve_and_lock",
+        "reason": "Owner listening test of voice-casting-v2; chose B over A."
+      },
+      {
+        "at": "2026-10-21",
+        "by": "Igor",
+        "action": "replace_and_lock",
+        "reason": "Final choice am_fenrir (pure, speed 1.0, no pitch) replacing casting B after voice comparison."
+      }
+    ]
+  },
+  "voiceProfileId": null
+}

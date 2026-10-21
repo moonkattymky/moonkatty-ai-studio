@@ -1,0 +1,62 @@
+{
+  "id": "MOONKATTY_NEWS_MASTER_VOICE",
+  "status": "locked",
+  "note": "FINAL approved master voice: pure stock Kokoro am_fenrir (speed 1.0, no pitch shift). Supersedes casting B (am_puck 0.6 + am_michael 0.4). Used for ALL stories and all emotion modes (speed/pauses/gain only). Never auto-replaced: if unavailable or hashes differ, rendering fails.",
+  "castingVariant": "stock-am_fenrir",
+  "engine": "kokoro-blend",
+  "blend": {
+    "am_fenrir": 1
+  },
+  "speed": 1.0,
+  "pitchSemitones": 0,
+  "rate": 1.0,
+  "voice": "am_fenrir",
+  "gender": "male",
+  "accent": "en-US",
+  "lang": "en-us",
+  "model": {
+    "name": "Kokoro-82M v1.0 (kokoro-onnx 0.6.1)",
+    "file": "${MA_KOKORO_MODEL}",
+    "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "license": "Apache-2.0"
+  },
+  "voicesFile": "${MA_KOKORO_VOICES}",
+  "voicesSha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d",
+  "loudnessLufs": -16,
+  "approvedBy": "Igor",
+  "approvedAt": "2026-10-21",
+  "lockedBy": "Igor",
+  "lockedAt": "2026-10-21",
+  "autoReplace": false,
+  "voiceProfileId": null,
+  "voiceProfileNote": "Set to the Studio 5 shared-library voice profile id once Studio 5 imports exports/master-voice.studio5.json.",
+  "audit": [
+    {
+      "at": "2026-10-21",
+      "by": "Igor",
+      "action": "approve_and_lock",
+      "reason": "Owner listening test of voice-casting-v2; chose B over A."
+    },
+    {
+      "at": "2026-10-21",
+      "by": "Igor",
+      "action": "replace_and_lock",
+      "reason": "Final choice am_fenrir (pure, speed 1.0, no pitch) replacing casting B after voice comparison."
+    }
+  ],
+  "emotionPitch": false,
+  "supersedes": {
+    "castingVariant": "B-energetic-playful",
+    "blend": {
+      "am_puck": 0.6,
+      "am_michael": 0.4
+    },
+    "speed": 1.06,
+    "pitchSemitones": 0.4,
+    "voice": "blend:am_puck@0.6+am_michael@0.4",
+    "approvedAt": "2026-10-21",
+    "supersededAt": "2026-10-21",
+    "supersededBy": "Igor",
+    "reason": "Owner chose am_fenrir after the 3-voice comparison renders (news2-voicecmp)."
+  }
+}

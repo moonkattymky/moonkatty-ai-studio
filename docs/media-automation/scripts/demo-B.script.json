@@ -1,0 +1,86 @@
+{
+  "lines": [
+    {
+      "role": "hook",
+      "text": "NASA is reimagining Mars flight with new helicopter blade designs!",
+      "emotion": "EXCITED"
+    },
+    {
+      "role": "body",
+      "text": "NASA researchers are developing futuristic blades for Mars helicopters.",
+      "emotion": "NEUTRAL"
+    },
+    {
+      "role": "body",
+      "text": "These blades aim for higher and farther flights on the Red Planet.",
+      "emotion": "NEUTRAL"
+    },
+    {
+      "role": "body",
+      "text": "Using advanced computer simulations and wind tunnel tests, engineers are making progress.",
+      "emotion": "NEUTRAL"
+    },
+    {
+      "role": "body",
+      "text": "The goal is to carry out more extensive science missions on Mars.",
+      "emotion": "NEUTRAL"
+    },
+    {
+      "role": "tag",
+      "text": "Finally, a helicopter with better stamina than my phone battery.",
+      "emotion": "WITTY"
+    },
+    {
+      "role": "signoff",
+      "text": "That’s your tech treat for today. Stay curious, friends.",
+      "emotion": "NEUTRAL"
+    }
+  ],
+  "spoken": "NASA is reimagining Mars flight with new helicopter blade designs! NASA researchers are developing futuristic blades for Mars helicopters. These blades aim for higher and farther flights on the Red Planet. Using advanced computer simulations and wind tunnel tests, engineers are making progress. The goal is to carry out more extensive science missions on Mars. Finally, a helicopter with better stamina than my phone battery. That’s your tech treat for today. Stay curious, friends.",
+  "provider": "ollama:qwen2.5:7b",
+  "attempts": 3,
+  "rejections": [
+    {
+      "attempt": 1,
+      "draft": "Get ready, Mars friends! NASA’s got some exciting news for you! NASA is revamping Mars helicopter blades for longer flights. They're using high-tech computer simulations and wind tunnels. The goal? Higher and farther flights on the Red Planet. Pretty cool, right?",
+      "unsupported": [
+        {
+          "type": "novel-content",
+          "value": "Pretty cool, right?"
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "draft": "Exploring the Red Planet with flying saucers of the future! NASA is reimagining Mars helicopters with better blades. Engineers are using simulations and wind tunnels for these designs. The goal is longer flights and higher altitudes for science. Exciting advancements for our robotic explorers on Mars!",
+      "unsupported": [
+        {
+          "type": "novel-content",
+          "value": "Exciting advancements for our robotic explorers on Mars!"
+        }
+      ]
+    }
+  ],
+  "humorLog": [
+    {
+      "joke": "Finally, a helicopter with better stamina than my phone battery.",
+      "ok": true,
+      "reasons": []
+    }
+  ],
+  "humorTag": "Finally, a helicopter with better stamina than my phone battery.",
+  "factCheck": {
+    "ok": true,
+    "unsupported": []
+  },
+  "sources": [
+    {
+      "name": "NASA",
+      "url": "https://www.nasa.gov/science-research/aeronautics-research/nasa-experimental-mars-helicopter-blade-designs-target-longer-flights/",
+      "published": "Tue, 20 Oct 2026 16:02:35 +0000"
+    }
+  ],
+  "generatedMs": 49641,
+  "storyId": "c90af54fccff",
+  "headline": "NASA Experimental Mars Helicopter Blade Designs Target Longer Flights"
+}
