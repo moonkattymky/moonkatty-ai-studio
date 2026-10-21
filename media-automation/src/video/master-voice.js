@@ -1,6 +1,8 @@
 'use strict';
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto');
 const { KokoroTTS, PiperTTS, MacSayTTS } = require('./tts');
+const { OWNER_ONLY_FIELDS } = require('../../../news-launch/azure-tts/approval');
+const { PRICE_FILE } = require('../../../news-launch/azure-tts/price');
 const DEFAULT = path.join(__dirname, '..', '..', 'config', 'master-voice.json');
 const expand = (s, env) => String(s || '').replace(/\$\{(\w+)\}/g, (_, k) => env[k] || '');
 const hashCache = new Map();
@@ -13,7 +15,9 @@ function sha256File(f) { const st = fs.statSync(f); const k = `${f}|${st.size}|$
  * - status 'candidate' until owner locks it; a locked config can only be changed via unlock(by, reason) (audit trail).
  */
 class MasterVoice {
-  constructor({ file = process.env.MA_MASTER_VOICE || DEFAULT, env = process.env } = {}) { this.file = file; this.env = env; this.cfg = JSON.parse(fs.readFileSync(file, 'utf8')); }
+  constructor({ file = process.env.MA_MASTER_VOICE || DEFAULT, env = process.env, approvalPublicKeyPem = null } = {}) {
+    this.file = file; this.env = env; this.approvalPublicKeyPem = approvalPublicKeyPem || null; this.cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
+  }
   get locked() { return this.cfg.status === 'locked'; }
   _save() { fs.writeFileSync(this.file + '.tmp', JSON.stringify(this.cfg, null, 2) + '\n'); fs.renameSync(this.file + '.tmp', this.file); }
   /** Build the TTS provider exactly as pinned; throws loudly when unavailable. */
@@ -25,9 +29,10 @@ class MasterVoice {
       const provider = new AzureSpeechProvider({
         enabled: true, voice: c.voice, region: c.region, tier: c.tier, rate: c.rate,
         allowPaid: c.allowPaid === true, paidEnabled: c.paidEnabled === true, paidApproval: c.paidApproval || null,
-        monthlyBudgetUsd: c.monthlyBudgetUsd, pricePerMillionChars: c.pricePerMillionChars,
-        paidCapChars: c.paidCapChars, limitChars: c.limitChars, maxAttempts: c.maxAttempts,
+        approvalPublicKeyPem: this.approvalPublicKeyPem,
+        limitChars: c.limitChars, maxAttempts: c.maxAttempts,
         stateFile: expand(c.stateFile, this.env) || undefined, keyService: c.keyService,
+        priceFile: fs.existsSync(PRICE_FILE) ? PRICE_FILE : undefined,
       });
       provider.assertConfig();
       return provider;
@@ -43,7 +48,15 @@ class MasterVoice {
     if (c.engine === 'say') { if (process.platform !== 'darwin') throw new Error('MASTER VOICE unavailable: macOS say requires macOS'); return new MacSayTTS({ voice: c.voice, rate: c.rate }); }
     throw new Error('unknown master voice engine ' + c.engine);
   }
-  setCandidate(next, by) { if (this.locked) throw new Error('MASTER VOICE is locked; unlock(by, reason) first'); this.cfg = { ...this.cfg, ...next, status: 'candidate', changedBy: by, changedAt: new Date().toISOString() }; this._save(); return this.cfg; }
+  setCandidate(next, by) {
+    if (this.locked) throw new Error('MASTER VOICE is locked; unlock(by, reason) first');
+    if (next && OWNER_ONLY_FIELDS.some(key => Object.prototype.hasOwnProperty.call(next, key))) {
+      throw new Error('Azure Speech paid switches are owner-only. setCandidate cannot change them.');
+    }
+    this.cfg = { ...this.cfg, ...next, status: 'candidate', changedBy: by, changedAt: new Date().toISOString() };
+    this._save();
+    return this.cfg;
+  }
   lock(by) { if (!by) throw new Error('owner name required'); this.createTTS(); this.cfg.status = 'locked'; this.cfg.lockedBy = by; this.cfg.lockedAt = new Date().toISOString(); this.cfg.note = 'Approved master voice. Do not change without owner.'; this._save(); return this.cfg; }
   unlock(by, reason) { if (!by || !reason) throw new Error('owner and reason required'); (this.cfg.audit = this.cfg.audit || []).push({ at: new Date().toISOString(), by, action: 'unlock', reason }); this.cfg.status = 'candidate'; this._save(); return this.cfg; }
   /** Export for the Studio 3D lip-sync pipeline. */

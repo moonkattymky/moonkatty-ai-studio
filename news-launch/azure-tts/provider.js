@@ -3,11 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { run, probeDuration } = require('../../media-automation/src/video/exec');
-const { DEFAULT_VOICE, resolveCap, CharacterBudget } = require('./budget');
+const { DEFAULT_VOICE, resolveCap } = require('./budget');
 const { resolvePrice, UsdBudget } = require('./usd');
 const { SERVICE, readKey, redact } = require('./keychain');
 const { buildSsml, DEFAULT_PRONUNCIATIONS } = require('./ssml');
-const { appendLedger, ledgerPath } = require('./ledger');
+const { appendLedger, ledgerPath, ledgerHasOk } = require('./ledger');
+const { readOwnerPrice } = require('./price');
 
 const OUTPUT_FORMAT = 'riff-24khz-16bit-mono-pcm';
 
@@ -25,6 +26,15 @@ function requestHash({ text, voice, rate, ssml }) {
   return crypto.createHash('sha256').update(String(voice)).update('\0').update(String(rate ?? '')).update('\0').update(ssml).update('\0').update(String(text)).digest('hex');
 }
 
+function cacheMac(key, hash, audio) {
+  return crypto.createHmac('sha256', key).update(String(hash)).update(audio).digest('hex');
+}
+
+function sealCache(key, hash, audio) {
+  const body = Buffer.from(audio);
+  return Buffer.from(JSON.stringify({ v: 1, hash, mac: cacheMac(key, hash, body), audio: body.toString('base64') }));
+}
+
 function retryable(err, status) {
   if (status === 408 || status === 429 || status >= 500) return true;
   const name = err && err.name;
@@ -35,8 +45,8 @@ function retryable(err, status) {
 
 /**
  * Candidate Azure Speech provider. Disabled unless `enabled` is true.
- * S0 does not call the network unless paidEnabled is true and paidApproval has at and by.
- * Billable length is the full SSML payload. Identical text+voice+SSML is served from cache at $0.
+ * Every call is budgeted in USD. The Speech key cannot reveal F0 versus S0.
+ * S0 also needs paidEnabled and an approval signature. Cache hits need an HMAC and a ledger ok line.
  */
 class AzureSpeechProvider {
   constructor({
@@ -48,8 +58,11 @@ class AzureSpeechProvider {
     allowPaid = false,
     paidEnabled = false,
     paidApproval = null,
+    approvalPublicKeyPem = null,
     monthlyBudgetUsd = null,
     pricePerMillionChars = null,
+    priceFile = null,
+    skuProbe = null,
     paidCapChars,
     limitChars,
     stateFile,
@@ -76,8 +89,11 @@ class AzureSpeechProvider {
     this.allowPaid = allowPaid === true;
     this.paidEnabled = paidEnabled === true;
     this.paidApproval = paidApproval || null;
+    this.approvalPublicKeyPem = approvalPublicKeyPem || null;
     this.monthlyBudgetUsd = monthlyBudgetUsd;
     this.pricePerMillionChars = pricePerMillionChars;
+    this.priceFile = priceFile || null;
+    this.skuProbe = skuProbe;
     this.paidCapChars = paidCapChars;
     this.limitChars = limitChars;
     this.stateFile = stateFile || path.join(__dirname, 'state', 'usage.json');
@@ -105,16 +121,31 @@ class AzureSpeechProvider {
       limitChars: this.limitChars,
       paidCapChars: this.paidCapChars,
       voice: this.voice,
+      region: this.region,
       paidEnabled: this.paidEnabled,
       paidApproval: this.paidApproval,
+      approvalPublicKeyPem: this.approvalPublicKeyPem,
       monthlyBudgetUsd: this.monthlyBudgetUsd,
       pricePerMillionChars: this.pricePerMillionChars,
     });
-    if (policy.tier === 'S0') {
-      const price = resolvePrice({ voice: policy.voice, pricePerMillionChars: this.pricePerMillionChars, monthlyBudgetUsd: this.monthlyBudgetUsd });
-      return { ...policy, ...price };
+    const fromFile = this.priceFile ? readOwnerPrice(this.priceFile, policy.voice) : null;
+    const price = resolvePrice({
+      voice: policy.voice,
+      pricePerMillionChars: fromFile ? fromFile.pricePerMillionChars : this.pricePerMillionChars,
+      monthlyBudgetUsd: fromFile ? fromFile.monthlyBudgetUsd : this.monthlyBudgetUsd,
+    });
+    return { ...policy, ...price };
+  }
+  async _observedSku(policy) {
+    if (typeof this.skuProbe !== 'function') return null;
+    let sku;
+    try { sku = await this.skuProbe(); } catch {
+      throw new Error('Azure Speech resource sku check failed. Refusing to run.');
     }
-    return policy;
+    const shown = sku == null || sku === '' ? 'missing' : String(sku);
+    if (sku !== 'F0' && sku !== 'S0') throw new Error(`Azure Speech resource sku is unknown (${shown}). Refusing to run.`);
+    if (sku !== policy.tier) throw new Error(`Azure Speech resource sku is ${sku} and the config says ${policy.tier}. Refusing to run. No request was sent.`);
+    return sku;
   }
   async listVoices() {
     return [{ id: this.voice, lang: 'en-US' }];
@@ -122,16 +153,25 @@ class AzureSpeechProvider {
   _cacheFile(hash) {
     return path.join(this.cacheDir, hash);
   }
-  _readCache(hash) {
+  _openCache(hash, key) {
     const file = this._cacheFile(hash);
     if (!fs.existsSync(file)) return null;
-    return fs.readFileSync(file);
+    let data;
+    try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+    if (!data || data.v !== 1 || data.hash !== hash || typeof data.mac !== 'string' || typeof data.audio !== 'string') return null;
+    const audio = Buffer.from(data.audio, 'base64');
+    const mac = cacheMac(key, hash, audio);
+    const left = Buffer.from(mac);
+    const right = Buffer.from(data.mac);
+    if (left.length !== right.length || !crypto.timingSafeEqual(left, right)) return null;
+    if (!ledgerHasOk(this.ledgerDir, hash.slice(0, 16))) return null;
+    return audio;
   }
-  _writeCache(hash, bytes) {
+  _writeCache(hash, bytes, key) {
     fs.mkdirSync(this.cacheDir, { recursive: true });
     const file = this._cacheFile(hash);
     const tmp = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, bytes, { mode: 0o600 });
+    fs.writeFileSync(tmp, sealCache(key, hash, bytes), { mode: 0o600 });
     fs.renameSync(tmp, file);
   }
   _note(entry, secret) {
@@ -161,13 +201,7 @@ class AzureSpeechProvider {
     const hash = requestHash({ text: script, voice: policy.voice, rate: this.rate, ssml });
     const requestId = hash.slice(0, 16);
     if (typeof this.fetchFn !== 'function') throw new Error('Azure Speech HTTP client is unavailable. Refusing to run.');
-    const cached = this._readCache(hash);
-    if (cached) {
-      const durationSec = await this._toWav(cached, outWav);
-      const month = (this.now().toISOString()).slice(0, 7);
-      this._note({ month, chars: 0, estCostUsd: '0.000000', status: 'cache', requestId, attempt: 0 });
-      return { file: outWav, durationSec, warnings: [], characters: 0, month, requestId, cached: true, attempts: 0 };
-    }
+    await this._observedSku(policy);
     let key;
     try { key = await this.getKey(); }
     catch (e) {
@@ -176,26 +210,28 @@ class AzureSpeechProvider {
       throw new Error('Azure Speech key is not in the Keychain.');
     }
     if (typeof key !== 'string' || !key || /[\r\n]/.test(key)) throw new Error('Azure Speech key is not in the Keychain.');
+    const cached = this._openCache(hash, key);
+    if (cached) {
+      const durationSec = await this._toWav(cached, outWav, key);
+      const month = (this.now().toISOString()).slice(0, 7);
+      this._note({ month, chars: 0, estCostUsd: '0.000000', status: 'cache', requestId, attempt: 0 }, key);
+      return { file: outWav, durationSec, warnings: [], characters: 0, month, requestId, cached: true, attempts: 0 };
+    }
     const warnings = [];
     let lastError = null;
-    let usd = null;
-    if (policy.tier === 'S0') {
-      usd = new UsdBudget({
-        stateFile: this.stateFile,
-        monthlyBudgetUsd: policy.monthlyBudgetUsd,
-        pricePerMillionChars: policy.pricePerMillionChars,
-        now: this.now,
-      });
-    }
-    const charsBudget = policy.tier === 'F0'
-      ? new CharacterBudget({ stateFile: this.stateFile, limitChars: policy.limitChars, tier: 'F0', now: this.now })
-      : null;
+    const usd = new UsdBudget({
+      stateFile: this.stateFile,
+      ledgerDir: this.ledgerDir,
+      monthlyBudgetUsd: policy.monthlyBudgetUsd,
+      pricePerMillionChars: policy.pricePerMillionChars,
+      voice: policy.voice,
+      now: this.now,
+    });
     try {
       for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
         let reserved;
         try {
-          if (usd) reserved = usd.begin({ chars: characters, hash });
-          else reserved = charsBudget.reserve(characters);
+          reserved = usd.begin({ chars: characters, hash });
         } catch (e) {
           if (e.code === 'BUDGET' && e.projected) {
             this._note({ month: e.projected.month, chars: e.projected.chars, estCostUsd: e.projected.estCostUsd, status: 'blocked', requestId, attempt });
@@ -246,7 +282,7 @@ class AzureSpeechProvider {
           this._note({ month, chars: characters, estCostUsd: reserved.estCostUsd || '0.000000', status: 'failed', requestId, attempt }, key);
           throw new Error('Azure Speech returned empty audio.');
         }
-        this._writeCache(hash, bytes);
+        this._writeCache(hash, bytes, key);
         this._note({ month, chars: characters, estCostUsd: reserved.estCostUsd || '0.000000', status: 'ok', requestId, attempt }, key);
         const durationSec = await this._toWav(bytes, outWav, key);
         return {
@@ -271,4 +307,4 @@ class AzureSpeechProvider {
   }
 }
 
-module.exports = { AzureSpeechProvider, endpoint, OUTPUT_FORMAT, requestHash };
+module.exports = { AzureSpeechProvider, endpoint, OUTPUT_FORMAT, requestHash, cacheMac, sealCache };

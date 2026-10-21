@@ -5,6 +5,8 @@ const { spawn } = require('child_process');
 const SERVICE = 'MOONKATTY AI STUDIO.azure-speech';
 const TEST_SERVICE = 'MOONKATTY AI STUDIO.azure-speech-test';
 const ACCOUNT = 'azure-speech';
+const OWNER_SERVICE = 'MOONKATTY AI STUDIO.azure-speech-owner';
+const OWNER_ACCOUNT = 'azure-speech-owner';
 const MISSING = 'Azure Speech key is not in the Keychain.';
 const MAC_ONLY = 'Azure Speech Keychain is macOS-only.';
 const NOT_STORED = 'Azure Speech key was not stored.';
@@ -82,4 +84,6 @@ function storeKey(key, { service = SERVICE, account = ACCOUNT, spawnFn = spawn, 
   });
 }
 
-module.exports = { SERVICE, TEST_SERVICE, ACCOUNT, readKey, storeKey, redact, MISSING, MAC_ONLY, NOT_STORED };
+module.exports = {
+  SERVICE, TEST_SERVICE, ACCOUNT, OWNER_SERVICE, OWNER_ACCOUNT, readKey, storeKey, redact, MISSING, MAC_ONLY, NOT_STORED,
+};

@@ -8,7 +8,7 @@ function classifyAzure(err) {
   if (/disabled/.test(message)) return 'disabled';
   if (/key is not in the Keychain|macOS-only/.test(message)) return 'no-key';
   if (/budget reached|cap reached|BUDGET/.test(message)) return 'budget-blocked';
-  if (/S0 calls are refused|paidEnabled/.test(message)) return 'not-approved';
+  if (/S0 calls are refused|paidEnabled|owner approval/.test(message)) return 'not-approved';
   return 'error';
 }
 

@@ -146,8 +146,8 @@ test('S0 dollar budget warns at 70 and 90 percent and blocks above one dollar', 
   assert.equal(first.warnings.length, 2);
   assert.throws(() => budget.begin({ chars: 6667, hash: 'b' }), /monthly budget reached/);
   assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).spentMicro, costMicro(60000, 15));
-  const exact = new UsdBudget({ stateFile: path.join(root, 'exact.json'), monthlyBudgetUsd: 1, pricePerMillionChars: 10, now });
-  assert.equal(exact.begin({ chars: 100000, hash: 'c' }).spentMicro, 1000000);
+  const exact = new UsdBudget({ stateFile: path.join(root, 'exact.json'), monthlyBudgetUsd: 15, pricePerMillionChars: 15, now });
+  assert.equal(exact.begin({ chars: 1000000, hash: 'c' }).spentMicro, 15000000);
   assert.throws(() => exact.begin({ chars: 1, hash: 'd' }), /monthly budget reached/);
 });
 
@@ -157,8 +157,9 @@ test('the character count is committed before HTTP and is kept when HTTP fails',
   const p = provider(root, {
     maxAttempts: 1,
     fetchFn: async () => {
-      const used = JSON.parse(fs.readFileSync(p._stateFile, 'utf8')).usedChars;
-      assert.equal(used, buildSsml('hello', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length);
+      const { costMicro } = require('../azure-tts/usd');
+      const spent = JSON.parse(fs.readFileSync(p._stateFile, 'utf8')).spentMicro;
+      assert.equal(spent, costMicro(buildSsml('hello', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length, 15));
       throw new Error(`network down ${KEY}`);
     },
   });
@@ -168,7 +169,8 @@ test('the character count is committed before HTTP and is kept when HTTP fails',
     assert.match(err.message, /\[redacted\]/);
     return true;
   });
-  assert.equal(JSON.parse(fs.readFileSync(p._stateFile, 'utf8')).usedChars, buildSsml('hello', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length);
+  const { costMicro } = require('../azure-tts/usd');
+  assert.equal(JSON.parse(fs.readFileSync(p._stateFile, 'utf8')).spentMicro, costMicro(buildSsml('hello', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length, 15));
 });
 
 test('HTTP error bodies and corrupt usage files cannot echo the key', async () => {
@@ -237,8 +239,10 @@ test('synthesize posts SSML to the regional endpoint and stays inside the mocked
   const p = provider(root, {
     fetchFn: async (url, init) => {
       seen.push({ url, init });
+      const { costMicro } = require('../azure-tts/usd');
       const st = JSON.parse(fs.readFileSync(p._stateFile, 'utf8'));
-      assert.equal(st.usedChars, buildSsml('Hello MOONKATTY', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length);
+      assert.equal(st.spentMicro, costMicro(buildSsml('Hello MOONKATTY', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 }).length, 15));
+      assert.equal(String(url).includes('management.azure.com'), false);
       return { ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF')).buffer };
     },
   });
@@ -368,7 +372,7 @@ test('a disabled provider is not a MasterVoice swap, and the repo candidate stay
   assert.equal(example.fallback.engine, 'kokoro');
   assert.equal(example.fallback.voice, 'am_michael');
   assert.equal('key' in example, false);
-  for (const name of ['budget.js', 'keychain.js', 'ssml.js', 'provider.js', 'keychain-cli.js', 'usd.js', 'ledger.js', 'disclosure.js', 'session.js']) {
+  for (const name of ['budget.js', 'keychain.js', 'ssml.js', 'provider.js', 'keychain-cli.js', 'usd.js', 'ledger.js', 'disclosure.js', 'session.js', 'approval.js', 'price.js', 'sku.js']) {
     const src = fs.readFileSync(path.join(__dirname, '..', 'azure-tts', name), 'utf8');
     assert.equal(src.includes(KEY), false);
     assert.equal(src.includes('process.env.AZURE'), false);
@@ -389,14 +393,36 @@ test('the provider is disabled by default and an empty script does not reserve q
 
 const APPROVAL = { at: '2026-10-21T00:00:00Z', by: 'owner' };
 
+const crypto = require('crypto');
+const ownerPair = crypto.generateKeyPairSync('ed25519');
+const OWNER_PUB = ownerPair.publicKey.export({ type: 'spki', format: 'pem' });
+const OWNER_PRIV = ownerPair.privateKey;
+
+function signedApproval(extra = {}) {
+  const { signApproval } = require('../azure-tts/approval');
+  return signApproval(OWNER_PRIV, {
+    at: '2026-10-21T00:00:00Z',
+    by: 'owner',
+    voice: extra.voice || 'en-US-AndrewMultilingualNeural',
+    region: extra.region || 'uaenorth',
+  });
+}
+
 function s0(root, extra = {}) {
+  const voice = extra.voice || 'en-US-AndrewMultilingualNeural';
+  const region = extra.region || 'uaenorth';
+  const paidApproval = Object.prototype.hasOwnProperty.call(extra, 'paidApproval') ? extra.paidApproval : signedApproval({ voice, region });
+  const approvalPublicKeyPem = Object.prototype.hasOwnProperty.call(extra, 'approvalPublicKeyPem') ? extra.approvalPublicKeyPem : OWNER_PUB;
   return provider(root, {
     tier: 'S0',
     paidEnabled: true,
-    paidApproval: APPROVAL,
     monthlyBudgetUsd: 1,
     pricePerMillionChars: 15,
+    voice,
+    region,
     ...extra,
+    paidApproval,
+    approvalPublicKeyPem,
   });
 }
 
@@ -409,7 +435,9 @@ test('neural and HD prices default from the 21 October 2026 retail meters and st
   assert.equal(resolvePrice({ voice: 'en-US-AndrewMultilingualNeural' }).pricePerMillionChars, 15);
   assert.equal(resolvePrice({ voice: 'en-US-AndrewMultilingualNeural' }).monthlyBudgetUsd, 1);
   assert.equal(resolvePrice({ voice: 'en-US-Andrew:DragonHDLatestNeural' }).pricePerMillionChars, 22);
-  assert.equal(resolvePrice({ voice: 'en-US-Andrew:DragonHDLatestNeural', pricePerMillionChars: 15 }).pricePerMillionChars, 15);
+  assert.throws(() => resolvePrice({ voice: 'en-US-Andrew:DragonHDLatestNeural', pricePerMillionChars: 15 }), /retail floor of 22.00/);
+  assert.throws(() => resolvePrice({ voice: 'en-US-AndrewMultilingualNeural', pricePerMillionChars: 0.0000004 }), /retail floor/);
+  assert.equal(resolvePrice({ voice: 'en-US-AndrewMultilingualNeural', pricePerMillionChars: 16 }).pricePerMillionChars, 16);
   assert.equal(costMicro(1, 15), 15);
   assert.equal(costMicro(1, 0.5), 1);
 });
@@ -515,7 +543,7 @@ test('every S0 attempt is billed, including a timeout, and the ledger stores no 
   const lines = fs.readFileSync(ledgerPath(root, '2026-10'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
   assert.deepEqual(lines.map((row) => row.status), ['reserved', 'timeout', 'reserved', 'ok']);
   for (const row of lines) {
-    assert.deepEqual(Object.keys(row).sort(), ['at', 'attempt', 'chars', 'estCostUsd', 'month', 'requestId', 'status']);
+    assert.deepEqual(Object.keys(row).sort(), ['at', 'attempt', 'chars', 'estCostUsd', 'month', 'prev', 'requestId', 'status']);
     assert.equal(row.chars, ssml.length);
     assert.equal(row.estCostUsd, formatUsd(perTry));
     assert.equal(row.requestId, ids[0]);
@@ -550,7 +578,7 @@ test('an identical re-render is cached at zero dollars and does not call the net
   assert.equal(spent, costMicro(first.characters, 15));
   const second = await p.synthesize('Hello MOONKATTY', path.join(root, 'b.wav'));
   assert.equal(fetches, 1);
-  assert.equal(keys, 1);
+  assert.equal(keys, 2);
   assert.equal(second.cached, true);
   assert.equal(second.characters, 0);
   assert.equal(second.attempts, 0);
@@ -616,20 +644,21 @@ test('S0 hard-blocks before HTTP when the next attempt would pass the dollar bud
   const root = dir();
   const stateFile = path.join(root, 'usage.json');
   const now = () => new Date('2026-10-21T12:00:00Z');
-  const budget = new UsdBudget({ stateFile, monthlyBudgetUsd: 1, pricePerMillionChars: 10, now });
-  budget.begin({ chars: 100000, hash: 'fill' });
+  const budget = new UsdBudget({ stateFile, monthlyBudgetUsd: 15, pricePerMillionChars: 15, now });
+  budget.begin({ chars: 1000000, hash: 'fill' });
   budget.clearInflight('fill');
   let fetches = 0;
   let keys = 0;
   const p = s0(root, {
     stateFile,
-    pricePerMillionChars: 10,
+    monthlyBudgetUsd: 15,
+    pricePerMillionChars: 15,
     getKey: async () => { keys += 1; return KEY; },
     fetchFn: async () => { fetches += 1; throw new Error('sent'); },
   });
   await assert.rejects(() => p.synthesize('hello', path.join(root, 'a.wav')), /monthly budget reached/);
   assert.equal(fetches, 0);
-  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf8')).spentMicro, 1000000);
+  assert.equal(JSON.parse(fs.readFileSync(stateFile, 'utf8')).spentMicro, 15000000);
   const lines = fs.readFileSync(ledgerPath(root, '2026-10'), 'utf8').trim().split('\n').map((line) => JSON.parse(line));
   assert.equal(lines[lines.length - 1].status, 'blocked');
   assert.equal(JSON.stringify(lines).includes('hello'), false);
@@ -751,12 +780,13 @@ test('Azure failure falls back to the local engine and a final render is marked 
 
   const { UsdBudget } = require('../azure-tts/usd');
   const stateFile = path.join(root, 'blocked.json');
-  const budget = new UsdBudget({ stateFile, monthlyBudgetUsd: 1, pricePerMillionChars: 10, now: () => new Date('2026-10-21T12:00:00Z') });
-  budget.begin({ chars: 100000, hash: 'fill' });
+  const budget = new UsdBudget({ stateFile, monthlyBudgetUsd: 15, pricePerMillionChars: 15, now: () => new Date('2026-10-21T12:00:00Z') });
+  budget.begin({ chars: 1000000, hash: 'fill' });
   budget.clearInflight('fill');
   const blocked = s0(root, {
     stateFile,
-    pricePerMillionChars: 10,
+    monthlyBudgetUsd: 15,
+    pricePerMillionChars: 15,
     fetchFn: async () => { fetches += 1; throw new Error('sent'); },
   });
   const blockedSession = new VoiceSession({ azure: blocked, local, episodeFile, summary: 'Markets moved.' });
@@ -766,7 +796,9 @@ test('Azure failure falls back to the local engine and a final render is marked 
   assert.equal(blockedResult.azureStatus, 'budget-blocked');
   assert.equal(fetches, 0);
 
+  const spokenState = path.join(root, 'spoken', 'usage.json');
   const broken = s0(root, {
+    stateFile: spokenState,
     fetchFn: async () => { fetches += 1; throw new Error(`network down UNIQUE-AZURE-FAIL-TOKEN ${KEY}`); },
     maxAttempts: 1,
   });
@@ -782,6 +814,7 @@ test('Azure failure falls back to the local engine and a final render is marked 
   assert.ok(localCalls >= 1);
 
   const azure = s0(root, {
+    stateFile: spokenState,
     fetchFn: async () => ({ ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF')).buffer }),
   });
   const before = localCalls;
@@ -866,10 +899,10 @@ test('S0 makes no network call unless paidEnabled and an owner approval are both
     fs.writeFileSync(file, JSON.stringify({
       status: 'candidate', engine: 'azure', enabled: true, gender: 'male',
       voice: 'en-US-AndrewMultilingualNeural', tier: 'S0', region: 'uaenorth',
-      paidEnabled: true, paidApproval: APPROVAL, monthlyBudgetUsd: 1, rate: 0.95,
+      paidEnabled: true, paidApproval: signedApproval(), monthlyBudgetUsd: 1, rate: 0.95,
       stateFile: path.join(root, 'mv.json'),
     }));
-    const tts = new MasterVoice({ file, env: {} }).createTTS();
+    const tts = new MasterVoice({ file, env: {}, approvalPublicKeyPem: OWNER_PUB }).createTTS();
     assert.equal(tts.paidEnabled, true);
     assert.equal(tts.name, 'azure:en-US-AndrewMultilingualNeural');
     assert.equal(keys, 0);
@@ -878,4 +911,378 @@ test('S0 makes no network call unless paidEnabled and an owner approval are both
   } finally {
     globalThis.fetch = orig;
   }
+});
+
+test('QA-AZR-001 config tier F0 is budgeted in USD and the sku read is not a TTS call', async () => {
+  const { costMicro } = require('../azure-tts/usd');
+  const { skuReadRequest, SKU_API_VERSION } = require('../azure-tts/sku');
+  const root = dir();
+  const orig = globalThis.fetch;
+  let live = 0;
+  globalThis.fetch = async () => { live += 1; throw new Error('LIVE'); };
+  let fetches = 0;
+  try {
+    const ssml = buildSsml('hello', { voice: 'en-US-AndrewMultilingualNeural', rate: 0.95 });
+    const p = provider(root, {
+      tier: 'F0',
+      paidEnabled: false,
+      fetchFn: async (url) => {
+        fetches += 1;
+        assert.equal(url, 'https://uaenorth.tts.speech.microsoft.com/cognitiveservices/v1');
+        assert.equal(String(url).includes('management.azure.com'), false);
+        return { ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF-audio')).buffer };
+      },
+    });
+    const result = await p.synthesize('hello', path.join(root, 'a.wav'));
+    assert.equal(result.spentMicro, costMicro(ssml.length, 15));
+    assert.equal(fetches, 1);
+    const req = skuReadRequest({
+      subscriptionId: '11111111-1111-1111-1111-111111111111',
+      resourceGroup: 'rg',
+      accountName: 'speech',
+    });
+    assert.equal(req.method, 'GET');
+    assert.equal(SKU_API_VERSION, '2024-10-01');
+    assert.equal(req.url, 'https://management.azure.com/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/speech?api-version=2024-10-01');
+    assert.equal(req.skuField, 'sku.name');
+    assert.equal(fetches, 1);
+    assert.equal(live, 0);
+    let probeFetches = 0;
+    const mismatch = provider(root, {
+      tier: 'F0',
+      stateFile: path.join(root, 'mismatch.json'),
+      skuProbe: async () => 'S0',
+      fetchFn: async () => { probeFetches += 1; throw new Error('sent'); },
+    });
+    await assert.rejects(() => mismatch.synthesize('hello', path.join(root, 'b.wav')), /sku is S0/);
+    assert.equal(probeFetches, 0);
+    const unknown = provider(root, {
+      tier: 'F0',
+      stateFile: path.join(root, 'unknown.json'),
+      skuProbe: async () => 'B0',
+      fetchFn: async () => { probeFetches += 1; throw new Error('sent'); },
+    });
+    await assert.rejects(() => unknown.synthesize('hello', path.join(root, 'c.wav')), /sku is unknown/);
+    assert.equal(probeFetches, 0);
+    const matched = provider(root, {
+      tier: 'F0',
+      stateFile: path.join(root, 'matched', 'usage.json'),
+      skuProbe: async () => 'F0',
+      fetchFn: async () => {
+        probeFetches += 1;
+        return { ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF')).buffer };
+      },
+    });
+    const matchedResult = await matched.synthesize('hello', path.join(root, 'd.wav'));
+    assert.equal(probeFetches, 1);
+    assert.equal(matchedResult.spentMicro, costMicro(ssml.length, 15));
+    assert.equal(live, 0);
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
+
+test('QA-AZR-002 agents cannot flip paid switches and an unsigned approval does not lock S0', async () => {
+  const { verifyApproval, OWNER_SERVICE } = require('../azure-tts/approval');
+  const { runOwner } = require('../azure-tts/keychain-cli');
+  const { PRICE_FILE } = require('../azure-tts/price');
+  const root = dir();
+  const kokoro = {
+    status: 'candidate', engine: 'kokoro', voice: 'am_michael', gender: 'male', enabled: false, paidEnabled: false,
+  };
+  const voiceFile = path.join(root, 'voice.json');
+  fs.writeFileSync(voiceFile, JSON.stringify(kokoro));
+  const mv = new MasterVoice({ file: voiceFile, env: {} });
+  assert.throws(() => mv.setCandidate({
+    enabled: true,
+    paidEnabled: true,
+    paidApproval: APPROVAL,
+    pricePerMillionChars: 0.0000004,
+    tier: 'S0',
+  }, 'agent'), /owner-only/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(voiceFile, 'utf8')), kokoro);
+  assert.throws(() => mv.setCandidate({ enabled: true }, 'agent'), /owner-only/);
+  assert.throws(() => mv.setCandidate({ paidEnabled: true }, 'agent'), /owner-only/);
+  const changed = mv.setCandidate({ voice: 'am_michael' }, 'owner');
+  assert.equal(changed.voice, 'am_michael');
+  assert.equal(changed.status, 'candidate');
+  assert.equal(changed.paidEnabled, false);
+
+  const forgedFile = path.join(root, 'forged.json');
+  const forged = {
+    status: 'candidate', engine: 'azure', enabled: true, gender: 'male',
+    voice: 'en-US-AndrewMultilingualNeural', tier: 'S0', region: 'uaenorth',
+    paidEnabled: true, paidApproval: { at: '2026-10-21T00:00:00Z', by: 'agent' },
+    rate: 0.95, stateFile: path.join(root, 'forged-usage.json'),
+    lockedBy: null, lockedAt: null,
+  };
+  fs.writeFileSync(forgedFile, JSON.stringify(forged));
+  const forgedVoice = new MasterVoice({ file: forgedFile, env: {}, approvalPublicKeyPem: OWNER_PUB });
+  assert.throws(() => forgedVoice.lock('agent'), /S0 calls are refused/);
+  const afterLock = JSON.parse(fs.readFileSync(forgedFile, 'utf8'));
+  assert.equal(afterLock.status, 'candidate');
+  assert.equal(afterLock.lockedBy, null);
+  assert.equal(afterLock.paidApproval.sig, undefined);
+
+  const other = crypto.generateKeyPairSync('ed25519');
+  const { signApproval } = require('../azure-tts/approval');
+  const foreign = signApproval(other.privateKey, {
+    at: '2026-10-21T00:00:00Z', by: 'agent', voice: 'en-US-AndrewMultilingualNeural', region: 'uaenorth',
+  });
+  let fetches = 0;
+  const foreignProvider = s0(root, {
+    paidApproval: foreign,
+    fetchFn: async () => { fetches += 1; throw new Error('sent'); },
+  });
+  await assert.rejects(() => foreignProvider.synthesize('hello', path.join(root, 'a.wav')), /S0 calls are refused/);
+  assert.equal(fetches, 0);
+  assert.equal(verifyApproval(foreign, OWNER_PUB, { voice: 'en-US-AndrewMultilingualNeural', region: 'uaenorth' }), false);
+  assert.equal(verifyApproval(APPROVAL, OWNER_PUB, { voice: 'en-US-AndrewMultilingualNeural', region: 'uaenorth' }), false);
+
+  const der = OWNER_PRIV.export({ type: 'pkcs8', format: 'der' }).toString('base64');
+  const approved = await runOwner(['approve', '2026-10-21T00:00:00Z', 'owner', 'en-US-AndrewMultilingualNeural', 'uaenorth'], `${der}\n`);
+  const record = JSON.parse(approved);
+  assert.equal(verifyApproval(record, OWNER_PUB, { voice: 'en-US-AndrewMultilingualNeural', region: 'uaenorth' }), true);
+  assert.equal(approved.includes(der), false);
+  const spawn = scriptedSpawn({ code: 0 });
+  const stored = await runOwner(['store-owner'], `${der}\n`, { spawnFn: spawn, platform: 'darwin' });
+  assert.match(stored, /not printed/);
+  assert.equal(stored.includes(der), false);
+  assert.deepEqual(spawn.calls[0].args, ['-i']);
+  assert.equal(spawn.calls[0].args.join(' ').includes(der), false);
+  assert.equal(spawn.calls[0].stdin.includes(`-s "${OWNER_SERVICE}"`), true);
+  assert.equal(spawn.calls[0].stdin.includes(`-w "${der}"`), true);
+  const providerSrc = fs.readFileSync(path.join(__dirname, '..', 'azure-tts', 'provider.js'), 'utf8');
+  assert.equal(providerSrc.includes('MOONKATTY AI STUDIO.azure-speech-owner'), false);
+
+  assert.equal(fs.existsSync(PRICE_FILE), false);
+  const priced = path.join(root, 'priced.json');
+  fs.writeFileSync(priced, JSON.stringify({
+    status: 'candidate', engine: 'azure', enabled: true, gender: 'male',
+    voice: 'en-US-AndrewMultilingualNeural', tier: 'F0', region: 'uaenorth',
+    paidEnabled: false, pricePerMillionChars: 0.0000004, monthlyBudgetUsd: 1000,
+    rate: 0.95, stateFile: path.join(root, 'priced-usage.json'),
+  }));
+  const tts = new MasterVoice({ file: priced, env: {} }).createTTS();
+  assert.equal(tts.pricePerMillionChars, null);
+  assert.equal(tts.monthlyBudgetUsd, null);
+  const policy = tts.assertConfig();
+  assert.equal(policy.pricePerMillionChars, 15);
+  assert.equal(policy.monthlyBudgetUsd, 1);
+});
+
+test('QA-AZR-003 a near-zero price is refused and the price file must be owner-only', async () => {
+  const { writeOwnerPrice, readOwnerPrice } = require('../azure-tts/price');
+  const root = dir();
+  let fetches = 0;
+  const cheap = provider(root, {
+    pricePerMillionChars: 0.0000004,
+    fetchFn: async () => { fetches += 1; throw new Error('sent'); },
+  });
+  await assert.rejects(() => cheap.synthesize('hello', path.join(root, 'a.wav')), /retail floor/);
+  assert.equal(fetches, 0);
+  const priceFile = path.join(root, 'price.json');
+  const written = writeOwnerPrice(priceFile, { pricePerMillionChars: 15, monthlyBudgetUsd: 1, voice: 'en-US-AndrewMultilingualNeural' });
+  assert.equal(written.pricePerMillionChars, 15);
+  assert.equal(fs.statSync(priceFile).mode & 0o077, 0);
+  fs.chmodSync(priceFile, 0o644);
+  assert.throws(() => readOwnerPrice(priceFile, 'en-US-AndrewMultilingualNeural'), /owner-only/);
+  const loose = provider(root, {
+    stateFile: path.join(root, 'loose.json'),
+    priceFile,
+    fetchFn: async () => { fetches += 1; throw new Error('sent'); },
+  });
+  await assert.rejects(() => loose.synthesize('hello', path.join(root, 'b.wav')), /owner-only/);
+  assert.equal(fetches, 0);
+  fs.chmodSync(priceFile, 0o600);
+  assert.equal(readOwnerPrice(priceFile, 'en-US-AndrewMultilingualNeural').pricePerMillionChars, 15);
+  const badPrice = path.join(root, 'bad-price.json');
+  assert.throws(() => writeOwnerPrice(badPrice, { pricePerMillionChars: 0.0000004, voice: 'en-US-AndrewMultilingualNeural' }), /retail floor/);
+  assert.equal(fs.existsSync(badPrice), false);
+  writeOwnerPrice(priceFile, { pricePerMillionChars: 16, monthlyBudgetUsd: 1, voice: 'en-US-AndrewMultilingualNeural' });
+  const priced = provider(root, {
+    stateFile: path.join(root, 'priced.json'),
+    priceFile,
+    fetchFn: async () => ({ ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF')).buffer }),
+  });
+  await priced.synthesize('hello', path.join(root, 'c.wav'));
+  assert.equal(JSON.parse(fs.readFileSync(priced._stateFile, 'utf8')).pricePerMillionChars, 16);
+});
+
+test('QA-AZR-004 a planted cache file is not returned as the Azure render', async () => {
+  const { requestHash, sealCache } = require('../azure-tts/provider');
+  const { VoiceSession } = require('../azure-tts/session');
+  const voice = 'en-US-AndrewMultilingualNeural';
+  const rate = 0.95;
+  const text = 'hello';
+  const ssml = buildSsml(text, { voice, rate });
+  const hash = requestHash({ text, voice, rate, ssml });
+  const root = dir();
+  let fetches = 0;
+  const p = provider(root, {
+    fetchFn: async () => {
+      fetches += 1;
+      return { ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF-REAL')).buffer };
+    },
+  });
+  fs.mkdirSync(p.cacheDir, { recursive: true });
+  fs.writeFileSync(path.join(p.cacheDir, hash), 'PLANTED');
+  const planted = await p.synthesize(text, path.join(root, 'a.wav'));
+  assert.equal(planted.cached, false);
+  assert.equal(fetches, 1);
+  const raw = p._calls.find((call) => Object.prototype.hasOwnProperty.call(call, 'raw'));
+  assert.equal(raw.raw.includes('PLANTED'), false);
+  assert.equal(raw.raw.includes('RIFF-REAL'), true);
+  assert.equal(fs.readFileSync(path.join(p.cacheDir, hash)).includes(KEY), false);
+
+  const root2 = dir();
+  let secondFetches = 0;
+  const sealed = provider(root2, {
+    fetchFn: async () => {
+      secondFetches += 1;
+      return { ok: true, status: 200, text: async () => '', arrayBuffer: async () => Uint8Array.from(Buffer.from('RIFF-REAL')).buffer };
+    },
+  });
+  fs.mkdirSync(sealed.cacheDir, { recursive: true });
+  fs.writeFileSync(path.join(sealed.cacheDir, hash), sealCache(KEY, hash, Buffer.from('RIFF-FAKE')));
+  const miss = await sealed.synthesize(text, path.join(root2, 'b.wav'));
+  assert.equal(miss.cached, false);
+  assert.equal(secondFetches, 1);
+  const sealedRaw = sealed._calls.find((call) => Object.prototype.hasOwnProperty.call(call, 'raw'));
+  assert.equal(sealedRaw.raw.includes('RIFF-FAKE'), false);
+  assert.equal(sealedRaw.raw.includes('RIFF-REAL'), true);
+  assert.equal(fs.readFileSync(path.join(sealed.cacheDir, hash)).includes(KEY), false);
+
+  const root3 = dir();
+  const failing = provider(root3, {
+    maxAttempts: 1,
+    fetchFn: async () => { throw new Error('network down'); },
+  });
+  fs.mkdirSync(failing.cacheDir, { recursive: true });
+  fs.writeFileSync(path.join(failing.cacheDir, hash), 'PLANTED');
+  const episodeFile = path.join(root3, 'episode.json');
+  const session = new VoiceSession({
+    azure: failing,
+    local: {
+      name: 'kokoro:am_michael',
+      synthesize: async (script, out) => {
+        fs.writeFileSync(out, 'local-wav');
+        return { file: out, durationSec: 1, spoken: script };
+      },
+    },
+    episodeFile,
+    summary: 'Markets moved.',
+  });
+  const spoken = await session.render(text, path.join(root3, 'out.wav'), { episodeId: 'ep-planted', final: true });
+  assert.equal(spoken.voice, 'fallback');
+  assert.notEqual(spoken.voice, voice);
+  assert.equal(fs.readFileSync(path.join(root3, 'out.wav'), 'utf8'), 'local-wav');
+  assert.equal(JSON.parse(fs.readFileSync(episodeFile, 'utf8')).voice, 'fallback');
+});
+
+test('QA-AZR-005 a long description keeps the disclosure after truncation', async () => {
+  const { dryRunAzureEpisode, AZURE_DISCLOSURE, fitDescription } = require('../azure-tts/disclosure');
+  const root = dir();
+  const orig = globalThis.fetch;
+  let live = 0;
+  globalThis.fetch = async () => { live += 1; throw new Error('LIVE'); };
+  try {
+    const fitted = fitDescription('M'.repeat(5000));
+    assert.ok(fitted.length <= 5000);
+    assert.equal(fitted.endsWith(AZURE_DISCLOSURE), true);
+    const result = await dryRunAzureEpisode({
+      outDir: root,
+      episodeId: 'ep-long',
+      title: 'MOONKATTY NEWS',
+      summary: 'M'.repeat(5000),
+    });
+    assert.ok(result.posts[0].payload.description.length <= 5000);
+    assert.equal(result.posts[0].payload.description.endsWith('Voice: AI-generated (Microsoft Azure)'), true);
+    assert.equal(result.posts[0].remote.preview.description.endsWith('Voice: AI-generated (Microsoft Azure)'), true);
+    assert.equal(result.posts[0].status, 'dry_run');
+    assert.equal(live, 0);
+  } finally {
+    globalThis.fetch = orig;
+  }
+});
+
+test('deleting usage.json fails closed when the ledger remains, and a broken chain is refused', () => {
+  const { UsdBudget, costMicro, formatUsd } = require('../azure-tts/usd');
+  const { appendLedger, ledgerPath } = require('../azure-tts/ledger');
+  const root = dir();
+  const now = () => new Date('2026-10-21T12:00:00Z');
+  const missDir = path.join(root, 'miss');
+  const missState = path.join(missDir, 'usage.json');
+  const budget = new UsdBudget({ stateFile: missState, ledgerDir: missDir, monthlyBudgetUsd: 1, pricePerMillionChars: 15, now });
+  budget.begin({ chars: 1000, hash: 'seed' });
+  budget.clearInflight('seed');
+  appendLedger(ledgerPath(missDir, '2026-10'), {
+    at: '2026-10-21T12:00:00.000Z',
+    chars: 1000,
+    estCostUsd: formatUsd(costMicro(1000, 15)),
+    status: 'reserved',
+    requestId: 'seed',
+    attempt: 1,
+    month: '2026-10',
+  });
+  fs.rmSync(missState);
+  assert.throws(() => budget.begin({ chars: 10, hash: 'next' }), /usage state is missing but the ledger exists/);
+  assert.equal(fs.existsSync(missState), false);
+
+  const bare = path.join(root, 'bare-usage.json');
+  fs.writeFileSync(bare, JSON.stringify({ month: '2026-10' }));
+  const bareBudget = new UsdBudget({
+    stateFile: bare,
+    ledgerDir: path.join(root, 'bare-ledger'),
+    monthlyBudgetUsd: 1,
+    pricePerMillionChars: 15,
+    now,
+  });
+  assert.throws(() => bareBudget.begin({ chars: 10, hash: 'bare' }), /unreadable/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(bare, 'utf8')), { month: '2026-10' });
+
+  const lowDir = path.join(root, 'low');
+  const lowState = path.join(lowDir, 'usage.json');
+  fs.mkdirSync(lowDir, { recursive: true });
+  appendLedger(ledgerPath(lowDir, '2026-10'), {
+    at: '2026-10-21T12:00:00.000Z',
+    chars: 1000,
+    estCostUsd: formatUsd(costMicro(1000, 15)),
+    status: 'reserved',
+    requestId: 'low',
+    attempt: 1,
+    month: '2026-10',
+  });
+  fs.writeFileSync(lowState, JSON.stringify({ month: '2026-10', spentMicro: 0 }));
+  const low = new UsdBudget({ stateFile: lowState, ledgerDir: lowDir, monthlyBudgetUsd: 1, pricePerMillionChars: 15, now });
+  assert.throws(() => low.begin({ chars: 10, hash: 'low' }), /below the ledger/);
+  assert.equal(JSON.parse(fs.readFileSync(lowState, 'utf8')).spentMicro, 0);
+
+  const chainDir = path.join(root, 'chain');
+  const chainState = path.join(root, 'chain.json');
+  fs.mkdirSync(chainDir, { recursive: true });
+  fs.writeFileSync(ledgerPath(chainDir, '2026-10'), `${JSON.stringify({ prev: 'tampered', status: 'reserved', estCostUsd: '0.015000' })}\n`);
+  fs.writeFileSync(chainState, JSON.stringify({ month: '2026-10', spentMicro: 15000 }));
+  const chain = new UsdBudget({ stateFile: chainState, ledgerDir: chainDir, monthlyBudgetUsd: 1, pricePerMillionChars: 15, now });
+  assert.throws(() => chain.begin({ chars: 10, hash: 'bad' }), /ledger chain/);
+  assert.equal(JSON.parse(fs.readFileSync(chainState, 'utf8')).spentMicro, 15000);
+
+  let when = new Date('2026-01-15T00:00:00Z');
+  const clockState = path.join(root, 'clock.json');
+  const clock = new UsdBudget({
+    stateFile: clockState,
+    ledgerDir: path.join(root, 'clock-ledger'),
+    monthlyBudgetUsd: 1,
+    pricePerMillionChars: 15,
+    now: () => when,
+  });
+  const january = clock.begin({ chars: 1000, hash: 'jan' });
+  clock.clearInflight('jan');
+  when = new Date('2026-02-15T00:00:00Z');
+  const february = clock.begin({ chars: 10, hash: 'feb' });
+  clock.clearInflight('feb');
+  assert.equal(february.spentMicro, costMicro(10, 15));
+  when = new Date('2026-01-20T00:00:00Z');
+  const back = clock.begin({ chars: 10, hash: 'jan2' });
+  assert.equal(back.spentMicro, january.spentMicro + costMicro(10, 15));
 });

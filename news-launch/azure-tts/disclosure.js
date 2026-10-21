@@ -13,6 +13,19 @@ function withDisclosure(description) {
   return base ? `${base}\n\n${AZURE_DISCLOSURE}` : AZURE_DISCLOSURE;
 }
 
+/** Keep the disclosure when the platform limit slices the summary. */
+function fitDescription(summary, limit = 5000) {
+  const cap = Number.isInteger(limit) && limit > 0 ? limit : 5000;
+  const suffix = `\n\n${AZURE_DISCLOSURE}`;
+  let base = String(summary || '').trim();
+  if (base.includes(AZURE_DISCLOSURE)) base = base.split(AZURE_DISCLOSURE).join('').trim();
+  const full = base ? `${base}${suffix}` : AZURE_DISCLOSURE;
+  if (full.length <= cap) return full;
+  const room = cap - suffix.length;
+  if (room <= 0) return AZURE_DISCLOSURE.slice(0, cap);
+  return `${base.slice(0, room).trimEnd()}${suffix}`;
+}
+
 function episodeRecord({ episodeId, engine, voice, final = false, summary = '', showCaption = false, azureStatus = null } = {}) {
   const azure = voice !== 'fallback';
   return {
@@ -24,7 +37,7 @@ function episodeRecord({ episodeId, engine, voice, final = false, summary = '', 
     azureStatus,
     syntheticVoice: azure,
     disclosure: azure ? AZURE_DISCLOSURE : null,
-    description: azure ? withDisclosure(summary) : String(summary || ''),
+    description: azure ? fitDescription(summary) : String(summary || ''),
     caption: azure && showCaption ? AZURE_DISCLOSURE : null,
   };
 }
@@ -44,7 +57,7 @@ async function dryRunAzureEpisode({ outDir, episodeId = 'episode-azure', title =
   fs.mkdirSync(outDir, { recursive: true });
   const video = videoPath || path.join(outDir, 'episode.mp4');
   if (!fs.existsSync(video)) fs.writeFileSync(video, '');
-  const description = withDisclosure(summary);
+  const description = fitDescription(summary);
   const publisher = new Publisher({
     statePath: path.join(outDir, 'publisher.json'),
     adapters: defaultAdapters(),
@@ -54,7 +67,7 @@ async function dryRunAzureEpisode({ outDir, episodeId = 'episode-azure', title =
   const payload = {
     videoPath: video,
     title: String(title).slice(0, 100),
-    description: description.slice(0, 5000),
+    description,
   };
   if (showCaption) payload.caption = AZURE_DISCLOSURE;
   publisher.enqueue({
@@ -67,4 +80,4 @@ async function dryRunAzureEpisode({ outDir, episodeId = 'episode-azure', title =
   return { description, posts, publisher };
 }
 
-module.exports = { AZURE_DISCLOSURE, withDisclosure, episodeRecord, writeEpisodeRecord, dryRunAzureEpisode };
+module.exports = { AZURE_DISCLOSURE, withDisclosure, fitDescription, episodeRecord, writeEpisodeRecord, dryRunAzureEpisode };

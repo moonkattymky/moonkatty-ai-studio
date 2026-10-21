@@ -1,6 +1,8 @@
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const { isHdVoice, utcMonth, warnThreshold, withFileLock, writeState } = require('./budget');
+const { inspectLedger, ledgerPath } = require('./ledger');
 
 /**
  * Retail Prices API, queried 21 October 2026.
@@ -25,14 +27,20 @@ function assertUsd(value, label) {
   }
 }
 
+function retailFloor(voice) {
+  return isHdVoice(voice) ? HD_USD_PER_MILLION : NEURAL_USD_PER_MILLION;
+}
+
 function resolvePrice({ voice, pricePerMillionChars = null, monthlyBudgetUsd = null } = {}) {
-  const pricePerMillion = pricePerMillionChars == null
-    ? (isHdVoice(voice) ? HD_USD_PER_MILLION : NEURAL_USD_PER_MILLION)
-    : pricePerMillionChars;
+  const floor = retailFloor(voice);
+  const pricePerMillion = pricePerMillionChars == null ? floor : pricePerMillionChars;
   const budgetUsd = monthlyBudgetUsd == null ? DEFAULT_MONTHLY_BUDGET_USD : monthlyBudgetUsd;
   assertUsd(pricePerMillion, 'pricePerMillionChars');
   assertUsd(budgetUsd, 'monthlyBudgetUsd');
-  return { pricePerMillionChars: pricePerMillion, monthlyBudgetUsd: budgetUsd };
+  if (pricePerMillion + 1e-9 < floor) {
+    throw new Error(`Azure Speech pricePerMillionChars ${pricePerMillion} is below the retail floor of ${floor.toFixed(2)}. Refusing to run.`);
+  }
+  return { pricePerMillionChars: pricePerMillion, monthlyBudgetUsd: budgetUsd, floor };
 }
 
 function toMicro(usd) {
@@ -55,12 +63,23 @@ function readUsd(file) {
   let data;
   try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { throw new Error('Azure Speech usage state is unreadable. Refusing to run.'); }
   if (!data || typeof data !== 'object' || !/^\d{4}-\d{2}$/.test(data.month)) throw new Error('Azure Speech usage state is unreadable. Refusing to run.');
-  if (data.spentMicro != null && (!Number.isInteger(data.spentMicro) || data.spentMicro < 0)) throw new Error('Azure Speech usage state is unreadable. Refusing to run.');
+  if (!Number.isInteger(data.spentMicro) || data.spentMicro < 0) throw new Error('Azure Speech usage state is unreadable. Refusing to run.');
+  const history = {};
+  if (data.history != null) {
+    if (typeof data.history !== 'object' || Array.isArray(data.history)) throw new Error('Azure Speech usage state is unreadable. Refusing to run.');
+    for (const [month, entry] of Object.entries(data.history)) {
+      if (!/^\d{4}-\d{2}$/.test(month) || !entry || !Number.isInteger(entry.spentMicro) || entry.spentMicro < 0) {
+        throw new Error('Azure Speech usage state is unreadable. Refusing to run.');
+      }
+      history[month] = { spentMicro: entry.spentMicro };
+    }
+  }
   return {
     month: data.month,
-    spentMicro: data.spentMicro || 0,
+    spentMicro: data.spentMicro,
     reconciliation: data.reconciliation || null,
     inflight: data.inflight && typeof data.inflight === 'object' ? data.inflight : {},
+    history,
   };
 }
 
@@ -74,23 +93,48 @@ function pidAlive(pid) {
  * reserve() runs before HTTP. A blocked request is not added. Failures are not refunded.
  */
 class UsdBudget {
-  constructor({ stateFile, monthlyBudgetUsd = DEFAULT_MONTHLY_BUDGET_USD, pricePerMillionChars = NEURAL_USD_PER_MILLION, now = () => new Date() } = {}) {
+  constructor({ stateFile, ledgerDir = null, monthlyBudgetUsd = DEFAULT_MONTHLY_BUDGET_USD, pricePerMillionChars = NEURAL_USD_PER_MILLION, voice = null, now = () => new Date() } = {}) {
     if (!stateFile) throw new Error('Azure Speech usage state file is required.');
-    const price = resolvePrice({ pricePerMillionChars, monthlyBudgetUsd });
+    const price = resolvePrice({ voice, pricePerMillionChars, monthlyBudgetUsd });
     this.stateFile = stateFile;
+    this.ledgerDir = ledgerDir || path.dirname(stateFile);
     this.monthlyBudgetUsd = price.monthlyBudgetUsd;
     this.pricePerMillionChars = price.pricePerMillionChars;
     this.budgetMicro = toMicro(price.monthlyBudgetUsd);
     this.now = now;
     this.lockFile = `${stateFile}.lock`;
   }
+  _ledger() {
+    return inspectLedger(ledgerPath(this.ledgerDir, utcMonth(this.now())));
+  }
   _load() {
     const month = utcMonth(this.now());
+    const ledger = this._ledger();
     const loaded = readUsd(this.stateFile);
-    if (!loaded || loaded.month !== month) return { month, spentMicro: 0, reconciliation: null, inflight: {}, rolled: true };
-    return { ...loaded, rolled: false };
+    if (!loaded) {
+      if (ledger.lines > 0) throw new Error('Azure Speech usage state is missing but the ledger exists. Refusing to run.');
+      return { month, spentMicro: 0, reconciliation: null, inflight: {}, history: {}, rolled: true };
+    }
+    const history = { ...loaded.history };
+    let spent = loaded.spentMicro;
+    let reconciliation = loaded.reconciliation;
+    let inflight = loaded.inflight;
+    let rolled = false;
+    if (loaded.month !== month) {
+      history[loaded.month] = { spentMicro: loaded.spentMicro };
+      if (history[month]) spent = history[month].spentMicro;
+      else if (ledger.lines > 0) throw new Error('Azure Speech usage state does not match this month and the ledger exists. Refusing to run.');
+      else spent = 0;
+      reconciliation = null;
+      inflight = {};
+      rolled = true;
+    }
+    if (ledger.lines > 0 && spent < ledger.spentMicro) throw new Error('Azure Speech usage state is below the ledger. Refusing to run.');
+    return { month, spentMicro: spent, reconciliation, inflight, history, rolled };
   }
   _save(state) {
+    const history = { ...state.history };
+    delete history[state.month];
     writeState(this.stateFile, {
       month: state.month,
       spentMicro: state.spentMicro,
@@ -100,6 +144,7 @@ class UsdBudget {
       tier: 'S0',
       reconciliation: state.reconciliation,
       inflight: state.inflight,
+      history,
     });
   }
   /**
@@ -164,5 +209,5 @@ class UsdBudget {
 
 module.exports = {
   PRICE_SOURCE, NEURAL_USD_PER_MILLION, HD_USD_PER_MILLION, DEFAULT_MONTHLY_BUDGET_USD,
-  resolvePrice, toMicro, costMicro, formatUsd, UsdBudget, pidAlive,
+  resolvePrice, retailFloor, toMicro, costMicro, formatUsd, UsdBudget, pidAlive,
 };

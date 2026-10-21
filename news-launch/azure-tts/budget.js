@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { verifyApproval } = require('./approval');
 
 /** Published Free (F0) neural text-to-speech allowance. See RESEARCH.md. */
 const F0_FREE_CHARS = 500000;
@@ -22,9 +23,11 @@ function warnThreshold(limit, percent) {
 
 /**
  * Decide the guard before any key lookup or HTTP call.
- * F0 stays on the free character quota. S0 needs paidEnabled and an owner approval record.
+ * F0 still refuses HD voices, allowPaid, and a limit above the published free quota.
+ * synthesize charges the USD guard for every tier: the Speech key cannot show F0 versus S0.
+ * S0 needs paidEnabled and a signed owner approval.
  */
-function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice = DEFAULT_VOICE, paidEnabled = false, paidApproval = null, monthlyBudgetUsd = null, pricePerMillionChars = null } = {}) {
+function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice = DEFAULT_VOICE, region = null, paidEnabled = false, paidApproval = null, approvalPublicKeyPem = null, monthlyBudgetUsd = null, pricePerMillionChars = null } = {}) {
   if (tier !== 'F0' && tier !== 'S0') {
     const shown = tier == null || tier === '' ? 'missing' : String(tier);
     throw new Error(`Azure Speech pricing tier is unknown (${shown}). Refusing to run. Accepted values are F0 and S0.`);
@@ -36,10 +39,7 @@ function resolveCap({ tier, allowPaid = false, limitChars, paidCapChars, voice =
     throw new Error(`Azure Speech voice ${voice} is an HD voice. The F0 allowance on the pricing page is labeled Neural, not Neural HD. Refusing to run.`);
   }
   if (tier === 'S0') {
-    if (paidEnabled !== true || !paidApproval || !paidApproval.at || !paidApproval.by) {
-      throw new Error('Azure Speech S0 calls are refused. paidEnabled and an owner approval record (timestamp and who) are both required. No request was sent.');
-    }
-    if (!/^\d{4}-\d{2}-\d{2}T/.test(String(paidApproval.at)) || !String(paidApproval.by).trim()) {
+    if (paidEnabled !== true || !verifyApproval(paidApproval, approvalPublicKeyPem, { voice, region })) {
       throw new Error('Azure Speech S0 calls are refused. paidEnabled and an owner approval record (timestamp and who) are both required. No request was sent.');
     }
     return { tier, voice, monthlyBudgetUsd, pricePerMillionChars, paidApproval };
