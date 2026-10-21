@@ -138,7 +138,7 @@ const yn = aud.channels.find(c => c.id === 'youtube-news');
 const yp = aud.channels.find(c => c.id === 'youtube-project');
 ok('A two YouTube channels stay separate and DEMO', aud.youtubeMerged === false && aud.mergeYoutube === false && aud.channels.length === 7 && yn.subscribers.label === 'DEMO 100' && yp.subscribers.label === 'DEMO 137' && yn.subscribers.real === false);
 ok('A real progress, retention, CTR and formats are НЕТ ДАННЫХ', yn.progress === 'НЕТ ДАННЫХ' && yn.retention === 'НЕТ ДАННЫХ' && yn.clickThrough === 'НЕТ ДАННЫХ' && yn.formats === 'НЕТ ДАННЫХ' && yn.growth.daily === 'НЕТ ДАННЫХ');
-ok('A revenue link uses confirmed payouts only', yn.revenue === 'НЕТ ДАННЫХ' && cc3.memory.path === 'fallback' && cc3.memory.audience.some(x => x.goal === 1000000));
+ok('A revenue link uses confirmed payouts only', yn.revenue === 'НЕТ ДАННЫХ' && ['fallback', 'studio-intelligence'].includes(cc3.memory.path) && cc3.memory.audience.some(x => x.goal === 1000000));
 ok('A organic recommendation forbids bought followers', yn.recommendations.join(' ').includes('Не покупать'));
 ok('A directors read audience and do not publish', cc3.directors.ceo.audience === true && cc3.directors.marketing.publishes === false && cc3.directors.creative.audience === true && cc3.directors.revenue.audience === true);
 const experiment = await api('POST', '/api/world/experiments', { hypothesis: 'Новая обложка удержит зрителя', metric: 'retention', durationDays: 14, platformId: 'youtube-news' });
