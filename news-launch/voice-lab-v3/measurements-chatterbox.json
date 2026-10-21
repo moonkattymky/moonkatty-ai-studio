@@ -1,0 +1,156 @@
+[
+  {
+    "engine": "chatterbox",
+    "model": "ResembleAI/chatterbox",
+    "voice": "osr-us-male-0030",
+    "exaggeration": 0.35,
+    "cfgWeight": 0.5,
+    "temperature": 0.8,
+    "genSec": 211.187,
+    "device": "cpu",
+    "id": "chatterbox-exag035",
+    "words": 133,
+    "wav": "audio/chatterbox-exag035.wav",
+    "mp3": "audio/chatterbox-exag035.mp3",
+    "durationSec": 58.32,
+    "wpm": 137,
+    "wavLufs": -16,
+    "wavTruePeakDb": -0.8,
+    "mp3Lufs": -16,
+    "mp3TruePeakDb": -0.8,
+    "pauses": {
+      "count": 17,
+      "longestSec": 2.31,
+      "gaps": [
+        {
+          "start": 2.31,
+          "duration": 0.65
+        },
+        {
+          "start": 7.97,
+          "duration": 0.41
+        },
+        {
+          "start": 11.03,
+          "duration": 1.5
+        },
+        {
+          "start": 13.49,
+          "duration": 0.55
+        },
+        {
+          "start": 18.07,
+          "duration": 0.68
+        },
+        {
+          "start": 20.23,
+          "duration": 0.42
+        },
+        {
+          "start": 22.16,
+          "duration": 0.99
+        },
+        {
+          "start": 25.94,
+          "duration": 0.37
+        },
+        {
+          "start": 30.02,
+          "duration": 0.39
+        },
+        {
+          "start": 32.29,
+          "duration": 1.41
+        },
+        {
+          "start": 34.67,
+          "duration": 0.92
+        },
+        {
+          "start": 38.71,
+          "duration": 0.97
+        },
+        {
+          "start": 43.84,
+          "duration": 0.98
+        },
+        {
+          "start": 48.99,
+          "duration": 0.41
+        },
+        {
+          "start": 51.48,
+          "duration": 0.66
+        },
+        {
+          "start": 54.01,
+          "duration": 0.52
+        },
+        {
+          "start": 56.01,
+          "duration": 2.31
+        }
+      ]
+    },
+    "rtf": 3.621
+  },
+  {
+    "engine": "chatterbox",
+    "model": "ResembleAI/chatterbox",
+    "voice": "osr-us-male-0030",
+    "exaggeration": 0.85,
+    "cfgWeight": 0.5,
+    "temperature": 0.8,
+    "genSec": 174.462,
+    "device": "cpu",
+    "id": "chatterbox-exag085",
+    "words": 133,
+    "wav": "audio/chatterbox-exag085.wav",
+    "mp3": "audio/chatterbox-exag085.mp3",
+    "durationSec": 50.76,
+    "wpm": 157,
+    "wavLufs": -16,
+    "wavTruePeakDb": -0.6,
+    "mp3Lufs": -16,
+    "mp3TruePeakDb": -0.6,
+    "pauses": {
+      "count": 8,
+      "longestSec": 0.67,
+      "gaps": [
+        {
+          "start": 1.66,
+          "duration": 0.42
+        },
+        {
+          "start": 9.53,
+          "duration": 0.67
+        },
+        {
+          "start": 15.52,
+          "duration": 0.35
+        },
+        {
+          "start": 18.83,
+          "duration": 0.43
+        },
+        {
+          "start": 27.39,
+          "duration": 0.46
+        },
+        {
+          "start": 40.54,
+          "duration": 0.4
+        },
+        {
+          "start": 47.45,
+          "duration": 0.42
+        },
+        {
+          "start": 50.37,
+          "duration": 0.39
+        }
+      ]
+    },
+    "rtf": 3.437
+  }
+]

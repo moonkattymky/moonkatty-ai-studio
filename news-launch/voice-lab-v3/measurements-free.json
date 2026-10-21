@@ -1,0 +1,355 @@
+[
+  {
+    "engine": "kokoro-onnx",
+    "voice": "am_michael",
+    "speed": 1,
+    "lang": "en-us",
+    "genSec": 13.328,
+    "device": "cpu",
+    "id": "kokoro-am_michael",
+    "words": 133,
+    "wav": "audio/kokoro-am_michael.wav",
+    "mp3": "audio/kokoro-am_michael.mp3",
+    "durationSec": 48.41,
+    "wpm": 165,
+    "wavLufs": -16.4,
+    "wavTruePeakDb": -1.5,
+    "mp3Lufs": -16,
+    "mp3TruePeakDb": -1.1,
+    "pauses": {
+      "count": 10,
+      "longestSec": 0.52,
+      "gaps": [
+        {
+          "start": 1.42,
+          "duration": 0.45
+        },
+        {
+          "start": 8.38,
+          "duration": 0.37
+        },
+        {
+          "start": 9.57,
+          "duration": 0.46
+        },
+        {
+          "start": 15.2,
+          "duration": 0.39
+        },
+        {
+          "start": 24.88,
+          "duration": 0.46
+        },
+        {
+          "start": 26.18,
+          "duration": 0.52
+        },
+        {
+          "start": 33.95,
+          "duration": 0.39
+        },
+        {
+          "start": 41,
+          "duration": 0.5
+        },
+        {
+          "start": 45.79,
+          "duration": 0.46
+        },
+        {
+          "start": 47.23,
+          "duration": 0.38
+        }
+      ]
+    },
+    "rtf": 0.275
+  },
+  {
+    "engine": "edge-tts",
+    "voice": "en-US-AndrewMultilingualNeural",
+    "rate": "+0%",
+    "genSec": 66.779,
+    "device": "network",
+    "id": "edge-andrew",
+    "words": 133,
+    "wav": "audio/edge-andrew.wav",
+    "mp3": "audio/edge-andrew.mp3",
+    "durationSec": 48.72,
+    "wpm": 164,
+    "wavLufs": -16.1,
+    "wavTruePeakDb": -1.5,
+    "mp3Lufs": -16.3,
+    "mp3TruePeakDb": -1.7,
+    "pauses": {
+      "count": 17,
+      "longestSec": 0.5,
+      "gaps": [
+        {
+          "start": 1.61,
+          "duration": 0.44
+        },
+        {
+          "start": 4.47,
+          "duration": 0.42
+        },
+        {
+          "start": 8.79,
+          "duration": 0.45
+        },
+        {
+          "start": 9.85,
+          "duration": 0.4
+        },
+        {
+          "start": 13.43,
+          "duration": 0.43
+        },
+        {
+          "start": 15.06,
+          "duration": 0.44
+        },
+        {
+          "start": 16.55,
+          "duration": 0.43
+        },
+        {
+          "start": 22.66,
+          "duration": 0.44
+        },
+        {
+          "start": 25.68,
+          "duration": 0.5
+        },
+        {
+          "start": 26.98,
+          "duration": 0.41
+        },
+        {
+          "start": 30.77,
+          "duration": 0.43
+        },
+        {
+          "start": 35.2,
+          "duration": 0.45
+        },
+        {
+          "start": 37.65,
+          "duration": 0.43
+        },
+        {
+          "start": 39.57,
+          "duration": 0.46
+        },
+        {
+          "start": 41.55,
+          "duration": 0.45
+        },
+        {
+          "start": 46.25,
+          "duration": 0.44
+        },
+        {
+          "start": 47.46,
+          "duration": 0.44
+        }
+      ]
+    },
+    "rtf": 1.371
+  },
+  {
+    "engine": "edge-tts",
+    "voice": "en-US-BrianNeural",
+    "rate": "+0%",
+    "genSec": 31.58,
+    "device": "network",
+    "id": "edge-brian",
+    "words": 133,
+    "wav": "audio/edge-brian.wav",
+    "mp3": "audio/edge-brian.mp3",
+    "durationSec": 49.22,
+    "wpm": 162,
+    "wavLufs": -16.1,
+    "wavTruePeakDb": -1.5,
+    "mp3Lufs": -16.4,
+    "mp3TruePeakDb": -1.7,
+    "pauses": {
+      "count": 21,
+      "longestSec": 0.67,
+      "gaps": [
+        {
+          "start": 1.45,
+          "duration": 0.46
+        },
+        {
+          "start": 4.52,
+          "duration": 0.45
+        },
+        {
+          "start": 6.35,
+          "duration": 0.4
+        },
+        {
+          "start": 9.12,
+          "duration": 0.43
+        },
+        {
+          "start": 10.28,
+          "duration": 0.44
+        },
+        {
+          "start": 14.03,
+          "duration": 0.55
+        },
+        {
+          "start": 15.95,
+          "duration": 0.43
+        },
+        {
+          "start": 17.76,
+          "duration": 0.45
+        },
+        {
+          "start": 20.64,
+          "duration": 0.67
+        },
+        {
+          "start": 24.09,
+          "duration": 0.43
+        },
+        {
+          "start": 25.88,
+          "duration": 0.53
+        },
+        {
+          "start": 27.35,
+          "duration": 0.45
+        },
+        {
+          "start": 30.91,
+          "duration": 0.44
+        },
+        {
+          "start": 35.32,
+          "duration": 0.47
+        },
+        {
+          "start": 37.79,
+          "duration": 0.38
+        },
+        {
+          "start": 39.93,
+          "duration": 0.48
+        },
+        {
+          "start": 41.95,
+          "duration": 0.44
+        },
+        {
+          "start": 44.17,
+          "duration": 0.43
+        },
+        {
+          "start": 46.76,
+          "duration": 0.44
+        },
+        {
+          "start": 47.91,
+          "duration": 0.45
+        },
+        {
+          "start": 48.86,
+          "duration": 0.36
+        }
+      ]
+    },
+    "rtf": 0.642
+  },
+  {
+    "engine": "edge-tts",
+    "voice": "en-US-ChristopherNeural",
+    "rate": "+0%",
+    "genSec": 17.771,
+    "device": "network",
+    "id": "edge-christopher",
+    "words": 133,
+    "wav": "audio/edge-christopher.wav",
+    "mp3": "audio/edge-christopher.mp3",
+    "durationSec": 57.74,
+    "wpm": 138,
+    "wavLufs": -16.3,
+    "wavTruePeakDb": -1.5,
+    "mp3Lufs": -16,
+    "mp3TruePeakDb": -1.1,
+    "pauses": {
+      "count": 16,
+      "longestSec": 1.03,
+      "gaps": [
+        {
+          "start": 1.57,
+          "duration": 0.98
+        },
+        {
+          "start": 5.12,
+          "duration": 0.97
+        },
+        {
+          "start": 9.79,
+          "duration": 0.98
+        },
+        {
+          "start": 11.62,
+          "duration": 0.94
+        },
+        {
+          "start": 16.03,
+          "duration": 0.99
+        },
+        {
+          "start": 18.34,
+          "duration": 0.97
+        },
+        {
+          "start": 20.72,
+          "duration": 1
+        },
+        {
+          "start": 29.8,
+          "duration": 0.97
+        },
+        {
+          "start": 31.67,
+          "duration": 1.02
+        },
+        {
+          "start": 35.55,
+          "duration": 1.03
+        },
+        {
+          "start": 40.44,
+          "duration": 1.01
+        },
+        {
+          "start": 45.23,
+          "duration": 0.95
+        },
+        {
+          "start": 48.26,
+          "duration": 0.99
+        },
+        {
+          "start": 53.32,
+          "duration": 0.99
+        },
+        {
+          "start": 55.23,
+          "duration": 0.96
+        },
+        {
+          "start": 56.85,
+          "duration": 0.89
+        }
+      ]
+    },
+    "rtf": 0.308
+  }
+]
