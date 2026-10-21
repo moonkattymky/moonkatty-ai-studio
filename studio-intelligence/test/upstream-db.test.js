@@ -8,7 +8,8 @@ const { execFileSync } = require('node:child_process');
 const { openStudioIntelligence } = require('../src');
 
 const ROOT = path.join(__dirname, '..', '..');
-const V12 = 'origin/feat/v1.2.0';
+// feat/v1.2.0 @ a3fd83a: внутри v1.2.1 (42d3fd5) и video_render (a991e93). Отдельной таблицы под рендер нет.
+const V12 = 'a3fd83a7606330b6b5cd58ccd9f3574ffe467294';
 
 function scratchDir(name) {
   return fs.mkdtempSync(path.join(os.tmpdir(), name));
@@ -65,7 +66,11 @@ test('миграция сохраняет базу, созданную SQL main'
   si.close();
 });
 
-test('миграция сохраняет базу, созданную lib/db.js и lib/jobs.js ветки feat/v1.2.0', () => {
+function tableNames(db) {
+  return db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all().map(row => row.name);
+}
+
+test('миграция сохраняет базу lib/db.js и lib/jobs.js с a3fd83a, включая video_render', () => {
   const tree = writeTree(V12, ['lib/db.js', 'lib/jobs.js']);
   const { open } = require(path.join(tree, 'lib/db.js'));
   const createJobs = require(path.join(tree, 'lib/jobs.js'));
@@ -74,26 +79,46 @@ test('миграция сохраняет базу, созданную lib/db.js
   const db = open(dbPath);
   db.exec(panelSql(V12 + ':server.js'));
   db.prepare('INSERT INTO items (col, id, data) VALUES (?, ?, ?)').run(
-    'tasks', 't-v12', JSON.stringify({ id: 't-v12', title: 'задача 1.2.0', project: 'main' })
+    'tasks', 't-v12', JSON.stringify({ id: 't-v12', title: 'задача 1.2.1', project: 'main' })
   );
-  db.prepare('INSERT INTO meta (k, v) VALUES (?, ?)').run('version', '1.2.0');
+  db.prepare('INSERT INTO meta (k, v) VALUES (?, ?)').run('version', '1.2.1');
   const jobs = createJobs(db);
   const job = jobs.create('task-v12', 'blender', 'detect');
   jobs.event(job.id, 'info', 'detect', 'проверка', 'rule-1');
+  const render = jobs.create('task-video', 'video_render', 'video_render');
+  jobs.update(render.id, {
+    input: { runId: 'run1', preset: 'youtube', episodeRef: 's01/e03' },
+    idempotencyKey: 'run1:youtube',
+    resourceClass: 'gpu_heavy',
+    requiresNode: 'mac-mini',
+    safeToRetry: true
+  });
+  jobs.event(render.id, 'info', 'video_render', 'строка рендера', null);
+  const beforeTables = tableNames(db);
+  assert.deepEqual(beforeTables, ['items', 'job_events', 'jobs', 'meta']);
   const jobCount = db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n;
   const eventCount = db.prepare('SELECT COUNT(*) AS n FROM job_events').get().n;
-  const status = db.prepare('SELECT status, task_id FROM jobs WHERE id = ?').get(job.id);
   db.close();
   const si = openStudioIntelligence({ dbPath });
-  assert.equal(JSON.parse(si.db.prepare("SELECT data FROM items WHERE id = 't-v12'").get().data).title, 'задача 1.2.0');
-  assert.equal(si.db.prepare("SELECT v FROM meta WHERE k = 'version'").get().v, '1.2.0');
+  const afterTables = tableNames(si.db);
+  for (const name of beforeTables) assert.ok(afterTables.includes(name), name);
+  assert.equal(JSON.parse(si.db.prepare("SELECT data FROM items WHERE id = 't-v12'").get().data).title, 'задача 1.2.1');
+  assert.equal(si.db.prepare("SELECT v FROM meta WHERE k = 'version'").get().v, '1.2.1');
   assert.equal(si.db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n, jobCount);
   assert.equal(si.db.prepare('SELECT COUNT(*) AS n FROM job_events').get().n, eventCount);
   const again = si.db.prepare('SELECT status, task_id, kind FROM jobs WHERE id = ?').get(job.id);
-  assert.equal(again.status, status.status);
+  assert.equal(again.status, 'queued');
   assert.equal(again.task_id, 'task-v12');
   assert.equal(again.kind, 'blender');
+  const video = si.db.prepare('SELECT kind, status, idempotency_key, input, resource_class FROM jobs WHERE id = ?').get(render.id);
+  assert.equal(video.kind, 'video_render');
+  assert.equal(video.status, 'queued');
+  assert.equal(video.idempotency_key, 'run1:youtube');
+  assert.equal(video.resource_class, 'gpu_heavy');
+  assert.equal(JSON.parse(video.input).episodeRef, 's01/e03');
   assert.equal(si.db.prepare('SELECT msg FROM job_events WHERE job_id = ?').get(job.id).msg, 'проверка');
+  assert.equal(si.db.prepare('SELECT msg FROM job_events WHERE job_id = ?').get(render.id).msg, 'строка рендера');
+  assert.equal(si.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name = 'video_render'").get().n, 0);
   assert.ok(si.db.prepare("SELECT 1 AS n FROM sqlite_master WHERE name = 'si_records'").get());
   si.close();
 });
