@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 PKG="${1:-/workspace/dist-node/moonkatty-node-0.2.2-js-only.tar.gz}"; REF="${2:-db4720b}"
 ( cd "$(dirname "$PKG")" && sha256sum -c "$(basename "$PKG").sha256" )
 H=$(mktemp -d /tmp/node022-compat-XXXX); trap 'rm -rf "$H"' EXIT
-tar -xzf "$PKG" -C "$H"; P=$(ls -d "$H"/moonkatty-node-*/); ( cd "$P" && sha256sum -c --quiet MANIFEST.sha256 )
+tar --no-same-owner -xzf "$PKG" -C "$H"; P=$(ls -d "$H"/moonkatty-node-*/); ( cd "$P" && sha256sum -c --quiet MANIFEST.sha256 )
 mkdir -p "$H/h"; git archive "$REF" | tar -x -C "$H/h"                      # Studio 3 tree at REF (its tests, fixtures, scripts, docs)
 for f in nodes.js node-enroll.js state.js; do cp "lib/ops/$f" "$H/h/lib/ops/$f"; done   # swap in OUR coordinator only
 rm -rf "$H/h/node-agent"; cp -r "$P/app" "$H/h/node-agent"; cp "$P"/*.sh "$H/h/scripts/node/" 2>/dev/null || true   # REAL 0.2.2 agent from the package
