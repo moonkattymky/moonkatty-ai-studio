@@ -12,7 +12,7 @@ button{margin-top:16px;padding:10px 18px;border:0;border-radius:8px;background:#
 const T='__TOKEN__',$=i=>document.getElementById(i);
 const msg={pin:'Проверяю сертификат Mac mini…',device:'Создаю ключ устройства (Keychain)…',pending:'Ждём подтверждения владельцем на Mac mini…',enrolled:'Готово! Токен сохранён в Keychain. Агент перезапускается.',error:'Ошибка'};
 async function poll(){const s=await (await fetch('/enroll/state')).json();$('st').className=s.step==='enrolled'?'ok':s.step==='error'?'err':'';
-$('st').textContent=(msg[s.step]||s.step)+(s.requestId?'\nЗапрос: '+s.requestId:'')+(s.deviceId?'\nУстройство: '+s.deviceId:'')+(s.nodeId?'\nУзел: '+s.nodeId:'')+(s.error?'\n'+s.error:'');
+$('st').textContent=(msg[s.step]||s.step)+(s.requestId?'\nЗапрос: '+s.requestId:'')+(s.deviceId?'\nУстройство: '+s.deviceId:'')+(s.pubKeyShort?'\nКлюч устройства (сверить с панелью): '+s.pubKeyShort+'\nПолный отпечаток ключа: '+s.pubKeyFp:'')+(s.nodeId?'\nУзел: '+s.nodeId:'')+(s.error?'\n'+s.error:'');
 if(s.step!=='enrolled'&&s.step!=='error'&&s.step!=='idle')setTimeout(poll,1500);}
 $('go').onclick=async()=>{const r=await fetch('/enroll',{method:'POST',headers:{'content-type':'application/json','x-node-local':T},body:JSON.stringify({code:$('code').value.trim(),url:$('url').value.trim(),fingerprint:$('fp').value.trim()})});if(r.status===202)setTimeout(poll,300);else $('st').textContent='Не удалось начать: '+r.status;};
 poll();

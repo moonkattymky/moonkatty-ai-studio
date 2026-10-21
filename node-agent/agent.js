@@ -242,9 +242,13 @@ async function config(env = process.env) {
 }
 if (require.main === module) {
   if (process.argv.includes('--info')) config().catch(() => ({ workDir: os.tmpdir() })).then(c => sysInfo(c)).then(i => { console.log(JSON.stringify(i, null, 2)); });
-  else if (process.argv.includes('--enroll')) { const a = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : process.env['NODE_ENROLL_' + k.toUpperCase()]; };
-    sysInfo({ workDir: os.homedir() }).then(info => EN.enroll({ url: a('url'), fingerprint: a('fingerprint'), code: a('code'), info, onState: s => console.log('enroll:', s.step, s.requestId || '', s.nodeId || '', s.deviceId || '') }))
-      .then(r => { console.log(`Подключено: узел ${r.nodeId} (${r.role}), устройство ${r.deviceId}. Токен сохранён в Keychain. Запустите агент или включите автозапуск.`); process.exit(0); })
+  else if (process.argv.includes('--enroll')) { const a = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : undefined; };
+    // the one-time code is never taken from argv/env (visible in ps / process env): typed at the prompt or piped via stdin
+    if (process.argv.includes('--code')) { console.error('enroll: не передавайте код в командной строке (виден в ps) — введите его по запросу или через stdin'); process.exit(2); }
+    const readCode = () => new Promise(res => { if (process.stdin.isTTY) process.stderr.write('Код подключения из панели Mac mini: '); let b = ''; process.stdin.setEncoding('utf8');
+      process.stdin.on('data', d => { b += d; if (b.includes('\n')) { process.stdin.pause(); res(b.split('\n')[0].trim()); } }); process.stdin.on('end', () => res(b.trim())); });
+    readCode().then(code => sysInfo({ workDir: os.homedir() }).then(info => EN.enroll({ url: a('url'), fingerprint: a('fingerprint'), code, info, onState: s => console.log('enroll:', s.step, s.requestId || '', s.nodeId || '', s.deviceId || '', s.pubKeyShort ? 'ключ ' + s.pubKeyShort + ' — сверьте с панелью' : '') })))
+      .then(r => { console.log(`Подключено: узел ${r.nodeId} (${r.role}), устройство ${r.deviceId}, ключ ${r.pubKeyShort}. Токен сохранён в Keychain. Запустите агент или включите автозапуск.`); process.exit(0); })
       .catch(e => { console.error('enroll:', e.message); process.exit(2); }); }
   else config().then(main).catch(e => { if (/NODE_ID обязателен|нет токена/.test(e.message) && !process.argv.includes('--no-enroll-ui')) return enrollUi(); console.error('node-agent:', e.message); process.exit(1); });
 }

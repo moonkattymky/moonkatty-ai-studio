@@ -168,3 +168,19 @@ test('peer buckets behind tailscale serve: per tailnet device (whois, mocked) / 
   assert.ok(N.createNodeManager({ dir: dir2, now }));
   assert.equal(await N.defaultWhois('8.8.8.8'), null);
 });
+test('confirmation screens: node shows device-key fingerprint equal to panel; panel shows full+short key, labels device-reported fields unverified; CLI code not via argv; tailscale mode needs *.ts.net', async () => {
+  const c = await coord(); const kc = kcEnv(); const home = tmp(); clock = Date.now();
+  try { const r = c.m.enrollment.create({ role: 'news' }); const states = []; const p = EN.enroll({ url: c.url, fingerprint: c.fp, code: r.code, home, env: kc, info: {}, pollMs: 30, onState: s => states.push(s) });
+    let q; for (let i = 0; i < 200 && !(q = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20));
+    for (let i = 0; i < 200 && !states.some(s => s.step === 'pending'); i++) await new Promise(z => setTimeout(z, 10)); const nodeScreen = states.find(s => s.step === 'pending'); assert.equal(nodeScreen.pubKeyShort, q.device.pubKeyShort); assert.equal(nodeScreen.pubKeyFp, q.device.pubKeyFingerprint); assert.equal(nodeScreen.deviceId, q.device.deviceId);
+    c.m.enrollment.reject(q.requestId); await assert.rejects(p, e => e.code === 'E_REJECTED');
+  } finally { await c.close(); }
+  const html = fs.readFileSync(path.join(__dirname, '../../node-agent/enroll.html'), 'utf8'); assert.match(html, /s\.pubKeyShort/); assert.match(html, /s\.pubKeyFp/); assert.ok(!/innerHTML/.test(html));
+  const ui = fs.readFileSync(path.join(__dirname, '../../public/ops-ui.js'), 'utf8'); assert.match(ui, /pubKeyFingerprint/); assert.match(ui, /Сообщено устройством \(не проверено\)/); assert.match(ui, /Ключ устройства: \$\{dv\.pubKeyShort\}/);
+  await assert.rejects(() => EN.enroll({ url: 'https://127.0.0.1:9', tlsMode: 'tailscale', code: 'X', env: kc, home: tmp() }), e => e.code === 'E_TLS_MODE');
+  await assert.rejects(() => EN.enroll({ url: 'https://127.0.0.1:9', tlsMode: 'none', code: 'X', env: kc, home: tmp() }), e => e.code === 'E_TLS_MODE');
+  const { spawnSync } = require('child_process'); const agent = path.join(__dirname, '../../node-agent/agent.js');
+  const bad = spawnSync(process.execPath, [agent, '--enroll', '--url', 'https://127.0.0.1:9', '--code', '23456-789GH-JKMNP'], { encoding: 'utf8', timeout: 10000, env: { ...process.env, HOME: tmp() } }); assert.equal(bad.status, 2); assert.match(bad.stderr, /не передавайте код/);
+  const viaStdin = spawnSync(process.execPath, [agent, '--enroll', '--url', 'http://127.0.0.1:9'], { input: '23456-789GH-JKMNP\n', encoding: 'utf8', timeout: 10000, env: { ...process.env, HOME: tmp() } });
+  assert.equal(viaStdin.status, 2); assert.match(viaStdin.stderr, /только https/); assert.ok(!(viaStdin.stdout + viaStdin.stderr).includes('JKMNP'));
+});

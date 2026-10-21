@@ -35,23 +35,26 @@ function post(url, p, body, { ca, fingerprint, tlsMode }) { return new Promise((
 // ---------- enrollment flow ----------
 async function enroll({ url, fingerprint, code, tlsMode, home = path.join(os.homedir(), '.moonkatty-node'), env = process.env, info = {}, onState = () => {}, pollMs, maxWaitMs = 30 * 60e3 }) {
   const u = new URL(String(url || '')); if (u.protocol !== 'https:') throw Object.assign(new Error('только https:// — подключение по открытому HTTP запрещено'), { code: 'E_TLS_REQUIRED' });
-  tlsMode = tlsMode || (/\.ts\.net$/i.test(u.hostname) ? 'tailscale' : 'pinned'); const kc = keychain(env); if (!kc.available) throw new Error('Keychain недоступен (только macOS)');
+  tlsMode = tlsMode || (/\.ts\.net$/i.test(u.hostname) ? 'tailscale' : 'pinned');
+  if (tlsMode === 'tailscale' && !/\.ts\.net$/i.test(u.hostname)) throw Object.assign(new Error('режим tailscale только для https://<mac-mini>.<tailnet>.ts.net — для IP-адреса нужен отпечаток сертификата'), { code: 'E_TLS_MODE' });
+  if (!['tailscale', 'pinned'].includes(tlsMode)) throw Object.assign(new Error('tlsMode: tailscale|pinned'), { code: 'E_TLS_MODE' }); const kc = keychain(env); if (!kc.available) throw new Error('Keychain недоступен (только macOS)');
   let ca = null; if (tlsMode === 'pinned') { onState({ step: 'pin' }); ca = await fetchPinnedCert(url, fingerprint); }
-  const dev = await deviceIdentity(home, kc); onState({ step: 'device', deviceId: dev.deviceId });
+  const dev = await deviceIdentity(home, kc); const pubKeyFp = sha256(crypto.createPublicKey(dev.pubKey).export({ type: 'spki', format: 'der' }));
+  const base = { deviceId: dev.deviceId, pubKeyFp, pubKeyShort: shortFp(pubKeyFp) }; const emit = x => onState({ ...base, ...x }); emit({ step: 'device' });
   const o = { ca, fingerprint: String(fingerprint || '').replace(/[:\s]/g, '').toLowerCase(), tlsMode }; const rid = String(code || '').toUpperCase().replace(/[\s-]/g, '').slice(0, 5);
   const r = await post(url, '/enroll', { code, deviceId: dev.deviceId, devicePubKey: dev.pubKey, proof: sign(dev.key, `enroll:${rid}:${dev.deviceId}`), info }, o);
   if (r.status !== 200) throw Object.assign(new Error(`${r.body.code || 'HTTP ' + r.status}: ${r.body.error || ''}`), { code: r.body.code });
-  await kc.set('moonkatty-node-enroll', r.body.requestId, r.body.requestSecret); onState({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId });
+  await kc.set('moonkatty-node-enroll', r.body.requestId, r.body.requestSecret); emit({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId });
   const t0 = Date.now(); for (;;) { if (Date.now() - t0 > maxWaitMs) throw new Error('владелец не подтвердил за 30 минут — создайте новый код');
     await new Promise(z => setTimeout(z, pollMs || r.body.pollMs || 3000)); const ts = Date.now(); const nonce = crypto.randomBytes(18).toString('base64url'); const secret = await kc.get('moonkatty-node-enroll', r.body.requestId);
     const s = await post(url, '/enroll/status', { requestId: r.body.requestId, requestSecret: secret, ts, nonce, sig: sign(dev.key, `status:${r.body.requestId}:${ts}:${nonce}`) }, o);
     if (s.status !== 200) throw Object.assign(new Error(`${s.body.code || 'HTTP ' + s.status}: ${s.body.error || ''}`), { code: s.body.code });
-    if (s.body.status === 'pending') { onState({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId }); continue; }
+    if (s.body.status === 'pending') { emit({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId }); continue; }
     if (s.body.status === 'rejected') { await kc.del('moonkatty-node-enroll', r.body.requestId); throw Object.assign(new Error('владелец отклонил подключение'), { code: 'E_REJECTED' }); }
     if (s.body.status === 'enrolled' && s.body.token) { await kc.set('moonkatty-node-' + s.body.nodeId, 'node-token', s.body.token); await kc.del('moonkatty-node-enroll', r.body.requestId);
       fs.mkdirSync(home, { recursive: true, mode: 0o700 }); const certFile = path.join(home, 'coordinator.crt'); if (ca) fs.writeFileSync(certFile, ca, { mode: 0o644 });
       const envF = path.join(home, 'node-agent.env'); const lines = [`# MOONKATTY NODE 0.2.1 — создано при подключении ${new Date().toISOString()}. Токен — только в Keychain.`, `NODE_ID=${s.body.nodeId}`, `NODE_PROFILE=${s.body.role}`, `NODE_TLS_MODE=${tlsMode}`, `COORDINATOR_URL=${url}`,
         ...(tlsMode === 'pinned' ? [`COORDINATOR_CERT=${certFile}`, `COORDINATOR_FINGERPRINT=${o.fingerprint}`] : []), 'NODE_STATUS_PORT=8791'];
-      fs.writeFileSync(envF + '.tmp', lines.join('\n') + '\n', { mode: 0o600 }); fs.renameSync(envF + '.tmp', envF); onState({ step: 'enrolled', nodeId: s.body.nodeId, role: s.body.role }); return { nodeId: s.body.nodeId, role: s.body.role, deviceId: dev.deviceId }; }
+      fs.writeFileSync(envF + '.tmp', lines.join('\n') + '\n', { mode: 0o600 }); fs.renameSync(envF + '.tmp', envF); emit({ step: 'enrolled', nodeId: s.body.nodeId, role: s.body.role }); return { nodeId: s.body.nodeId, role: s.body.role, ...base }; }
     throw new Error('неожиданный статус: ' + s.body.status); } }
 module.exports = { keychain, deviceIdentity, fetchPinnedCert, enroll, sign, shortFp };
