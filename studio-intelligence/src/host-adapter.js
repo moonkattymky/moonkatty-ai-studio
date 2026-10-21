@@ -30,7 +30,7 @@ function describeRoutes() {
       method: 'GET',
       path: '/api/ops/ledger',
       owner: 'studio-3',
-      note: 'Чтение журнала денег. Память только вызывает listEntries с теми же полями.'
+      note: 'Чтение журнала денег. Память вызывает listEntries. В query даты — YYYY-MM-DD, включительно. Маршрут монтирует Studio 3.'
     }
   ];
 }
