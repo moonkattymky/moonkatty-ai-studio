@@ -1,0 +1,66 @@
+
+> moonkatty-ai-studio@1.3.0-test test:video
+> node scripts/video-render-test.mjs && node scripts/video-render-wiring-test.mjs
+
+PASS type registered with defaults gpu_heavy / mac-mini / safeToRetry
+PASS reject: unknown field
+PASS reject: unknown preset
+PASS reject: missing runId
+PASS reject: runId traversal
+PASS reject: runId with slash
+PASS reject: runId with space
+PASS reject: runId too long
+PASS reject: episodeRef traversal
+PASS reject: episodeRef absolute
+PASS reject: episodeRef shell chars
+PASS reject: episodeRef non-string
+PASS reject: episodeRef empty segment
+PASS reject: input array
+PASS reject: runId NUL
+PASS reject resourceClass override
+PASS reject requiresNode override
+PASS reject idempotencyKey not <runId>:<preset>
+PASS no job rows created by rejected requests
+(node:78682) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS blender_template holds the heavy lock — {"holder":"blender:build","waiting":0,"since":1792610026973}
+PASS video_render job fields: key <runId>:<preset>, gpu_heavy, mac-mini, safeToRetry — {"jobId":"job_5f3b9e23aaa79a34","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_2026-10-21.a:youtube","safeToRetry":true,"status":"queued","internalStatus":"queued","stage":"video_render","attempt":0,"maxAttempts":2,"error":null,"blocked":false,"arti
+PASS input stored exactly (no extra fields)
+PASS idempotency: same runId+preset → same jobId, existing:true
+PASS idempotency: explicit matching key also dedupes
+PASS different preset → new job
+PASS video_render stays queued while Blender runs (no overlap) — queued
+PASS two video_render jobs waiting behind the lock — {"holder":"blender:build","waiting":2,"since":1792610026973}
+PASS stub: job failed with «Не подключено», no artifacts — {"jobId":"job_5f3b9e23aaa79a34","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_2026-10-21.a:youtube","safeToRetry":true,"status":"failed","internalStatus":"failed","stage":"video_render","attempt":1,"maxAttempts":2,"error":"video_render: Не подключе
+PASS stub: no output files created
+PASS never more than one heavy job active (video/video/blender/ollama) — +ollama -ollama +video -video +video -video +blender -blender
+PASS plugged executor: job succeeded
+PASS artifact schema: mp4+srt+jpg each {path,size,sha256,kind} — [{"name":"mp4.mp4","path":"/tmp/mk-video-test/media/r2/youtube/mp4.mp4","size":7,"sha256":"1d1a2ad6d7ea54cf98b57e96bcac405b3ae41a88070e0fc931cbf42009e1098c","kind":"mp4"},{"name":"srt.srt","path":"/tmp/mk-video-test/media/r2/youtube/srt.srt","size":35,"sha256":"400775f954a420b7304d96095088d24a7b4ff1
+PASS validateArtifacts accepts good set
+PASS reject path outside workspace
+PASS reject ../ traversal path
+PASS reject symlink escaping workspace
+PASS reject wrong sha256
+PASS reject wrong size
+PASS reject missing cover jpg
+PASS reject duplicate mp4
+PASS reject unknown kind (png)
+PASS reject kind/extension mismatch
+PASS reject unknown artifact field
+PASS executor returning out-of-workspace artifact → job failed, artifacts not stored
+PASS setExecutor(null) restores stub
+
+45/45 passed
+(node:78689) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS plain DATA_DIR: render succeeded — {"jobId":"job_84d88cf8f9ca9bf5","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_1:youtube","safeToRetry":true,"status":"succeeded","internalStatus":"done","stage":"video_render","attempt":1,"maxAttempts":2,"error":null,"blocked":false,"artifacts":[{"
+PASS plain DATA_DIR: exactly 3 artifacts mp4/srt/jpg — [{"name":"run_1-youtube.mp4","path":"/tmp/mk-vrw-plain/real/media/run_1-youtube.mp4","size":8,"sha256":"5d50d66fa9e75c6eed0a2820906493db5ccf57321ebfad1d0db18d45080f6e16","kind":"mp4"},{"name":"run_1-youtube.srt","path":"/tmp/mk-vrw-plain/real/media/run_1-youtube.srt","size":8,"sha256":"c761b6d9af61f
+PASS plain DATA_DIR: artifacts inside media, full schema
+PASS symlinked DATA_DIR: render succeeded — {"jobId":"job_44629467d4c8be05","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_1:youtube","safeToRetry":true,"status":"succeeded","internalStatus":"done","stage":"video_render","attempt":1,"maxAttempts":2,"error":null,"blocked":false,"artifacts":[{"
+PASS symlinked DATA_DIR: exactly 3 artifacts mp4/srt/jpg — [{"name":"run_1-youtube.mp4","path":"/tmp/mk-vrw-link/link/media/run_1-youtube.mp4","size":8,"sha256":"5d50d66fa9e75c6eed0a2820906493db5ccf57321ebfad1d0db18d45080f6e16","kind":"mp4"},{"name":"run_1-youtube.srt","path":"/tmp/mk-vrw-link/link/media/run_1-youtube.srt","size":8,"sha256":"c761b6d9af61f72
+PASS symlinked DATA_DIR: artifacts inside media, full schema
+PASS cancel during render ends as cancelled (not failed) — {"jobId":"job_2683d342d76ef339","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_1:youtube","safeToRetry":true,"status":"cancelled","internalStatus":"cancelled","stage":"video_render","attempt":1,"maxAttempts":2,"error":null,"blocked":false,"artifacts
+PASS MA_JOBS_BACKEND default off → local
+
+8/8 passed
+EXIT:0

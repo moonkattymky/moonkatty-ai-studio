@@ -1,0 +1,57 @@
+
+> moonkatty-ai-studio@1.3.0-test test:opencode
+> node scripts/opencode-auth-test.mjs
+
+PASS GET /api/opencode/auth requires auth (401)
+PASS PUT /api/opencode/auth requires auth (401)
+PASS POST /api/opencode/test requires auth (401)
+PASS PUT without X-Studio-Request rejected (CSRF 403)
+PASS POST test with foreign Origin rejected (403)
+PASS PUT with Sec-Fetch-Site cross-site rejected (403)
+PASS initial state: keychain available (fake), hasPassword=false, default user opencode — {"available":true,"store":"macOS Keychain"}
+PASS URL refused: LAN
+PASS URL refused: remote host
+PASS URL refused: rebinding-style host
+PASS URL refused: file:
+PASS URL refused: userinfo
+PASS URL refused: js
+PASS URL refused: query
+PASS non-loopback refusal has clear RU message
+PASS bad username refused
+PASS password with newline refused (stdin protocol safety)
+PASS password > 256 chars refused
+PASS password of wrong type refused
+PASS unknown fields refused
+PASS generic CRUD cannot set non-loopback OpenCode URL
+PASS generic CRUD strips a password field
+PASS malformed JSON with password → 400, generic error
+PASS settings saved (loopback URL, user)
+PASS no password → 401 handled, RU message — OpenCode требует пароль (HTTP 401): укажите пароль в настройках.
+PASS password saved → hasPassword=true, response has no password
+PASS correct Basic Auth → Подключено — Подключено (Basic Auth) · версия 1.0.0-mock
+PASS status after success = Подключено
+PASS wrong password → 401, RU message, no leak — Неверный логин или пароль OpenCode (HTTP 401). Проверьте OPENCODE_SERVER_PASSWORD и логин (по умолчанию «opencode»).
+PASS wrong username → 401
+PASS 403 → RU message, echoed Authorization scrubbed — Доступ запрещён (HTTP 403): сервер OpenCode отклонил запрос.
+PASS connection refused → RU message — Соединение отклонено: OpenCode не запущен на этом адресе (opencode serve --port 4096).
+PASS timeout → RU message (5 s) — Нет ответа за 5 с (таймаут). 5028ms
+PASS legacy /api/integrations/opencode/test goes through the safe check
+PASS back to working server
+PASS backup export has no password/base64
+PASS no password in ANY data file (SQLite/WAL/backups/tokens; 7 files)
+PASS backup file(s) created and clean
+PASS audit log has OpenCode entries but no password/Authorization
+PASS Keychain calls never carry the password in argv (plain or hex)
+PASS Keychain item uses service "MOONKATTY AI STUDIO" / account opencode-server-password
+PASS UI: password field cleared, not in localStorage/sessionStorage/DOM
+PASS UI: «Проверить подключение» shows result — ✓ Подключено (Basic Auth) · версия 1.0.0-mock
+PASS UI: EN translation of the OpenCode card
+PASS UI: UK translation of the OpenCode card
+PASS no Keychain → feature shown unavailable (Не подключено)
+PASS no Keychain → saving password refused (409), no fallback
+PASS no Keychain → password not written anywhere
+PASS clearPassword removes Keychain item
+PASS no password in any API response body
+PASS no password in server stdout/stderr
+{"passed":51,"failed":[]}
+EXIT:0

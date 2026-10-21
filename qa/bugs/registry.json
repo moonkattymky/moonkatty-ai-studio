@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T19:00:11.630Z",
+  "updatedAt": "2026-10-21T19:20:36.561Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -821,7 +821,8 @@
         "qa/reports/security-recheck-v1.2.4-final/REPORT.md",
         "qa/reports/security-recheck-v1.2.4-final/logs/ops-studio.log",
         "qa/reports/security-recheck-v1.2.4-final/logs/delta-attack.json",
-        "qa/reports/final-v1.3.0-test/REPORT.md"
+        "qa/reports/final-v1.3.0-test/REPORT.md",
+        "qa/reports/final-v1.3.0-test-r2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:32:00.000Z",
       "foundIn": "feat/v1.2.4-test-nodes 322023f, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
@@ -837,6 +838,11 @@
           "at": "2026-10-21T18:28:05.233Z",
           "status": "open",
           "note": "Reproduced on integ/v1.3.0-test b813ac4. First test is the same TypeError on n.info. Second test is cancelled at 90s because node-agent 0.2.2 enters enrollUi when the token is missing. Register is still E_LEGACY_DISABLED. Does not block the TEST install."
+        },
+        {
+          "at": "2026-10-21T19:20:36.561Z",
+          "status": "open",
+          "note": "c24f756 rerun matches b813ac4: TypeError reading info at nodes.multiprocess.test.js:24, then the runner cancels the second test at 90000ms. Owner approval is not set."
         }
       ]
     },
