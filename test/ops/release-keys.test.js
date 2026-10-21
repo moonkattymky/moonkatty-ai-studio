@@ -26,11 +26,11 @@ function zip(names) { const locals = [], cds = []; let off = 0;
     c.writeUInt32LE((0o100644 << 16) >>> 0, 38); c.writeUInt32LE(off, 42); locals.push(l, nb, data); cds.push(c, nb); off += 30 + nb.length + data.length; }
   const cd = Buffer.concat(cds), e = Buffer.alloc(22); e.writeUInt32LE(0x06054b50, 0); e.writeUInt16LE(names.length, 8); e.writeUInt16LE(names.length, 10); e.writeUInt32LE(cd.length, 12); e.writeUInt32LE(off, 16);
   return Buffer.concat([...locals, cd, e]); }
-function release({ version = '1.3.0', noBuiltAt = false, signWith, tamperArchive = false, tamperManifest = false, sigOverride } = {}) {
-  const archive = zip([APP + '.app/', APP + '.app/Contents/', APP + '.app/Contents/Info.plist']); const name = `MOONKATTY-AI-STUDIO-${version}-arm64-mac.zip`, tag = `v${version}-mac-preview`;
+function release({ version = '1.3.0', noBuiltAt = false, builtAt, assetVersion, signWith, tamperArchive = false, tamperManifest = false, sigOverride } = {}) {
+  const archive = zip([APP + '.app/', APP + '.app/Contents/', APP + '.app/Contents/Info.plist']); const name = `MOONKATTY-AI-STUDIO-${assetVersion || version}-arm64-mac.zip`, tag = `v${version}-mac-preview`;
   const m = { manifestVersion: 1, version, channel: 'preview', sourceCommit: 'a'.repeat(40), arch: 'arm64', platform: 'darwin', bundleId: 'com.moonkatty.aistudio', appName: APP, dataDirName: APP,
     launchdLabel: 'com.moonkatty.aistudio.server', keychainServicePrefix: APP, defaultPort: 8787, dbSchemaVersion: 3, minUpgradeFrom: '1.1.2', isolated: false, isolatedFrom: [], signing: 'adhoc', notarized: false,
-    ...(noBuiltAt ? {} : { builtAt: new Date().toISOString() }), assets: [{ name, size: archive.length, sha256: sha(archive) }] };
+    ...(noBuiltAt ? {} : { builtAt: builtAt || new Date().toISOString() }), assets: [{ name, size: archive.length, sha256: sha(archive) }] };
   let mb = Buffer.from(JSON.stringify(m)); const sig = sigOverride || (signWith ? sign(signWith, mb) : Buffer.alloc(0));
   if (tamperManifest) mb = Buffer.from(JSON.stringify({ ...m, minUpgradeFrom: '1.0.0' })); // bytes changed after signing
   const arc = tamperArchive ? Buffer.from(archive) : archive; if (tamperArchive) arc[arc.length - 30] ^= 0xff; // modified package bytes
@@ -151,4 +151,35 @@ test('release-sign.mjs writes builtAt into the manifest before signing (signatur
   execFileSync(process.execPath, [path.join(ROOT, 'scripts/release-sign.mjs'), '--key', k.privateKeyFile, '--manifest', mf], { env: { ...process.env, RELEASE_KEY_PASSPHRASE: PASS }, stdio: 'pipe' });
   const mb = fs.readFileSync(mf); const m = JSON.parse(mb); assert.ok(Number.isFinite(Date.parse(m.builtAt)));
   const s = JSON.parse(fs.readFileSync(mf + '.sig')); assert.ok(crypto.verify(null, mb, crypto.createPublicKey(fs.readFileSync(k.publicKeyFile)), Buffer.from(s.sig, 'base64')));
+});
+
+// ---------- signed version policy / anti-rollback ----------
+const centerAt = (r, env, o = {}) => UC.createUpdateCenter({ dir: tmp(), current: o.current || '1.2.2', fetchImpl: fake(r), identity: PROD, env, currentBuiltAt: o.currentBuiltAt ?? null, healthUrl: 'http://127.0.0.1:1/api/health' });
+const firstRel = async (r, k, o) => { const uc = centerAt(r, { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) }, o); const rel = (await uc.check()).releases[0]; return { uc, rel }; };
+test('signed version: tampered version (manifest bytes changed after signing) is rejected', async () => {
+  const k = keygen(); const r = release({ signWith: k }); const m = JSON.parse(r.files['release-manifest.json']);
+  r.files['release-manifest.json'] = Buffer.from(JSON.stringify({ ...m, version: '9.9.9' })); const { uc, rel } = await firstRel(r, k);
+  assert.equal(rel.verified, false); assert.throws(() => uc.prepareDownload(r.tag), { code: 'UNVERIFIED' });
+});
+test('signed version must match tag and package name', async () => {
+  const k = keygen(); const r = release({ signWith: k, version: '1.3.0' }); r.rel.tag_name = r.tag = 'v1.4.0-mac-preview';
+  assert.equal((await firstRel(r, k)).rel.verified, false);
+  const r2 = release({ signWith: k, version: '1.3.0', assetVersion: '1.4.0' }); const { rel } = await firstRel(r2, k); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /не соответствует подписанной версии/);
+});
+test('anti-rollback: downgrade and equal version vs current are rejected', async () => {
+  const k = keygen();
+  let { rel } = await firstRel(release({ signWith: k, version: '1.2.1' }), k, { current: '1.2.2' }); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /anti-rollback.*старше/);
+  ({ rel } = await firstRel(release({ signWith: k, version: '1.2.2' }), k, { current: '1.2.2' })); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /anti-rollback.*равна/);
+  ({ rel } = await firstRel(release({ signWith: k, version: '1.3.0' }), k, { current: '1.2.2' })); assert.equal(rel.verified, true, rel.problems.join('; '));
+});
+test('builtAt: future beyond skew rejected; older than current build rejected; missing rejected', async () => {
+  const k = keygen();
+  let { rel } = await firstRel(release({ signWith: k, builtAt: new Date(Date.now() + 3600e3).toISOString() }), k); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /в будущем/);
+  ({ rel } = await firstRel(release({ signWith: k, builtAt: new Date(Date.now() + 60e3).toISOString() }), k)); assert.equal(rel.verified, true, 'within 5 min skew: ' + rel.problems.join('; '));
+  ({ rel } = await firstRel(release({ signWith: k, builtAt: '2026-01-01T00:00:00Z' }), k, { currentBuiltAt: '2026-06-01T00:00:00Z' })); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /старше сборки текущего/);
+  ({ rel } = await firstRel(release({ signWith: k, noBuiltAt: true }), k)); assert.equal(rel.verified, false); assert.match(rel.problems.join(), /builtAt/);
+});
+test('auto-download / auto-install stay off: check() never downloads, no timers', async () => {
+  const k = keygen(); const r = release({ signWith: k }); const { uc } = await firstRel(r, k); assert.equal(uc.status().releases[0].download, null); assert.equal(uc.status().autoInstall.enabled, false);
+  assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'lib/ops/update-center.js'), 'utf8'), /setInterval/);
 });

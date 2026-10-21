@@ -97,7 +97,7 @@ test('security: tampered manifest (signature over other bytes) is rejected', () 
 });
 test('security: downgrade attack (validly signed older version) is blocked', async () => {
   const kp = keys(); const r = release({ priv: kp.privateKey, version: '1.0.9' }); const { uc } = center({ kp, fetchImpl: fakeGitHub([r]), update: schemaStub(1), db: {} });
-  const it = (await uc.check()).releases[0]; assert.equal(it.verified, true); assert.equal(it.newer, false); assert.equal(it.gate.allowed, false); assert.ok(it.gate.reasons.some(x => /downgrade/.test(x)));
+  const it = (await uc.check()).releases[0]; assert.equal(it.verified, false, 'anti-rollback: older signed version is not verified'); assert.ok(it.problems.some(x => /anti-rollback/.test(x))); assert.equal(it.newer, false); assert.equal(it.gate.allowed, false); assert.ok(it.gate.reasons.some(x => /downgrade/.test(x)));
   const same = G({ manifest: { ...r.m, version: '1.1.2' }, verified: true, current: '1.1.2', compat: { ok: true }, backup: { verified: true }, ownerApproval: true }); assert.equal(same.allowed, false);
   const tagSwap = release({ priv: kp.privateKey, tag: 'v1.3.0-mac-preview' }); const { uc: u2 } = center({ kp, fetchImpl: fakeGitHub([tagSwap]), update: schemaStub(1), db: {} });
   const it2 = (await u2.check()).releases[0]; assert.equal(it2.verified, false); assert.ok(it2.problems.some(x => /не соответствует/.test(x)));
