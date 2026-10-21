@@ -142,6 +142,28 @@ Failed validation: the prepared payload's queue row was stored as `published` wi
 
 Same evidence as item 4. Publish, reply, forged `PUT published`, and the scheduler did not publish. Restore can write the word `published` into SQLite and still gets HTTP 403 from `POST /publish`.
 
+## Claimed fixes on `f2440e1`
+
+Lead Studio named this commit as the fix for QA-APR-001, QA-APR-002, QA-DB-001, QA-OC-001, QA-INFO-001, and `isStub` / `hasExecutor`. The worktree was detached at `f2440e111b8e8caaeda3fd799cee4b7652496c60`. `feat/v1.2.2-test-isolated` was not checked out and was not written.
+
+| Claim | Result |
+| --- | --- |
+| QA-APR-001 | **PASS.** `POST /api/queue` with `approved` or `retry` is stored as `pending_approval` (`server.js` 405–407). Log lines 3–5. |
+| QA-APR-002 | **PASS for the original defect on the test flavor** (empty `externalId` is HTTP 400 `external_id_required`; a non-empty client id is HTTP 403 `publishing_disabled`). **FAIL on the prod flavor of this same commit:** `PUT` with `externalId: "forged_on_prod_flavor"` stored `published` and did not check a platform body. `CHANGELOG.md` lines 25–26 describe the test-flavor rule. |
+| QA-DB-001 | **PASS.** `server.js` 22–25 and `lib/db-backup.js` wrote `pre-migration-v1-to-v4-*.db` plus a matching `.sha256`. Seeded task and login survived. |
+| QA-OC-001 | **Source change present** (`runner.js` 35–40). **Runtime NOT VERIFIED** (`sandbox-exec` was not run). |
+| QA-INFO-001 | **NOT VERIFIED as a built app.** The claimed change is `scripts/package-mac-on-linux.sh` lines 48–49: BUILD-INFO is produced with `npx @electron/fuses@2.1.3 read`, and a first field of `undefined` is relabelled `UnknownFuse#N`. `package.json` `electronFuses` (lines 113–122) still has no `WasmTrapHandlers` key. This recheck did not run the packager, so no BUILD-INFO and no fuse wire were read. |
+| `hasExecutor` / `isStub` | **PASS for the function contract.** See below. `feat/media-automation` is not in this commit, so that branch's adapter was not loaded. |
+
+`lib/video-render.js` lines 47–50 export `hasExecutor: () => executor !== stubExecutor` and `isStub: () => executor === stubExecutor`. `lib/services.js` line 104 returns `videoRender: VR` from `createServices`. A local `node -e` against the worktree:
+
+- Default: `hasExecutor() === false`, `isStub() === true`.
+- After `setExecutor(fn)`: `hasExecutor() === true`, `isStub() === false`.
+- After `setExecutor(null)`: both return to the stub.
+- `hasExecutor()` stays the inverse of `isStub()`.
+
+The Studio 2 predicate from `a33a315` `studio-adapter.js` (`typeof v.hasExecutor === 'function' ? v.hasExecutor() : !!v.executor`) then omits `video_render` while the stub is installed, and includes it after `setExecutor`. `getExecutor()` on the stub is a function, so the old `!!executor` fallback would have listed `video_render` for the stub. `hasExecutor()` is what keeps the stub off that list.
+
 ## Prior defects
 
 | Id | This commit |
@@ -150,8 +172,8 @@ Same evidence as item 4. Publish, reply, forged `PUT published`, and the schedul
 | QA-APR-002 | **PASS on the test flavor** (`PUT` without `externalId` is 400; with one is 403 `publishing_disabled`). **FAIL on the prod flavor of this commit**: a client `externalId` is stored with no platform response. |
 | QA-DB-001 | **PASS**. Pre-migration `VACUUM INTO` backup plus SHA-256 sidecar; seeded task and login survived. |
 | QA-OC-001 | **Source change present** (`runner.js` 39–40). **Runtime NOT VERIFIED.** |
-| QA-INFO-001 | **NOT VERIFIED.** No macOS binary and no BUILD-INFO in this commit. `package.json` `electronFuses` still has no `WasmTrapHandlers` key, which is what made the 1.2.1 BUILD-INFO line say `undefined`. |
-| video_render HTTP 400 | **Does not reproduce.** `POST /api/jobs` `{type:"video_render", input:{runId,preset,episodeRef}}` returned HTTP 201. The job then failed with `video_render: Не подключено — исполнитель рендера видео (feat/media-automation) ещё не подключён к Studio; результат не создан`. `lib/video-render.js` lines 45–50 export `hasExecutor`. |
+| QA-INFO-001 | **NOT VERIFIED as a built app.** `scripts/package-mac-on-linux.sh` 48–49 pins `@electron/fuses@2.1.3` and relabels a leading `undefined` in BUILD-INFO. `package.json` `electronFuses` still has no `WasmTrapHandlers` key. The packager was not run. |
+| video_render HTTP 400 | **Does not reproduce.** `POST /api/jobs` `{type:"video_render", input:{runId,preset,episodeRef}}` returned HTTP 201. The job then failed with `video_render: Не подключено — исполнитель рендера видео (feat/media-automation) ещё не подключён к Studio; результат не создан`. `hasExecutor` / `isStub` evidence is in `logs/has-executor.log`. |
 
 ## Remaining vulnerabilities
 

@@ -1,0 +1,35 @@
+{
+  "sha": "f2440e111b8e8caaeda3fd799cee4b7652496c60",
+  "default": {
+    "hasExecutor": false,
+    "isStub": true
+  },
+  "stubList": [
+    "design3d",
+    "blender_template",
+    "opencode_task",
+    "render_segment"
+  ],
+  "afterSet": {
+    "hasExecutor": true,
+    "isStub": false,
+    "list": [
+      "design3d",
+      "blender_template",
+      "opencode_task",
+      "render_segment",
+      "video_render"
+    ]
+  },
+  "afterClear": {
+    "hasExecutor": false,
+    "isStub": true,
+    "list": [
+      "design3d",
+      "blender_template",
+      "opencode_task",
+      "render_segment"
+    ]
+  },
+  "fallbackWouldListStub": true
+}
