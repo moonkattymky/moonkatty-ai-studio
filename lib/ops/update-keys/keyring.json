@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "comment": "Trusted Ed25519 keys for release-manifest.json.sig. Sets: 'prod' (channels preview/stable) and 'test' (channel test). Changes only via reviewed commits. See README.md and docs/ops/UPDATE_CENTER.md §8.",
+  "keys": {
+    "24f2c5557922cb89": { "file": "stub-test-ed25519.pub.pem", "set": "test", "status": "active", "stub": true, "note": "PLACEHOLDER: private half discarded at generation; verifies nothing; never valid for prod" }
+  },
+  "revoked": []
+}
