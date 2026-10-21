@@ -19,6 +19,17 @@ class MasterVoice {
   /** Build the TTS provider exactly as pinned; throws loudly when unavailable. */
   createTTS() {
     const c = this.cfg; if (c.gender !== 'male') throw new Error('master voice must be male (owner requirement)');
+    if (c.engine === 'azure') {
+      if (c.enabled !== true) throw new Error('Azure Speech provider is disabled. MasterVoice stays on the Kokoro candidate and is not locked.');
+      const { AzureSpeechProvider } = require('../../../news-launch/azure-tts/provider');
+      const provider = new AzureSpeechProvider({
+        enabled: true, voice: c.voice, region: c.region, tier: c.tier, rate: c.rate,
+        allowPaid: c.allowPaid === true, paidCapChars: c.paidCapChars, limitChars: c.limitChars,
+        stateFile: expand(c.stateFile, this.env) || undefined, keyService: c.keyService,
+      });
+      provider.assertConfig();
+      return provider;
+    }
     const model = expand(c.model?.file, this.env);
     if (c.engine !== 'say') {
       if (!model || !fs.existsSync(model)) throw new Error(`MASTER VOICE unavailable: model file not found (${c.model?.file}). Refusing to substitute another voice.`);

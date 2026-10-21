@@ -5,3 +5,5 @@ data/
 .env
 news-launch/models/
 news-launch/work/
+news-launch/azure-tts/state/*.json
+news-launch/azure-tts/state/*.tmp

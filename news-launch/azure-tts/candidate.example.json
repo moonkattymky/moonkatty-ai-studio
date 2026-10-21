@@ -1,0 +1,18 @@
+{
+  "status": "candidate",
+  "note": "NOT LOADED. Example only. MasterVoice is not switched to Azure and is not locked. enabled is false. This file has no key.",
+  "enabled": false,
+  "engine": "azure",
+  "voice": "en-US-AndrewMultilingualNeural",
+  "gender": "male",
+  "accent": "en-US",
+  "rate": 0.95,
+  "tier": "F0",
+  "region": "uaenorth",
+  "allowPaid": false,
+  "limitChars": 500000,
+  "loudnessLufs": -16,
+  "lockedBy": null,
+  "lockedAt": null,
+  "voiceProfileId": null
+}
