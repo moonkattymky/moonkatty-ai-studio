@@ -57,11 +57,11 @@ const t1 = await run('Создай фиолетового кота MOONKATTY в 
 const scan = setInterval(scanArgv, 500); let j1 = await waitJob(t1.id, terminal); clearInterval(scan);
 ok('safe test job reaches waiting_approval', j1?.status === 'waiting_approval', j1?.status + ' ' + (j1?.error || '') + '\n' + evText(j1));
 const stagesSeen = new Set((j1?.events || []).map(e => e.stage)); ok('all stages executed in order', ['preflight', 'params', 'agent', 'validate', 'build', 'render', 'verify'].every(s => stagesSeen.has(s)));
-ok('params honestly marked as rules (no Ollama model here)', /Ollama недоступна/.test(evText(j1)) && j1.checkpoint?.paramsBy === 'rules');
+ok('params honestly marked as rules (no Ollama model here)', /Ollama недоступна/.test(evText(j1)) && j1.checkpoint?.paramsBy === 'rules+opencode');
 ok('OpenCode config verified against policy', /Политика OpenCode проверена/.test(evText(j1)));
-ok('real OpenCode session created and edit permission allowed by studio policy (rule oc.edit.ws)', /Сессия OpenCode ses_/.test(evText(j1)) && /«edit» scene_params\.json → разрешено.*oc\.edit\.ws/.test(evText(j1)));
+ok('real OpenCode session created; agent answered JSON text, studio wrote params (no agent tools)', /Сессия OpenCode ses_/.test(evText(j1)) && /записаны студией/.test(evText(j1)) && !/пытался вызвать/.test(evText(j1)), evText(j1));
 const vdir = j1 && j1.checkpoint.vdir;
-ok('scene_params.json written by the OpenCode agent (real write tool)', vdir && fs.existsSync(vdir + '/scene_params.json'));
+ok('scene_params.json written (by the studio after strict validation)', vdir && fs.existsSync(vdir + '/scene_params.json'));
 const rj = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
 const br = vdir && rj(vdir + '/logs/build-result.json'), rr = vdir && rj(vdir + '/logs/render-result.json');
 ok('.blend saved by Blender (BLENDER magic)', vdir && fs.existsSync(vdir + '/scene.blend') && fs.readFileSync(vdir + '/scene.blend').subarray(0, 7).toString() === 'BLENDER');
@@ -95,13 +95,15 @@ ok('opencode_task reserved stub (failed «не реализовано», resourc
 ok('unknown job type refused', (await api('POST', '/api/jobs', { type: 'shell' })).status === 400);
 // ---- 2. permission policy denial cases with the REAL OpenCode server
 const tp = await run('Кот MOCK_PROTECTED'); const jp = await waitJob(tp.id, terminal);
-ok('policy: agent write of .blend inside workspace REJECTED (fs.blender-only), job fails', jp?.status === 'failed' && /ОТКЛОНЕНО.*fs\.blender-only/.test(evText(jp)) && !fs.existsSync(jp.checkpoint.vdir + '/scene.blend'), jp?.error);
+ok('policy: agent attempt to write .blend refused (no tools at agent step), file not written by agent', /пытался вызвать инструменты.*write:error/.test(evText(jp)) && !/инструмент write: completed/.test(evText(jp)), (jp?.error || '') + evText(jp).slice(-600));
 const to = await run('Кот MOCK_OUTSIDE'); const jo = await waitJob(to.id, terminal);
-ok('policy: write outside workspace blocked (no file created), job fails', jo?.status === 'failed' && !fs.existsSync('/tmp/mk-outside-by-agent.txt'), jo?.error);
+ok('policy: write outside workspace blocked (no file created, tool errored)', !fs.existsSync('/tmp/mk-outside-by-agent.txt') && /пытался вызвать инструменты/.test(evText(jo)), jo?.error);
 const tb = await run('Кот MOCK_BASH'); const jb = await waitJob(tb.id, terminal);
-ok('policy: bash never executes (tool not available / denied), job fails', jb?.status === 'failed' && !fs.existsSync('/tmp/mk-pwned-by-agent'), jb?.error);
+ok('policy: bash never executes (tool not available / denied)', !fs.existsSync('/tmp/mk-pwned-by-agent') && /пытался вызвать инструменты/.test(evText(jb)), jb?.error);
 const tv = await run('Кот MOCK_BADPARAMS'); const jv = await waitJob(tv.id, terminal);
-ok('agent output violating schema rejected at validate stage (no Blender run)', jv?.status === 'failed' && jv.stage === 'validate' && /схемы/.test(jv.error), jv?.error);
+ok('agent output violating schema rejected (1 retry, then failed, no Blender run)', jv?.status === 'failed' && jv.stage === 'agent' && /не вернул корректный JSON/.test(jv.error) && !fs.existsSync(jv.checkpoint.vdir + '/scene.blend'), jv?.error);
+const tn = await run('Кот MOCK_FIXRETRY'); const jn = await waitJob(tn.id, terminal);
+ok('real OpenCode: malformed JSON → one retry → success', jn?.status === 'waiting_approval' && /Повторный запрос/.test(evText(jn)), jn?.error);
 await api('PUT', '/api/opencode/auth', { url: `http://127.0.0.1:${OCPERM}` });
 const tc = await run('Кот проверка конфига'); const jc = await waitJob(tc.id, terminal);
 ok('permissive OpenCode server config refused (blocked, bash/edit named)', jc?.status === 'blocked' && /bash/.test(jc.error) && /edit/.test(jc.error), jc?.error);
