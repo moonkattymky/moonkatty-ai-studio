@@ -76,7 +76,7 @@ node --disable-warning=ExperimentalWarning --test studio-intelligence/test/*.tes
 
 На `feat/studio-intelligence` (PR #1): 40 тестов, 0 падений, около 481 мс. Внутри них `real-ledger.test.js` (настоящий `createLedger` @ `e9a46bf`) и `upstream-db.test.js` (миграция поверх SQL main и поверх `lib/db.js`+`lib/jobs.js` с `a3fd83a`, включая строку `video_render`).
 
-На `cursor/studio-server-integration-c51e` (PR #3): 43 теста, 0 падений, около 466 мс. Те же 40 плюс `host-compat.test.js` и два теста в `upstream-rollback.test.js` (откат файла для формы main и для формы `a3fd83a`, вместе со строкой `video_render`).
+На `cursor/studio-server-integration-c51e` (PR #3): 43 теста, 0 падений, около 503 мс. Те же 40 плюс `host-compat.test.js` и два теста в `upstream-rollback.test.js` (откат файла для формы main и для формы `a3fd83a`, вместе со строкой `video_render`).
 
 `node --test studio-intelligence/test` без маски `*.test.js` не используется: каталог для `node --test` не модуль.
 
