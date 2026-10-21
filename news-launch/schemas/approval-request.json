@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/approval-request.json",
+  "title": "ApprovalRequest",
+  "description": "Approval Center hold. status is pending. publish is false. Publisher posts are dry-run until an owner approves and a live flag is set.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "episodeId", "status", "publish", "requestedAt", "summary", "sources"],
+  "properties": {
+    "id": { "type": "string" },
+    "episodeId": { "type": "string" },
+    "status": { "const": "pending" },
+    "publish": { "const": false },
+    "requestedAt": { "type": "string" },
+    "summary": { "type": "string" },
+    "sources": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+    "taskId": { "type": "string" },
+    "queueIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,58 @@
+[
+  {
+    "storyId": "alberta-referendum-2026-10-19",
+    "claim": "Elections Alberta held a referendum on 19 October 2026. Question 10 asked whether Alberta should remain in Canada or start the legal process for a binding separation referendum. Official results are published on 29 October 2026. This edition does not call a winner.",
+    "publisher": "Elections Alberta",
+    "org": "elections-alberta",
+    "url": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
+    "title": "Unofficial Referendum Results Reporting Process",
+    "published": "2026-10-19",
+    "role": "primary",
+    "primarySourceUrl": "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
+    "primaryPublisher": "Elections Alberta",
+    "primaryPublished": "2026-10-19",
+    "editorialStatus": "confirmed-primary"
+  },
+  {
+    "storyId": "alberta-referendum-2026-10-19",
+    "claim": "Question 10, set by O.C. 160/2026, is not binding. Option 1 is remain. Option 2 is to commence the legal process for a binding provincial referendum on separation.",
+    "publisher": "Elections Alberta",
+    "org": "elections-alberta",
+    "url": "https://www.elections.ab.ca/elections/referendum/",
+    "title": "Referendum",
+    "published": "2026-10-19",
+    "role": "primary",
+    "primarySourceUrl": "https://www.elections.ab.ca/elections/referendum/",
+    "primaryPublisher": "Elections Alberta",
+    "primaryPublished": "2026-10-19",
+    "editorialStatus": "confirmed-primary"
+  },
+  {
+    "storyId": "nigeria-ebola-2026-10-20",
+    "claim": "Nigeria confirmed one Ebola disease case in the FCT on 20 October 2026. The patient is a woman who arrived on a flight from Uganda and is in isolation. Forty-four close contacts were identified. Coordinating Minister Muhammad Ali Pate issued the statement.",
+    "publisher": "Federal Ministry of Health and Social Welfare of Nigeria",
+    "org": "health.gov.ng",
+    "url": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf",
+    "title": "FG CONFIRMS EBOLA DISEASE CASE IN FCT, ACTIVATES PUBLIC HEALTH RESPONSE",
+    "published": "2026-10-20",
+    "role": "primary",
+    "primarySourceUrl": "https://health.gov.ng/wp-content/uploads/2026/10/Immediate-Press-statememnt_confirmed-Ebola-in-Nigeria-1.pdf",
+    "primaryPublisher": "Federal Ministry of Health and Social Welfare of Nigeria",
+    "primaryPublished": "2026-10-20",
+    "editorialStatus": "confirmed-primary"
+  },
+  {
+    "storyId": "uk-saudi-typhoon-2026-10-20",
+    "claim": "The UK Ministry of Defence said on 20 October 2026 that RAF Typhoon jets will fly defensive missions to protect Saudi cities and infrastructure and will not conduct offensive strikes against the Houthis. Defence Secretary Wes Streeting approved the support.",
+    "publisher": "UK Ministry of Defence",
+    "org": "gov.uk",
+    "url": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia",
+    "title": "Operational update 20 October – UK military support to the Kingdom of Saudi Arabia",
+    "published": "2026-10-20",
+    "role": "primary",
+    "primarySourceUrl": "https://www.gov.uk/government/news/operational-update-20-october-uk-military-support-to-the-kingdom-of-saudi-arabia",
+    "primaryPublisher": "UK Ministry of Defence",
+    "primaryPublished": "2026-10-20",
+    "editorialStatus": "confirmed-primary"
+  }
+]

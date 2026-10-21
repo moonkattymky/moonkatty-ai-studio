@@ -197,6 +197,10 @@ app.post('/api/reset', (req, res) => {
   log('info', 'system', 'Данные сброшены к начальным', req.user); res.json({ ok: true });
 });
 
+// MOONKATTY NEWS launch (authenticated). Does not publish.
+const { mountNewsLaunch } = require('./news-launch/src/http');
+mountNewsLaunch(app, { get, put, list, log, core, social: S, filesDir: FILES_DIR });
+
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));

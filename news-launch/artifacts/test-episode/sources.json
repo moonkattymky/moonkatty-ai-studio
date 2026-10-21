@@ -1,0 +1,86 @@
+[
+  {
+    "storyId": "f9ec31204119",
+    "claim": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+    "publisher": "The Guardian",
+    "org": "guardian",
+    "url": "https://www.theguardian.com/world/2026/oct/20/canada-alberta-rejects-independence-succession-referendum",
+    "title": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+    "published": "2026-10-20T16:24:05.000Z",
+    "category": "politics",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "f9ec31204119",
+    "claim": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+    "publisher": "CBS News",
+    "org": "cbs",
+    "url": "https://www.cbsnews.com/news/canada-alberta-referendum-vote-separation-independence/",
+    "title": "Voters reject separation of Alberta from Canada in referendum",
+    "published": "2026-10-20T06:11:00.000Z",
+    "category": "politics",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "97dab615c25b",
+    "claim": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+    "publisher": "NPR",
+    "org": "npr",
+    "url": "https://www.npr.org/2026/10/20/g-s1-148975/nigeria-confirms-ebola-case",
+    "title": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+    "published": "2026-10-20T20:19:16.000Z",
+    "category": "other",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "97dab615c25b",
+    "claim": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+    "publisher": "ABC News",
+    "org": "abc",
+    "url": "https://abcnews.com/International/wireStory/nigeria-confirms-ebola-case-abuja-woman-arrived-uganda-137420211",
+    "title": "Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive",
+    "published": "2026-10-20T20:02:27.000Z",
+    "category": "other",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "59bc6b4539c2",
+    "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+    "publisher": "BBC News",
+    "org": "bbc",
+    "url": "https://www.bbc.co.uk/news/articles/ckr5yqe1r1llo?at_medium=RSS&at_campaign=rss",
+    "title": "UK to deploy jets to defend Saudi Arabia from Houthi attacks",
+    "published": "2026-10-20T13:54:35.000Z",
+    "category": "politics",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "59bc6b4539c2",
+    "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+    "publisher": "The Guardian",
+    "org": "guardian",
+    "url": "https://www.theguardian.com/uk-news/2026/oct/20/uk-raf-typhoon-fighters-saudi-arabia-houthi-attacks",
+    "title": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+    "published": "2026-10-20T18:30:16.000Z",
+    "category": "politics",
+    "method": "news-engine-cluster",
+    "adapter": null
+  },
+  {
+    "storyId": "59bc6b4539c2",
+    "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+    "publisher": "Al Jazeera",
+    "org": "aljazeera",
+    "url": "https://www.aljazeera.com/video/newsfeed/2026/10/20/aje-onl-nf_uk-to-deploy-fighter-jets-to-defend-saudi-arabia_1-201026?traffic_source=rss",
+    "title": "UK to deploy fighter jets to defend Saudi Arabia",
+    "published": "2026-10-20T18:55:52.000Z",
+    "category": "politics",
+    "method": "news-engine-cluster",
+    "adapter": null
+  }
+]

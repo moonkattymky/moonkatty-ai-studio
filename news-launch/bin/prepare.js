@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+'use strict';
+const path = require('path');
+const { runLaunch } = require('../src/pipeline');
+const { saveToStudio, openStudio } = require('../src/studio-save');
+const { masterSpeech } = require('../src/factory-render');
+
+function arg(name) {
+  const i = process.argv.indexOf(name);
+  return i >= 0 ? process.argv[i + 1] : null;
+}
+
+const prompt = arg('--prompt') || 'Подготовь выпуск MOONKATTY NEWS о трёх важных мировых событиях';
+const outDir = path.resolve(arg('--out') || path.join(__dirname, '..', 'artifacts', 'test-episode'));
+const stopAfter = process.argv.includes('--dry-run') ? 'factcheck' : (arg('--stop-after') || null);
+
+(async () => {
+  const ttsName = arg('--tts');
+  let tts;
+  if (!stopAfter) {
+    if (ttsName === 'piper') tts = undefined;
+    else if (ttsName && ttsName !== 'kokoro') throw new Error('Supported --tts values: kokoro (MasterVoice am_michael), piper (comparison only).');
+    else {
+      const voice = arg('--voice');
+      if (voice && voice !== 'am_michael') throw new Error(`Voice ${voice} is not the MasterVoice candidate am_michael`);
+      tts = masterSpeech().tts;
+    }
+  }
+  const manifest = await runLaunch({
+    prompt, outDir, stopAfter, profile: arg('--profile') || 'episode',
+    skipOllama: process.argv.includes('--skip-ollama'),
+    tts,
+  });
+  if (stopAfter) {
+    const stories = (manifest.selected && manifest.selected.stories) || [];
+    console.log(JSON.stringify({
+      stage: manifest.stage,
+      ingest: manifest.ingest,
+      confirmed: (manifest.checks || []).filter(r => r.status === 'confirmed').length,
+      stories: stories.map(s => ({
+        claim: s.claim, category: s.category, method: s.method, adapter: s.adapter,
+        controversial: s.controversial, publishedAt: s.publishedAt,
+        sources: s.sources.map(x => ({ org: x.org, publisher: x.publisher, url: x.url, title: x.title })),
+      })),
+    }, null, 2));
+    return;
+  }
+  console.log(JSON.stringify({
+    outDir, episodeId: manifest.episodeId, llm: manifest.script.llm, adapters: manifest.adapters,
+    qc: manifest.qc.map(q => ({ ok: q.ok, width: q.width, height: q.height, durationSec: q.durationSec, loudnessLUFS: q.loudnessLUFS, truePeakDb: q.truePeakDb })),
+  }, null, 2));
+  const db = arg('--db');
+  if (db) {
+    const studio = openStudio(path.resolve(db));
+    const saved = await saveToStudio({ ...studio, user: 'news-launch' }, manifest);
+    console.log('saved episode', saved.episode.id);
+    studio.db.close();
+  }
+})().catch(err => { console.error(err.stack || err.message); process.exit(1); });

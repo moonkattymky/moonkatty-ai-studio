@@ -1,0 +1,22 @@
+{
+  "status": "candidate",
+  "note": "NOT LOADED. Example only. MasterVoice is not switched to Azure and is not locked. enabled is false. This file has no key.",
+  "enabled": false,
+  "engine": "azure",
+  "voice": "en-US-AndrewMultilingualNeural",
+  "gender": "male",
+  "accent": "en-US",
+  "rate": 0.95,
+  "tier": "S0",
+  "region": "uaenorth",
+  "paidEnabled": false,
+  "paidApproval": null,
+  "monthlyBudgetUsd": 1.0,
+  "pricePerMillionChars": 15.0,
+  "allowPaid": false,
+  "fallback": { "engine": "kokoro", "voice": "am_michael" },
+  "loudnessLufs": -16,
+  "lockedBy": null,
+  "lockedAt": null,
+  "voiceProfileId": null
+}

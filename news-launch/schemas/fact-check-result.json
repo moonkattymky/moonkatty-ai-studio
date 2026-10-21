@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/fact-check-result.json",
+  "title": "FactCheckResult",
+  "description": "A claim is confirmed only when at least two independent reputable publishers (different org ids) each supply a URL. A single official source is rejected.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["storyId", "claim", "status", "sources", "independentPublishers", "checkedAt", "method"],
+  "properties": {
+    "storyId": { "type": "string" },
+    "claim": { "type": "string" },
+    "status": { "enum": ["confirmed", "rejected"] },
+    "rejectionReason": { "type": ["string", "null"] },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["org", "publisher", "url", "title"],
+        "properties": {
+          "org": { "type": "string" },
+          "publisher": { "type": "string" },
+          "url": { "type": "string" },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "published": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "independentPublishers": { "type": "integer", "minimum": 0 },
+    "checkedAt": { "type": "string" },
+    "method": { "type": "string" },
+    "adapter": {
+      "type": ["string", "null"],
+      "description": "Set when the temporary cross-headline matcher was required. Null when the News Engine cluster alone had two orgs."
+    },
+    "category": { "type": "string" },
+    "controversial": { "type": "boolean" },
+    "publishedAt": { "type": ["string", "null"] },
+    "primarySourceUrl": { "type": ["string", "null"] },
+    "primaryPublisher": { "type": ["string", "null"] },
+    "primaryPublished": { "type": ["string", "null"] },
+    "editorialStatus": { "enum": ["confirmed-primary", "confirmed-publishers", "dropped-unconfirmed"] }
+  }
+}

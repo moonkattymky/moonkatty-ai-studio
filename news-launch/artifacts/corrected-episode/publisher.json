@@ -1,0 +1,90 @@
+{
+  "posts": {
+    "dac7d2beab4c70f51b059d93": {
+      "id": "dac7d2beab4c70f51b059d93",
+      "idempotencyKey": "dac7d2beab4c70f51b059d93",
+      "accountId": "youtube-news",
+      "platform": "youtube",
+      "contentId": "corrmvhcmy2u:youtube",
+      "payload": {
+        "videoPath": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
+        "title": "MOONKATTY NEWS",
+        "description": "This is MOONKATTY NEWS. On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called. Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement. Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth. Sources are official statements. This edition awaits approval and is not published."
+      },
+      "content": {
+        "reviewStatus": "pending",
+        "storyId": "corrmvhcmy2u"
+      },
+      "status": "dry_run",
+      "attempts": 0,
+      "nextAt": 0,
+      "remote": {
+        "dryRun": true,
+        "preview": {
+          "platform": "youtube",
+          "title": "MOONKATTY NEWS",
+          "description": "This is MOONKATTY NEWS. On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called. Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement. Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth. Sources are official statements. This edition awaits approval and is not published.",
+          "tags": [],
+          "privacy": "private",
+          "file": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
+          "shorts": false
+        }
+      },
+      "error": null,
+      "createdAt": "2026-10-21T00:08:14.141Z",
+      "history": [
+        {
+          "at": "2026-10-21T00:08:14.141Z",
+          "event": "enqueued",
+          "data": null
+        },
+        {
+          "at": "2026-10-21T00:08:14.142Z",
+          "event": "dry_run",
+          "data": null
+        }
+      ]
+    },
+    "67138436e36b6c1198d62024": {
+      "id": "67138436e36b6c1198d62024",
+      "idempotencyKey": "67138436e36b6c1198d62024",
+      "accountId": "tiktok-news",
+      "platform": "tiktok",
+      "contentId": "corrmvhcmy2u:shorts",
+      "payload": {
+        "videoPath": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
+        "title": "MOONKATTY NEWS"
+      },
+      "content": {
+        "reviewStatus": "pending",
+        "storyId": "corrmvhcmy2u"
+      },
+      "status": "dry_run",
+      "attempts": 0,
+      "nextAt": 0,
+      "remote": {
+        "dryRun": true,
+        "preview": {
+          "platform": "tiktok",
+          "caption": "MOONKATTY NEWS",
+          "privacy": "SELF_ONLY",
+          "file": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4"
+        }
+      },
+      "error": null,
+      "createdAt": "2026-10-21T00:08:14.141Z",
+      "history": [
+        {
+          "at": "2026-10-21T00:08:14.141Z",
+          "event": "enqueued",
+          "data": null
+        },
+        {
+          "at": "2026-10-21T00:08:14.142Z",
+          "event": "dry_run",
+          "data": null
+        }
+      ]
+    }
+  }
+}

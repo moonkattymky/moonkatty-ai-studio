@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/video-render-job.json",
+  "title": "VideoRenderJob",
+  "description": "A video_render job on the local JobQueuePort. music is null. The host is host3d-stub until an owner-approved host exists.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "preset", "status", "scriptTitle", "width", "height", "character3d", "music"],
+  "properties": {
+    "id": { "type": "string" },
+    "preset": { "enum": ["youtube", "shorts"] },
+    "status": { "enum": ["queued", "running", "succeeded", "failed", "cancelled"] },
+    "scriptTitle": { "type": "string" },
+    "width": { "type": "integer" },
+    "height": { "type": "integer" },
+    "character3d": { "const": "host3d-stub" },
+    "music": { "type": "null" },
+    "video": { "type": "string" },
+    "subtitles": { "type": "string" }
+  }
+}

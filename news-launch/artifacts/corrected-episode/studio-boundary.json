@@ -1,0 +1,5 @@
+{
+  "mode": "TEMPORARY_ADAPTER:studio-job-queue-not-connected",
+  "connected": false,
+  "error": "Studio job client is not injected. feat/v1.2.0 is on origin (00b63fc, docs/JOBS_API.md). This launch does not open that database and does not write server/jobs or server/blender."
+}

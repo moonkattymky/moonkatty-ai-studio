@@ -1,0 +1,11 @@
+{
+  "connected": false,
+  "mode": "TEMPORARY_ADAPTER:studio-job-queue-not-connected",
+  "error": "feat/v1.2.0 is not on origin. server/jobs and server/blender were not created or written.",
+  "outDir": "news-launch/artifacts/test-episode",
+  "outDirOwnedByStudio": false,
+  "serverJobsExists": false,
+  "serverBlenderExists": false,
+  "blenderInvoked": false,
+  "note": "Probe run after the episode render. The render wrote only under news-launch/artifacts/test-episode."
+}

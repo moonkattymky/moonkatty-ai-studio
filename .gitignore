@@ -3,3 +3,11 @@ data/
 *.db
 *.db-*
 .env
+news-launch/models/
+news-launch/work/
+news-launch/azure-tts/state/*.json
+news-launch/azure-tts/state/*.jsonl
+news-launch/azure-tts/state/*.tmp
+news-launch/azure-tts/state/*.lock
+news-launch/azure-tts/state/cache/
+news-launch/azure-tts/state/cache-mac.key

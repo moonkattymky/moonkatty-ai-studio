@@ -1,0 +1,15 @@
+{
+  "engine": "kokoro:am_michael",
+  "voice": "am_michael",
+  "license": "Kokoro-82M model card apache-2.0. Candidate am_michael is not owner-approved.",
+  "commercialUse": true,
+  "provisional": true,
+  "locked": false,
+  "segments": [
+    {
+      "text": "On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called. Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement. Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth.",
+      "file": "/workspace/news-launch/artifacts/corrected-episode/horizontal.anchor.wav",
+      "durationSec": 59.633333
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/script.json",
+  "title": "NewsScript",
+  "description": "Narration passed to the Video Factory. Story lines must be grounded in the fact-check sources.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["title", "lang", "scenes", "llm"],
+  "properties": {
+    "title": { "type": "string" },
+    "lang": { "const": "en" },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["intro", "story", "outro"] },
+          "heading": { "type": "string" },
+          "text": { "type": "string", "minLength": 1 },
+          "storyId": { "type": "string" }
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["ollama", "temporary-adapter", "editor"] },
+        "model": { "type": ["string", "null"] },
+        "adapter": { "type": ["string", "null"] },
+        "reason": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

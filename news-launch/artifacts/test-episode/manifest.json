@@ -1,0 +1,390 @@
+{
+  "episodeId": "mvh8sdbz7rtk1t",
+  "prompt": "Подготовь выпуск MOONKATTY NEWS о трёх важных мировых событиях",
+  "profile": "episode",
+  "outDir": "/workspace/news-launch/artifacts/test-episode",
+  "script": {
+    "title": "MOONKATTY NEWS",
+    "lang": "en",
+    "scenes": [
+      {
+        "id": "intro",
+        "kind": "intro",
+        "heading": "MOONKATTY NEWS",
+        "text": "This is MOONKATTY NEWS. Three world stories, each checked against at least two independent sources."
+      },
+      {
+        "id": "f9ec31204119",
+        "kind": "story",
+        "storyId": "f9ec31204119",
+        "heading": "Guardian · CBS",
+        "text": "The Guardian reports: Alberta voters overwhelmingly reject plan to leave Canada in referendum. CBS News reports: Voters reject separation of Alberta from Canada in referendum."
+      },
+      {
+        "id": "97dab615c25b",
+        "kind": "story",
+        "storyId": "97dab615c25b",
+        "heading": "NPR · ABC",
+        "text": "NPR reports: Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive. ABC News reports: Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive."
+      },
+      {
+        "id": "59bc6b4539c2",
+        "kind": "story",
+        "storyId": "59bc6b4539c2",
+        "heading": "BBC · Guardian",
+        "text": "BBC News reports: UK to deploy jets to defend Saudi Arabia from Houthi attacks. The Guardian reports: UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks."
+      },
+      {
+        "id": "outro",
+        "kind": "outro",
+        "heading": "Sources",
+        "text": "These accounts come from the sources named in this edition. This edition is waiting for approval and has not been published."
+      }
+    ],
+    "llm": {
+      "mode": "temporary-adapter",
+      "model": null,
+      "adapter": "TEMPORARY_ADAPTER:extractive-headlines",
+      "reason": "fetch failed"
+    }
+  },
+  "voiceover": {
+    "engine": "piper",
+    "voice": "en_US-ljspeech-high",
+    "license": "Piper MIT; voice en_US-ljspeech-high trained from scratch on the public-domain LJ Speech dataset",
+    "commercialUse": true,
+    "segments": [
+      {
+        "text": "This is MOONKATTY NEWS. Three world stories, each checked against at least two independent sources.",
+        "file": "/workspace/news-launch/artifacts/test-episode/voiceover/scene-0.wav",
+        "durationSec": 7.191837
+      },
+      {
+        "text": "The Guardian reports: Alberta voters overwhelmingly reject plan to leave Canada in referendum. CBS News reports: Voters reject separation of Alberta from Canada in referendum.",
+        "file": "/workspace/news-launch/artifacts/test-episode/voiceover/scene-1.wav",
+        "durationSec": 12.822676
+      },
+      {
+        "text": "NPR reports: Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive. ABC News reports: Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive.",
+        "file": "/workspace/news-launch/artifacts/test-episode/voiceover/scene-2.wav",
+        "durationSec": 16.073469
+      },
+      {
+        "text": "BBC News reports: UK to deploy jets to defend Saudi Arabia from Houthi attacks. The Guardian reports: UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks.",
+        "file": "/workspace/news-launch/artifacts/test-episode/voiceover/scene-3.wav",
+        "durationSec": 13.670204
+      },
+      {
+        "text": "These accounts come from the sources named in this edition. This edition is waiting for approval and has not been published.",
+        "file": "/workspace/news-launch/artifacts/test-episode/voiceover/scene-4.wav",
+        "durationSec": 6.680998
+      }
+    ]
+  },
+  "jobs": [
+    {
+      "id": "news-horizontal",
+      "preset": "youtube",
+      "status": "done",
+      "scriptTitle": "MOONKATTY NEWS",
+      "width": 1920,
+      "height": 1080,
+      "character3d": "stub-3d",
+      "music": null,
+      "video": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+      "subtitles": "/workspace/news-launch/artifacts/test-episode/horizontal.srt"
+    },
+    {
+      "id": "news-vertical",
+      "preset": "shorts",
+      "status": "done",
+      "scriptTitle": "MOONKATTY NEWS",
+      "width": 1080,
+      "height": 1920,
+      "character3d": "stub-3d",
+      "music": null,
+      "video": "/workspace/news-launch/artifacts/test-episode/vertical.mp4",
+      "subtitles": "/workspace/news-launch/artifacts/test-episode/vertical.srt"
+    }
+  ],
+  "qc": [
+    {
+      "file": "/workspace/news-launch/artifacts/test-episode/horizontal.mp4",
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "durationSec": 57.899,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioPresent": true,
+      "loudnessLUFS": -14.2,
+      "truePeakDb": -2.5,
+      "clipping": false,
+      "blackFrames": [],
+      "subtitleFile": "/workspace/news-launch/artifacts/test-episode/horizontal.srt",
+      "subtitleCues": 22,
+      "failures": [],
+      "checkedAt": "2026-10-20T22:16:19.042Z"
+    },
+    {
+      "file": "/workspace/news-launch/artifacts/test-episode/vertical.mp4",
+      "ok": true,
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 57.745,
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "audioPresent": true,
+      "loudnessLUFS": -14.2,
+      "truePeakDb": -2.1,
+      "clipping": false,
+      "blackFrames": [],
+      "subtitleFile": "/workspace/news-launch/artifacts/test-episode/vertical.srt",
+      "subtitleCues": 37,
+      "failures": [],
+      "checkedAt": "2026-10-20T22:16:21.848Z"
+    }
+  ],
+  "sources": [
+    {
+      "storyId": "f9ec31204119",
+      "claim": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+      "publisher": "The Guardian",
+      "org": "guardian",
+      "url": "https://www.theguardian.com/world/2026/oct/20/canada-alberta-rejects-independence-succession-referendum",
+      "title": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+      "published": "2026-10-20T16:24:05.000Z",
+      "category": "politics",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "f9ec31204119",
+      "claim": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+      "publisher": "CBS News",
+      "org": "cbs",
+      "url": "https://www.cbsnews.com/news/canada-alberta-referendum-vote-separation-independence/",
+      "title": "Voters reject separation of Alberta from Canada in referendum",
+      "published": "2026-10-20T06:11:00.000Z",
+      "category": "politics",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "97dab615c25b",
+      "claim": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+      "publisher": "NPR",
+      "org": "npr",
+      "url": "https://www.npr.org/2026/10/20/g-s1-148975/nigeria-confirms-ebola-case",
+      "title": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+      "published": "2026-10-20T20:19:16.000Z",
+      "category": "other",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "97dab615c25b",
+      "claim": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+      "publisher": "ABC News",
+      "org": "abc",
+      "url": "https://abcnews.com/International/wireStory/nigeria-confirms-ebola-case-abuja-woman-arrived-uganda-137420211",
+      "title": "Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive",
+      "published": "2026-10-20T20:02:27.000Z",
+      "category": "other",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "59bc6b4539c2",
+      "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+      "publisher": "BBC News",
+      "org": "bbc",
+      "url": "https://www.bbc.co.uk/news/articles/ckr5yqe1r1llo?at_medium=RSS&at_campaign=rss",
+      "title": "UK to deploy jets to defend Saudi Arabia from Houthi attacks",
+      "published": "2026-10-20T13:54:35.000Z",
+      "category": "politics",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "59bc6b4539c2",
+      "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+      "publisher": "The Guardian",
+      "org": "guardian",
+      "url": "https://www.theguardian.com/uk-news/2026/oct/20/uk-raf-typhoon-fighters-saudi-arabia-houthi-attacks",
+      "title": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+      "published": "2026-10-20T18:30:16.000Z",
+      "category": "politics",
+      "method": "news-engine-cluster",
+      "adapter": null
+    },
+    {
+      "storyId": "59bc6b4539c2",
+      "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+      "publisher": "Al Jazeera",
+      "org": "aljazeera",
+      "url": "https://www.aljazeera.com/video/newsfeed/2026/10/20/aje-onl-nf_uk-to-deploy-fighter-jets-to-defend-saudi-arabia_1-201026?traffic_source=rss",
+      "title": "UK to deploy fighter jets to defend Saudi Arabia",
+      "published": "2026-10-20T18:55:52.000Z",
+      "category": "politics",
+      "method": "news-engine-cluster",
+      "adapter": null
+    }
+  ],
+  "imageLicenses": {
+    "images": [
+      {
+        "id": "generated-color-cards",
+        "origin": "generated",
+        "generator": "ffmpeg lavfi color + drawtext via Video Factory v0",
+        "license": "Original graphics produced by this pipeline. No third-party photograph or footage.",
+        "thirdPartyAssets": [
+          {
+            "name": "DejaVu Sans",
+            "license": "Bitstream Vera / DejaVu, free for commercial use"
+          }
+        ]
+      }
+    ],
+    "music": null,
+    "tts": {
+      "engine": "piper",
+      "voice": "en_US-ljspeech-high",
+      "license": "Piper MIT; voice en_US-ljspeech-high trained from scratch on the public-domain LJ Speech dataset",
+      "commercialUse": true
+    }
+  },
+  "selected": [
+    {
+      "storyId": "f9ec31204119",
+      "claim": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+      "status": "confirmed",
+      "rejectionReason": null,
+      "sources": [
+        {
+          "org": "guardian",
+          "publisher": "The Guardian",
+          "url": "https://www.theguardian.com/world/2026/oct/20/canada-alberta-rejects-independence-succession-referendum",
+          "title": "Alberta voters overwhelmingly reject plan to leave Canada in referendum",
+          "summary": "Result is a victory for prime minister Mark Carney and supporters of Canadian unity Voters in Canada’s Alberta have overwhelmingly rejected a proposal to begin the process of independence, delivering a decisive victory for supporters of Canadian unity and deepening divisions within the separatist movement. With nearly 1.9m votes counted, roughly 76% people supported remaining in Canada, while 24% backed beginning a process toward separation, according to unofficial results from Elections Alberta. Continue reading...",
+          "published": "2026-10-20T16:24:05.000Z",
+          "sourceId": "guardian-world",
+          "engineStoryId": "9df4934b2ba5"
+        },
+        {
+          "org": "cbs",
+          "publisher": "CBS News",
+          "url": "https://www.cbsnews.com/news/canada-alberta-referendum-vote-separation-independence/",
+          "title": "Voters reject separation of Alberta from Canada in referendum",
+          "summary": "The vote was not a referendum on independence from Canada, but it would have begun a process towards possible separation.",
+          "published": "2026-10-20T06:11:00.000Z",
+          "sourceId": "cbs-world",
+          "engineStoryId": "9df4934b2ba5"
+        }
+      ],
+      "independentPublishers": 2,
+      "checkedAt": "2026-10-20T22:15:49.470Z",
+      "method": "news-engine-cluster",
+      "adapter": null,
+      "category": "politics",
+      "controversial": false,
+      "breaking": false,
+      "publishedAt": "2026-10-20T16:24:05.000Z"
+    },
+    {
+      "storyId": "97dab615c25b",
+      "claim": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+      "status": "confirmed",
+      "rejectionReason": null,
+      "sources": [
+        {
+          "org": "npr",
+          "publisher": "NPR",
+          "url": "https://www.npr.org/2026/10/20/g-s1-148975/nigeria-confirms-ebola-case",
+          "title": "Nigeria confirms an Ebola case in Abuja as a woman arriving from Uganda tests positive",
+          "summary": "Nigeria is the latest country to report an Ebola case as the outbreak spreads across the region. Kenya confirmed its first case earlier this month and has since recorded nine infections.",
+          "published": "2026-10-20T20:19:16.000Z",
+          "sourceId": "npr-world",
+          "engineStoryId": "ae040e036d48"
+        },
+        {
+          "org": "abc",
+          "publisher": "ABC News",
+          "url": "https://abcnews.com/International/wireStory/nigeria-confirms-ebola-case-abuja-woman-arrived-uganda-137420211",
+          "title": "Nigeria confirms Ebola case in Abuja as woman who arrived from Uganda tests positive",
+          "summary": "Nigeria has confirmed an Ebola case in its capital, Abuja, after a woman arriving from Uganda tested positive",
+          "published": "2026-10-20T20:02:27.000Z",
+          "sourceId": "abc-intl",
+          "engineStoryId": "ae040e036d48"
+        }
+      ],
+      "independentPublishers": 2,
+      "checkedAt": "2026-10-20T22:15:49.470Z",
+      "method": "news-engine-cluster",
+      "adapter": null,
+      "category": "other",
+      "controversial": false,
+      "breaking": false,
+      "publishedAt": "2026-10-20T20:19:16.000Z"
+    },
+    {
+      "storyId": "59bc6b4539c2",
+      "claim": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+      "status": "confirmed",
+      "rejectionReason": null,
+      "sources": [
+        {
+          "org": "bbc",
+          "publisher": "BBC News",
+          "url": "https://www.bbc.co.uk/news/articles/ckr5yqe1r1llo?at_medium=RSS&at_campaign=rss",
+          "title": "UK to deploy jets to defend Saudi Arabia from Houthi attacks",
+          "summary": "The UK announces it will provide additional defensive military support to Saudi Arabia as Houthi attacks escalate in the region.",
+          "published": "2026-10-20T13:54:35.000Z",
+          "sourceId": "bbc-top",
+          "engineStoryId": "43a37539aae7"
+        },
+        {
+          "org": "guardian",
+          "publisher": "The Guardian",
+          "url": "https://www.theguardian.com/uk-news/2026/oct/20/uk-raf-typhoon-fighters-saudi-arabia-houthi-attacks",
+          "title": "UK to deploy fighter jets to protect Saudi Arabia from Houthi attacks",
+          "summary": "RAF Typhoon fighters to fly defensive missions over cities and infrastructure in extension of UK support for Riyadh RAF Typhoon fighters are to be used in efforts to protect Saudi Arabia from attack by Yemen’s Houthis, flying protective missions over the country’s cities and critical infrastructure as western allies increase their intervention in the escalating conflict. The operation – the most significant military mission signed off by Andy Burnham as prime minister – will involve RAF pilots attempting to shoot down Houthi missiles and drones, which attacked Saudi airports and oil facilities. Continue reading...",
+          "published": "2026-10-20T18:30:16.000Z",
+          "sourceId": "guardian-world",
+          "engineStoryId": "43a37539aae7"
+        },
+        {
+          "org": "aljazeera",
+          "publisher": "Al Jazeera",
+          "url": "https://www.aljazeera.com/video/newsfeed/2026/10/20/aje-onl-nf_uk-to-deploy-fighter-jets-to-defend-saudi-arabia_1-201026?traffic_source=rss",
+          "title": "UK to deploy fighter jets to defend Saudi Arabia",
+          "summary": "British Typhoon jets will carry out defensive missions to protect Saudi Arabia from escalating Houthi attacks.",
+          "published": "2026-10-20T18:55:52.000Z",
+          "sourceId": "aljazeera",
+          "engineStoryId": "43a37539aae7"
+        }
+      ],
+      "independentPublishers": 3,
+      "checkedAt": "2026-10-20T22:15:49.470Z",
+      "method": "news-engine-cluster",
+      "adapter": null,
+      "category": "politics",
+      "controversial": true,
+      "breaking": false,
+      "publishedAt": "2026-10-20T18:55:52.000Z"
+    }
+  ],
+  "adapters": [
+    "TEMPORARY_ADAPTER:extractive-headlines"
+  ],
+  "character3d": "stub-3d",
+  "hostUsed": false,
+  "publish": false,
+  "ageWindowHours": 96,
+  "ingest": {
+    "fetched": 359,
+    "new": 0,
+    "duplicates": 359,
+    "errors": []
+  }
+}
