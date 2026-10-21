@@ -2,14 +2,14 @@
 /**
  * PLATFORM READ API v1.0.0 — read-only view for Studio 4 (CEO / Marketing Director / Revenue Director).
  * Every return value is a frozen deep copy; nothing here can publish, spend, approve or mutate state.
- * Data source: a snapshot object (default: data/platforms-snapshot.sample.json, all mock) or live providers
+ * Data source: a snapshot object (default: fixtures/platforms-snapshot.sample.json, all mock) or live providers
  * ({ publisher, ledger, approvals, analytics }) which are only READ.
  */
 const fs = require('fs'); const path = require('path');
 const { PLATFORMS, getPlatform, liveMode } = require('./registry');
 const { capabilitiesFor } = require('./capabilities');
 const READ_API_VERSION = '1.0.0';
-const SAMPLE = path.join(__dirname, '..', '..', 'data', 'platforms-snapshot.sample.json');
+const SAMPLE = path.join(__dirname, '..', '..', 'fixtures', 'platforms-snapshot.sample.json');
 const freeze = o => { if (o && typeof o === 'object') { Object.values(o).forEach(freeze); Object.freeze(o); } return o; };
 const out = o => freeze(JSON.parse(JSON.stringify(o)));
 function createReadApi({ snapshot = null, snapshotPath = SAMPLE, publisher = null, ledger = null, approvals = null, analytics = null, liveFlags = {}, env = {} } = {}) {

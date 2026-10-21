@@ -20,4 +20,4 @@ PLATFORMS.forEach((p, i) => { const impl = p.implemented !== false; const n = (i
   if (UNAV[p.kind] && platforms[p.id].analytics.totals) for (const k of UNAV[p.kind]) platforms[p.id].analytics.totals[k] = null;
 });
 const out = { schemaVersion: '1.0.0', readApiVersion: READ_API_VERSION, generatedAt: AS_OF, note: 'SAMPLE: every platform is dataMode=mock. No accounts are connected; no real publishing or revenue.', platforms };
-const f = path.join(__dirname, '..', 'data', 'platforms-snapshot.sample.json'); fs.writeFileSync(f, JSON.stringify(out, null, 2) + '\n'); console.log('wrote', f);
+const f = path.join(__dirname, '..', 'fixtures', 'platforms-snapshot.sample.json'); fs.writeFileSync(f, JSON.stringify(out, null, 2) + '\n'); console.log('wrote', f);

@@ -38,5 +38,5 @@ Every payload carries a `dataMode` field:
 
 ## Files
 - JSON Schema: `media-automation/schemas/platforms/read-api.schema.json`. Its `$defs` are platform, status, pipeline, analytics, revenue, revenueEntry, capabilities and snapshot.
-- Sample snapshot, all mock: `media-automation/data/platforms-snapshot.sample.json`. Regenerate it with `node media-automation/bin/build-platform-snapshot.js`.
+- Sample snapshot, all mock: `media-automation/fixtures/platforms-snapshot.sample.json`. Regenerate it with `node media-automation/bin/build-platform-snapshot.js`.
 - Validator with no dependencies: `media-automation/src/platforms/schema-check.js`.

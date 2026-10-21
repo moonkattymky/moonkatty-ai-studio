@@ -1,5 +1,7 @@
 {
   "schema": "moonkatty.studio5.voice-profile/v1 (proposal)",
+  "schemaVersion": "1.0.0",
+  "provisional": true,
   "id": "MOONKATTY_NEWS_MASTER_VOICE",
   "displayName": "MOONKATTY NEWS anchor",
   "status": "locked",

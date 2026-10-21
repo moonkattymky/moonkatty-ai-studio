@@ -1,5 +1,7 @@
 # 3D animation cue contract (v1) — contract only, no rig work
 
+> **PROVISIONAL — NOT yet agreed with Studio.** Studio reviews this schema at stage D. `version: "1"` and `$id moonkatty/animation-cues/v1` stay fixed until then; any change after review bumps the version. Do not build against it as final.
+
 Produced by the Voice&Emotion stage per segment; consumed by the future 3D host renderer. All times are seconds on the **episode** timeline; `offsetSec` = start of this segment in the episode (segment-local time = t − offsetSec). Canonical schema file: `media-automation/config/animation-cues.schema.json` (validated by `src/anchor/cues.js` `checkCues`, zero-dep validator).
 
 ```json

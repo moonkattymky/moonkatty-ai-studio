@@ -72,7 +72,7 @@ test('meta.js bridge: reads connections, never decrypts, no OAuth', async () => 
   const fs = require('fs'); assert.ok(!/require\(['"][./]*meta(\.js)?['"]\)/.test(fs.readFileSync(require.resolve('../src/platforms/meta-oauth-bridge'), 'utf8')));
 });
 test('read API: all functions, schema-valid, frozen, revenue split', () => {
-  assert.equal(api.READ_API_VERSION, '1.0.0'); assert.deepEqual(check({ $ref: '#/$defs/snapshot' }, require('../data/platforms-snapshot.sample.json'), '$', S), []);
+  assert.equal(api.READ_API_VERSION, '1.0.0'); assert.deepEqual(check({ $ref: '#/$defs/snapshot' }, require('../fixtures/platforms-snapshot.sample.json'), '$', S), []);
   for (const p of api.getPlatforms()) { assert.equal(p.dataMode, 'mock');
     for (const [k, f] of [['status', 'getPlatformStatus'], ['pipeline', 'getContentPipeline'], ['analytics', 'getAnalytics'], ['revenue', 'getRevenue'], ['capabilities', 'getCapabilities']]) assert.deepEqual(check({ $ref: '#/$defs/' + k }, api[f](p.id), p.id, S), [], `${p.id} ${k}`); }
   const r = api.getRevenue('youtube-news'); assert.ok(Object.isFrozen(r)); assert.throws(() => { r.confirmed.totals.USD = 1e6; }); assert.equal(r.viewsAreRevenue, false);
