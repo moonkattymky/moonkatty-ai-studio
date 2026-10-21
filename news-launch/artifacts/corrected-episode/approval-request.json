@@ -1,9 +1,9 @@
 {
-  "id": "approval-corrmvhboczt",
-  "episodeId": "corrmvhboczt",
+  "id": "approval-corrmvhcmy2u",
+  "episodeId": "corrmvhcmy2u",
   "status": "pending",
   "publish": false,
-  "requestedAt": "2026-10-20T23:41:48.886Z",
+  "requestedAt": "2026-10-21T00:08:14.143Z",
   "summary": "This is MOONKATTY NEWS. On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called. Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement. Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth. Sources are official statements. This edition awaits approval and is not published.",
   "sources": [
     "https://www.elections.ab.ca/resources/media/news-releases/2026-10-19-2/",
@@ -13,8 +13,8 @@
   ],
   "taskId": "",
   "queueIds": [
-    "e0f175fc6623bc4e2872e14d",
-    "10e05695e7ff748c19f7b5c4"
+    "dac7d2beab4c70f51b059d93",
+    "67138436e36b6c1198d62024"
   ],
   "licenses": [
     {

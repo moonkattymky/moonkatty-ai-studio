@@ -48,3 +48,25 @@ Rules we follow:
 ## 6. Mac mini notes
 - TTS: `MA_TTS=say` with `MA_SAY_VOICE`/`MA_SAY_RATE`, or Piper with `MA_PIPER_MODEL`/`MA_PIPER_BIN`. With no engine, the pipeline fails loudly; there is no tone fallback.
 - LLM: `MA_OLLAMA_URL` (default `http://127.0.0.1:11434`), `MA_OLLAMA_MODEL` (default `qwen2.5:1.5b`). 3B–8B Q4 models fit in 24 GB, but they must not run together with Blender (queue rule).
+
+## 7. Studio JOBS_API v1.2.0 alignment (read-only from feat/v1.2.0 @00b63fc docs/JOBS_API.md)
+`StudioJobQueueAdapter({client: jobsApi})` passes `resourceClass`, `requiresNode`, `idempotencyKey` (≤128), `safeToRetry`. It normalizes `id`→`jobId` and `publicStatus`, and maps internal statuses (waiting_*→needs_approval, done→succeeded, rejected→cancelled). Artifacts are mapped to `result.videoPath`. `StudioHost3D` enqueues `render_segment` (gpu_heavy, mac-mini). A `failed` result (the current stub) or a missing client returns `null`, and the episode continues without the host. `blenderService` is not called by us.
+
+## 8. Host3D contract v2 (PROPOSAL for Studio)
+Request `host3d.render_segment/v2`: `{script, audioPath (48k mono wav), durationSec, aspect, outPath, voice:{voiceProfileId, voiceId, modelSha256}, visemes:[{t,d,viseme,phoneme}], cues:[{t,emotion,gaze,ears,head}], costumeId, character:{id:'moonkatty-master-cat', modelVersion (pinned)}, output:{alpha:true,fps:30,format:'mov-prores4444'}}` → `{videoPath}|null`. Still enqueued as `render_segment`. Viseme set: PP FF TH DD kk CH SS RR I E aa O U sil. Per episode, `lipsync-handoff.json` carries anchorAudio, voiceProfileId, per-segment visemes and cues. We never build our own cat.
+
+## 9. Studio 4 (feat/news-launch-integration, news-launch/CONTRACTS.md), mismatches
+1. Imports old commits (4537b7a/66d4b20): Video Factory v0, not factory2/orchestrator/Approval Center.
+2. TTS default Piper `ljspeech-high` (female) conflicts with the male-only anchor. They refuse `ryan-high`. Their own `kokoro.js` bypasses MasterVoice (no hash pin, no loud failure).
+3. Loudness −14 LUFS (theirs) vs −16 LUFS (ours). Duplicate QC/loudness steps.
+4. Publishing via old `social.adapt`/`meta.js` queue with `imageRights:'generated'`, versus our Publisher plus per-asset licenses.
+5. Proposed fact-check fields (`primarySourceUrl`, `primaryPublisher`, `primaryPublished`, `editorialStatus`) are not in our engine yet. We are willing to accept them.
+6. Job contract without resourceClass/idempotencyKey/safeToRetry. They believe feat/v1.2.0 is not on origin; it is now.
+
+## 10. Proposed Studio job type `video_render` (needs main Studio approval)
+`video_render` is not in JOBS_API v1.2.0. Until it is approved, the orchestrator renders on the **local serialized queue** (`LocalJobQueue`, one heavy job at a time, Ollama unloaded first). `StudioJobQueueAdapter.supportedTypes` = design3d, blender_template, opencode_task, render_segment. The orchestrator falls back to `fallbackQueue` when `video_render` is not listed.
+Proposal: `type:'video_render'`, `resourceClass:'gpu_heavy'`, `requiresNode:'mac-mini'`, `safeToRetry:true`, `idempotencyKey:'<runId>:<preset>'`, `input:{runId, preset:'youtube'|'shorts', episodeRef}` → `artifacts[{kind:'file', path:<mp4>}, {kind:'file', path:<srt>}, {kind:'png', path:<thumb>}]`. It must hold `withHeavy` so it never overlaps Blender or Ollama.
+`render_segment` stays a Studio stub (created as `failed`). `StudioHost3D` maps that to `null`, and the episode renders without the host.
+
+## 11. Editorial verification (aligned with Studio 4)
+`confirmed` = primary source (official/originating outlet, `primarySourceUrl`, or `editorialStatus:'confirmed-primary'`) **plus** independent corroboration. A primary source alone is `primary_only`: auto-cleared only for an official, non-breaking, non-controversial self-announcement (`autoPrimaryOnly`, default on); otherwise it goes to owner review. Two media outlets without a primary source are `unconfirmed`. `editorialStatus:'dropped-unconfirmed'` excludes the story. The fields `primarySourceUrl`, `primaryPublisher`, `primaryPublished` and `editorialStatus` are read from source items or `manualFlags`. Licenses now accept UK OGL v3 (`OGL-UK-3.0`, attribution required). Ported from Studio 4: preset `targetLufs` (default −16; a launch can set −14), `resourceClass`/`requiresNode`/`safeToRetry` on LocalJobQueue jobs, and lexicon entries.

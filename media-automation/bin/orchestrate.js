@@ -24,8 +24,10 @@ async function build(stateDir) {
   const mv = new MasterVoice(); const tts = new SpeechComposer({ tts: mv.createTTS() }); // throws if master voice unavailable
   const bed = path.join(stateDir, 'ambient-bed.wav'); const music = fs.existsSync(bed + '.license.json') ? JSON.parse(fs.readFileSync(bed + '.license.json')) : await generateAmbientBed(bed, { durationSec: 90 });
   const jobQueue = new LocalJobQueue({ statePath: path.join(stateDir, 'jobs.json'), beforeHeavy: async t => { if (t === 'video_render' && llmOk) await llm.unload().catch(() => {}); } });
-  const orch = new Orchestrator({ stateDir, news: new NewsEngine({ statePath: path.join(stateDir, 'news.json'), sources: SOURCES }), editor: new NewsEditor({ llm: llmOk ? llm : null }),
-    media: new MediaLibrary({ dir: path.join(stateDir, 'media'), providers: { nasa: new NasaImagesProvider(), commons: new CommonsProvider() } }),
+  const mediaLib = new MediaLibrary({ dir: path.join(stateDir, 'media'), providers: { nasa: new NasaImagesProvider(), commons: new CommonsProvider() } });
+  const panelFallback = require('../src/media/panel').panelFallbackFactory({ library: mediaLib, dir: path.join(stateDir, 'media', 'panels') });
+  const orch = new Orchestrator({ panelFallback, stateDir, news: new NewsEngine({ statePath: path.join(stateDir, 'news.json'), sources: SOURCES }), editor: new NewsEditor({ llm: llmOk ? llm : null }),
+    media: mediaLib,
     factory: new NewsVideoFactory({ tts, workRoot: path.join(stateDir, 'work') }), jobQueue, approval: new ApprovalCenter({ statePath: path.join(stateDir, 'approval.json') }),
     publisher: new Publisher({ statePath: path.join(stateDir, 'publisher.json'), adapters: defaultAdapters(), accounts: DEFAULT_ACCOUNTS }), music, voice: mv.exportForLipSync(), storyCount: +(process.env.MA_STORY_COUNT || 4) });
   return { orch, llmOk };

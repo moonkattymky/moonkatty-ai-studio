@@ -135,6 +135,7 @@ async function renderEpisode({ episode, outDir, tts, episodeId, targetLufs = -16
       timeoutSec: 1800,
       maxAttempts: 1,
       resourceClass: 'gpu_heavy',
+      requiresNode: 'mac-mini',
       idempotencyKey,
       safeToRetry: true,
     }, () => factory.render(episode, { preset, outDir, music: null, basename }));
@@ -151,6 +152,7 @@ async function renderEpisode({ episode, outDir, tts, episodeId, targetLufs = -16
       video: manifest.files.video,
       subtitles: manifest.files.subtitles,
       resourceClass: stored.resourceClass,
+      requiresNode: stored.requiresNode,
       idempotencyKey: stored.idempotencyKey,
       safeToRetry: stored.safeToRetry,
     });

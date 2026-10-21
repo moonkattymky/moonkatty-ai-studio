@@ -1,33 +1,33 @@
 # Contracts with Studio 2
 
-Studio 2 owns the News Intelligence Engine, Video Factory, and Social Publisher on `feat/media-automation`. This branch re-imports that tree at `882cd398d191eea9dbaeef046562282ccd9a9d8c` and calls it. It does not open a pull request against their branch, and it does not merge.
+Studio 2 owns the News Intelligence Engine, Video Factory, and Social Publisher on `feat/media-automation`. This branch re-imports that tree at `228c2ea44e677e3067e8c0389c824c27549b38e3` and calls it. It does not open a pull request against their branch, and it does not merge.
 
 `server/jobs` and `server/blender` are not created and are not written. `news-launch/src/studio-boundary.js` throws `studio_owned_path` if an output path resolves under either tree.
 
 ## Import
 
-`git checkout 882cd39 -- media-automation docs/media-automation` on this branch only. The previous copy (`4537b7a` / `66d4b20`) is replaced.
+`git checkout 228c2ea -- media-automation docs/media-automation` on this branch only. The earlier copy (`882cd39`, and before that `4537b7a` / `66d4b20`) is replaced. `git diff 228c2ea -- media-automation docs/media-automation` is empty: the loudness preset, lexicon, and job fields that this launch had patched locally now come from their tree.
 
-Local deltas on the imported files, not pushed to `feat/media-automation`:
+Their `228c2ea` already contains:
 
-- `media-automation/src/video/presets.js` — `targetLufs: -16` on the shared preset base. `getPreset(name, { targetLufs })` can override it.
-- `media-automation/src/video/factory2.js` — program loudness, the anchor WAV, and `qaVideo` use `preset.targetLufs`, falling back to the factory default `-16`.
-- `media-automation/assets/lexicon.json` — episode pronunciations (Muhammad Ali Pate, Wes Streeting, Houthis, Typhoon, Alberta, Abuja, and the rest of the bulletin list). `SpeechComposer` applies them.
-- `media-automation/src/jobs/local.js` — `createJob` keeps `resourceClass`, `requiresNode`, and `safeToRetry`, and rejects an `idempotencyKey` longer than 128 characters.
-- `media-automation/src/orchestrator/orchestrator.js` — the `video_render` spec now includes `resourceClass: 'gpu_heavy'` and `safeToRetry: true` beside the existing `idempotencyKey`.
+- `targetLufs: -16` on the shared preset, overridable through `getPreset(name, { targetLufs })`. `factory2` uses that value for the program, the anchor WAV, and `qaVideo`.
+- Episode pronunciations in `media-automation/assets/lexicon.json`, applied by `SpeechComposer`.
+- `LocalJobQueue.createJob` fields `resourceClass`, `requiresNode`, `safeToRetry`, and an `idempotencyKey` of at most 128 characters.
+- Orchestrator `video_render` specs with `resourceClass: 'gpu_heavy'` and `safeToRetry: true`.
+- UK OGL v3 as `OGL-UK-3.0` (attribution required). A numbered OGL that is not v3, including `OGL 2`, stays rejected.
 
 ## News Engine
 
-`NewsEngine` in `media-automation/src/news/engine.js` is used as imported.
+`NewsEngine` and `verifyStory` are used as imported.
 
-The RSS path still fact-checks with `news-launch/src/factcheck.js`. Two publishers confirm a cluster for the RSS adapter only. That row is marked:
+`confirmed` requires a primary source and an independent second origin. A primary source is an official item, a source flagged `primary`, a `primarySourceUrl`, or `editorialStatus: 'confirmed-primary'`. A primary source alone is `primary_only`. With `autoPrimaryOnly` (default on), that status auto-clears only when the source is official and the story is neither breaking nor controversial. Every other `primary_only`, plus `unconfirmed`, `disputed`, breaking, controversial, and `editorialStatus: 'dropped-unconfirmed'`, goes to owner review. `dropped-unconfirmed` forces `corroboration` to `unconfirmed`. Two outlets with no primary source are `unconfirmed`.
+
+The RSS path still fact-checks with `news-launch/src/factcheck.js`. Two publishers confirm a cluster for that adapter only. That row is marked:
 
 - `primarySourceUrl`, `primaryPublisher`, `primaryPublished`: `null`
 - `editorialStatus`: `confirmed-publishers`
 
-A cluster that fails the two-publisher rule is `dropped-unconfirmed`. The corrected episode does not come from RSS. Its rows are `editorialStatus: confirmed-primary` with the primary URL, publisher, and date filled. See `news-launch/artifacts/corrected-episode/sources.json` and `news-launch/artifacts/test-episode/FACTCHECK.md`.
-
-Those four fields are accepted for this launch. `882cd39` does not read or store them (`verify.js` has no `primarySourceUrl`). Emitting them here does not fork their engine.
+A cluster that fails the two-publisher rule is `dropped-unconfirmed`. The corrected episode does not come from RSS. Its rows stay `editorialStatus: confirmed-primary` with the primary URL, publisher, and date filled. See `news-launch/artifacts/corrected-episode/sources.json` and `news-launch/artifacts/test-episode/FACTCHECK.md`. Those rows are compatible with their engine. They are not ingested as `NewsEngine` stories, so `autoPrimaryOnly` does not clear the edition. Approval Center stays `pending`.
 
 ## Voice
 
@@ -65,7 +65,21 @@ createJob({ type, agent, input, timeoutSec, maxAttempts, resourceClass, requires
 
 With no injected client the adapter throws `NOT_CONNECTED`. The probe result is `TEMPORARY_ADAPTER:studio-job-queue-not-connected`. The error text names `00b63fc` and states that this launch does not open their database.
 
-The VM render uses `LocalJobQueue` with `statePath` under the episode directory (`jobs-local.json`). Each `video_render` job is created with `resourceClass: 'gpu_heavy'`, an `idempotencyKey` of `{episodeId}:{preset}`, and `safeToRetry: true`. `beforeHeavy` is not set, so Ollama is not unloaded.
+`video_render` is absent from `docs/JOBS_API.md`. Their `INTEGRATION.md` §10 keeps it on `LocalJobQueue` until Studio adds the type. `StudioJobQueueAdapter.supportedTypes` is `design3d`, `blender_template`, `opencode_task`, `render_segment`. A failed `render_segment` is no host: `StudioHost3D` returns null, and this launch uses `StubHost3D` (`host3d-stub`).
+
+The VM render uses `LocalJobQueue` with `statePath` under the episode directory (`jobs-local.json`). Each `video_render` job matches the §10 proposal: `resourceClass: 'gpu_heavy'`, `requiresNode: 'mac-mini'`, `idempotencyKey` `{episodeId}:{preset}`, `safeToRetry: true`, timeout 1800, one attempt. Their orchestrator spec omits `requiresNode`. This launch does not set `beforeHeavy`, so it does not unload Ollama. Their `bin/orchestrate.js` does.
+
+## Remaining differences
+
+- RSS `editorialStatus: 'confirmed-publishers'` is this launch's two-publisher label. Their `verifyStory` classifies that cluster as `unconfirmed`.
+- Their engine copies story-level `editorialStatus` from `manualFlags` or from the item that also has `primarySourceUrl`. An item-level `dropped-unconfirmed` without a primary URL stays on the item. `flag()` with `editorialStatus: 'dropped-unconfirmed'` does force `corroboration` to `unconfirmed` and owner review. The corrected rows set both `primarySourceUrl` and `confirmed-primary`, which their engine stores.
+- The corrected bulletin is held in Approval Center. A lone official `confirmed-primary` item inside `NewsEngine` would be `primary_only` and, when it is not breaking or controversial, `auto_approved`.
+- The edition still uses the CC BY 4.0 RAF Typhoon photograph. OGL v3 would be eligible. The Commons “RAF Typhoon inflight” file is OGL 2 and stays out.
+- The Abuja still is CC BY-SA 4.0. The edition is not published.
+- `am_michael` stays `candidate`. The Pate pronunciation in the lexicon is an unverified editorial hint. Alberta has no winner; official results are 29 October 2026.
+- The corrected render calls `NewsVideoFactory` directly. It does not use orchestrator `trimScript` (34 words), `panelFallback`, or `fallbackQueue`. The RSS path still fails closed when a story has no licensed still.
+- Stage C routes on `feat/v1.2.0` tip `42d3fd5` are unused. The adapter maps `rejected` to `cancelled`.
+- Their `INTEGRATION.md` §9 still describes the pre-alignment launch. That file is theirs at `228c2ea` and is unchanged on this branch.
 
 ## Approval and publishing
 

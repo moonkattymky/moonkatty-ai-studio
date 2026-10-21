@@ -17,7 +17,7 @@ function quantities(text) {
 }
 /**
  * Analyse a cluster of items. src lookup provides { owner, primary, kind } per sourceId.
- * Returns { status: confirmed|unconfirmed|disputed, independentOrigins, origins, primarySource, syndicated, contradictions, dateIssues, reasons }
+ * Returns { status: confirmed|primary_only|unconfirmed|disputed, independentOrigins, origins, primarySource, syndicated, contradictions, dateIssues, reasons }
  */
 function verifyStory(items, { sources = {}, now = new Date(), maxAgeHours = 48, maxSpreadHours = 72, simThreshold = 0.8, minIndependent = 2, primaryDomains = [] } = {}) {
   const origins = []; // groups of items considered one origin
@@ -33,7 +33,7 @@ function verifyStory(items, { sources = {}, now = new Date(), maxAgeHours = 48, 
     o.items.push(it.sourceId); o.texts.push(tokens(it.summary || it.title)); originOf.set(it, key);
     if (wire && !syndicated.some(x => x.sourceId === it.sourceId)) syndicated.push({ sourceId: it.sourceId, wire });
   }
-  const isPrimary = it => { const s = sources[it.sourceId] || {}; if (s.primary || it.kind === 'official' || s.kind === 'official') return true;
+  const isPrimary = it => { const s = sources[it.sourceId] || {}; if (s.primary || it.kind === 'official' || s.kind === 'official' || it.primarySourceUrl || it.editorialStatus === 'confirmed-primary') return true;
     try { const h = new URL(it.link).host.replace(/^www\./, ''); return primaryDomains.some(d => h === d || h.endsWith('.' + d)); } catch { return false; } };
   const primary = items.filter(isPrimary).map(i => i.sourceId);
   // dates
@@ -57,9 +57,11 @@ function verifyStory(items, { sources = {}, now = new Date(), maxAgeHours = 48, 
   let status;
   if (contradictions.length) { status = 'disputed'; reasons.push('contradiction'); }
   else if (dateIssues.some(d => d.issue === 'future_date' || d.issue === 'unparseable_date')) { status = 'unconfirmed'; reasons.push('date_invalid'); }
-  else if (primary.length) { status = 'confirmed'; reasons.push('primary_source'); }
-  else if (independentOrigins >= minIndependent) { status = 'confirmed'; reasons.push('independent_origins'); }
-  else { status = 'unconfirmed'; reasons.push(items.length > 1 ? 'same_origin_only' : 'single_source'); }
+  // Editorial rule (Studio 4 owner follow-up): CONFIRMED = primary source (official/originating outlet) + independent corroboration.
+  // Primary alone -> primary_only (owner review unless low-risk official self-announcement, see engine). Media without primary -> unconfirmed.
+  else if (primary.length && independentOrigins >= minIndependent) { status = 'confirmed'; reasons.push('primary_source', 'independent_corroboration'); }
+  else if (primary.length) { status = 'primary_only'; reasons.push('primary_source', 'no_independent_corroboration'); }
+  else { status = 'unconfirmed'; reasons.push(independentOrigins >= minIndependent ? 'no_primary_source' : items.length > 1 ? 'same_origin_only' : 'single_source'); }
   if (status === 'confirmed' && dateIssues.some(d => d.issue === 'stale')) reasons.push('stale_warning');
   return { status, independentOrigins, origins: origins.map(o => ({ key: o.key, sources: o.items })), primarySource: primary, syndicated, contradictions, dateIssues, reasons };
 }

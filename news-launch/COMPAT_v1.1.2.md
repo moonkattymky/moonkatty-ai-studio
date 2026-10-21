@@ -15,6 +15,8 @@ Checked 20 October 2026 against the git history. This branch was not booted on t
 | `origin/feat/macos-app` | not the 1.1.2 tag | 1.1.1 at the time it was inspected |
 | `origin/feat/v1.2.0` | `42d3fd5` (contains `00b63fc` and the tag) | jobs contract used here is `00b63fc`, not the Stage C appendix |
 
+`media-automation/` and `docs/media-automation/` on this branch match `feat/media-automation` at `228c2ea44e677e3067e8c0389c824c27549b38e3`. There is no local patch on that tree. The Mac preview steps below are unchanged: this checkout's `server.js` against a database copy, Approval Center `pending`, Publisher `dry_run`, episode badge `pending_approval`.
+
 `v1.1.2-mac-preview` is the commit to treat as the installed preview. Its `package.json` description is "control panel (web + macOS desktop)" and `main` is `desktop/main.js`. It contains `desktop/` and `lib/opencode-auth.js`.
 
 `git merge-base --is-ancestor 3f9bd90 origin/feat/opencode-auth` and the same check against `origin/feat/v1.2.0` both succeed. The tag is contained in both. `origin/feat/opencode-auth` is the tag itself. `origin/feat/v1.2.0` continues past it: `00b63fc` is the v1.2.0 jobs/Blender contract (`docs/JOBS_API.md`), and the tip `42d3fd5` adds a v1.2.1 Stage C appendix (projects3d references, review, rerender, and job status `rejected`). This launch does not call those Stage C routes and does not write `server/jobs`.

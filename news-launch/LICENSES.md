@@ -14,7 +14,7 @@ The edition is `news-launch/artifacts/corrected-episode/`. It was rendered by `N
 
 On-screen credit tags and `image-licenses.json` use the attribution line their library built. The Abuja still is share-alike. This edition is not published. A later publish has to keep that CC BY-SA obligation, which their license policy already allows.
 
-OGL 2 was rejected by `classify()` (the in-flight RAF Typhoon file on Commons). It is not in the video. A photo titled as Alberta separatists was skipped so the frame would not imply a result. Elections Alberta has not called a winner.
+`classify()` accepts UK OGL v3 (`OGL-UK-3.0`, attribution required). The in-flight RAF Typhoon file on Commons is OGL 2, so it stays rejected and is not in the video. The frame that is encoded is the CC BY 4.0 photograph above. A photo titled as Alberta separatists was skipped so the frame would not imply a result. Elections Alberta has not called a winner.
 
 ## Graphics drawn by the factory
 
@@ -42,7 +42,7 @@ No music bed. `music` is null.
 | GOV.UK photo of the Ministry of Defence building | Rights not cleared. |
 | Elections Alberta page images | Rights not cleared. |
 | Guardian and BBC stills | Rights not cleared. |
-| Commons file “RAF Typhoon inflight” | `classify()` rejected OGL 2. |
+| Commons file “RAF Typhoon inflight” | `classify()` rejected OGL 2. OGL v3 would pass. |
 | Commons technical drawing of a Maitama plot | Matched the place name and was not a photograph of the city. Not selected. |
 
 ## Subtitles

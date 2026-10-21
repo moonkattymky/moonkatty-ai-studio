@@ -1,8 +1,8 @@
 {
   "items": {
-    "approval-corrmvhboczt": {
+    "approval-corrmvhcmy2u": {
       "kind": "video",
-      "id": "approval-corrmvhboczt",
+      "id": "approval-corrmvhcmy2u",
       "title": "MOONKATTY NEWS",
       "headline": "MOONKATTY NEWS",
       "text": "This is MOONKATTY NEWS. On October nineteenth, Elections Alberta held a referendum. Question ten: remain in Canada, or start the legal process for a separation vote. Official results are due October twenty-ninth. No winner is called. Nigeria's health ministry confirmed one Ebola case in the FCT on October twentieth. A woman from Uganda is in isolation. Officials list forty-four close contacts. Minister Muhammad Ali Pate issued the statement. Britain's Defence Ministry says Typhoon jets will defend Saudi cities and will not conduct offensive strikes against the Houthis. Wes Streeting approved that on October twentieth. Sources are official statements. This edition awaits approval and is not published.",
@@ -33,7 +33,7 @@
           "license": "CC0-1.0",
           "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
           "pageUrl": "https://commons.wikimedia.org/wiki/File:Alberta_Legislature_Building,_June_7,_2024.jpg",
-          "attribution": "Image: D. Benjamin Miller / Own work — CC0-1.0 — “Alberta Legislature Building, June 7, 2024.jpg”"
+          "attribution": "Image: D. Benjamin Miller / Own work \u2014 CC0-1.0 \u2014 \u201cAlberta Legislature Building, June 7, 2024.jpg\u201d"
         },
         {
           "title": "Chika Skyline.jpg",
@@ -41,7 +41,7 @@
           "license": "CC-BY-SA-4.0",
           "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
           "pageUrl": "https://commons.wikimedia.org/wiki/File:Chika_Skyline.jpg",
-          "attribution": "Image: Umasoyee / Own work — CC-BY-SA-4.0 — “Chika Skyline.jpg”"
+          "attribution": "Image: Umasoyee / Own work \u2014 CC-BY-SA-4.0 \u2014 \u201cChika Skyline.jpg\u201d"
         },
         {
           "title": "Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg",
@@ -49,22 +49,22 @@
           "license": "CC-BY-4.0",
           "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
           "pageUrl": "https://commons.wikimedia.org/wiki/File:Royal_Air_Force_Eurofighter_Typhoon_FGR.4_ZK344_Royal_International_Air_Tattoo_2025_01.jpg",
-          "attribution": "Image: Julian Herzog ( Website ) / Own work — CC-BY-4.0 — “Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg”"
+          "attribution": "Image: Julian Herzog ( Website ) / Own work \u2014 CC-BY-4.0 \u2014 \u201cRoyal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg\u201d"
         }
       ],
       "publish": {
         "status": "awaiting_approval"
       },
       "status": "pending",
-      "createdAt": "2026-10-20T23:41:48.877Z",
+      "createdAt": "2026-10-21T00:08:14.138Z",
       "history": [
         {
-          "at": "2026-10-20T23:41:48.877Z",
+          "at": "2026-10-21T00:08:14.138Z",
           "by": "news-launch",
           "action": "submitted"
         }
       ],
-      "updatedAt": "2026-10-20T23:41:48.877Z"
+      "updatedAt": "2026-10-21T00:08:14.138Z"
     }
   }
 }

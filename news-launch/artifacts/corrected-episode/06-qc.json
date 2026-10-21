@@ -15,7 +15,7 @@
     "subtitleFile": "/workspace/news-launch/artifacts/corrected-episode/horizontal.srt",
     "subtitleCues": 11,
     "failures": [],
-    "checkedAt": "2026-10-20T23:39:29.499Z",
+    "checkedAt": "2026-10-21T00:05:53.440Z",
     "targetLufs": -16
   },
   {
@@ -34,7 +34,7 @@
     "subtitleFile": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
     "subtitleCues": 14,
     "failures": [],
-    "checkedAt": "2026-10-20T23:41:48.858Z",
+    "checkedAt": "2026-10-21T00:08:14.107Z",
     "targetLufs": -16
   }
 ]

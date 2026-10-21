@@ -2,7 +2,7 @@
 
 Checked on 2026-10-20 against this branch, `feat/news-launch-integration`, based on `main` at `e87bd32f904faf676e8316fbf38ef8805727c7fc`. Other branches were fetched and read. None of them were merged or committed to.
 
-`feat/v1.2.0` is not on `origin` (`git fetch` and `git ls-remote` style branch list). `feat/quality-automation` and a Blender automation branch are not on `origin` either. This launch does not create or write `server/jobs*` or `server/blender*`.
+`origin/feat/v1.2.0` is `42d3fd5` (jobs contract `00b63fc`, Stage C appendix after it). This launch does not merge that branch and does not create or write `server/jobs*` or `server/blender*`.
 
 ## Owner claims
 
@@ -12,10 +12,10 @@ Checked on 2026-10-20 against this branch, `feat/news-launch-integration`, based
 | Ollama `qwen3:8b` | `server.js` `llmPlan` calls `127.0.0.1:11434` `/api/chat` and defaults the model to `qwen3:8b`. The VM has no Ollama daemon. The episode script is the extractive adapter. |
 | Secured OpenCode | Present on `origin/feat/opencode-auth` (`3f9bd90`). Not imported and not executed. |
 | Blender | No Blender branch and no `server/blender` tree. `StubCharacter3D` returns null. `QueuedHost3D` only enqueues `render_segment` on an injected client. |
-| News Intelligence Engine on `feat/media-automation` | Imported from `4537b7a` (files only, not a merge). That engine's own tests pass. Its corroboration is not the launch fact-check: one official source counts as confirmed there, and two copies of a wire can count. |
-| NewsVideoFactory | Re-imported from `882cd39`. Both aspect ratios, `music: null`, `host3d-stub`, loudness preset default −16 LUFS, QC from `qaVideo`. |
+| News Intelligence Engine on `feat/media-automation` | Re-imported at `228c2ea` with no local patches. `confirmed` requires a primary source plus independent corroboration. `primary_only` auto-clears only for an official, non-breaking, non-controversial item. `dropped-unconfirmed` forces `unconfirmed`. |
+| NewsVideoFactory | Same `228c2ea` tree. Both aspect ratios, `music: null`, `host3d-stub`, preset `targetLufs` default −16, QC from `qaVideo`. |
 | Approval Center and Publisher | Their Approval Center (`pending`) and Publisher dry-run. No `social.adapt` row and no `imageRights: 'generated'`. The studio episode badge stays `pending_approval`. |
-| Newer media-automation (stages 2–8, job port) | `origin/feat/media-automation` moved to `66d4b20` after the import. That commit was not merged. Only `jobs/port.js`, `jobs/studio-adapter.js`, and `host3d/index.js` were copied. `jobs/local.js` was left there so this branch cannot point a file queue at `server/jobs`. |
+| `video_render` | Not in `JOBS_API`. Rendered on their `LocalJobQueue` (proposal in `docs/media-automation/INTEGRATION.md` §10). `render_segment` failure means no host. |
 
 ## Proven by tests run here
 
@@ -41,7 +41,7 @@ Checked on 2026-10-20 against this branch, `feat/news-launch-integration`, based
 | `TEMPORARY_ADAPTER:studio-job-queue-not-connected` | `StudioJobQueueAdapter` has no client. Recorded in `artifacts/test-episode/studio-boundary.json`. |
 | `StubHost3D` / `host3d-stub` | Episode host. No substitute character is drawn. |
 | `QueuedHost3D` | Interface only, until a client and an owner-approved model exist. |
-| News Engine "confirmed" | Weaker than this launch. Official-only NASA items stay rejected here. |
+| News Engine `confirmed` | Their rule is primary source plus a second origin. This launch's RSS label `confirmed-publishers` is two publishers and is their `unconfirmed`. Official-only NASA items stay rejected on the RSS path. |
 | OpenCode, Blender, `feat/v1.2.0` | Not present on this branch and not executed. |
 | Social autopublish | Left at the seeded default off. Queue `scheduledAt` is null, so `meta.js` `tick` cannot send these items. |
 | Phobos / MMX | Guardian and CBS both reported the launch. Title Jaccard was 0.33, under the 0.42 bar. That bar also keeps apart "Lula and Bolsonaro tied" and "Meta treats both equally" (Jaccard 0.31). The pair was not scripted. |

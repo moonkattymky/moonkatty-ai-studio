@@ -1,6 +1,6 @@
 [
   {
-    "id": "0912a6aa-d5a4-484e-bff8-2b93aba85357",
+    "id": "b9ce3336-2df7-40f9-9625-0be1a9a1ea37",
     "preset": "youtube",
     "status": "succeeded",
     "scriptTitle": "MOONKATTY NEWS",
@@ -11,11 +11,12 @@
     "video": "/workspace/news-launch/artifacts/corrected-episode/horizontal.mp4",
     "subtitles": "/workspace/news-launch/artifacts/corrected-episode/horizontal.srt",
     "resourceClass": "gpu_heavy",
-    "idempotencyKey": "corrmvhboczt:youtube",
+    "requiresNode": "mac-mini",
+    "idempotencyKey": "corrmvhcmy2u:youtube",
     "safeToRetry": true
   },
   {
-    "id": "a0ba10d8-9498-47e4-ab08-633822d7761a",
+    "id": "968ceedd-6d2e-440e-aa06-1f7222916cb2",
     "preset": "shorts",
     "status": "succeeded",
     "scriptTitle": "MOONKATTY NEWS",
@@ -26,7 +27,8 @@
     "video": "/workspace/news-launch/artifacts/corrected-episode/vertical.mp4",
     "subtitles": "/workspace/news-launch/artifacts/corrected-episode/vertical.srt",
     "resourceClass": "gpu_heavy",
-    "idempotencyKey": "corrmvhboczt:shorts",
+    "requiresNode": "mac-mini",
+    "idempotencyKey": "corrmvhcmy2u:shorts",
     "safeToRetry": true
   }
 ]

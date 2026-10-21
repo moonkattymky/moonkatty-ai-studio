@@ -49,7 +49,7 @@ test('pipeline renders both frames from corroborated stories and holds approval'
   assert.equal(manifest.hostUsed, false);
   assert.equal(manifest.character3d, 'host3d-stub');
   assert.equal(manifest.targetLufs, -16);
-  assert.ok(manifest.jobs.every(j => j.resourceClass === 'gpu_heavy' && j.safeToRetry === true && j.idempotencyKey));
+  assert.ok(manifest.jobs.every(j => j.resourceClass === 'gpu_heavy' && j.requiresNode === 'mac-mini' && j.safeToRetry === true && j.idempotencyKey));
   assert.equal(manifest.imageLicenses.images[0].license, 'test-fixture');
   assert.ok(manifest.sources.every(s => s.editorialStatus === 'confirmed-publishers' && s.primarySourceUrl === null));
   assert.equal(manifest.selected.length, 3);

@@ -3,11 +3,15 @@ const fs = require('fs'); const path = require('path'); const crypto = require('
 const { JsonStore } = require('../store'); const { run } = require('../video/exec');
 const { licenseUrl, attributionLine } = require('./licenses'); const { UA } = require('./providers');
 
-const GENERIC = new Set(['nasa', 'esa', 'image', 'photo', 'file', 'new', 'first', 'mission', 'space', 'news', 'live', 'during', 'from', 'with', 'jpg', 'png']);
+const BROAD = new Set(['mars', 'moon', 'earth', 'sun', 'jupiter', 'saturn', 'venus', 'mercury', 'crater', 'express', 'station', 'solar', 'orbiter', 'rover', 'telescope', 'international', 'space', 'artemis', 'texas', 'america']);
+const GENERIC = new Set(['nasa', 'esa', 'image', 'photo', 'file', 'new', 'first', 'mission', 'space', 'news', 'live', 'during', 'from', 'with', 'jpg', 'png', 'three', 'words', 'time', 'celebrating', 'improves', 'analysis', 'photos', 'conduct', 'flights', 'welcomes', 'newest', 'progress', 'advances', 'over', 'around', 'video', 'captures', 'mesmerizing']);
 /** Candidate must share at least one significant query term with its title/description/keywords. */
 function relevant(q, c) {
   const terms = String(q).toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3 && !GENERIC.has(w)); if (!terms.length) return true;
-  const hay = ` ${c.title} ${c.description || ''} ${(c.keywords || []).join(' ')} `.toLowerCase(); const hits = terms.filter(t => new RegExp('[^a-z0-9]' + t + '[^a-z0-9]').test(hay)).length; return hits >= Math.min(2, terms.length);
+  const hay = ` ${c.title} ${c.description || ''} ${(c.keywords || []).join(' ')} `.toLowerCase(); const hit = t => new RegExp('[^a-z0-9]' + t + '[^a-z0-9]').test(hay); const hits = terms.filter(hit).length;
+  // proper nouns (capitalized in the query, e.g. BepiColombo, Schiaparelli) are distinctive: at least one must match when present
+  const proper = String(q).split(/[^A-Za-z0-9-]+/).filter(w => /^[A-Z]/.test(w) && w.length > 3 && !GENERIC.has(w.toLowerCase())).map(w => w.toLowerCase());
+  const distinct = proper.filter(w => !BROAD.has(w)); if (distinct.length ? !distinct.some(hit) : proper.length && !proper.some(hit)) return false; return hits >= Math.min(2, terms.length);
 }
 /** Layout for a still at a target frame: never upscales content. */
 function layoutFor(asset, W, H, { kbZoom = 1.12 } = {}) {
@@ -38,7 +42,8 @@ class MediaLibrary {
   async _probe(file) { const { stdout } = await this.runFn('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file]); const [w, h] = stdout.trim().split(',').map(Number); return { width: w, height: h }; }
   /** Find up to `count` licensed images for a news item. queries: [{ provider, q }] tried in order. */
   async findForNews(newsId, queries, { count = 2 } = {}) {
-    const have = this.assets({ newsId }); if (have.length >= count) return have.slice(0, count);
+    // cached assets must still pass the CURRENT relevance rules (rules get stricter over time)
+    const have = this.assets({ newsId }).filter(a => a.provider === 'moonkatty-generated' ? false : queries.some(({ q }) => relevant(q, a))); if (have.length >= count) return have.slice(0, count);
     const got = [...have];
     for (const { provider, q } of queries) {
       const p = this.providers[provider]; if (!p) continue;
@@ -66,6 +71,9 @@ class MediaLibrary {
     return got;
   }
   /** Rights file for an episode. */
+  /** Register an own generated graphic (branded infographic panel) used when no relevant licensed asset exists. */
+  addGenerated(a) { const asset = { provider: 'moonkatty-generated', kind: 'image', license: 'Own-work', licenseUrl: null, attributionRequired: false, author: 'MOONKATTY NEWS', attribution: 'Graphic: MOONKATTY NEWS (no stock image available)', fetchedAt: new Date().toISOString(), ...a };
+    this.store.update('assets', x => ({ ...x, [asset.id]: asset }), {}); return asset; }
   rightsReport(assetIds, extra = {}) {
     const all = this.store.get('assets', {}); const items = assetIds.map(id => all[id]).filter(Boolean);
     return { generatedAt: new Date().toISOString(), policy: 'Allowed: PD, CC0, NASA media (guidelines), CC BY, CC BY-SA (incl. ESA CC BY-SA 3.0 IGO). Rejected: NC, ND, unknown, logos/insignia.',

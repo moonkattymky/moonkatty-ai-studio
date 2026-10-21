@@ -1,6 +1,6 @@
 # Mac mini verification
 
-The corrected episode in `news-launch/artifacts/corrected-episode` was rendered on the Linux VM with Kokoro `am_michael` (provisional, not locked) and ffmpeg. Repeat the pipeline on the Mac mini against a database copy. Do not replace the installed AI STUDIO v1.1.2 build. Read `news-launch/COMPAT_v1.1.2.md` before the first run.
+The corrected episode in `news-launch/artifacts/corrected-episode` was rendered on the Linux VM with Kokoro `am_michael` (provisional, not locked) and `NewsVideoFactory` from `feat/media-automation` at `228c2ea` (no local patches on that tree). Repeat the pipeline on the Mac mini against a database copy. Do not replace the installed AI STUDIO v1.1.2 build. Read `news-launch/COMPAT_v1.1.2.md` before the first run.
 
 The earlier extractive episode in `news-launch/artifacts/test-episode` used Piper `en_US-ljspeech-high` and media headlines. That voice is female. The owner asked for an adult male American anchor. Do not treat LJ Speech as the locked voice. Its licence is fine. It does not fit the role. The fact-check of those three stories is `news-launch/artifacts/test-episode/FACTCHECK.md`.
 

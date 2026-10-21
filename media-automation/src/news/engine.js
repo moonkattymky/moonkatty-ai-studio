@@ -16,12 +16,12 @@ const id = s => crypto.createHash('sha1').update(s).digest('hex').slice(0, 12);
  */
 class NewsEngine {
   constructor({ statePath, sources = [], provider, translator = identityTranslator, fetchFn, retries = 2, backoffMs = 200,
-    similarity = 0.5, minSources = 2, verifyOptions = {}, outputLang = 'en', now = () => new Date().toISOString() } = {}) {
+    similarity = 0.5, minSources = 2, verifyOptions = {}, autoPrimaryOnly = true, outputLang = 'en', now = () => new Date().toISOString() } = {}) {
     if (!statePath) throw new Error('statePath required');
     this.store = new JsonStore(statePath);
     this.sources = new Map(); sources.forEach(s => this.addSource(s));
     this.provider = new FallbackProvider(provider || new LocalExtractiveProvider());
-    Object.assign(this, { verifyOptions, translator, fetchFn, retries, backoffMs, similarity, minSources, outputLang, now });
+    Object.assign(this, { autoPrimaryOnly, verifyOptions, translator, fetchFn, retries, backoffMs, similarity, minSources, outputLang, now });
   }
   addSource(s) { if (!s.id || (!s.url && !s.fetch)) throw new Error('source needs id and url|fetch'); this.sources.set(s.id, { kind: 'rss', trust: 0.5, ...s }); }
   removeSource(sid) { this.sources.delete(sid); }
@@ -65,7 +65,8 @@ class NewsEngine {
       const sim = jaccard(tk, new Set(s.tokens)); if (sim >= this.similarity && sim > best) { best = sim; target = s; }
     }
     const item = { sourceId: src.id, sourceName: src.name || src.id, kind: src.kind, title: it.title, link: it.link, summary: it.summary || '',
-      published: it.published || null, mediaUrl: it.mediaUrl || null, license: it.license || null, fetchedAt: this.now() };
+      published: it.published || null, mediaUrl: it.mediaUrl || null, license: it.license || null, fetchedAt: this.now(),
+      ...Object.fromEntries(['primarySourceUrl', 'primaryPublisher', 'primaryPublished', 'editorialStatus'].filter(k => it[k] != null).map(k => [k, it[k]])) };
     let result;
     if (target) { if (target.items.some(x => x.sourceId === src.id && x.title === it.title)) { result = 'dup'; } else { target.items.push(item); result = 'merged'; } }
     else { target = { id: id(key), createdAt: this.now(), tokens: [...tk], items: [item], manualFlags: {} }; stories[target.id] = target; result = 'new'; }
@@ -83,7 +84,12 @@ class NewsEngine {
     s.officialSource = s.items.some(i => i.kind === 'official');
     const srcMeta = Object.fromEntries([...this.sources.values()].map(x => [x.id, x]));
     s.verification = verifyStory(s.items, { sources: srcMeta, now: new Date(this.now()), minIndependent: this.minSources, ...this.verifyOptions });
-    s.corroboration = s.verification.status; // confirmed | unconfirmed | disputed
+    s.corroboration = s.verification.status; // confirmed | primary_only | unconfirmed | disputed
+    // Studio 4 proposed editorial fields (from items or manualFlags): primarySourceUrl, primaryPublisher, primaryPublished, editorialStatus
+    const pi = s.items.find(i => i.primarySourceUrl) || {}; const mf = s.manualFlags || {};
+    s.primarySourceUrl = mf.primarySourceUrl || pi.primarySourceUrl || null; s.primaryPublisher = mf.primaryPublisher || pi.primaryPublisher || null;
+    s.primaryPublished = mf.primaryPublished || pi.primaryPublished || null; s.editorialStatus = mf.editorialStatus || pi.editorialStatus || null;
+    if (s.editorialStatus === 'dropped-unconfirmed') s.corroboration = 'unconfirmed';
     s.category = s.manualFlags.category || categorize(text);
     s.breaking = !!(s.manualFlags.breaking ?? s.items.some(i => /^(breaking|just in)/i.test(i.title) || isBreaking(i.title)));
     s.controversial = !!(s.manualFlags.controversial ?? isControversial(text));
@@ -94,9 +100,10 @@ class NewsEngine {
     s.summary = await this.translator.translate(out.summary, 'auto', this.outputLang);
     s.lang = this.outputLang; s.summaryProvider = out.provider; s.summaryFallbackReason = out.fallbackReason || null;
     // Editorial review: never downgrade a human decision.
-    const needs = s.breaking || s.controversial || s.corroboration !== 'confirmed';
+    const lowRiskPrimary = s.corroboration === 'primary_only' && this.autoPrimaryOnly && s.officialSource && !s.breaking && !s.controversial;
+    const needs = s.breaking || s.controversial || s.editorialStatus === 'dropped-unconfirmed' || (s.corroboration !== 'confirmed' && !lowRiskPrimary);
     if (s.reviewStatus !== REVIEW.APPROVED && s.reviewStatus !== REVIEW.REJECTED) s.reviewStatus = needs ? REVIEW.PENDING : REVIEW.AUTO;
-    s.reviewReasons = [s.breaking && 'breaking', s.controversial && 'controversial', s.corroboration !== 'confirmed' && s.corroboration].filter(Boolean);
+    s.reviewReasons = [s.breaking && 'breaking', s.controversial && 'controversial', s.corroboration !== 'confirmed' && s.corroboration, s.editorialStatus === 'dropped-unconfirmed' && 'dropped-unconfirmed'].filter(Boolean);
     s.updatedAt = this.now();
   }
 

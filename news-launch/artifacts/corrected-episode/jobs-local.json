@@ -1,20 +1,20 @@
 {
   "jobs": {
-    "0912a6aa-d5a4-484e-bff8-2b93aba85357": {
-      "jobId": "0912a6aa-d5a4-484e-bff8-2b93aba85357",
+    "b9ce3336-2df7-40f9-9625-0be1a9a1ea37": {
+      "jobId": "b9ce3336-2df7-40f9-9625-0be1a9a1ea37",
       "type": "video_render",
       "agent": "news-launch",
       "input": {
-        "episodeId": "corrmvhboczt",
+        "episodeId": "corrmvhcmy2u",
         "preset": "youtube",
         "basename": "horizontal"
       },
       "timeoutSec": 1800,
       "maxAttempts": 1,
       "attempts": 1,
-      "idempotencyKey": "corrmvhboczt:youtube",
+      "idempotencyKey": "corrmvhcmy2u:youtube",
       "resourceClass": "gpu_heavy",
-      "requiresNode": null,
+      "requiresNode": "mac-mini",
       "safeToRetry": true,
       "status": "succeeded",
       "heavy": true,
@@ -101,9 +101,9 @@
           }
         ],
         "rights": [
-          "Image: D. Benjamin Miller / Own work — CC0-1.0 — “Alberta Legislature Building, June 7, 2024.jpg”",
-          "Image: Umasoyee / Own work — CC-BY-SA-4.0 — “Chika Skyline.jpg”",
-          "Image: Julian Herzog ( Website ) / Own work — CC-BY-4.0 — “Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg”",
+          "Image: D. Benjamin Miller / Own work \u2014 CC0-1.0 \u2014 \u201cAlberta Legislature Building, June 7, 2024.jpg\u201d",
+          "Image: Umasoyee / Own work \u2014 CC-BY-SA-4.0 \u2014 \u201cChika Skyline.jpg\u201d",
+          "Image: Julian Herzog ( Website ) / Own work \u2014 CC-BY-4.0 \u2014 \u201cRoyal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg\u201d",
           "Edition status: awaits approval and is not published."
         ],
         "music": null,
@@ -167,13 +167,13 @@
               "name": "av_sync_start",
               "ok": true,
               "actual": 0,
-              "expected": "|Δstart| <= 0.05s"
+              "expected": "|\u0394start| <= 0.05s"
             },
             {
               "name": "av_sync_duration",
               "ok": true,
               "actual": 0.004,
-              "expected": "|Δdur| <= 0.1s"
+              "expected": "|\u0394dur| <= 0.1s"
             },
             {
               "name": "no_black_frames",
@@ -205,46 +205,46 @@
             "fps": 30
           }
         },
-        "createdAt": "2026-10-20T23:39:29.499Z"
+        "createdAt": "2026-10-21T00:05:53.440Z"
       },
       "error": null,
-      "createdAt": "2026-10-20T23:36:39.884Z",
-      "updatedAt": "2026-10-20T23:39:29.507Z",
+      "createdAt": "2026-10-21T00:03:33.514Z",
+      "updatedAt": "2026-10-21T00:05:53.448Z",
       "events": [
         {
-          "at": "2026-10-20T23:36:39.884Z",
+          "at": "2026-10-21T00:03:33.514Z",
           "event": "created",
           "data": null
         },
         {
-          "at": "2026-10-20T23:36:39.885Z",
+          "at": "2026-10-21T00:03:33.516Z",
           "event": "started",
           "data": {
             "attempt": 1
           }
         },
         {
-          "at": "2026-10-20T23:39:29.507Z",
+          "at": "2026-10-21T00:05:53.448Z",
           "event": "succeeded",
           "data": null
         }
       ]
     },
-    "a0ba10d8-9498-47e4-ab08-633822d7761a": {
-      "jobId": "a0ba10d8-9498-47e4-ab08-633822d7761a",
+    "968ceedd-6d2e-440e-aa06-1f7222916cb2": {
+      "jobId": "968ceedd-6d2e-440e-aa06-1f7222916cb2",
       "type": "video_render",
       "agent": "news-launch",
       "input": {
-        "episodeId": "corrmvhboczt",
+        "episodeId": "corrmvhcmy2u",
         "preset": "shorts",
         "basename": "vertical"
       },
       "timeoutSec": 1800,
       "maxAttempts": 1,
       "attempts": 1,
-      "idempotencyKey": "corrmvhboczt:shorts",
+      "idempotencyKey": "corrmvhcmy2u:shorts",
       "resourceClass": "gpu_heavy",
-      "requiresNode": null,
+      "requiresNode": "mac-mini",
       "safeToRetry": true,
       "status": "succeeded",
       "heavy": true,
@@ -331,9 +331,9 @@
           }
         ],
         "rights": [
-          "Image: D. Benjamin Miller / Own work — CC0-1.0 — “Alberta Legislature Building, June 7, 2024.jpg”",
-          "Image: Umasoyee / Own work — CC-BY-SA-4.0 — “Chika Skyline.jpg”",
-          "Image: Julian Herzog ( Website ) / Own work — CC-BY-4.0 — “Royal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg”",
+          "Image: D. Benjamin Miller / Own work \u2014 CC0-1.0 \u2014 \u201cAlberta Legislature Building, June 7, 2024.jpg\u201d",
+          "Image: Umasoyee / Own work \u2014 CC-BY-SA-4.0 \u2014 \u201cChika Skyline.jpg\u201d",
+          "Image: Julian Herzog ( Website ) / Own work \u2014 CC-BY-4.0 \u2014 \u201cRoyal Air Force Eurofighter Typhoon FGR.4 ZK344 Royal International Air Tattoo 2025 01.jpg\u201d",
           "Edition status: awaits approval and is not published."
         ],
         "music": null,
@@ -397,13 +397,13 @@
               "name": "av_sync_start",
               "ok": true,
               "actual": 0,
-              "expected": "|Δstart| <= 0.05s"
+              "expected": "|\u0394start| <= 0.05s"
             },
             {
               "name": "av_sync_duration",
               "ok": true,
               "actual": 0.004,
-              "expected": "|Δdur| <= 0.1s"
+              "expected": "|\u0394dur| <= 0.1s"
             },
             {
               "name": "no_black_frames",
@@ -435,26 +435,26 @@
             "fps": 30
           }
         },
-        "createdAt": "2026-10-20T23:41:48.858Z"
+        "createdAt": "2026-10-21T00:08:14.107Z"
       },
       "error": null,
-      "createdAt": "2026-10-20T23:39:29.509Z",
-      "updatedAt": "2026-10-20T23:41:48.868Z",
+      "createdAt": "2026-10-21T00:05:53.454Z",
+      "updatedAt": "2026-10-21T00:08:14.132Z",
       "events": [
         {
-          "at": "2026-10-20T23:39:29.509Z",
+          "at": "2026-10-21T00:05:53.454Z",
           "event": "created",
           "data": null
         },
         {
-          "at": "2026-10-20T23:39:29.511Z",
+          "at": "2026-10-21T00:05:53.456Z",
           "event": "started",
           "data": {
             "attempt": 1
           }
         },
         {
-          "at": "2026-10-20T23:41:48.868Z",
+          "at": "2026-10-21T00:08:14.132Z",
           "event": "succeeded",
           "data": null
         }

@@ -21,6 +21,8 @@ function mediaQueries(story) {
   const q1 = words.slice(-3).join(' '); const q2 = words.slice(0, 3).join(' ');
   const space = ['space', 'science'].includes(story.category) || /nasa|esa|mars|moon|orbit|rocket|telescope|asteroid|planet|jupiter|spacecraft|webb|hubble|comet|galaxy|solar/i.test(story.headline);
   const prov = space ? ['nasa', 'commons'] : ['commons', 'nasa'];
-  return [...new Set([q1, q2].filter(Boolean))].flatMap(q => prov.map(provider => ({ provider, q })));
+  const hasProper = q => /(^|\s)[A-Z][A-Za-z0-9-]{3,}/.test(q); let qs = [...new Set([q1, q2].filter(Boolean))];
+  if (qs.some(hasProper)) qs = qs.filter(hasProper); // never search with only generic words (avoids e.g. a car photo for a Mars cloud story)
+  return qs.flatMap(q => prov.map(provider => ({ provider, q })));
 }
 module.exports = { pickFact, mediaQueries };

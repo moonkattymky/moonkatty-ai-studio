@@ -245,7 +245,7 @@ async function main() {
     publish: false,
     factory: 'NewsVideoFactory',
     targetLufs: -16,
-    mediaAutomation: '882cd398d191eea9dbaeef046562282ccd9a9d8c',
+    mediaAutomation: '228c2ea44e677e3067e8c0389c824c27549b38e3',
     provisionalVoice: { voice: master.cfg.voice, status: master.cfg.status, locked: false, rate: master.cfg.rate },
     publisher: held.posts.map(p => ({ id: p.id, accountId: p.accountId, status: p.status })),
     approval: { id: approval.id, status: approval.status, publish: false },
