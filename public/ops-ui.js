@@ -59,6 +59,8 @@
         n.info ? `${esc(i.os)} · ${esc(i.arch)} · CPU ${esc(i.cpus)} · RAM своб. ${gb(i.memAvailable)} из ${gb(i.memTotal)} · агент ${esc(i.agentVersion || '?')}` : '<span class="mut">нет данных об устройстве</span>',
         `задач ${n.running} · ошибок ${n.errors}${n.deviceKeyShort ? ' · ключ ' + esc(n.deviceKeyShort) : n.legacy ? ' · прямой токен 0.2.0' : ''}${n.rotatePending ? ' · ждёт ротации' : ''}`]); });
     return `<div class="grid g3" id="machines">${mini}${cards.join('')}</div><div class="card" style="margin-top:16px"><h3>Подключение и управление</h3>${nodesSection(ND, C.enroll, C.audit)}</div>`; };
+  VIEWS.computers.with = data => { const o = C, e = CERR; C = data; CERR = null; try { return VIEWS.computers(); } finally { C = o; CERR = e; } }; // pure render for tests
+  window.addEventListener('hashchange', () => { if (location.hash.split('?')[0] === '#computers') loadC(); });
   BIND.computers = v => { if (!C && !CERR) loadC(); const act = async fn => { try { await fn(); } catch (e) { alert(e.message); } loadC(); }; bindNodes(v, act, () => C && C.enroll); };
   VIEWS.ops = () => {
     if (ERR) return `<div class="card"><b>Операции недоступны:</b> ${esc(ERR)}</div>`;

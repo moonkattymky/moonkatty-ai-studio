@@ -185,3 +185,21 @@ test('confirmation screens: node shows device-key fingerprint equal to panel; pa
   const viaStdin = spawnSync(process.execPath, [agent, '--enroll', '--url', 'http://127.0.0.1:9'], { input: '23456-789GH-JKMNP\n', encoding: 'utf8', timeout: 10000, env: { ...process.env, HOME: tmp() } });
   assert.equal(viaStdin.status, 2); assert.match(viaStdin.stderr, /только https/); assert.ok(!(viaStdin.stdout + viaStdin.stderr).includes('JKMNP'));
 });
+test('confirmation peer: via tailscale serve (XFF + mocked whois) shows device name/100.x; direct tailnet peer; unknown → «адрес Tailscale не определён» + ack required; never 127.0.0.1', async () => {
+  const whois = async ip => ({ '100.101.1.1': { id: 'nIMAC', name: 'imac-igor', login: 'igor@x' }, '100.101.1.7': { id: 'nMB', name: 'macbook-igor', login: 'igor@x' } }[ip] || null);
+  const dir = tmp(); const m = N.createNodeManager({ dir, now: () => Date.now(), whois }); const tlsc = N.ensureCert(dir); const srv = await N.listen(m, { host: '127.0.0.1', port: 0, tls: tlsc }); const port = srv.address().port;
+  const post = (body, headers = {}) => new Promise((ok, no) => { const r = require('https').request({ method: 'POST', host: '127.0.0.1', port, path: '/api/nodes/enroll', ca: tlsc.cert, checkServerIdentity: () => undefined, headers: { 'content-type': 'application/json', ...headers } }, x => { let b = ''; x.on('data', d => b += d); x.on('end', () => ok({ s: x.statusCode, b: JSON.parse(b) })); }); r.on('error', no); r.end(JSON.stringify(body)); });
+  try { const d = devKeys(); clock = Date.now();
+    const r1 = m.enrollment.create({ role: 'news' }); assert.equal((await post(enBody(r1.code, d), { 'x-forwarded-for': '100.101.1.1' })).s, 200);
+    let q = m.enrollment.list().find(x => x.requestId === r1.requestId).device; assert.equal(q.peerVerified, true); assert.deepEqual([q.peerInfo.name, q.peerInfo.ip, q.peerInfo.via], ['imac-igor', '100.101.1.1', 'tailscale serve']); assert.ok(!/127\.0\.0\.1/.test(q.peer));
+    m.enrollment.confirm(r1.requestId); // verified peer → no extra ack needed
+    const d2 = devKeys(); const r2 = m.enrollment.create({ role: 'monitor' }); assert.equal((await post(enBody(r2.code, d2))).s, 200); // loopback without identity
+    q = m.enrollment.list().find(x => x.requestId === r2.requestId).device; assert.equal(q.peerVerified, false); assert.match(q.peer, /адрес Tailscale не определён/); assert.ok(!/127\.0\.0\.1/.test(q.peer)); assert.equal(q.peerInfo.ip, null);
+    assert.throws(() => m.enrollment.confirm(r2.requestId), e => e.code === 'E_PEER_UNVERIFIED'); m.enrollment.confirm(r2.requestId, ACK); assert.ok(m.audit().some(a => a.type === 'peer_unverified_acknowledged'));
+    // whois unavailable for a tailnet address → still not verified, address shown with explicit note
+    const p3 = await m.peerOf({ socket: { remoteAddress: '127.0.0.1' }, headers: { 'x-forwarded-for': '100.99.0.5' } }); assert.equal(p3.verified, false); assert.match(p3.label, /100\.99\.0\.5 \(устройство Tailscale не определено/);
+    // direct tailnet peer (listener bound on 100.x): socket address is the peer
+    const p4 = await m.peerOf({ socket: { remoteAddress: '::ffff:100.101.1.7' }, headers: {} }); assert.deepEqual([p4.verified, p4.name, p4.ip, p4.via], [true, 'macbook-igor', '100.101.1.7', 'direct']);
+    const p5 = await m.peerOf({ socket: { remoteAddress: '127.0.0.1' }, headers: { 'tailscale-user-login': 'igor@x' } }); assert.equal(p5.verified, false); assert.match(p5.label, /адрес Tailscale не определён · пользователь igor@x/);
+  } finally { await new Promise(r => srv.close(r)); }
+});
