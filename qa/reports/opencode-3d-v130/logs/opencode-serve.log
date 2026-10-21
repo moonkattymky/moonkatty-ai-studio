@@ -1,0 +1,35 @@
+
+> moonkatty-ai-studio@1.3.0-test test:opencode-serve
+> node scripts/opencode-serve-test.mjs
+
+PASS serve-test.sh: service, account and port 4097 match studio-config TEST
+PASS serve-test.sh refuses anything that mentions the production port
+PASS serve.sh: test flavor delegates, production path refuses port 4097 and still requires a password
+PASS serve-test.sh exits without starting when the caller asks for port 4096 — Отказ: порт рабочего OpenCode этот скрипт не использует.
+
+PASS serve.sh (production flavor) refuses port 4097 — Порт 4097 — тестовый. Для него: MK_FLAVOR=test opencode/serve.sh
+
+PASS serve-test.sh does not start without a Keychain password — Пароль OpenCode не найден в Keychain.
+Служба (service): MOONKATTY AI STUDIO.test
+Учётная запись (account): opencode-server-password
+Название (label): MOONKATTY AI STUDIO.test — OpenCode
+Сохраните пароль в тестовой студии: Настройки → OpenCode server. Без пароля сервер не запускается.
+
+PASS launcher refuses to start without a password (409) and does not spawn — Пароль OpenCode не найден в Keychain (service «MOONKATTY AI STUDIO.test», account «opencode-server-password»). Сохраните его в Настройках. Без пароля сервер не запускается.
+PASS launcher refuses the production OpenCode URL and does not spawn — Отказ: этот порт принадлежит рабочему OpenCode. Тестовая сборка его не запускает и не проверяет.
+PASS launcher spawns opencode serve on 127.0.0.1:4097 with the password only in the environment — {"started":true,"argv":["serve","--hostname","127.0.0.1","--port","4097"],"pwSet":true,"leaked":false}
+PASS HTTP without Basic credentials is rejected with 401 — 401
+PASS OpenCode-shaped server: 401 without a password, healthy with Basic opencode:password
+PASS test build reports the same Keychain service and account it writes — {"available":true,"store":"macOS Keychain","service":"MOONKATTY AI STUDIO.test","account":"opencode-server-password","label":"MOONKATTY AI STUDIO.test — OpenCode"}
+PASS POST /api/opencode/serve without a saved password is 409 — Пароль OpenCode не найден в Keychain (service «MOONKATTY AI STUDIO.test», account «opencode-server-password»). Сохраните его в Настройках. Без пароля сервер не запускается.
+PASS test app refuses to launch OpenCode on the production URL — Отказ: этот порт принадлежит рабочему OpenCode. Тестовая сборка его не запускает и не проверяет.
+PASS test app starts OpenCode on 4097 and does not log the password — {"argv":["serve","--hostname","127.0.0.1","--port","4097"],"pwSet":true,"leaked":false,"user":"opencode"}
+PASS password item key is service|account of the TEST build
+PASS OpenCode down → fallback writes valid scene_params.json, .blend and PNG —  waiting_approval
+PASS HTTP 401 stays blocked and does not write a fallback scene — OpenCode: неверный логин или пароль (HTTP 401) — проверьте пароль в настройках (Keychain)
+PASS bad JSON twice → fallback, exactly 2 prompts, files ready —  prompts=2
+PASS studio log never contains the OpenCode password
+PASS production flavor refuses the in-app launcher (403) — 403 {"error":"Запуск OpenCode из приложения есть только в тестовой сборке. Рабочий порт не используется.","allowed":false}
+
+21/21 passed
+EXIT:0

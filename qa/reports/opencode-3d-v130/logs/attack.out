@@ -1,0 +1,41 @@
+OK test identity is 8687, test bundle, test Keychain, OpenCode 4097 — {"flavor":"test","source":"env(source-checkout)","appId":"com.moonkatty.aistudio.test","port":8687,"kc":"MOONKATTY AI STUDIO.test","acc":"opencode-server-password","oc":"http://127.0.0.1:4097","model":"ollama/qwen3:8b","prodPort":8787,"prodOc":"http://127.0.0.1:4096","prodKc":"MOONKATTY AI STUDIO"}
+OK opencode-studio.json default model is ollama/qwen3:8b
+OK running server reports test flavor and not port 8787 — {"flavor":"test","product":"MOONKATTY AI STUDIO TEST","version":"1.3.0-test"}
+OK nothing from this audit is listening on 8787
+OK unauthenticated POST /api/opencode/serve is rejected by CSRF before the handler — {"error":"CSRF check failed (missing X-Studio-Request header)"}
+OK POST /api/opencode/serve with the CSRF header and no session is 401 — {"error":"auth required"}
+OK unauthenticated GET /api/opencode/serve is 401 — {"error":"auth required"}
+OK missing CSRF header is 403 — {"error":"CSRF check failed (missing X-Studio-Request header)"}
+OK foreign Origin is 403 — {"error":"Cross-origin request rejected"}
+OK Origin null is 403 — {"error":"Cross-origin request rejected"}
+OK Sec-Fetch-Site cross-site is 403 — {"error":"Cross-site request rejected"}
+OK side listener is on 14096
+OK foreign sleeper is alive before any start
+OK start without a password is 409 and ignores body port and pid — Пароль OpenCode не найден в Keychain (service «MOONKATTY AI STUDIO.test», account «opencode-server-password»). Сохраните его в Настройках. Без пароля сервер не запускается.
+OK start refuses the saved production URL and does not spawn — Отказ: этот порт принадлежит рабочему OpenCode. Тестовая сборка его не запускает и не проверяет.
+OK refused start did not open a connection to port 4096 — hits 0
+OK foreign sleeper was not killed
+OK command-like username is rejected — Логин: 1–64 символа (латиница, цифры, . _ @ -)
+OK shell metacharacters in the URL path are stored encoded and are not executed — http://127.0.0.1:4097/$(touch%20/tmp/oc3d-pwn)
+OK spawn argv is fixed and the password is not in argv — {"argv":["serve","--hostname","127.0.0.1","--port","4097"],"leaked":false,"pwSet":true,"pid":102242}
+OK start response has no password — {"ok":true,"already":false,"running":true,"pid":102242,"port":4097,"url":"http://127.0.0.1:4097"}
+OK foreign listener pid was not killed by start
+OK default Проверить talks to 4097 and reports connection refused — Соединение отклонено: на http://127.0.0.1:4097 никто не слушает. Пароль ищется только в Keychain: service «MOONKATTY AI STUDIO.test», account «opencode-server-password» (название «MOONKATTY AI STUDIO.test — OpenCode»). Запустите OpenCode кнопкой «Запустить OpenCode» или скриптом opencode/serve-test.
+OK a saved URL of 4096 makes Проверить contact that port — {"ok":true,"status":200,"url":"http://127.0.0.1:4096/global/health","hits":1}
+OK project id traversal is rejected — 404 {"error":"not found"}
+OK scene file name traversal is rejected — 404 {"error":"not found"}
+OK projectId traversal is rejected — 400 {"error":"Проект не найден"}
+OK down OpenCode uses a labeled fallback and still builds blend and PNG — waiting_approval rules+fallback 
+OK a permissive OpenCode policy stays blocked and does not write a fallback scene — blocked Конфигурация OpenCode server не соответствует политике студии: permission.bash должно быть "deny" (сейчас "allow"); permission.webfetch должно быть "deny" (сейчас "allow"); permiss
+OK a completed forbidden tool stops the job without a fallback scene — failed Агент OpenCode выполнил запрещённый инструмент (write:completed) — задание остановлено
+OK HTTP 403 is not turned into a fallback scene — failed OpenCode HTTP 403 (GET /global/health): no
+OK HTTP 401 stays blocked and does not write a fallback scene — blocked OpenCode: неверный логин или пароль (HTTP 401) — проверьте пароль в настройках (Keychain)
+OK production flavor refuses the in-app launcher — 403 {"error":"Запуск OpenCode из приложения есть только в тестовой сборке. Рабочий порт не используется.","allowed":false}
+OK prod-flavor process is a different port from 8687 in this probe — prod
+OK fake Keychain holds the test item and the password is not on security argv — argv bytes 2140
+OK studio data files do not contain the password
+OK HTTP responses do not contain the password — 0
+OK server stdout and stderr do not contain the password
+OK foreign sleeper still alive at the end
+{"fails":0,"notes":39,"failed":[]}
+EXIT:0

@@ -1,0 +1,25 @@
+
+> moonkatty-ai-studio@1.3.0-test test:e2e-test-build
+> node scripts/e2e-test-build.mjs
+
+PASS studio runs as TEST flavor on 8687 with schema 6
+PASS OpenCode password stored ONLY in TEST Keychain service "MOONKATTY AI STUDIO.test" — 200
+PASS OpenCode (port 4097) check with Basic Auth from TEST Keychain
+PASS panel input created a 3D task with the exact phrase
+PASS job from panel phrase reaches waiting_approval (all stages) — waiting_approval 
+ychain)
+[preflight] Рабочая папка: projects3d/p_mviqpzats9b8mo/v001
+[params] ▶ Параметры сцены
+[params] Ollama недоступна (Ollama недоступна: ECONNREFUSED) — параметры по правилам (без ИИ)
+[params] Параметры (rules): объект cat, свет three_point, движок CYCLES 640×480, кадров анимации 0
+[agent] ▶ Агент OpenCode
+[agent] Политика OpenCode проверена: bash/webfetch/external_directory
+PASS agent step done by REAL OpenCode (session, JSON answer, params written by the studio — no agent tools)
+PASS .blend saved inside TEST data dir (BLENDER magic) — /tmp/mk-e2e-testbuild/home/Library/Application Support/MOONKATTY AI STUDIO TEST/projects3d/p_mviqpzats9b8mo/v001/scene.blend
+PASS PNG render saved (PNG magic) — /tmp/mk-e2e-testbuild/home/Library/Application Support/MOONKATTY AI STUDIO TEST/projects3d/p_mviqpzats9b8mo/v001/renders/preview.png
+PASS artifacts carry SHA-256 equal to the files — [{"name":"scene.blend","path":"/tmp/mk-e2e-testbuild/home/Library/Application Support/MOONKATTY AI STUDIO TEST/projects3d/p_mviqpzats9b8mo/v001/scene.blend","size":913276,"sha256":"4d55d4db5c7b96f03d6d59f2b593fa1dab1e8f66b3a3be6c173ad6b9de9b1953","kind":"blend","project":"p_mviqpzats9b8mo","version"
+PASS PNG displayed in the 3D Studio panel
+PASS screenshot saved /tmp/oc3d-logs/e2e.png
+{"blend":"/tmp/mk-e2e-testbuild/home/Library/Application Support/MOONKATTY AI STUDIO TEST/projects3d/p_mviqpzats9b8mo/v001/scene.blend","blendSha256":"4d55d4db5c7b96f03d6d59f2b593fa1dab1e8f66b3a3be6c173ad6b9de9b1953","png":"/tmp/mk-e2e-testbuild/home/Library/Application Support/MOONKATTY AI STUDIO TEST/projects3d/p_mviqpzats9b8mo/v001/renders/preview.png","pngSha256":"e68f348ab5d0e8ca7f37c2d3d9bf13e73b5abd14fc4806d29a24f20f500fd69f","jobId":"job_b99a377b0ff62cc4"}
+{"passed":11,"failed":[]}
+EXIT:0

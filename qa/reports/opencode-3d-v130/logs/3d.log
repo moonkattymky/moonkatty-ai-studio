@@ -1,0 +1,76 @@
+
+> moonkatty-ai-studio@1.3.0-test test:3d
+> node scripts/design3d-test.mjs
+
+PASS real opencode serve requires Basic Auth (401 without)
+PASS real opencode serve healthy with fake password — version 1.19.3
+PASS 3D DESIGN agent migrated: enabled, not «в разработке»
+PASS OpenCode connection check via Basic Auth
+PASS settings: OpenCode model provider/model accepted
+PASS settings: bad model string refused
+PASS settings: relative Blender path refused
+PASS Blender detected, version + Python API probed headless — Blender 4.2.9 LTS, Python 3.11.7
+PASS Director (rule planner, Ollama absent) assigns 3D DESIGN with kind=3d — rules
+PASS safe test job reaches waiting_approval — waiting_approval 
+[preflight] Director назначил задачу агенту 3D DESIGN: Создай фиолетового кота MOONKATTY в студийном свете 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+
+PASS all stages executed in order
+PASS params honestly marked as rules (no Ollama model here)
+PASS OpenCode config verified against policy
+PASS real OpenCode session created; agent answered JSON text, studio wrote params (no agent tools) — [preflight] Director назначил задачу агенту 3D DESIGN: Создай фиолетового кота MOONKATTY в студийном свете 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCo
+PASS scene_params.json written (by the studio after strict validation)
+PASS .blend saved by Blender (BLENDER magic)
+PASS .blend reopened in a separate Blender process; objects preserved — Area,Area.001,Area.002,Body,Camera,EarL,EarR,EyeL,EyeR,Floor,Head,Tail
+PASS PNG preview rendered (640×480) — 406087 bytes
+PASS GLB exported
+PASS task waiting_approval with result + jobId
+PASS preview served via authenticated API
+PASS preview requires auth (401)
+PASS file API blocks traversal
+PASS createJob(design3d) → {jobId}; public status needs_approval
+PASS listJobs({status:needs_approval}) filters
+PASS render_segment reserved: job created as failed «не реализовано»
+PASS idempotencyKey: second createJob returns the same jobId
+PASS blender_template job: needs_approval, artifacts {path,sha256,kind}, ops fields
+PASS invalid resourceClass refused
+PASS opencode_task reserved stub (failed «не реализовано», resourceClass llm)
+PASS unknown job type refused
+PASS policy: agent attempt to write .blend refused (no tools at agent step), file not written by agent — шаблона scene_basic (build), Blender headless -b --python-exit-code blender.template
+[build] Сцена сохранена: projects3d/p_mviqqjzsc6temv/v001/scene.blend (892 КБ); объекты: Area, Area.001, Area.002, Body, Camera, EarL, EarR, EyeL, EyeR, Floor, Head, Tail; материалы: MK_Eye, MK_Floor, MK_Main 
+[rend
+PASS policy: write outside workspace blocked (no file created, tool errored)
+PASS policy: bash never executes (tool not available / denied)
+PASS agent output violating schema → fallback to validated params, Blender still runs — 
+Body, Camera, EarL, EarR, EyeL, EyeR, Floor, Head, Tail; материалы: MK_Eye, MK_Floor, MK_Main 
+[render] ▶ Повторное открытие и рендер PNG 
+[render] Повторное открытие scene.blend и рендер (CYCLES) 
+[render] Рендер готов (CYCLES): projects3d/p_mviqqz988apqlo/v001/renders/preview.png (2 файл(ов)) 
+[v
+PASS real OpenCode: malformed JSON → one retry → success
+PASS permissive OpenCode server config refused (blocked, bash/edit named) — Конфигурация OpenCode server не соответствует политике студии: permission.bash должно быть "deny" (сейчас "allow"); permission.webfetch должно быть "deny" (сейчас "allow"); permission.external_directory должно быть "deny" (сейчас "allow"); permission.edit должно быть "deny" (или "ask") — агент не пи
+PASS wrong OpenCode password → blocked with 401 message, no password in error — OpenCode: неверный логин или пароль (HTTP 401) — проверьте пароль в настройках (Keychain)
+PASS retry of blocked job (after fixing password) resumes and succeeds — waiting_approval {"id":"job_5cf1ddbde8c8fb97","taskId":"mviqrcftlzgb5n","kind":"3d","status":"queued","stage":"preflight","attempt":1,"maxAttempts":2,"retries":1,"maxRetries":3,"checkpoint":{"opencodeDown":null},"artifacts":[],"error":null,"pending":null,"resourceClass":null,"requiresNode":null,"ide
+PASS retry refused for a job that is not failed/blocked
+PASS Blender script error → failed with Python error text, after 1 automatic retry — Blender (build) завершился с кодом 3: RuntimeError: fake template failure
+PASS cancel during Blender render: job+task cancelled, Blender process killed — procs before 1, status cancelled
+PASS after hard kill: orphaned Blender process found and killed on recovery — pid 101509
+PASS job resumed after restart from render stage (build not repeated) and finished — waiting_approval builds=1 
+PASS data preserved: tasks, posts, agents, Ollama settings
+PASS delete version without confirmation → 409 needsConfirmation, nothing deleted
+PASS delete version with confirm:true → removed
+PASS delete with traversal id refused
+PASS password absent from SQLite/WAL/backups/project files/job logs
+PASS password absent from logs API
+PASS password absent from all job events/API bodies
+PASS password never in any process argv (scanned during the agent job)
+PASS fake keychain argv log has no plaintext password
+PASS studio stdout/stderr has no password
+
+54/54 passed
+sample PNG: /workspace/sample-render-agent.png
+EXIT:0

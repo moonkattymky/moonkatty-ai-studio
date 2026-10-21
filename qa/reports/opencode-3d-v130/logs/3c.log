@@ -1,0 +1,78 @@
+
+> moonkatty-ai-studio@1.3.0-test test:3c
+> node scripts/studio3c-test.mjs
+
+PASS real opencode serve requires Basic Auth (401 without)
+PASS real opencode serve healthy with fake password — version 1.19.3
+PASS 3D DESIGN agent migrated: enabled, not «в разработке»
+PASS OpenCode connection check via Basic Auth
+PASS settings: OpenCode model provider/model accepted
+PASS settings: bad model string refused
+PASS settings: relative Blender path refused
+PASS Blender detected, version + Python API probed headless — Blender 4.2.9 LTS, Python 3.11.7
+PASS project created
+PASS reference upload stored with SHA-256 — {"sha256":"ebad2009953e6747e31fe3f5d8191bc4c265b46844510a8177a97e59fb5a54b8","file":"ebad2009953e6747e31fe3f5d8191bc4c265b46844510a8177a97e59fb5a54b8.png","name":"cat.png","size":80,"mime":"image/png","at":"2026-10-21T23:25:29.816Z"}
+PASS duplicate reference detected
+PASS spoofed extension (.png containing HTML) refused
+PASS SVG refused
+PASS oversize (>15 MB) refused
+PASS empty upload refused
+PASS traversal in file name neutralised (stored by sha, not by name)
+PASS traversal in project id refused
+PASS upload without CSRF header → 403
+PASS upload without auth → 401
+PASS reference served with nosniff + sandbox CSP
+PASS reference by bad sha → 404
+PASS job in project reaches waiting_approval — waiting_approval 
+[preflight] Director назначил задачу агенту 3D DESIGN: Создай фиолетового кота MOONKATTY 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCo
+PASS generic PUT cannot set 3D task status (403)
+PASS generic PUT cannot change kind/agentId
+PASS generic POST forces 3D task to queued, strips review
+PASS review without CSRF → 403
+PASS review bad action → 400
+PASS rework without comment → 400
+PASS GLB download: attachment + nosniff
+PASS .blend download
+PASS download whitelist blocks ../../studio.db
+PASS download whitelist blocks logs/agent.log
+PASS download whitelist blocks /etc/passwd
+PASS download whitelist blocks exports/../../../app-token
+PASS download whitelist blocks scene_params.json
+PASS download traversal in version → 404
+PASS rework accepted and created a new task — {"ok":true,"review":{"decision":"rework","by":"igor","at":"2026-10-21T23:25:46.994Z","comment":"сделай синим и солнечный свет, ближе"},"nextTask":{"id":"mviqq7w3o4z2fw","kind":"3d","agentId":"design3d
+PASS old task marked rework (not approved)
+PASS rework job → waiting_approval in new version — waiting_approval [preflight] Director назначил задачу агенту 3D DESIGN: Доработка v001: сделай синим и солнечный свет, ближе 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+
+PASS new version records parent + comment
+PASS rework changed params per comment — {"title":"Создай фиолетового кота MOONKATTY","subject":"cat","color":[0.15,0.35,0.9],"background":[0.04,0.04,0.08],"metallic":0,"roughness":0.45,"lighting":"sun","camera":{"distance":6.75,"height":1.2,"focal":50},"render":{"engine":"CYCLES","samples":32,"width":640,"height":480},"animation":{"frames
+PASS previous version left intact (preview still there)
+PASS approve v2
+PASS cannot review twice (409)
+PASS rerender accepted — {"id":"mviqqjw29ewzqu","kind":"3d","agentId":"design3d","priority":"normal","status":"queued","project":"main","schedule":{"type":"none"},"createdAt":"2026-10-21T23:26:02.546Z","source":"director","ti
+PASS rerender rejects unknown fields
+PASS rerender rejects bad values
+PASS rerender job → waiting_approval, agent skipped — waiting_approval [preflight] Director назначил задачу агенту 3D DESIGN: Перерендер v002: свет studio, кадров 3 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] Op
+PASS rerender: 320×240, 3 turntable frames, FBX exported — [{"name":"scene.blend","path":"/tmp/mk-3c-test/data/projects3d/p_mviqpumovyu0o8/v003/scene.blend","size":916160,"sha256":"d2400d79766a4c24dd971fc2c57f93aae1be0dbe37bd4078957b57ced583aed5","kind":"blend"},{"name":"renders/preview.png","path":"/tmp/mk-3c-test/data/projects3d/p_mviqpumovyu0o8/v003/rend
+PASS preview PNG at requested resolution
+PASS FBX download
+PASS reject v3
+PASS delete without confirm → 409 needsConfirmation
+PASS delete with confirm → backup in _trash — {"ok":true,"backup":"p_mviqpumovyu0o8/_trash/v003-2026-10-21T23-26-05-421Z"}
+PASS deleted version hidden, listed as backup
+PASS delete traversal refused
+PASS CSP strict: script-src self only — default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+PASS index loads local glb-viewer.js
+PASS glb-viewer has no external URLs / eval
+PASS viewer parses real Blender GLB — 8 primitives
+PASS no password in API bodies
+
+61/61 passed
+EXIT:0

@@ -1,0 +1,58 @@
+
+> moonkatty-ai-studio@1.3.0-test test:opencode-json
+> node scripts/opencode-json-test.mjs
+
+PASS schema: extra key rejected
+PASS schema: path-like title rejected
+PASS schema: enum/range/type violations rejected
+PASS extractJson: fenced, bare, none, broken
+PASS safe writer: symlinked scene_params.json refused, symlink target untouched — Путь scene_params.json вне рабочей папки проекта — запись запрещена
+PASS safe writer: symlinked project folder refused — Рабочая папка проекта — символическая ссылка; запись запрещена
+PASS safe writer: invalid params never written
+PASS safe writer: valid params written inside folder (0600)
+PASS no-tool-call agent: job reaches waiting_approval (full pipeline) — waiting_approval 
+[preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_JSON фиолетовый 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабоч
+PASS scene_params.json written by the studio from the agent JSON text
+PASS real Blender PNG rendered (320×240 from agent params) — 122752 bytes
+PASS session created with directory = job version folder; tools disabled in prompt
+PASS fenced ```json answer accepted
+PASS permission ask (edit in-folder) REJECTED by studio, job still succeeds via studio write — [preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_ASK 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабочая папка: projects3d/p_mviqshj
+PASS out-of-folder write ask REJECTED (fs.outside), no file outside — [preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_OUTSIDE 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабочая папка: projects3d/p_mvi
+PASS file created by agent → job failed, no Blender run — Агент OpenCode создал файлы, хотя запись запрещена: evil.py — задание остановлено
+PASS invalid JSON → 1 retry → success
+PASS malformed JSON twice → fallback (not a hard stop), exactly 2 prompts, valid scene_params —  prompts=2
+Body, Camera, EarL, EarR, EyeL, EyeR, Floor, Head, Tail; материалы: MK_Eye, MK_Floor, MK_Main 
+[render] ▶ Повторное открытие и рендер PNG 
+[render] Повторное открытие scene.blend и рендер (CYCLES) 
+[render] Рендер готов (CYCLES): projects3d/p_mviqsxdrw0pmra/v001/renders/preview.png (2 файл(ов)) 
+[verify] ▶ Проверка результата 
+[verify] Проверено: PNG 640×480, файлов 3. Результат ждёт ут
+PASS fallback still shows .blend and PNG paths
+PASS model error → fallback, warning «Ошибка модели в OpenCode» — null
+er] ▶ Повторное открытие и рендер PNG 
+[render] Повторное открытие scene.blend и рендер (CYCLES) 
+[render] Рендер готов (CYCLES): projects3d/p_mviqt6n4e4wi3d/v001/renders/preview.png (2 файл(ов)) 
+[verify] ▶ Проверка результата 
+[verify] Проверено: PNG 640×480, файлов 3. Результат ждёт утверждения. 
+PASS no answer → timeout text, then fallback — null
+er] ▶ Повторное открытие и рендер PNG 
+[render] Повторное открытие scene.blend и рендер (CYCLES) 
+[render] Рендер готов (CYCLES): projects3d/p_mviqtfx18vrelu/v001/renders/preview.png (2 файл(ов)) 
+[verify] ▶ Проверка результата 
+[verify] Проверено: PNG 640×480, файлов 3. Результат ждёт утверждения. 
+PASS no password in studio output
+
+22/22 passed
+EXIT:0

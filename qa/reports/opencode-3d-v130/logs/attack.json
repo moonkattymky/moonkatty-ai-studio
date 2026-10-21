@@ -1,0 +1,201 @@
+{
+  "fails": 0,
+  "notes": [
+    {
+      "name": "test identity is 8687, test bundle, test Keychain, OpenCode 4097",
+      "ok": true,
+      "extra": "{\"flavor\":\"test\",\"source\":\"env(source-checkout)\",\"appId\":\"com.moonkatty.aistudio.test\",\"port\":8687,\"kc\":\"MOONKATTY AI STUDIO.test\",\"acc\":\"opencode-server-password\",\"oc\":\"http://127.0.0.1:4097\",\"model\":\"ollama/qwen3:8b\",\"prodPort\":8787,\"prodOc\":\"http://127.0.0.1:4096\",\"prodKc\":\"MOONKATTY AI STUDIO\"}"
+    },
+    {
+      "name": "opencode-studio.json default model is ollama/qwen3:8b",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "running server reports test flavor and not port 8787",
+      "ok": true,
+      "extra": "{\"flavor\":\"test\",\"product\":\"MOONKATTY AI STUDIO TEST\",\"version\":\"1.3.0-test\"}"
+    },
+    {
+      "name": "nothing from this audit is listening on 8787",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "unauthenticated POST /api/opencode/serve is rejected by CSRF before the handler",
+      "ok": true,
+      "extra": "{\"error\":\"CSRF check failed (missing X-Studio-Request header)\"}"
+    },
+    {
+      "name": "POST /api/opencode/serve with the CSRF header and no session is 401",
+      "ok": true,
+      "extra": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "unauthenticated GET /api/opencode/serve is 401",
+      "ok": true,
+      "extra": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "missing CSRF header is 403",
+      "ok": true,
+      "extra": "{\"error\":\"CSRF check failed (missing X-Studio-Request header)\"}"
+    },
+    {
+      "name": "foreign Origin is 403",
+      "ok": true,
+      "extra": "{\"error\":\"Cross-origin request rejected\"}"
+    },
+    {
+      "name": "Origin null is 403",
+      "ok": true,
+      "extra": "{\"error\":\"Cross-origin request rejected\"}"
+    },
+    {
+      "name": "Sec-Fetch-Site cross-site is 403",
+      "ok": true,
+      "extra": "{\"error\":\"Cross-site request rejected\"}"
+    },
+    {
+      "name": "side listener is on 14096",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "foreign sleeper is alive before any start",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "start without a password is 409 and ignores body port and pid",
+      "ok": true,
+      "extra": "Пароль OpenCode не найден в Keychain (service «MOONKATTY AI STUDIO.test», account «opencode-server-password»). Сохраните его в Настройках. Без пароля сервер не запускается."
+    },
+    {
+      "name": "start refuses the saved production URL and does not spawn",
+      "ok": true,
+      "extra": "Отказ: этот порт принадлежит рабочему OpenCode. Тестовая сборка его не запускает и не проверяет."
+    },
+    {
+      "name": "refused start did not open a connection to port 4096",
+      "ok": true,
+      "extra": "hits 0"
+    },
+    {
+      "name": "foreign sleeper was not killed",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "command-like username is rejected",
+      "ok": true,
+      "extra": "Логин: 1–64 символа (латиница, цифры, . _ @ -)"
+    },
+    {
+      "name": "shell metacharacters in the URL path are stored encoded and are not executed",
+      "ok": true,
+      "extra": "http://127.0.0.1:4097/$(touch%20/tmp/oc3d-pwn)"
+    },
+    {
+      "name": "spawn argv is fixed and the password is not in argv",
+      "ok": true,
+      "extra": "{\"argv\":[\"serve\",\"--hostname\",\"127.0.0.1\",\"--port\",\"4097\"],\"leaked\":false,\"pwSet\":true,\"pid\":102242}"
+    },
+    {
+      "name": "start response has no password",
+      "ok": true,
+      "extra": "{\"ok\":true,\"already\":false,\"running\":true,\"pid\":102242,\"port\":4097,\"url\":\"http://127.0.0.1:4097\"}"
+    },
+    {
+      "name": "foreign listener pid was not killed by start",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "default Проверить talks to 4097 and reports connection refused",
+      "ok": true,
+      "extra": "Соединение отклонено: на http://127.0.0.1:4097 никто не слушает. Пароль ищется только в Keychain: service «MOONKATTY AI STUDIO.test», account «opencode-server-password» (название «MOONKATTY AI STUDIO.test — OpenCode»). Запустите OpenCode кнопкой «Запустить OpenCode» или скриптом opencode/serve-test.sh — пароль попадёт в окружение процесса, в командную строку и журналы он не пишется. Рабочий порт н"
+    },
+    {
+      "name": "a saved URL of 4096 makes Проверить contact that port",
+      "ok": true,
+      "extra": "{\"ok\":true,\"status\":200,\"url\":\"http://127.0.0.1:4096/global/health\",\"hits\":1}"
+    },
+    {
+      "name": "project id traversal is rejected",
+      "ok": true,
+      "extra": "404 {\"error\":\"not found\"}"
+    },
+    {
+      "name": "scene file name traversal is rejected",
+      "ok": true,
+      "extra": "404 {\"error\":\"not found\"}"
+    },
+    {
+      "name": "projectId traversal is rejected",
+      "ok": true,
+      "extra": "400 {\"error\":\"Проект не найден\"}"
+    },
+    {
+      "name": "down OpenCode uses a labeled fallback and still builds blend and PNG",
+      "ok": true,
+      "extra": "waiting_approval rules+fallback "
+    },
+    {
+      "name": "a permissive OpenCode policy stays blocked and does not write a fallback scene",
+      "ok": true,
+      "extra": "blocked Конфигурация OpenCode server не соответствует политике студии: permission.bash должно быть \"deny\" (сейчас \"allow\"); permission.webfetch должно быть \"deny\" (сейчас \"allow\"); permiss"
+    },
+    {
+      "name": "a completed forbidden tool stops the job without a fallback scene",
+      "ok": true,
+      "extra": "failed Агент OpenCode выполнил запрещённый инструмент (write:completed) — задание остановлено"
+    },
+    {
+      "name": "HTTP 403 is not turned into a fallback scene",
+      "ok": true,
+      "extra": "failed OpenCode HTTP 403 (GET /global/health): no"
+    },
+    {
+      "name": "HTTP 401 stays blocked and does not write a fallback scene",
+      "ok": true,
+      "extra": "blocked OpenCode: неверный логин или пароль (HTTP 401) — проверьте пароль в настройках (Keychain)"
+    },
+    {
+      "name": "production flavor refuses the in-app launcher",
+      "ok": true,
+      "extra": "403 {\"error\":\"Запуск OpenCode из приложения есть только в тестовой сборке. Рабочий порт не используется.\",\"allowed\":false}"
+    },
+    {
+      "name": "prod-flavor process is a different port from 8687 in this probe",
+      "ok": true,
+      "extra": "prod"
+    },
+    {
+      "name": "fake Keychain holds the test item and the password is not on security argv",
+      "ok": true,
+      "extra": "argv bytes 2140"
+    },
+    {
+      "name": "studio data files do not contain the password",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "HTTP responses do not contain the password",
+      "ok": true,
+      "extra": "0"
+    },
+    {
+      "name": "server stdout and stderr do not contain the password",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "foreign sleeper still alive at the end",
+      "ok": true,
+      "extra": ""
+    }
+  ],
+  "failed": []
+}
