@@ -20,10 +20,10 @@ function zip(names, { symlink } = {}) {
 }
 const goodZip = () => zip([APP + '.app/', APP + '.app/Contents/', APP + '.app/Contents/Info.plist', APP + '.app/Contents/Frameworks/Current'], { symlink: APP + '.app/Contents/Frameworks/Current' });
 const keys = () => crypto.generateKeyPairSync('ed25519');
-const ident = { bundleId: 'com.moonkatty.aistudio', dataDirName: 'MOONKATTY AI STUDIO', launchdLabel: 'com.moonkatty.aistudio.server', keychainServicePrefix: 'com.moonkatty.aistudio' };
+const ident = { bundleId: 'com.moonkatty.aistudio', appName: APP, dataDirName: APP, launchdLabel: 'com.moonkatty.aistudio.server', keychainServicePrefix: APP };
 function release({ version = '1.2.1', tag = `v${version}-mac-preview`, priv, archive = goodZip(), manifest = {}, sig, noManifest, noSig, assetHost, extraAssets = [] } = {}) {
   const name = `MOONKATTY-AI-STUDIO-${version}-arm64-mac.zip`;
-  const m = { version, channel: 'preview', sourceCommit: '42d3fd5', ...ident, dbSchemaVersion: 2, minUpgradeFrom: '1.1.0', assets: [{ name, size: archive.length, sha256: sha(archive) }], signing: 'ed25519', notarized: false, isolatedFrom: [], knownIssues: ['Gatekeeper предупреждает (нет нотаризации)'], node: { asset: name, arch: ['x64', 'arm64'], minMacOS: '12.0', minNode: '20.0.0' }, ...manifest };
+  const m = { manifestVersion: 1, version, channel: 'preview', sourceCommit: '42d3fd5'.padEnd(40, '0'), branch: 'feat/v1.2.0', arch: 'arm64', platform: 'darwin', ...ident, dataDir: `~/Library/Application Support/${APP}/`, logDir: `~/Library/Logs/${APP}/`, keychainItems: [{ service: APP, account: 'master-key' }], defaultPort: 8787, opencodeUrl: 'http://127.0.0.1:4096', dbSchemaVersion: 3, minUpgradeFrom: '1.1.2', isolated: false, electron: '44.9.1', assets: [{ name, size: archive.length, sha256: sha(archive) }], signing: 'adhoc', notarized: false, isolatedFrom: [], knownIssues: ['Gatekeeper предупреждает (нет нотаризации)'], node: { asset: name, arch: ['x64', 'arm64'], minMacOS: '12.0', minNode: '20.0.0' }, ...manifest };
   const mb = Buffer.from(JSON.stringify(m)); const s = sig ?? (priv ? crypto.sign(null, mb, priv).toString('base64') : '');
   const files = { [name]: archive, 'release-manifest.json': mb, 'release-manifest.json.sig': Buffer.from(s), ...Object.fromEntries(extraAssets) };
   if (noManifest) delete files['release-manifest.json']; if (noSig) delete files['release-manifest.json.sig'];
@@ -40,9 +40,10 @@ function fakeGitHub(releases, { redirectHost = 'objects.githubusercontent.com', 
     const r = releases.find(x => u.search.includes(x.tag)); const b = r && r.files[decodeURIComponent(path.basename(u.pathname))]; if (!b) return resp(404, Buffer.alloc(0));
     const range = opts.headers && opts.headers.range; if (range && !ignoreRange) { const s = +/bytes=(\d+)-/.exec(range)[1]; return resp(206, b.subarray(s)); } return resp(200, b); };
 }
+const TESTM = () => ({ ...release({ version: '1.2.2-test' }).m, channel: 'test', bundleId: 'com.moonkatty.aistudio.test', appName: APP + ' TEST', dataDirName: APP + ' TEST', launchdLabel: 'com.moonkatty.aistudio.test.server', keychainServicePrefix: APP + '.test', defaultPort: 8687, dbSchemaVersion: 4, minUpgradeFrom: null, isolated: true, isolatedFrom: ['com.moonkatty.aistudio'] });
 function center(o = {}) { const k = o.kp || keys(); const dir = o.dir || tmp();
   return { k, dir, uc: UC.createUpdateCenter({ dir, current: o.current || '1.1.2', fetchImpl: o.fetchImpl, keys: o.keys || [k.publicKey], update: o.update, db: o.db, backups: o.backups, nodes: o.nodes, env: o.env || {}, healthUrl: 'http://127.0.0.1:1/api/health' }) }; }
-const schemaStub = v => ({ schemaCheck: () => ({ ok: true, schemaVersion: v }) });
+const schemaStub = v => ({ schemaCheck: () => ({ ok: true, schemaVersion: v, source: 'tables', tables: ['items', 'meta'] }) });
 
 test('pinned key in repo is a valid Ed25519 SPKI key', () => { const ks = UC.loadKeys(); assert.equal(ks.length, 1); assert.equal(ks[0].asymmetricKeyType, 'ed25519'); });
 test('versions: compare, downgrade detection', () => { assert.equal(UC.cmpVer('1.2.1', '1.1.2'), 1); assert.equal(UC.cmpVer('v1.2.1-mac-preview', '1.2.1'), 0); assert.equal(UC.cmpVer('1.0.9', '1.1.2'), -1); assert.throws(() => UC.cmpVer('x', '1.0.0')); });
@@ -147,14 +148,14 @@ test('rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs ve
   assert.equal(UC.gate({ ...base, current: '1.0.0', compat: { ok: true }, backup: { verified: true }, ownerApproval: true }).allowed, false, 'minUpgradeFrom');
 });
 test('rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused', () => {
-  const m = { ...release({ version: '1.2.2' }).m, channel: 'test', bundleId: 'com.moonkatty.aistudio.test', dataDirName: 'MOONKATTY AI STUDIO TEST', launchdLabel: 'com.moonkatty.aistudio.test.server', keychainServicePrefix: 'com.moonkatty.aistudio.test', isolatedFrom: ['com.moonkatty.aistudio'] };
+  const m = TESTM();
   const g = UC.gate({ manifest: m, verified: true, current: '1.1.2', compat: { ok: false }, backup: null }); assert.equal(g.allowed, true); assert.equal(g.mode, 'side-by-side');
-  const p = UC.gate({ manifest: { ...m, dataDirName: 'MOONKATTY AI STUDIO' }, verified: true, current: '1.1.2', compat: { ok: true }, backup: { verified: true }, ownerApproval: true }); assert.equal(p.allowed, false); assert.match(p.reasons.join(), /частично/);
+  const p = UC.gate({ manifest: { ...m, dataDirName: APP }, verified: true, current: '1.1.2', compat: { ok: true }, backup: { verified: true }, ownerApproval: true }); assert.equal(p.allowed, false); assert.match(p.reasons.join(), /частично/);
   assert.equal(UC.gate({ manifest: m, verified: false, current: '1.1.2' }).allowed, false, 'isolated but unsigned → no');
 });
 test('compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade', () => {
   assert.equal(UC.compatCheck({}, { ok: true, schemaVersion: 1 }).ok, false); assert.equal(UC.compatCheck({ dbSchemaVersion: 1 }, { ok: true, schemaVersion: 2 }).ok, false);
-  assert.equal(UC.compatCheck({ dbSchemaVersion: 2 }, { ok: true, schemaVersion: 1 }).migration, true); assert.equal(UC.compatCheck({ dbSchemaVersion: 1 }, { ok: false, schemaVersion: 1 }).ok, false);
+  assert.equal(UC.compatCheck({ dbSchemaVersion: 2 }, { ok: true, schemaVersion: 1 }).migration, true); assert.equal(UC.compatCheck({ dbSchemaVersion: 1 }, { schemaVersion: 1, tables: ['items'] }).ok, false, 'damaged DB');
 });
 test('manifest validation rejects path-like asset names and bad identity', () => {
   const m = release().m; assert.deepEqual(UC.validateManifest(m), []);
@@ -164,7 +165,7 @@ test('manifest validation rejects path-like asset names and bad identity', () =>
 test('pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched', async () => {
   const d = tmp(); const db = open(path.join(d, 'studio.db')); db.exec("CREATE TABLE items (col TEXT, id TEXT, data TEXT, PRIMARY KEY(col,id)); CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT); INSERT INTO items VALUES ('tasks','t1','{}');");
   const backups = createBackupManager({ db, openDb: open, dataDir: d, filesDir: path.join(d, 'files'), version: '1.1.2' });
-  const kp = keys(); const r = release({ priv: kp.privateKey, manifest: { dbSchemaVersion: 1 } });
+  const kp = keys(); const r = release({ priv: kp.privateKey, manifest: { dbSchemaVersion: 1 } }); // same schema as the fixture DB
   const { uc } = center({ kp, fetchImpl: fakeGitHub([r]), update: createUpdateManager(), db, backups }); await uc.check();
   let p = uc.installPlan(r.tag); assert.equal(p.allowed, false);
   const b = uc.preBackup(); assert.equal(b.verified, true); assert.equal(b.integrity, 'ok');
@@ -205,4 +206,45 @@ test('MOONKATTY NODE: per-device compat first; delivery disabled by default; job
 test('code never bypasses macOS security', () => {
   for (const f of ['lib/ops/update-center.js', 'public/update-ui.js']) { const src = fs.readFileSync(path.join(__dirname, '../..', f), 'utf8').split('\n').filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
     assert.doesNotMatch(src.replace(/не используйте xattr\/spctl|xattr\/карантин/g, ''), /xattr\s+-|com\.apple\.quarantine|master-disable|spctl\s+--add|rm -rf/, f); }
+});
+
+test('manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced', () => {
+  assert.deepEqual(UC.validateManifest(release().m), []); assert.deepEqual(UC.validateManifest(TESTM()), []);
+  const m = release().m;
+  for (const [k, v] of [['manifestVersion', 2], ['arch', 'x64'], ['platform', 'linux'], ['isolated', 'yes'], ['isolatedFrom', 'x'], ['dbSchemaVersion', '3'], ['dbSchemaVersion', undefined], ['minUpgradeFrom', 'latest'], ['notarized', 'no'], ['sourceCommit', 'zz'], ['keychainItems', [{ service: 1 }]], ['defaultPort', 70000], ['dataDir', '~/../../etc']])
+    assert.ok(UC.validateManifest({ ...m, [k]: v }).length, k + '=' + JSON.stringify(v));
+  assert.deepEqual(UC.validateManifest({ ...m, futureField: 1 }), [], 'unknown fields ignored');
+});
+test('rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity', () => {
+  const base = { verified: true, current: '1.1.2', compat: { ok: true }, backup: { verified: true }, ownerApproval: true };
+  assert.equal(UC.gate({ ...base, manifest: { ...release().m, minUpgradeFrom: null } }).allowed, false);
+  assert.equal(UC.gate({ ...base, manifest: { ...TESTM(), isolated: false } }).allowed, false, 'all ids differ but not declared isolated → conflict');
+  assert.equal(UC.gate({ ...base, manifest: { ...TESTM(), isolatedFrom: [] } }).allowed, false, 'isolatedFrom must name the installed bundle');
+  assert.equal(UC.gate({ ...base, manifest: { ...release().m, isolated: true } }).allowed, false, 'isolated=true with same ids → refused');
+  assert.equal(UC.gate({ ...base, manifest: { ...TESTM(), keychainServicePrefix: APP } }).allowed, false, 'shared Keychain service → not isolated');
+});
+test('schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated', () => {
+  const { detectSchemaVersion, createUpdateManager: cum } = require('../../lib/ops/update.js'); const mk = sql => { const db = open(path.join(tmp(), 's.db')); db.exec(sql); return db; };
+  const base = 'CREATE TABLE items (col TEXT, id TEXT, data TEXT); CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT);';
+  const cases = [['CREATE TABLE x (a);', 0, 'tables'], [base, 1, 'tables'], [base + 'CREATE TABLE jobs (id TEXT); CREATE TABLE job_events (id TEXT);', 2, 'tables'],
+    [base + 'CREATE TABLE jobs (id TEXT, input TEXT); CREATE TABLE job_events (id TEXT);', 3, 'tables'], [base + "CREATE TABLE jobs (id TEXT, input TEXT); INSERT INTO meta VALUES ('schemaVersion','4');", 4, 'meta'],
+    [base + "INSERT INTO meta VALUES ('schemaVersion','garbage');", 1, 'tables']];
+  for (const [sql, v, src] of cases) { const db = mk(sql); const d = detectSchemaVersion(db); assert.equal(d.version, v, sql); assert.equal(d.source, src); db.close(); }
+  const db1 = mk(base); const s1 = cum().schemaCheck(db1); assert.equal(s1.ok, true); assert.equal(s1.schemaVersion, 1); db1.close();
+  const c = UC.compatCheck(release({ version: '1.2.1' }).m, s1); assert.equal(c.ok, true); assert.equal(c.migration, true); assert.equal(c.target, 3); assert.match(c.detail, /1 → 3/);
+  assert.equal(UC.compatCheck(release().m, { schemaVersion: 4, source: 'meta', tables: ['items', 'meta'] }).ok, false, 'DB newer (4) than release (3) → no');
+  assert.equal(UC.compatCheck(release().m, { schemaVersion: 0, tables: ['x'] }).ok, false);
+  const ct = UC.compatCheck(TESTM(), s1); assert.equal(ct.ok, true); assert.equal(ct.isolated, true);
+  const g = UC.gate({ manifest: TESTM(), verified: true, current: '1.1.2', compat: ct }); assert.equal(g.mode, 'side-by-side');
+});
+test('test-build archive: app name taken from manifest.appName', () => {
+  const d = tmp(); const f = path.join(d, 'a.zip'); fs.writeFileSync(f, zip([APP + ' TEST.app/', APP + ' TEST.app/Contents/Info.plist']));
+  assert.equal(UC.inspectZip(f, { appName: APP + ' TEST' }).ok, true); assert.equal(UC.inspectZip(f).ok, false);
+});
+test('unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download', async () => {
+  const kp = keys(), other = keys(); const m = TESTM(); const b = goodZip();
+  for (const r of [release({ version: '1.2.2-test', tag: 'v1.2.2-test', manifest: m, noSig: true }), release({ version: '1.2.2-test', tag: 'v1.2.2-test', manifest: m, priv: other.privateKey })]) {
+    const { uc } = center({ kp, fetchImpl: fakeGitHub([r]), update: schemaStub(1), db: {} }); const it = (await uc.check()).releases[0];
+    assert.equal(it.verified, false); assert.equal(it.gate.allowed, false); assert.equal(it.compat.isolated, true); await assert.rejects(uc.download(it.tag), /подпис/); }
+  void b;
 });
