@@ -9,14 +9,16 @@ const ROUTES = [...SCREENS.map((s) => s.hash), ...SUBS];
 
 for (const route of ROUTES) {
   test(`sweep ${route}`, async ({ page, baseURL }) => {
+    test.setTimeout(600_000);
     const g = await guard(page, baseURL);
     await fresh(page, route);
     const scope = (await page.locator('#sheet-wrap.open').count()) ? '#sheet' : 'body';
-    const count = await page.locator(`${scope} ${SEL}`).count();
+    const Q = SEL.split(',').map((x) => `${scope} ${x.trim()}`).join(', ');
+    const count = await page.locator(Q).count();
     const report = [];
     for (let i = 0; i < count; i++) {
       await fresh(page, route);
-      const el = page.locator(`${scope} ${SEL}`).nth(i);
+      const el = page.locator(Q).nth(i);
       if (!(await el.isVisible())) continue;
       // scroll into view, but skip elements fully hidden under the fixed tab bar after scrolling (still reachable by scroll)
       await el.scrollIntoViewIfNeeded();
@@ -39,7 +41,7 @@ for (const route of ROUTES) {
         return { hash: location.hash, y: scrollY };
       });
       if (info.current) { report.push(`current-tab: ${info.text}`); continue; } // the active tab is the location indicator
-      await el.click();
+      await el.click({ timeout: 8000 });
       await page.waitForTimeout(350);
       const after = await page.evaluate(() => ({ hash: location.hash, mut: window.__mut, toast: !!document.querySelector('#toast .toast') }));
       const did = after.hash !== before.hash || after.mut > 0 || after.toast;

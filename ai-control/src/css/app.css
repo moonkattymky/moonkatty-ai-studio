@@ -469,3 +469,14 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .src-row { min-height: 64px; padding: 8px 12px; }
 .total-card .val { font-size: 34px; }
 .hdr h1 { font-size: 27px; }
+/* home fits one iPhone screen like the reference */
+.hero { height: calc(var(--sat) + 296px); }
+.hero img { height: 248px; }
+.stat { min-height: 72px; padding: 8px 12px; }
+.stats { gap: 8px; }
+.home .section-title { margin: 14px 2px 8px; }
+.tile { min-height: 72px; }
+.newscard { height: 74px; margin-top: 10px; }
+.stat .meta.green { color: var(--green); font-weight: 600; }
+.newscard .round-btn { background: radial-gradient(circle at 50% 40%, #3b8cff, #1d4fb8); color: #fff; }
+.newscard .round-btn svg { width: 20px; height: 20px; }
