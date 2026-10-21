@@ -32,3 +32,9 @@ Licensed media sourcing with relevance filter and branded-panel fallback, Video 
 5. Corrections/retractions: **added** (`CorrectionsDesk` with VerificationPort for Studio 4 and CorrectionLogPort for Studio 5). Correction video segment is roadmap.
 6. Owner approval for anything breaking/controversial: **existed** (Approval Center; nothing auto-publishes).
 Other roadmap items: forced-alignment visemes (e.g. Montreal/whisper timestamps), host overlay compositing once Studio delivers alpha video, owner master-voice lock, live publishing per platform after audits, image relevance via vision model (local).
+
+## News 2.0 — Stage 2 plan (not started)
+1. Wire `runPipeline` handlers to existing news/verify/editorial/video/approval modules; emit animation cues per segment.
+2. Word timestamps (per-sentence durations + local forced alignment), cue JSON generator + schema validation test.
+3. Video improvements: per-format templates (16:9 / 9:16), emotion-driven lower-thirds, story transitions, captions from word timings.
+4. Three demo videos (Daily Briefing, Shorts, Space & Tech) with the owner-picked voice variant; QA + Approval only, no publishing.
