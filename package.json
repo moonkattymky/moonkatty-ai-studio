@@ -16,7 +16,7 @@
     "test:policy": "node scripts/policy-test.mjs",
     "test:3d": "node scripts/design3d-test.mjs",
     "test:3c": "node scripts/studio3c-test.mjs",
-    "test:video": "node scripts/video-render-test.mjs",
+    "test:video": "node scripts/video-render-test.mjs && node scripts/video-render-wiring-test.mjs",
     "test:publish-guard": "node scripts/publish-guard-test.mjs",
     "test:isolation": "node scripts/isolation-test.mjs",
     "test:e2e-test-build": "node scripts/e2e-test-build.mjs",

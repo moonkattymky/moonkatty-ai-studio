@@ -147,6 +147,12 @@ const policy = require('./lib/policy.js'), SP = require('./lib/scene-params.js')
 const design3d = require('./lib/executors/design3d.js')({ jobs, ws: ws3d, blender, get, put, log, sec, ollamaStatus: runner.ollamaStatus, ollamaJson: runner.ollamaJson });
 runner.register('design3d', design3d.run);
 const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log, mediaRoot: path.join(DATA_DIR, 'media') }); app.locals.services = services; module.exports = { services };
+// Studio 2 media-automation: real video_render executor (lazy factory — TTS is detected on first render, not at boot).
+// Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
+{ const { createVideoRenderExecutor } = require('./media-automation/src/jobs'); let vf = null;
+  const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
+  const llm = null; /* no Ollama unload hook in this build */
+  services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm })); }
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
   q.setMeta.run('mig_120_design3d', core.now()); }
 q.setMeta.run('schemaVersion', String(DB_SCHEMA_VERSION)); // all migrations above are done
@@ -197,7 +203,9 @@ meta.mountProtected();
 // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
 const dump = () => ({ app: 'moonkatty-ai-studio', version: 2, flavor: CFG.flavor, schemaVersion: DB_SCHEMA_VERSION, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])),
   jobs: db.prepare('SELECT * FROM jobs ORDER BY created_at').all(), jobEvents: db.prepare('SELECT * FROM job_events ORDER BY seq').all(),
-  users: Object.entries(getUsers()).map(([username, hash]) => ({ username, passwordHash: hash })) });
+  users: Object.entries(getUsers()).map(([username, hash]) => ({ username, passwordHash: hash })),
+  si: SIX.exportSi(db) }); // Studio 5: si_* tables (docs/studio-intelligence/patches/server-dump-include-si.md)
+const SIX = require('./studio-intelligence/src/si-export');
 function scheduledBackup() {
   const f = path.join(BACKUP_DIR, 'backup-' + core.now().replace(/[:.]/g, '-') + '.json'); fs.writeFileSync(f, JSON.stringify(dump()));
   const all = fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort(); for (const x of all.slice(0, Math.max(0, all.length - 14))) fs.unlinkSync(path.join(BACKUP_DIR, x));
@@ -232,6 +240,7 @@ app.post('/api/restore', express.json({ limit: '1mb' }), (req, res) => {
   const d = p.data;
   let demoted = 0;
   db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o0 of d[c]) if (o0 && o0.id) { const o = c === 'queue' ? sanitizeRestoredQueue(o0) : o0; if (o !== o0) demoted++; put(c, o); } } })();
+  if (d.si) { try { SIX.importSi(db, d.si); } catch (e) { log('warn', 'backup', 'si_* не восстановлены: ' + e.message, req.user); } }
   if (demoted) log('warn', 'backup', `Восстановление: ${demoted} элемент(ов) очереди переведены в «На утверждении» (исторический статус сохранён только для аудита)`, req.user);
   log('info', 'backup', `Данные восстановлены из резервной копии (предварительная копия ${path.basename(bk.file)}, SHA-256 ${bk.sha256})`, req.user);
   res.json({ ok: true, backup: { file: path.basename(bk.file), sha256: bk.sha256, size: bk.size } });
