@@ -25,4 +25,21 @@ function mediaQueries(story) {
   if (qs.some(hasProper)) qs = qs.filter(hasProper); // never search with only generic words (avoids e.g. a car photo for a Mars cloud story)
   return qs.flatMap(q => prov.map(provider => ({ provider, q })));
 }
-module.exports = { pickFact, mediaQueries };
+const GEN_PROPER = new Set(['NASA', 'ESA', 'The', 'A', 'An', 'In', 'On', 'At', 'This', 'It', 'Scientists', 'Researchers', 'Earth', 'Space', 'Image', 'Credit', 'October', 'November', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+/** Strict media plan (News 2.0): story-specific proper nouns (place after a preposition in the headline, names capitalised mid-sentence in the source summary). An image must mention one. */
+function strictMediaPlan(story) {
+  const text = `${story.summary || ''} ${(story.items || []).map(i => i.summary || '').join(' ')}`; const head = String(story.headline || '');
+  const mid = [...text.matchAll(/(?<![.!?]\s|^)\b([A-Z][a-zA-Z0-9-]{2,}(?:\s+[A-Z][a-zA-Z0-9-]{2,})*)/g)].flatMap(m => m[1].split(/\s*\b[A-Za-z]+-(?:led|based|built)\b\s*/)).map(w => w.trim()).filter(w => w.length > 2 && !GEN_PROPER.has(w)); // multi-word names kept whole ("Solar Orbiter")
+  const postPrep = [...head.matchAll(/\b(?:Past|Over|In|At|Near|Off|Across|From|To|On)\s+([A-Z][a-zA-Z-]{2,})/g)].map(m => m[1]); // Title-Case headlines: place after preposition
+  const BROADP = new Set(['North', 'South', 'East', 'West', 'Hurricane', 'Storm', 'Mars', 'Moon', 'Sun']);
+  const requireAny = [...new Set([...postPrep, ...mid.filter(w => head.toLowerCase().includes(w.toLowerCase()))])].filter(w => !GEN_PROPER.has(w) && !BROADP.has(w));
+  const words = head.replace(/[’']s\b/g, '').split(/[^A-Za-z0-9-]+/).filter(w => w.length > 2 && !STOP.has(w.toLowerCase()) && !VERBS.has(w.toLowerCase()) && !GEN_PROPER.has(w) && !/^(apod|experimental|target|longer|whips|oddest|even|than|thought)$/i.test(w));
+  const bigrams = words.slice(0, -1).map((w, i) => `${w} ${words[i + 1]}`); // adjacent content words, e.g. "Mars Helicopter"
+  const base0 = mediaQueries(story); const provs = [...new Set(base0.map(b => b.provider))];
+  const base = [...bigrams.slice(0, 3).flatMap(q => provs.map(provider => ({ provider, q }))), ...base0]; if (!requireAny.length) return { queries: base, requireAny };
+  const content = head.split(/[^A-Za-z-]+/).filter(w => w.length > 4 && !requireAny.includes(w) && !STOP.has(w.toLowerCase()) && !VERBS.has(w.toLowerCase()) && !/^(whips|hits|slams|gets|takes)$/i.test(w));
+  const prov = [...new Set(base.map(b => b.provider))];
+  const extra = requireAny.slice(0, 3).flatMap(t => [...(t.includes(" ") ? [t] : []), ...content.filter(c => !t.includes(c)).slice(0, 2).map(c => `${t} ${c}`)]).slice(0, 5).flatMap(q => prov.map(provider => ({ provider, q })));
+  return { queries: [...extra, ...base], requireAny };
+}
+module.exports = { pickFact, mediaQueries, strictMediaPlan };

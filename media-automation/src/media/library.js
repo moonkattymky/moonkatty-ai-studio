@@ -11,7 +11,11 @@ function relevant(q, c) {
   const hay = ` ${c.title} ${c.description || ''} ${(c.keywords || []).join(' ')} `.toLowerCase(); const hit = t => new RegExp('[^a-z0-9]' + t + '[^a-z0-9]').test(hay); const hits = terms.filter(hit).length;
   // proper nouns (capitalized in the query, e.g. BepiColombo, Schiaparelli) are distinctive: at least one must match when present
   const proper = String(q).split(/[^A-Za-z0-9-]+/).filter(w => /^[A-Z]/.test(w) && w.length > 3 && !GENERIC.has(w.toLowerCase())).map(w => w.toLowerCase());
-  const distinct = proper.filter(w => !BROAD.has(w)); if (distinct.length ? !distinct.some(hit) : proper.length && !proper.some(hit)) return false; return hits >= Math.min(2, terms.length);
+  // News 2.0: two consecutive capitalised BROAD words form a mission NAME ("Solar Orbiter", "Mars Express") — at least one such name must appear as a phrase
+  const qw = String(q).split(/\s+/); const pairs = qw.slice(0, -1).map((w, i) => [w, qw[i + 1]]).filter(([a, b]) => /^[A-Z][a-z]/.test(a) && /^[A-Z][a-z]/.test(b) && BROAD.has(a.toLowerCase()) && BROAD.has(b.toLowerCase())).map(p => p.join(' ').toLowerCase());
+  if (pairs.length && !pairs.some(p => hay.replace(/[^a-z0-9]+/g, ' ').includes(p))) return false;
+  const distinct = proper.filter(w => !BROAD.has(w)); if (distinct.length ? !distinct.some(hit) : proper.length && !proper.some(hit)) return false; // stricter (News 2.0): >= 2 terms AND >= 60% of distinctive terms must appear in title/description/keywords
+  return hits >= Math.min(2, terms.length) && hits / terms.length >= 0.6;
 }
 /** Layout for a still at a target frame: never upscales content. */
 function layoutFor(asset, W, H, { kbZoom = 1.12 } = {}) {
@@ -41,9 +45,12 @@ class MediaLibrary {
   }
   async _probe(file) { const { stdout } = await this.runFn('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file]); const [w, h] = stdout.trim().split(',').map(Number); return { width: w, height: h }; }
   /** Find up to `count` licensed images for a news item. queries: [{ provider, q }] tried in order. */
-  async findForNews(newsId, queries, { count = 2 } = {}) {
+  async findForNews(newsId, queries, { count = 2, requireAny = [] } = {}) {
+    // requireAny (News 2.0 strict mode): story-specific proper nouns (e.g. a place); an image must mention at least one, so a
+    // same-type image of a DIFFERENT event (cyclone over another region) is rejected.
+    const must = requireAny.map(t => t.toLowerCase()); const specific = c => !must.length || must.some(t => ` ${c.title} ${c.description || ''} ${(c.keywords || []).join(' ')} `.toLowerCase().includes(t));
     // cached assets must still pass the CURRENT relevance rules (rules get stricter over time)
-    const have = this.assets({ newsId }).filter(a => a.provider === 'moonkatty-generated' ? false : queries.some(({ q }) => relevant(q, a))); if (have.length >= count) return have.slice(0, count);
+    const have = this.assets({ newsId }).filter(a => a.provider === 'moonkatty-generated' ? false : queries.some(({ q }) => relevant(q, a)) && specific(a)); if (have.length >= count) return have.slice(0, count);
     const got = [...have];
     for (const { provider, q } of queries) {
       const p = this.providers[provider]; if (!p) continue;
@@ -53,6 +60,7 @@ class MediaLibrary {
         if (got.some(a => a.pageUrl === c.pageUrl) || this.assets().some(a => a.pageUrl === c.pageUrl && a.newsId !== newsId)) continue; // no reuse across stories
         if (!c.license.ok) { this._reject(c, c.license.reason); continue; }
         if (!relevant(q, c)) { this._reject(c, 'not relevant to query'); continue; }
+        if (!specific(c)) { this._reject(c, `missing story-specific term (${must.join('|')})`); continue; }
         if (c.width && Math.min(c.width, c.height) < this.minShortSide) { this._reject(c, `too small ${c.width}x${c.height}`); continue; }
         try {
           c = await p.resolve(c); if (!c?.url) { this._reject(c || {}, 'no downloadable file'); continue; }

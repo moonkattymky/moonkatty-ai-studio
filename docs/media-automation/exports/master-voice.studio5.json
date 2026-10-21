@@ -1,0 +1,65 @@
+{
+  "schema": "moonkatty.studio5.voice-profile/v1 (proposal)",
+  "id": "MOONKATTY_NEWS_MASTER_VOICE",
+  "displayName": "MOONKATTY NEWS anchor",
+  "status": "locked",
+  "owner": "moonkatty-news (media-automation)",
+  "engine": {
+    "name": "kokoro-82m",
+    "runtime": "kokoro-onnx",
+    "runtimeVersion": "0.6.1",
+    "model": {
+      "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+      "license": "Apache-2.0"
+    },
+    "voicesPack": {
+      "file": "voices-v1.0.bin",
+      "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"
+    }
+  },
+  "voice": {
+    "type": "style-blend",
+    "blend": {
+      "am_puck": 0.6,
+      "am_michael": 0.4
+    },
+    "speed": 1.06,
+    "pitchSemitones": 0.4,
+    "lang": "en-us",
+    "sampleRateHz": 24000,
+    "deliveryFormat": "wav 48kHz mono s16, -16 LUFS"
+  },
+  "character": {
+    "gender": "male",
+    "accent": "en-US",
+    "perceivedAge": "25-35",
+    "description": "warm, confident, friendly, energetic; original synthetic blend, imitates no real person"
+  },
+  "emotionModes": [
+    "SERIOUS",
+    "NEUTRAL",
+    "EXCITED",
+    "CURIOUS",
+    "PLAYFUL",
+    "WITTY",
+    "EMPATHETIC"
+  ],
+  "policy": {
+    "autoReplace": false,
+    "failIfUnavailable": true,
+    "changeRequires": "owner unlock(by, reason)"
+  },
+  "approval": {
+    "approvedBy": "Igor",
+    "approvedAt": "2026-10-21",
+    "audit": [
+      {
+        "at": "2026-10-21",
+        "by": "Igor",
+        "action": "approve_and_lock",
+        "reason": "Owner listening test of voice-casting-v2; chose B over A."
+      }
+    ]
+  },
+  "voiceProfileId": null
+}

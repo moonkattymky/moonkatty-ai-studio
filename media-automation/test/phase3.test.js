@@ -48,9 +48,9 @@ test('master voice: pinned hash, male only, lock/unlock audit, no substitution, 
   mv.unlock('Igor', 'retest'); assert.equal(mv.cfg.audit.length, 1);
   const g = JSON.parse(fs.readFileSync(f)); g.gender = 'female'; fs.writeFileSync(f, JSON.stringify(g)); assert.throws(() => new MasterVoice({ file: f, env: {} }).createTTS(), /male/);
 });
-test('repo master voice config: male, pinned, voiceProfileId field present, not locked yet', () => {
+test('repo master voice config: male, locked by owner (B blend), autoReplace false, voiceProfileId field present', () => {
   const c = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'master-voice.json')));
-  assert.equal(c.gender, 'male'); assert.match(c.model.sha256, /^[0-9a-f]{64}$/); assert.ok('voiceProfileId' in c); assert.notEqual(c.status, 'locked');
+  assert.equal(c.gender, 'male'); assert.match(c.model.sha256, /^[0-9a-f]{64}$/); assert.ok('voiceProfileId' in c); assert.equal(c.status, 'locked'); assert.equal(c.autoReplace, false); assert.equal(c.approvedBy, 'Igor'); assert.deepEqual(c.blend, { am_puck: 0.6, am_michael: 0.4 }); assert.equal(c.speed, 1.06); assert.equal(c.pitchSemitones, 0.4); assert.match(c.voicesSha256, /^[0-9a-f]{64}$/);
 });
 test('pkce S256', () => { const p = pkce(); assert.equal(p.challenge, crypto.createHash('sha256').update(p.verifier).digest('base64url')); assert.ok(p.verifier.length >= 43); });
 test('YouTube OAuth loopback: state check, PKCE exchange, refresh token stored per channel, refresh + invalid_grant', async () => {
@@ -133,7 +133,7 @@ test('relevance: proper noun must match (no opera image for BepiColombo)', () =>
 test('panel fallback: own-work branded panel registered with rights, no stock image', async () => {
   const { MediaLibrary } = require('../src/media/library'); const { panelFallbackFactory, panelSvg } = require('../src/media/panel'); const d = tmp();
   const lib = new MediaLibrary({ dir: d, providers: {} });
-  assert.match(panelSvg({ headline: 'A & B', category: 'space' }), /A &amp; B/);
+  assert.match(panelSvg({ headline: 'A & B', category: 'space', showHeadline: true }), /A &amp; B/); assert.doesNotMatch(panelSvg({ headline: 'A & B', category: 'space' }), /A &amp; B/); // no duplicate headline on panel
   const mk = panelFallbackFactory({ library: lib, dir: d, runFn: async (cmd, args) => { fs.writeFileSync(args[1], 'png'); return { stdout: '' }; } });
   const a = await mk({ story: { id: 's1', category: 'space' }, headline: 'Shock analysis', fact: null });
   assert.equal(a.license, 'Own-work'); assert.ok(fs.existsSync(a.localPath)); assert.equal(lib.rightsReport([a.id]).assets[0].provider, 'moonkatty-generated');

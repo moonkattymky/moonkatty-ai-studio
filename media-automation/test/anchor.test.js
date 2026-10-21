@@ -59,7 +59,7 @@ test('pipeline order, persistence, resume, breaking confirmed-only', async () =>
   await assert.rejects(A.runPipeline({ dir: tmp(), format: 'breaking', handlers: h2, input: {} }), /confirmed-only/);
   assert.equal(A.FORMATS.breaking.humor, false);
 });
-test('anchor-personality config is valid and voice not pinned', () => {
+test('anchor-personality config is valid and points to pinned master voice', () => {
   const c = JSON.parse(fs.readFileSync(path.join(__dirname, '../config/anchor-personality.json'), 'utf8'));
-  assert.equal(c.voice.pinned, false); assert.ok(c.humor.neverAlterFacts); assert.ok(A.NAMES.includes(c.defaultEmotion));
+  assert.equal(c.voice.pinned, true); assert.equal(c.voice.masterVoiceId, 'MOONKATTY_NEWS_MASTER_VOICE'); assert.ok(c.humor.neverAlterFacts); assert.ok(A.NAMES.includes(c.defaultEmotion));
 });

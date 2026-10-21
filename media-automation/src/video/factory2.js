@@ -3,7 +3,7 @@ const fs = require('fs'); const path = require('path');
 const { run, probeDuration } = require('./exec'); const { getPreset } = require('./presets');
 const { buildSrt } = require('./subtitles'); const { parseSrt, validateSrt } = require('./srtcheck'); const { buildAss } = require('./ass');
 const { validateMusic } = require('./music'); const { qaVideo } = require('./qa'); const { stripMarkup } = require('./speech');
-const G = require('./graphics'); const { layoutFor } = require('../media/library'); const { StubHost3D } = require('../host3d');
+const G = require('./graphics'); const { applyLexicon, loadLexicon } = require('./speech'); const { buildCues, checkCues } = require('../anchor/cues'); const crypto = require('crypto'); const { layoutFor } = require('../media/library'); const { StubHost3D } = require('../host3d');
 const ASSETS = path.join(__dirname, '..', '..', 'assets');
 const TRANSITIONS = ['smoothleft', 'circleopen', 'slideup', 'dissolve', 'wiperight', 'radial', 'smoothup', 'fade'];
 
@@ -67,34 +67,44 @@ class NewsVideoFactory {
     let t = 0; const cues = [];
     for (const [i, s] of segs.entries()) {
       s.wav = path.join(work, `a${i}.wav`);
-      if (s.kind === 'story') { const r = await this.tts.synthesize(`[pause 250] ${s.story.text} [pause 350]`, s.wav); s.duration = r.durationSec; s.speech = r.durationSec; }
+      if (s.kind === 'story' && this.tts.constructor.name === 'KokoroBlendTTS') { // emotion-aware master voice with measured sentence times
+        const emo = s.story.emotion || 'NEUTRAL'; const raw = s.wav + '.tts.wav'; const r = await this.tts.synthesize(applyLexicon(stripMarkup(s.story.text), this.lexicon || (this.lexicon = loadLexicon())), raw, { emotion: emo });
+        await this._ff(['-i', raw, '-af', 'adelay=250,apad=pad_dur=0.35', '-ar', '44100', '-ac', '1', s.wav]); fs.rmSync(raw, { force: true });
+        s.duration = r.durationSec + 0.6; s.speech = s.duration; s.sentences = r.sentences.map(x => ({ ...x, start: x.start + 0.25, end: x.end + 0.25, text: x.text })); s.emotion = emo; }
+      else if (s.kind === 'story') { const r = await this.tts.synthesize(`[pause 250] ${s.story.text} [pause 350]`, s.wav); s.duration = r.durationSec; s.speech = r.durationSec; }
       else await this._ff(['-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', s.duration.toFixed(3), s.wav]);
       s.start = t; t += s.duration;
-      if (s.kind === 'story') { const srt = buildSrt([{ text: stripMarkup(s.story.text), start: s.start + 0.25, duration: s.speech - 0.6 }], { maxChars: V ? 28 : 46 }); cues.push(...parseSrt(srt).map(c => ({ start: c.start, end: c.end, text: c.lines.join('\n') }))); }
+      if (s.kind === 'story' && s.sentences) { // captions from word timestamps; displayed text = original script words (lexicon only affects pronunciation)
+        const doc = buildCues({ segmentId: `${basename}-${i}`, audio: { file: s.wav, sha256: crypto.createHash('sha256').update(fs.readFileSync(s.wav)).digest('hex'), durationSec: +s.duration.toFixed(3), sampleRate: 44100 },
+          text: stripMarkup(s.story.text), emotion: s.emotion, sentences: s.sentences.map((x, k) => ({ ...x, text: splitSentences(stripMarkup(s.story.text))[k] || x.text })), offset: s.start, humorTag: s.story.humorTag || null });
+        const chk = checkCues(doc, { offset: s.start }); if (!chk.ok) throw new Error('animation cues invalid: ' + chk.errors.slice(0, 5).join('; ')); s.cues = doc;
+        cues.push(...wordCaptions(doc.words, V ? 26 : 42, s.emotion)); /* <= validateSrt limits (28/46) */ }
+      else if (s.kind === 'story') { const srt = buildSrt([{ text: stripMarkup(s.story.text), start: s.start + 0.25, duration: s.speech - 0.6 }], { maxChars: V ? 28 : 46 }); cues.push(...parseSrt(srt).map(c => ({ start: c.start, end: c.end, text: c.lines.join('\n') }))); }
     }
     const total = t; const lufs = P.targetLufs ?? this.targetLufs; if (P.maxDurationSec && total > P.maxDurationSec) throw new Error(`duration ${total.toFixed(1)}s exceeds ${P.name} limit`);
     const srtText = cues.map((c, i) => `${i + 1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`).join('\n');
     const check = validateSrt(srtText, { maxChars: V ? 28 : 46, totalSec: total }); if (!check.ok) throw new Error('subtitle validation failed: ' + check.errors.join('; '));
     const srt = path.join(outDir, `${basename}.srt`); fs.writeFileSync(srt, srtText);
     const ass = path.join(work, 'subs.ass'); fs.writeFileSync(ass, buildAss(cues, { W, H }));
+    const cuesFile = path.join(outDir, `${basename}.cues.json`); fs.writeFileSync(cuesFile, JSON.stringify({ contract: 'moonkatty/animation-cues/v1', video: `${basename}.mp4`, voice: this.tts.name, segments: segs.filter(x => x.cues).map(x => x.cues) }, null, 2));
     // ---- clips
-    const clips = []; const pad = Math.round(Math.min(W, H) * 0.04);
+    const clips = []; const pad = Math.round(Math.min(W, H) * 0.05); const padX = Math.round(W * 0.05), padY = Math.round(H * 0.05); // title-safe 5%
     for (const [i, s] of segs.entries()) {
       const L = s.duration + (i < segs.length - 1 ? T : 0); const out = path.join(work, `v${i}.mp4`); const ov = [];
       if (s.kind === 'intro') {
-        const title = await png('title', G.titleSvg({ W, H, title: 'MOONKATTY NEWS', subtitle: ep.dateLabel || '' })); const [tw, th] = await dims(title); const [lw, lh] = await dims(logoBig);
+        const title = await png('title', G.titleSvg({ W, H, title: 'MOONKATTY NEWS', subtitle: [ep.formatTitle, ep.dateLabel].filter(Boolean).join(' · ') })); const [tw, th] = await dims(title); const [lw, lh] = await dims(logoBig);
         ov.push({ file: logoBig, x: `(W-w)/2`, y: `${Math.round(H * (V ? 0.3 : 0.18))}+(${lh}-h)/2`, start: 0.1, fadeIn: 0.9, scaleIn: true });
         ov.push({ file: title, x: Math.round((W - tw) / 2), y: Math.round(H * (V ? 0.3 : 0.18) + lh + pad), start: 0.9, fadeIn: 0.7, slide: false });
         await this._clip({ out, L, W, H, fps, bg: { type: 'stars', file: stars }, overlays: ov });
       } else if (s.kind === 'story') {
         const st = s.story; const lt = await png(`lt${i}`, G.lowerThirdSvg({ W, H, category: st.category || 'news', headline: st.headline })); const [, lth] = await dims(lt);
-        const ltY = V ? Math.round(H * 0.58) : H - lth - Math.round(H * 0.16);
-        ov.push({ file: lt, x: pad, y: ltY, start: 0.35, fadeIn: 0.5, slide: true });
+        const ltY = V ? Math.round(H * 0.58) : H - lth - Math.round(H * 0.17);
+        ov.push({ file: lt, x: padX, y: ltY, start: 0.35, fadeIn: 0.5, slide: true });
         if (st.fact) { const ip = await png(`ip${i}`, G.infoPanelSvg({ W, H, ...st.fact })); const [iw] = await dims(ip);
-          ov.push({ file: ip, x: W - iw - pad, y: V ? Math.round(H * 0.12) : Math.round(H * 0.1), start: Math.min(2.2, s.duration * 0.3), fadeIn: 0.5 }); }
+          ov.push({ file: ip, x: W - iw - padX, y: V ? Math.round(H * 0.12) : padY + Math.round(H * 0.08), start: Math.min(2.2, s.duration * 0.3), fadeIn: 0.5 }); }
         const ct = await png(`ct${i}`, G.creditTagSvg({ W, H, text: st.asset.attribution })); const [, cth] = await dims(ct);
-        ov.push({ file: ct, x: pad, y: V ? Math.round(H * 0.555) - cth : pad, start: 0.6, fadeIn: 0.4 });
-        const [bw] = await dims(logoBug); ov.push({ file: logoBug, x: W - bw - pad, y: V ? Math.round(H * 0.035) : pad, start: 0, fadeIn: 0.3 });
+        ov.push({ file: ct, x: padX, y: V ? Math.round(H * 0.555) - cth : padY, start: 0.6, fadeIn: 0.4 });
+        const [bw] = await dims(logoBug); ov.push({ file: logoBug, x: W - bw - padX, y: V ? Math.round(H * 0.05) : padY, start: 0, fadeIn: 0.3 });
         const bg = s.layout.mode === 'kenburns' ? { type: 'kenburns', file: st.asset.localPath, zoom: 1.1, dir: i } : { type: 'blurfill', file: st.asset.localPath, fgWidth: s.layout.fgWidth, fgHeight: s.layout.fgHeight };
         await this._clip({ out, L, W, H, fps, bg, overlays: ov });
         const seg3d = await this.host3d.renderSegment({ script: stripMarkup(st.text), audioPath: s.wav, durationSec: s.duration, aspect: P.aspect, outPath: path.join(work, `char${i}.mov`) });
@@ -124,16 +134,17 @@ class NewsVideoFactory {
     const anchor = path.join(outDir, `${basename}.anchor.wav`); await this._ff(['-i', narr, '-af', `loudnorm=I=${lufs}:TP=-1.5:LRA=11`, '-ar', '48000', '-ac', '1', '-c:a', 'pcm_s16le', anchor]);
     const mix = path.join(work, 'mix.wav');
     if (m) await this._ff(['-i', narr, '-stream_loop', '-1', '-i', m.file, '-filter_complex', `[0:a]aformat=channel_layouts=stereo[n];[1:a]aresample=44100,volume=${m.volume},atrim=0:${total.toFixed(3)}[mu];[mu][n]sidechaincompress=threshold=0.03:ratio=8:attack=15:release=350[d];[n][d]amix=inputs=2:duration=first:normalize=0[o]`, '-map', '[o]', '-t', total.toFixed(3), mix]);
-    else await this._ff(['-i', narr, '-ac', '2', mix]);
+    else await this._ff(['-i', narr, '-ac', '2', mix]); // stereo (dual-mono narration) in all outputs
     const norm = path.join(work, 'norm.wav'); const ln = `loudnorm=I=${lufs}:TP=-1.5:LRA=11`;
     const { stderr } = await this.runFn('ffmpeg', ['-hide_banner', '-nostats', '-i', mix, '-af', `${ln}:print_format=json`, '-f', 'null', '-']); const me = JSON.parse(stderr.slice(stderr.lastIndexOf('{'), stderr.lastIndexOf('}') + 1));
-    await this._ff(['-i', mix, '-af', `${ln}:measured_I=${me.input_i}:measured_TP=${me.input_tp}:measured_LRA=${me.input_lra}:measured_thresh=${me.input_thresh}:offset=${me.target_offset}:linear=true,aresample=48000`, norm]);
+    const norm0 = path.join(work, 'norm0.wav'); await this._ff(['-i', mix, '-af', `${ln}:measured_I=${me.input_i}:measured_TP=${me.input_tp}:measured_LRA=${me.input_lra}:measured_thresh=${me.input_thresh}:offset=${me.target_offset}:linear=true,aresample=48000`, '-ac', '2', norm0]);
+    const loud = await exactLoudness(norm0, norm, lufs, this.runFn, work); // gain trim + true-peak limiter, iterated to |ΔI| <= 0.1 LU
     // ---- final
     const out = path.join(outDir, `${basename}.mp4`);
     await this._ff(['-i', joined, '-i', norm, '-filter_complex', `[0:v]ass='${path.basename(ass)}',scale=out_range=tv,format=yuv420p[v]`, '-map', '[v]', '-map', '1:a', '-c:v', 'libx264', '-preset', 'medium', '-crf', String(P.crf), '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-t', total.toFixed(3), '-movflags', '+faststart', out], work);
     const thumb = path.join(outDir, `${basename}.jpg`); await this._ff(['-ss', (segs[1].start + 1.6).toFixed(2), '-i', out, '-frames:v', '1', '-q:v', '2', thumb]);
     const qa = await qaVideo(out, { width: W, height: H, fps, durationSec: total, targetLufs: lufs, runFn: this.runFn, visual: true });
-    const manifest = { title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
+    const manifest = { loudness: loud, cuesFile, title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
       tts: this.tts.name, transitions: used, segments: segs.map(s => ({ kind: s.kind, storyId: s.story?.id, assetId: s.story?.asset.id, layout: s.layout?.mode, start: +s.start.toFixed(3), duration: +s.duration.toFixed(3) })),
       sources: ep.sources, rights: ep.rights, music: m && { title: m.title, artist: m.artist, license: m.license }, subtitles: check, qa, createdAt: new Date().toISOString() };
     fs.writeFileSync(path.join(outDir, `${basename}.json`), JSON.stringify(manifest, null, 2)); if (!process.env.MA_KEEP_WORK) fs.rmSync(work, { recursive: true, force: true });
@@ -141,6 +152,23 @@ class NewsVideoFactory {
     return manifest;
   }
 }
+const splitSentences = t => (String(t).match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) || []).map(x => x.trim()).filter(Boolean);
+const CAP_STYLE = { SERIOUS: 'Serious', EMPATHETIC: 'Serious', NEUTRAL: 'Default', CURIOUS: 'Curious', EXCITED: 'Bright', PLAYFUL: 'Bright', WITTY: 'Bright' };
+/** Caption chunks from word timestamps: <= maxChars, split at sentence ends, 2 lines max handled by ASS wrap. */
+function wordCaptions(words, maxChars, emotion) {
+  const out = []; let cur = []; const lines = ws => { const L = [[]]; for (const w of ws) { const l = L[L.length - 1]; if (l.length && [...l, w].map(x => x.w).join(' ').length > maxChars) L.push([w]); else l.push(w); } return L; };
+  const flush = () => { if (!cur.length) return; out.push({ start: cur[0].start, end: Math.max(cur[cur.length - 1].end, cur[0].start + 0.8), text: lines(cur).map(l => l.map(w => w.w).join(' ')).join('\n'), style: CAP_STYLE[emotion] || 'Default' }); cur = []; };
+  for (const w of words) { if (cur.length && lines([...cur, w]).length > 2) flush(); cur.push(w); if (/[.!?]["')]?$/.test(w.w)) flush(); }
+  flush(); for (let i = 0; i < out.length - 1; i++) { out[i].end = Math.max(out[i].start + 0.8, Math.min(out[i].end, out[i + 1].start - 0.02)); out[i + 1].start = Math.max(out[i + 1].start, out[i].end + 0.02); out[i + 1].end = Math.max(out[i + 1].end, out[i + 1].start + 0.8); } return out;
+}
+async function measureI(f, runFn) { const { stderr } = await runFn('ffmpeg', ['-hide_banner', '-nostats', '-i', f, '-filter_complex', 'ebur128=peak=true', '-f', 'null', '-']); const sum = stderr.slice(stderr.lastIndexOf('Summary:'));
+  return { I: parseFloat(sum.match(/I:\s+(-?[\d.]+) LUFS/)[1]), TP: parseFloat((sum.match(/Peak:\s+(-?[\d.]+) dBFS/) || [])[1]) }; }
+async function exactLoudness(src, out, target, runFn, work) {
+  let cur = src; const steps = [];
+  for (let k = 0; k < 4; k++) { const m = await measureI(cur, runFn); steps.push(m); if (Math.abs(m.I - target) <= 0.1 && m.TP <= -1.0) { fs.copyFileSync(cur, out); return { targetLufs: target, measured: m, passes: steps }; }
+    const nxt = path.join(work, `loud${k}.wav`); await runFn('ffmpeg', ['-y', '-v', 'error', '-i', cur, '-af', `volume=${(target - m.I).toFixed(2)}dB,alimiter=limit=0.79:level=disabled:attack=5:release=60,aresample=48000`, '-ac', '2', nxt]); cur = nxt; }
+  const m = await measureI(cur, runFn); fs.copyFileSync(cur, out); return { targetLufs: target, measured: m, passes: steps };
+}
 const fmt = s => { const ms = Math.round(s * 1000); const p = (n, w = 2) => String(n).padStart(w, '0'); return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`; };
 const hostOf = u => { try { return new URL(u).host.replace(/^www\./, ''); } catch { return u || ''; } };
-module.exports = { NewsVideoFactory, TRANSITIONS };
+module.exports = { NewsVideoFactory, TRANSITIONS, wordCaptions, exactLoudness };
