@@ -1,0 +1,404 @@
+{
+  "commit": "aef14c465322e3c969b41d4866c3557b7b555367",
+  "src": "/tmp/mk-uc2",
+  "controls": 79,
+  "failed": [],
+  "node": "v22.23.3",
+  "rows": [
+    {
+      "id": "worktree-commit",
+      "ok": true,
+      "detail": "aef14c465322e3c969b41d4866c3557b7b555367"
+    },
+    {
+      "id": "worktree-clean-before",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "id": "url-policy-blocks-ssrf",
+      "ok": true,
+      "detail": "http:NOT_HTTPS metadata-ip:URL_NOT_ALLOWED localhost:URL_NOT_ALLOWED userinfo:BAD_URL foreign-repo:REPO_NOT_ALLOWED port:BAD_URL"
+    },
+    {
+      "id": "redirect-to-metadata-blocked",
+      "ok": true,
+      "detail": "NOT_HTTPS"
+    },
+    {
+      "id": "sig-prod-key-accepts-stable",
+      "ok": true,
+      "detail": "{\"ok\":true,\"keyId\":\"952447f1ce41a7a8\",\"set\":\"prod\",\"stub\":false}"
+    },
+    {
+      "id": "sig-raw-base64-rejected",
+      "ok": true,
+      "detail": "подпись не в формате {v,alg,keyId,sig} — подпись без keyId не принимается"
+    },
+    {
+      "id": "sig-flipped-rejected",
+      "ok": true,
+      "detail": "подпись не прошла проверку ключом 952447f1ce41a7a8"
+    },
+    {
+      "id": "sig-tampered-manifest-rejected",
+      "ok": true,
+      "detail": "подпись не прошла проверку ключом 952447f1ce41a7a8"
+    },
+    {
+      "id": "sig-unknown-key-rejected",
+      "ok": true,
+      "detail": "ключ 6efd187217e6de3a не входит в доверенный набор «prod» (канал stable)"
+    },
+    {
+      "id": "sig-test-key-rejected-for-stable",
+      "ok": true,
+      "detail": "ключ 6ba9622e82c4432b не входит в доверенный набор «prod» (канал stable)"
+    },
+    {
+      "id": "sig-prod-key-rejected-for-test",
+      "ok": true,
+      "detail": "ключ 952447f1ce41a7a8 не входит в доверенный набор «test» (канал test)"
+    },
+    {
+      "id": "sig-revoked-key-rejected",
+      "ok": true,
+      "detail": "ключ b76aeb11911b3e29 отозван"
+    },
+    {
+      "id": "sig-retired-key-rejected",
+      "ok": true,
+      "detail": "ключ df8edf4d2206dd41 не входит в доверенный набор «prod» (канал stable)"
+    },
+    {
+      "id": "sig-next-test-key-accepts",
+      "ok": true,
+      "detail": "{\"ok\":true,\"keyId\":\"2474e39866296d7d\",\"set\":\"test\",\"stub\":false}"
+    },
+    {
+      "id": "stub-prod-key-dropped",
+      "ok": true,
+      "detail": "ключ-заглушка 5a5a32c4ded25789 отклонён для prod"
+    },
+    {
+      "id": "revoked-and-retired-not-loaded",
+      "ok": true,
+      "detail": "prod=952447f1ce41a7a8 revoked=b76aeb11911b3e29"
+    },
+    {
+      "id": "committed-ring-prod-empty",
+      "ok": true,
+      "detail": "{\"prod\":0,\"test\":1,\"stubOnly\":{\"prod\":true,\"test\":true},\"problems\":[],\"files\":[\"README.md\",\"keyring.json\",\"stub-test-ed25519.pub.pem\"]}"
+    },
+    {
+      "id": "no-private-key-in-tree",
+      "ok": true,
+      "detail": "README.md,keyring.json,stub-test-ed25519.pub.pem"
+    },
+    {
+      "id": "fresh-release-verified",
+      "ok": true,
+      "detail": "нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "downgrade-blocked",
+      "ok": true,
+      "detail": "версия 1.1.9 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "same-version-blocked",
+      "ok": true,
+      "detail": "версия 1.2.0 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "older-than-365-days-blocked",
+      "ok": true,
+      "detail": "релиз опубликован 2334 дн. назад (> 365) — возможен replay старой подписи | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "same-bytes-second-check-still-verified",
+      "ok": true,
+      "detail": "second check of the same bytes still verified"
+    },
+    {
+      "id": "missing-publishedAt-skips-age",
+      "ok": true,
+      "detail": "tag=v1.3.0 publishedAt=null reasons=нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "republish-resets-age",
+      "ok": true,
+      "detail": "publishedAt=2026-10-01T00:00:00Z reasons=нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "strict-tag-rejects-suffix",
+      "ok": true,
+      "detail": "тег v1.3.0-test не соответствует версии/каналу manifest 1.3.0/stable"
+    },
+    {
+      "id": "preview-tag-allowed",
+      "ok": true,
+      "detail": "verified"
+    },
+    {
+      "id": "preview-tag-rejected-on-stable",
+      "ok": true,
+      "detail": "тег v1.3.1-mac-preview не соответствует версии/каналу manifest 1.3.1/stable"
+    },
+    {
+      "id": "version-without-test-prerelease-blocked",
+      "ok": true,
+      "detail": "идентичность в manifest не соответствует профилю канала «test» (расходятся: bundleId, appName, dataDirName, launchdLabel, keychainServicePrefix, isolated) — например test-manifest с prod-идентификаторами | версия 1.3.0 не соответствует каналу test | другой канал/сборка (test, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio) запрещена; рядом можно только полностью изолированную сборку | "
+    },
+    {
+      "id": "test-manifest-prod-ids-blocked",
+      "ok": true,
+      "detail": "идентичность в manifest не соответствует профилю канала «test» (расходятся: bundleId, appName, dataDirName, launchdLabel, keychainServicePrefix) — например test-manifest с prod-идентификаторами | другой канал/сборка (test, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio) запрещена; рядом можно только полностью изолированную сборку auto=BLOCKED"
+    },
+    {
+      "id": "channel-switch-is-side-by-side",
+      "ok": true,
+      "detail": "mode=side-by-side target=/Applications/MOONKATTY AI STUDIO TEST.app reasons="
+    },
+    {
+      "id": "prod-manifest-cannot-replace-test-app",
+      "ok": true,
+      "detail": "другой канал/сборка (stable, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio.test) запрещена; рядом можно только полностью изолированную сборку"
+    },
+    {
+      "id": "test-profile-replaces-test-app-only",
+      "ok": true,
+      "detail": "mode=replace target=/Applications/MOONKATTY AI STUDIO TEST.app reasons="
+    },
+    {
+      "id": "runtime-identity-prod-and-test",
+      "ok": true,
+      "detail": "{\"prod\":\"prod\",\"test\":\"test\",\"testPath\":\"/Applications/MOONKATTY AI STUDIO TEST.app\"}"
+    },
+    {
+      "id": "flavor-contradiction-blocks",
+      "ok": true,
+      "detail": "STUDIO_FLAVOR=prod противоречит bundle id com.moonkatty.aistudio.test || неизвестный bundle id: com.evil.app"
+    },
+    {
+      "id": "unknown-identity-blocks-install",
+      "ok": true,
+      "detail": "идентичность запущенного приложения не определена: неизвестный bundle id: com.evil.app"
+    },
+    {
+      "id": "toctou-replaced-zip-blocks-plan",
+      "ok": true,
+      "detail": "plan=SHA-256 архива изменился после загрузки — установка запрещена auto=BLOCKED status=tampered"
+    },
+    {
+      "id": "consent-cleared-when-manifest-changes",
+      "ok": true,
+      "detail": "manifest изменился — прежнее согласие владельца аннулировано"
+    },
+    {
+      "id": "consent-bound-to-manifest-sha256",
+      "ok": true,
+      "detail": "поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest"
+    },
+    {
+      "id": "zip-slip-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"../outside.txt\""
+    },
+    {
+      "id": "absolute-path-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"/tmp/abs.txt\""
+    },
+    {
+      "id": "backslash-rejected",
+      "ok": true,
+      "detail": "опасный путь в архиве: \"..\\\\outside.txt\""
+    },
+    {
+      "id": "symlink-absolute-rejected",
+      "ok": true,
+      "detail": "симлинк ведёт за пределы приложения: MOONKATTY AI STUDIO.app/Contents/MacOS/escape -> /etc/passwd"
+    },
+    {
+      "id": "symlink-escape-rejected",
+      "ok": true,
+      "detail": "симлинк ведёт за пределы приложения: MOONKATTY AI STUDIO.app/Contents/MacOS/escape -> ../../../../../../etc/passwd"
+    },
+    {
+      "id": "symlink-inside-app-allowed",
+      "ok": true,
+      "detail": "ok=true problems="
+    },
+    {
+      "id": "zip-slip-download-deleted",
+      "ok": true,
+      "detail": "BAD_ARCHIVE leftover=false"
+    },
+    {
+      "id": "symlink-download-refused",
+      "ok": true,
+      "detail": "BAD_ARCHIVE"
+    },
+    {
+      "id": "autoinstall-off-without-flags",
+      "ok": true,
+      "detail": "AUTO_INSTALL_DISABLED"
+    },
+    {
+      "id": "autoinstall-dry-run-spctl-on-staging",
+      "ok": true,
+      "detail": "/usr/bin/ditto -x -k /tmp/mk-uc2-jMB1ep/downloads/v1.3.0/MOONKATTY-AI-STUDIO-1.3.0-arm64-mac.zip /tmp/mk-uc2-jMB1ep/staging/v1.3.0\n/usr/bin/codesign --verify --deep --strict /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app\n/usr/sbin/spctl --assess --type execute /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app\n/usr/bin/codesign -dv --verbose=4 /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app\n/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server\n/bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-previous.app\n/bin/mv /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO.app\n/bin/launchctl bootstrap gui/1000 /home/ubuntu/Library/LaunchAgents/com.moonkatty.aistudio.server.plist"
+    },
+    {
+      "id": "autoinstall-requires-developer-id",
+      "ok": true,
+      "detail": "NOT_NOTARIZED"
+    },
+    {
+      "id": "autoinstall-refuses-non-mac",
+      "ok": true,
+      "detail": "linux=NOT_MAC armedDarwinAttempt=undefined"
+    },
+    {
+      "id": "rollback-is-mv-and-http-dry",
+      "ok": true,
+      "detail": "NOT_MAC /bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server || /bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-failed-1792584000000.app || /bin/mv /Applications/MOONKATTY AI STUDIO-previous.app /Applications/MOONKATTY AI STUDIO.app || /bin/launchctl bootstrap gui/1000 /home/ubuntu/Library/LaunchAgents/com.moonkatty.aistudio.server.plist"
+    },
+    {
+      "id": "legacy-plan-has-no-rm-rf",
+      "ok": true,
+      "detail": "[\"Закройте приложение\",\"mv \\\"/Applications/MOONKATTY AI STUDIO.app\\\" \\\"/Applications/MOONKATTY AI STUDIO-failed.app\\\" && mv \\\"/Applications/MOONKATTY AI STUDIO-previous.app\\\" \\\"/Applications/MOONKATTY AI STUDIO.app\\\" (неудачную версию не удалять)\",\"Если менялась схема данных — восстановите бэкап в пустую папку: node ops/backup.js restore <id> --to <папка> и замените папку данных\"]"
+    },
+    {
+      "id": "schema-3-blocks-gate",
+      "ok": true,
+      "detail": "schema=false/3 compat=текущая БД (схема 3) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено gate=проверка совместимости БД/миграций не пройдена: текущая БД (схема 3) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено"
+    },
+    {
+      "id": "schema-99-blocks-gate",
+      "ok": true,
+      "detail": "неизвестная версия схемы 99 (известны 1, 2, 3, 4)"
+    },
+    {
+      "id": "schema-4-fail-closed",
+      "ok": true,
+      "detail": "v1=true v4=false supported=1 текущая БД (схема 4) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено"
+    },
+    {
+      "id": "schema-99-db-fail-closed",
+      "ok": true,
+      "detail": "текущая БД (схема 99) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено"
+    },
+    {
+      "id": "non-darwin-codesign-not-ok",
+      "ok": true,
+      "detail": "codesign:false"
+    },
+    {
+      "id": "gatekeeper-rejection-not-ok",
+      "ok": true,
+      "detail": "codesign:true,gatekeeper:false"
+    },
+    {
+      "id": "health-url-loopback-only",
+      "ok": true,
+      "detail": "BAD_HEALTH_URL BAD_HEALTH_URL BAD_HEALTH_URL http://127.0.0.1:8787/api/health ctor=BAD_HEALTH_URL"
+    },
+    {
+      "id": "update-center-has-no-interval",
+      "ok": true,
+      "detail": "no setInterval in update-center.js"
+    },
+    {
+      "id": "index-health-is-loopback",
+      "ok": true,
+      "detail": "index builds 127.0.0.1 health URL"
+    },
+    {
+      "id": "ops-sources-have-no-rm-rf",
+      "ok": true,
+      "detail": "lib/ops has no rm -rf"
+    },
+    {
+      "id": "ui-check-is-a-button",
+      "ok": true,
+      "detail": "POST /check is the button handler"
+    },
+    {
+      "id": "electron-autocheck-off",
+      "ok": true,
+      "detail": "DEF.checkUpdates false; manual only"
+    },
+    {
+      "id": "electron-check-does-not-install",
+      "ok": true,
+      "detail": "no electron-updater"
+    },
+    {
+      "id": "builder-still-adhoc",
+      "ok": true,
+      "detail": "{\"target\":[{\"target\":\"dir\",\"arch\":[\"arm64\"]}],\"category\":\"public.app-category.productivity\",\"icon\":\"build/icon.png\",\"identity\":null,\"hardenedRuntime\":false,\"gatekeeperAssess\":false,\"minimumSystemVersion\":\"12.0\",\"extendInfo\":{\"LSApplicationCategoryType\":\"public.app-category.productivity\",\"CFBundleDevelopmentRegion\":\"ru\",\"NSHumanReadableCopyright\":\"MOONKATTY\"}}"
+    },
+    {
+      "id": "servers-started",
+      "ok": true,
+      "detail": "off=true on=true ge at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nMOONKATTY AI STUDIO: http://127.0.0.1:18961 (pid 45085, db node:sqlite)\n(node:45086) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nMOONKATTY AI STUDIO: http://127.0.0.1:18962 (pid 45086, db node:sqlite)\n"
+    },
+    {
+      "id": "flag-off-is-404",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "id": "unauthenticated-is-401",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "csrf-missing-header-403",
+      "ok": true,
+      "detail": "CSRF check failed (missing X-Studio-Request header)"
+    },
+    {
+      "id": "csrf-evil-origin-403",
+      "ok": true,
+      "detail": "Cross-origin request rejected"
+    },
+    {
+      "id": "csrf-cross-site-403",
+      "ok": true,
+      "detail": "Cross-site request rejected"
+    },
+    {
+      "id": "autoinstall-http-disabled",
+      "ok": true,
+      "detail": "{\"error\":\"автоустановка выключена: не заданы OPS_UPDATE_AUTO_INSTALL, OPS_UPDATE_SIGNATURE_READY, OPS_UPDATE_BACKUP_VERIFIED_READY, OPS_UPDATE_ROLLBACK_TESTED_ON_MAC\",\"code\":\"AUTO_INSTALL_DISABLED\"}"
+    },
+    {
+      "id": "rollback-http-stays-dry-run",
+      "ok": true,
+      "detail": "{\"dryRun\":true,\"commands\":[\"/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server\",\"/bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-failed-1792587923208.app\",\"/bin/mv /Applications/MOONKATTY AI STUDIO-previous.app /Applications/MOONKATTY AI STUDIO.app\",\"/bin/l"
+    },
+    {
+      "id": "approve-wrong-password-403",
+      "ok": true,
+      "detail": "Неверный пароль владельца"
+    },
+    {
+      "id": "check-does-not-touch-applications",
+      "ok": true,
+      "detail": "status=200 applicationsApp=false bind=http://127.0.0.1:18962"
+    },
+    {
+      "id": "server-bind-is-loopback",
+      "ok": true,
+      "detail": "http://127.0.0.1:18962"
+    },
+    {
+      "id": "worktree-clean-after",
+      "ok": true,
+      "detail": "clean"
+    }
+  ]
+}

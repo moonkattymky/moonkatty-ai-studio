@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T12:54:00.747Z",
+  "updatedAt": "2026-10-21T13:06:50.610Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -363,12 +363,12 @@
       "id": "QA-UC-001",
       "title": "Update Center has one identity and one signing key",
       "severity": "high",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "On feat/update-center at 9ffad98 the running app is always the production identity, and every channel is checked with the one public key. A test-channel manifest that copies the production bundleId, data directory, launchd label, and Keychain prefix is a replace of /Applications/MOONKATTY AI STUDIO.app.",
       "expected": "Test and production update independently, with different bundle ids, data directories, launchd labels, Keychain prefixes, channels, and signing keys.",
-      "actual": "CURRENT_IDENTITY is hardcoded to com.moonkatty.aistudio. Channel is not an identity field. loadKeys() reads one pem. A signed test-channel manifest with production ids planned mode replace.",
+      "actual": "On aef14c4 a signed test-channel manifest with production ids is blocked. installPlan mode is blocked. autoInstall returns BLOCKED. The committed prod key set is empty.",
       "repro": [
         "Load lib/ops/update-center.js from 9ffad98",
         "Sign a manifest with channel test and the production bundleId, dataDirName, launchdLabel, and keychainServicePrefix",
@@ -377,17 +377,24 @@
       ],
       "evidence": [
         "qa/reports/update-center/REPORT.md",
-        "qa/reports/update-center/logs/attack.json"
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
       ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "The committed public key is a placeholder, so a real release does not verify yet. The gate still treats a test channel with production ids as a replace once a real key is installed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.157Z",
+          "status": "qa_verified",
+          "note": "aef14c4: a test-channel manifest with production ids is blocked after signature, backup, and approval. installPlan mode is blocked. autoInstall returns BLOCKED. The prod key set is empty. Owner approval is not set."
         }
       ]
     },
@@ -395,12 +402,12 @@
       "id": "QA-UC-002",
       "title": "Update zip symlink entries are accepted",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "inspectZip counts symlink entries and still returns ok. Download marks that archive verified. The auto-install dry-run extracts it with ditto -x -k into /Applications.",
       "expected": "A symlink whose target leaves the archive is rejected, or extraction creates the link without following it and the install refuses it.",
-      "actual": "A zip containing MOONKATTY AI STUDIO.app plus a symlink to /etc/passwd has symlinks 1 and ok true. The dry-run command is ditto -x -k of that zip into /Applications.",
+      "actual": "On aef14c4 a symlink to /etc/passwd and a symlink that leaves the app fail inspectZip. Download returns BAD_ARCHIVE and deletes the file. An in-app relative symlink stays allowed.",
       "repro": [
         "Build a stored zip with a normal app entry and a Unix symlink entry aimed at /etc/passwd",
         "Sign the manifest and call download",
@@ -409,17 +416,24 @@
       ],
       "evidence": [
         "qa/reports/update-center/REPORT.md",
-        "qa/reports/update-center/logs/attack.json"
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
       ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "Path traversal, absolute paths, and backslashes are rejected. Symlinks are not. ditto was not executed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.185Z",
+          "status": "qa_verified",
+          "note": "aef14c4: a symlink to /etc/passwd and a symlink that leaves the app fail inspectZip. Download returns BAD_ARCHIVE. An in-app relative symlink stays allowed. Owner approval is not set."
         }
       ]
     },
@@ -427,12 +441,12 @@
       "id": "QA-UC-003",
       "title": "Verified update bytes are not hashed again at install",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "After download status is verified, replacing the zip on disk leaves installPlan allowed and points ditto at the new bytes. Owner approval is stored by tag, so a later signed manifest for the same tag stays approved.",
       "expected": "install and autoInstall recompute SHA-256 and require it to match the signed manifest. Approval is bound to that digest.",
-      "actual": "Overwriting the verified file changed its SHA-256 and installPlan stayed allowed. A second signed manifest for tag v1.3.0 remained approved.",
+      "actual": "On aef14c4 replacing the verified zip makes installPlan refuse and sets status tampered. A second signed manifest for the same tag clears the stored approval.",
       "repro": [
         "Download a signed zip until status is verified",
         "Overwrite the file with different zip bytes",
@@ -441,17 +455,24 @@
       ],
       "evidence": [
         "qa/reports/update-center/REPORT.md",
-        "qa/reports/update-center/logs/attack.json"
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
       ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "Requires a local write to the update data directory, or a replaced GitHub release that is signed with a loaded key. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.225Z",
+          "status": "qa_verified",
+          "note": "aef14c4: replacing the verified zip makes installPlan refuse and sets status tampered. A later manifest for the same tag clears the stored approval. Owner approval is not set."
         }
       ]
     },
@@ -459,29 +480,36 @@
       "id": "QA-UC-004",
       "title": "Electron checks GitHub releases five seconds after launch",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "desktop/main.js defaults checkUpdates to true and calls checkUpdates(false) five seconds after the app is ready. That path fetches the pinned GitHub releases API and can open the release page. It does not download the zip or replace the app.",
       "expected": "An update check runs only after the owner presses Check for updates. There is no automatic check.",
-      "actual": "The timer runs unless desktop.json sets checkUpdates to false. The menu item \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f is a separate explicit action. package.json has no electron-updater dependency.",
+      "actual": "On aef14c4 desktop/main.js defaults checkUpdates to false. checkUpdates returns immediately unless the menu passes manual. The five-second timer is gone.",
       "repro": [
         "Read desktop/main.js DEF.checkUpdates and the ready handler",
         "Confirm setTimeout calls checkUpdates(false) at 5000 ms",
         "Confirm the function returns before any install when the zip or checksum is missing"
       ],
       "evidence": [
-        "qa/reports/update-center/REPORT.md"
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
       ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, desktop/main.js",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "Update Center itself has no timer. This is the Electron shell on the same branch. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.264Z",
+          "status": "qa_verified",
+          "note": "aef14c4: desktop/main.js defaults checkUpdates to false and returns immediately unless the menu passes manual. The five-second timer is gone. Owner approval is not set."
         }
       ]
     },
@@ -489,12 +517,12 @@
       "id": "QA-UC-005",
       "title": "Schema support cap does not block the install gate",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "schemaCheck treats only schema version 1 as supported. A database detected as version 3 returns ok false. compatCheck ignores that flag and allows a manifest whose dbSchemaVersion is greater than or equal to the detected version, including a jump to 99.",
       "expected": "A release whose schema the running code marks unsupported stays blocked.",
-      "actual": "schemaCheck.ok is false at version 3 while gate mode is replace when the manifest schema is 3. A manifest schema of 99 against a detected schema of 4 is compat ok with migration true.",
+      "actual": "On aef14c4 schema 3, 4, and 99 make schemaCheck.ok false and the gate blocks. Manifest dbSchemaVersion 99 is blocked as an unknown schema.",
       "repro": [
         "Build a fake db whose jobs table has an input column and no meta.schemaVersion",
         "Call schemaCheck and read ok false, schemaVersion 3, supported 1",
@@ -502,17 +530,24 @@
       ],
       "evidence": [
         "qa/reports/update-center/REPORT.md",
-        "qa/reports/update-center/logs/attack.json"
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
       ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, lib/ops/update.js and lib/ops/update-center.js",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "A manifest schema older than the database stays blocked. Their unit tests stub schemaCheck to ok true. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.293Z",
+          "status": "qa_verified",
+          "note": "aef14c4: schema 3, 4, and 99 make schemaCheck.ok false and the gate blocks. Manifest schema 99 is blocked as unknown. Owner approval is not set."
         }
       ]
     },
@@ -619,7 +654,7 @@
       "status": "qa_verified",
       "ownerApproval": false,
       "area": "3d",
-      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with '\u0410\u0433\u0435\u043d\u0442 OpenCode \u043d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043b scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
+      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with 'Агент OpenCode не записал scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
       "expected": "A model that does not call write still leaves a schema-valid scene_params.json from the studio params, or the job says the model must call write before the Mac test is treated as done.",
       "actual": "On 6cf7c08 a chat-only mock finished with tools none. The job status was failed at stage agent. scene.blend and preview.png were absent. The same server, with the product mock that does call write, produced a 913264-byte BLENDER file and a 640x480 PNG.",
       "repro": [
@@ -646,6 +681,38 @@
           "at": "2026-10-21T12:54:00.709Z",
           "status": "qa_verified",
           "note": "b7101c4 (36fc193 merged in 5b7e000): a chat-only OpenCode reply is JSON text with no tools. The studio writes scene_params.json. Blender 4.2.9 LTS wrote scene.blend (913192 bytes, magic BLENDER) and a 320x240 PNG. Malformed JSON stops after one retry. Symlink and traversal writes are refused. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-006",
+      "title": "Release age uses the unsigned GitHub date",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "The 365-day refusal reads GitHub release published_at. That field is outside the signed manifest. A missing date skips the check. Republishing the same signed bytes with a fresh published_at is not refused for age.",
+      "expected": "The age the gate enforces is covered by the manifest signature, so republishing an old manifest cannot reset it.",
+      "actual": "A release dated 2020-06-01 is blocked at 2334 days. The same signed version with published_at 2026-10-01 is not age-blocked. published_at null skips the age check. A lower version stays blocked by the version compare. A revoked key stays rejected.",
+      "repro": [
+        "Sign a stable manifest whose version is newer than the running app",
+        "Serve it once with published_at 2020-06-01 and read the 365-day gate reason",
+        "Serve the same bytes with published_at 2026-10-01 and read the gate reasons",
+        "Serve the same bytes with published_at null and confirm the age reason is absent"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:10:00.000Z",
+      "foundIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:10:00.000Z",
+          "status": "open",
+          "note": "Downgrade by version still blocks. Revocation still blocks. The date itself is GitHub metadata. Owner approval is not set."
         }
       ]
     }
