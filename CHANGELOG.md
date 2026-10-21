@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0-test — интеграционная сборка (integ/v1.3.0-test, TEST, не публикуется)
+- Studio 5 память: feat/studio-intelligence @ 4a101a7 + PR #3 (cursor/studio-server-integration-c51e @ dbe63be); таблицы si_* входят в JSON-копию и восстанавливаются (patch server-dump-include-si). STUDIO_OPS_MONEY выключен.
+- Studio 2 feat/media-automation @ d0ded55: исполнитель video_render подключён (createVideoRenderExecutor, ленивый выбор TTS). MA_JOBS_BACKEND и MA_EXPERIMENTAL по умолчанию выключены (major-event pause, CorrectionsDesk, Brand Memory, Cost Control, X/Telegram — неактивны).
+- Studio 4 feature/world-class-revenue @ 25e564a (схема БД 6).
+- node-agent 0.2.2 (feat/studio-operations @ 8b50ce6) вместо 0.2.0.
+- Update Center (feat/update-center @ 5100568) НЕ включён: нет PASS-отчёта Studio 4 именно для 5100568.
+- Тесты: scripts/video-render-wiring-test.mjs (отмена → cancelled, DATA_DIR через симлинк, ровно 3 артефакта).
+
 ## 1.3.0-test — WORLD CLASS MODE (TEST, не публикуется, 2026-10-21)
 Тот же продукт, что v1.2.4-test (`322023f`). Соцсети, публикация, `meta.js`, `public/social.js` и модули площадок не менялись. Аккаунты не подключаются. Автопубликация в тестовой сборке по-прежнему выключена.
 - Миссия `config/WORLD_CLASS_MISSION.md` и `config/mission.yaml`. Каждый агент получает снимок при старте сервера и при своём запуске. Снимок хранится в базе и читается снова после перезапуска.
