@@ -1,0 +1,324 @@
+{
+  "controls": 43,
+  "failed": [],
+  "findings": [
+    "a symlink to a public key outside the keyring directory is loaded",
+    "keyring.json as a symlink is followed",
+    "a mode 0777 keyring directory is loaded and the signature state is READY",
+    "an external keyring revokes the built-in prod key and adds another",
+    "a manifest with no builtAt and a fresh published_at is not age-blocked",
+    "a missing builtAt and a missing published_at skip the age check",
+    "gitignore does not exclude owner.pem or id_ed25519",
+    "build.files has no glob for a private key named owner.pem"
+  ],
+  "results": [
+    {
+      "kind": "hold",
+      "name": "an absolute file path is reduced to the basename and is not read",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a file field with .. is reduced to the basename and is not read",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a file field of .. does not load a key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a symlink to a public key outside the keyring directory is loaded",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a symlink to a private key PEM is rejected",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "keyring.json as a symlink is followed",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a mode 0777 keyring directory is loaded and the signature state is READY",
+      "ok": true,
+      "detail": {
+        "mode": "777"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a mode 0700 directory with a public key is READY and the key type is public",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "key material «pkcs8 private PEM» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "key material «encrypted pkcs8 PEM» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "key material «public PEM followed by a private PEM» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "key material «tab inside the private header» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "key material «public header over a private body» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "key material «zero-width space in the private header» is rejected",
+      "ok": true,
+      "detail": {
+        "loaded": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a private JWK is rejected",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "an external keyring revokes the built-in prod key and adds another",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an external keyring cannot clear a revocation already in the base ring",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a key listed in keys and revoked in the same file is not loaded",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an external revocation removes the built-in test stub and does not revive prod",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a revoked object is ignored",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a signed builtAt of 2020 blocks a republished date",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an old published_at still blocks when builtAt is recent",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a manifest with no builtAt and a fresh published_at is not age-blocked",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a missing builtAt and a missing published_at skip the age check",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "SUPPORTED_SCHEMA is 1",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "schema 1 passes and schemas 2, 3, and 4 fail closed",
+      "ok": true,
+      "detail": {
+        "s1": 1,
+        "s4": 4
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a live schema above the cap blocks the install gate",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the four auto-install flags default off",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "true, yes, on, 0, and an empty string leave auto-install off",
+      "ok": true,
+      "detail": {
+        "enabledValues": []
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "the string 1 turns the four flags on and the empty prod ring still blocks auto-install",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a prod bundle id is the prod profile and a test bundle id is the test profile",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a flavor that contradicts the bundle id is not a known identity",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "Electron checkUpdates stays false",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the mac build identity is still null and Gatekeeper assess is false",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "gitignore excludes the documented private-key names",
+      "ok": true,
+      "detail": {
+        "ignored": [
+          "foo.key",
+          "foo.p8",
+          "foo.p12",
+          "foo.pfx",
+          "foo.priv",
+          "foo.priv.pem",
+          "myprivate.pem",
+          "mysecret.pem",
+          "release-prod-abcdef.key"
+        ]
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "gitignore does not exclude owner.pem or id_ed25519",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "build.files excludes the documented private-key globs",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "build.files has no glob for a private key named owner.pem",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an empty prod ring blocks download and auto-install in process",
+      "ok": true,
+      "detail": {
+        "dl": "UNVERIFIED",
+        "missing": "NOT_FOUND",
+        "auto": "SIGNATURE_BLOCKED",
+        "verified": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a test signature on a manifest with prod ids does not install",
+      "ok": true,
+      "detail": {
+        "verified": true,
+        "allowed": false,
+        "mode": "blocked"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "that same manifest does not replace the prod app",
+      "ok": true,
+      "detail": {
+        "mode": "blocked"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "with signature BLOCKED, health, tasks, and runtime still answer",
+      "ok": true,
+      "detail": {
+        "health": 200,
+        "tasks": 200,
+        "runtime": 200
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "the update-center route reports BLOCKED and download is refused",
+      "ok": true,
+      "detail": {
+        "down": 404,
+        "auto": 400,
+        "sig": "BLOCKED"
+      }
+    }
+  ]
+}

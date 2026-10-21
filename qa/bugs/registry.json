@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T14:49:23.275Z",
+  "updatedAt": "2026-10-21T17:23:44.395Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -738,7 +738,8 @@
       ],
       "evidence": [
         "qa/reports/update-center-v2/REPORT.md",
-        "qa/reports/update-center-v2/logs/attack.json"
+        "qa/reports/update-center-v2/logs/attack.json",
+        "qa/reports/update-center-v3/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:10:00.000Z",
       "foundIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
@@ -749,6 +750,11 @@
           "at": "2026-10-21T13:10:00.000Z",
           "status": "open",
           "note": "Downgrade by version still blocks. Revocation still blocks. The date itself is GitHub metadata. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:23:44.341Z",
+          "status": "open",
+          "note": "At 3fc9573 a signed builtAt of 2020-01-01 blocks a republished published_at of 2026-10-21, and the older of the two dates wins. Still open: a manifest with no builtAt follows the unsigned GitHub date, and both dates absent skips the age check. Owner approval is not set."
         }
       ]
     },
@@ -770,7 +776,8 @@
       "evidence": [
         "qa/reports/computers-nodes-fixes/REPORT.md",
         "qa/reports/computers-nodes-fixes/logs/their-tests.log",
-        "qa/reports/computers-nodes-fixes/logs/ui-rerun.log"
+        "qa/reports/computers-nodes-fixes/logs/ui-rerun.log",
+        "qa/reports/update-center-v3/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:25:00.000Z",
       "foundIn": "feat/studio-operations fe8e4ab, test/ops/ui-computers.e2e.test.js",
@@ -781,6 +788,11 @@
           "at": "2026-10-21T13:25:00.000Z",
           "status": "open",
           "note": "The panel issued a new code. The test read the previous one. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:23:44.369Z",
+          "status": "open",
+          "note": "Still open. feat/update-center 3fc9573 does not contain test/ops/ui-computers.e2e.test.js. Owner approval is not set."
         }
       ]
     },
@@ -1210,6 +1222,37 @@
       "history": [
         {
           "at": "2026-10-21T14:49:23.274Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-007",
+      "title": "The external update keyring does not check mode or symlink targets",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "OPS_UPDATE_KEYRING_DIR is loaded with readFileSync. path.basename stops a .. file field. There is no mode check and no realpath containment. A mode 0777 directory with a mode 0666 keyring.json loaded a public key and signatureStatus was READY. A symlink to a public key outside the directory was loaded. keyring.json as a symlink was followed. A symlink to a PKCS8 private PEM was rejected. An external ring can revoke a built-in key and add a different public key. It cannot clear a revocation already in the base ring. With the variable unset, the prod set stays empty and the signature state stays BLOCKED.",
+      "expected": "The external keyring accepts only regular public-key files inside a directory that is not writable by group or other, and a symlink cannot point outside that directory.",
+      "actual": "Mode 0777 is loaded and the signature state becomes READY. A symlink to an outside public key is loaded. A private-key PEM, including through a symlink, is rejected. An absolute or .. file field is not read.",
+      "repro": [
+        "Point OPS_UPDATE_KEYRING_DIR at a mode 0777 directory whose keyring.json names an Ed25519 public key and call loadKeyrings",
+        "Replace the public-key file with a symlink to a public key outside the directory and load again",
+        "Point the same symlink at a PKCS8 private PEM and confirm the prod set stays empty"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v3/REPORT.md",
+        "qa/reports/update-center-v3/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T17:30:00.000Z",
+      "foundIn": "feat/update-center 3fc9573, qa/reports/update-center-v3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:23:44.395Z",
           "status": "open",
           "note": "added"
         }
