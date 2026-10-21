@@ -10,7 +10,7 @@ COMMIT=$(git rev-parse HEAD); export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct
 VER=$(node -p "require('./package.json').version"); APP="dist/mac-arm64/MOONKATTY AI STUDIO.app"
 npm ci --ignore-scripts --no-audit --no-fund
 scripts/fetch-node.sh
-node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'macos'}))"
+COMMIT="$COMMIT" node scripts/write-build-info.mjs --builder macos
 rm -rf dist
 export CSC_IDENTITY_AUTO_DISCOVERY="${CSC_IDENTITY_AUTO_DISCOVERY:-false}"
 npx electron-builder --mac dir --arm64 --publish never

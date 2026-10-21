@@ -183,3 +183,43 @@ test('auto-download / auto-install stay off: check() never downloads, no timers'
   const k = keygen(); const r = release({ signWith: k }); const { uc } = await firstRel(r, k); assert.equal(uc.status().releases[0].download, null); assert.equal(uc.status().autoInstall.enabled, false);
   assert.doesNotMatch(fs.readFileSync(path.join(ROOT, 'lib/ops/update-center.js'), 'utf8'), /setInterval/);
 });
+
+// ---------- macOS path semantics: parent symlink (/var -> /private/var, $TMPDIR) must NOT block ----------
+test('QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED', () => {
+  const k = keygen(); const real = tmp(); const d = path.join(real, 'update-keys'); fs.mkdirSync(d, { mode: 0o700 }); fs.chmodSync(d, 0o700);
+  fs.copyFileSync(k.publicKeyFile, path.join(d, path.basename(k.publicKeyFile))); fs.writeFileSync(path.join(d, 'keyring.json'), JSON.stringify({ keys: { [k.keyId]: { ...k.keyringEntry, status: 'active' } } }));
+  const varLink = path.join(tmp(), 'var'); fs.symlinkSync(real, varLink); // parent is a symlink, the keyring dir itself is real
+  const st = UC.signatureStatus(UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: path.join(varLink, 'update-keys') }, uid: UID })); assert.equal(st.state, 'READY', st.message);
+  const dirLink = path.join(varLink, 'keys-link'); fs.symlinkSync(d, dirLink); assert.equal(UC.signatureStatus(UC.loadKeyrings({ env: { OPS_UPDATE_KEYRING_DIR: dirLink }, uid: UID })).state, 'BLOCKED');
+});
+test('scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)', () => {
+  const t = tmp(); const out = execFileSync('bash', [path.join(ROOT, 'scripts/mac-keyring-check.sh')], { env: { ...process.env, TMPDIR: t }, encoding: 'utf8' });
+  assert.match(out, /ВСЕ PASS/); assert.doesNotMatch(out, /^FAIL/m); assert.deepEqual(fs.readdirSync(t), [], 'temp dir cleaned up');
+});
+
+// ---------- anti-rollback in the PACKAGED layout (build-info.json inside app.asar) ----------
+test('packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version', async () => {
+  const asar = require('@electron/asar'); const pkg = require('../../package.json'); const stage = tmp();
+  assert.ok(pkg.build.files.includes('desktop/**') && pkg.build.files.includes('lib/**') && pkg.build.asar === true, 'build.files packages desktop/** and lib/** into asar');
+  for (const d of ['lib', 'desktop']) fs.cpSync(path.join(ROOT, d), path.join(stage, d), { recursive: true, filter: s => !/build-info\.json$/.test(s) });
+  fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(stage, 'package.json'));
+  const epoch = Math.floor(Date.now() / 1000) - 86400; // built "yesterday"
+  execFileSync(process.execPath, [path.join(ROOT, 'scripts/write-build-info.mjs'), '--builder', 'test', '--out', path.join(stage, 'desktop/build-info.json')], { env: { ...process.env, SOURCE_DATE_EPOCH: String(epoch), COMMIT: 'a'.repeat(40) }, stdio: 'pipe' });
+  const archive = path.join(tmp(), 'app.asar'); await asar.createPackage(stage, archive);
+  const list = asar.listPackage(archive).map(x => x.replace(/\\/g, '/')); for (const f of ['/desktop/build-info.json', '/lib/ops/update-center.js', '/lib/ops/app-identity.js']) assert.ok(list.includes(f), 'asar lacks ' + f);
+  const ext = tmp(); asar.extractAll(archive, ext); const P = require(path.join(ext, 'lib/ops/update-center.js'));
+  const builtAt = new Date(epoch * 1000).toISOString(); assert.equal(P.readBuildInfoBuiltAt(), builtAt, 'packaged update-center reads its own build-info');
+  const k = keygen(); const mk = (o, cur = '1.2.2') => P.createUpdateCenter({ dir: tmp(), current: cur, fetchImpl: fake(release({ signWith: k, ...o })), identity: PROD, env: { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) }, healthUrl: 'http://127.0.0.1:1/api/health' });
+  let uc = mk({ builtAt: new Date((epoch - 86400) * 1000).toISOString() }); assert.equal(uc.status().buildAge.available, true);
+  let rel = (await uc.check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /старше сборки текущего/);
+  rel = (await mk({ version: '1.2.2' }).check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /anti-rollback.*равна/);
+  rel = (await mk({ version: '1.2.1' }).check()).releases[0]; assert.equal(rel.verified, false); assert.match(rel.problems.join(), /anti-rollback.*старше/);
+  rel = (await mk({}).check()).releases[0]; assert.equal(rel.verified, true, rel.problems.join('; '));
+});
+test('dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)', async () => {
+  const k = keygen(); const uc = centerAt(release({ signWith: k }), { OPS_UPDATE_KEYRING_DIR: ownerKeyringDir(k) }, { currentBuiltAt: null });
+  const s = uc.status(); assert.equal(s.buildAge.available, false); assert.match(s.buildAge.message, /проверка возраста сборки недоступна/);
+  const rel = (await uc.check()).releases[0]; assert.ok((rel.warnings || []).includes(UC.BUILD_AGE_NA));
+  assert.match(fs.readFileSync(path.join(ROOT, 'public/update-ui.js'), 'utf8'), /ucBuildAge/);
+  for (const f of ['scripts/build-mac.sh', 'scripts/package-mac-on-linux.sh']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8'), /write-build-info\.mjs/);
+});

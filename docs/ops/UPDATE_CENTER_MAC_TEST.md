@@ -32,3 +32,34 @@
 13a. **Автопроверка отключена.** Запустите приложение, подождите 1 мин. Проверка: окна «Доступно обновление» нет, `lsof -i -n | grep -i github` пусто; пункт меню «Проверить обновления…» работает вручную.
 14. **Узлы.** С выключенным `OPS_UPDATE_NODES` — `deliver` отвечает «выключены». С включённым: `check` для iMac (Intel, macOS 12.5.1) показывает ok/проблемы; `deliver` без успешного check — отказ.
 15. **Выключение.** Уберите `STUDIO_OPS_UPDATE=1`, перезапустите. Проверка: `/api/ops/update-center` → 404; раздел в Настройках исчез.
+
+## Проверка прав папки внешнего keyring на Mac mini (QA-UC-007)
+Скрипт `scripts/mac-keyring-check.sh` работает **только** во временной папке внутри `$TMPDIR` (создаёт её через `mktemp` и удаляет
+в конце), создаёт одноразовый **публичный** тест-ключ в памяти, не читает ваши настоящие ключи и не меняет системные настройки.
+
+1. **Открыть репозиторий.** `cd ~/moonkatty-ai-studio && git log --oneline -1`.
+   **Проверка:** коммит ветки `feat/update-center` (или сборки v1.3.0-test), `git status --short` пусто.
+2. **Посмотреть $TMPDIR.** `echo $TMPDIR; cd "$TMPDIR" && pwd -P; cd -`.
+   **Проверка:** путь вида `/var/folders/…/T/`, а `pwd -P` показывает `/private/var/folders/…` (на macOS `/var` — ссылка на `/private/var`;
+   это нормально и **не** должно блокировать keyring — блокируется только сама папка-ссылка).
+3. **Запустить проверку.** `bash scripts/mac-keyring-check.sh`.
+   **Проверка:** в первой строке `ОС: Darwin`, права `700` и ваш uid (`id -u`) — их выводит BSD `stat -f '%Lp' / '%u'`.
+4. **Сверить результаты.** Ожидается `PASS` в каждой строке:
+   0700 → READY (оба пути: через `$TMPDIR` и через realpath); 755 / 777 / 750 → BLOCKED; папка-ссылка → BLOCKED;
+   `.pub.pem`-ссылка наружу → BLOCKED; `keyring.json`-ссылка → BLOCKED; файл 666 → BLOCKED; чужой владелец (симуляция uid) → BLOCKED.
+   **Проверка:** последняя строка `Итого: ВСЕ PASS`, код выхода `echo $?` → `0`.
+5. **Убедиться, что следов нет.** `ls "$TMPDIR" | grep mk-keyring-check`.
+   **Проверка:** пусто (временная папка удалена).
+6. **Если есть FAIL** — пришлите разработчику только вывод скрипта (в нём нет секретов: только публичный тест-ключ, права и uid).
+   Настоящий keyring в это время оставьте без изменений; Update Center при любом нарушении показывает `BLOCKED`.
+
+Реальный «чужой владелец» требует `sudo chown` — скрипт этого **не** делает (симулирует uid). Вручную, по желанию:
+`D=$(mktemp -d); sudo chown root "$D"; OPS_UPDATE_KEYRING_DIR=$D node -e 'const U=require("./lib/ops/update-center.js");console.log(U.signatureStatus(U.loadKeyrings({env:process.env})).message)'; sudo rm -rf "$D"`
+→ `BLOCKED: … владелец папки uid 0 …`.
+
+## Anti-rollback в собранном приложении
+`scripts/build-mac.sh` записывает `desktop/build-info.json` (`scripts/write-build-info.mjs`, `builtAt` = время последнего коммита),
+файл упаковывается в `app.asar` (`build.files: desktop/**`). Update Center собранного приложения отклоняет релизы с версией ≤ текущей и
+с подписанным `builtAt` старше сборки. **Проверка:** Настройки › «Центр обновлений» — строки «проверка возраста сборки недоступна» **нет**;
+`npx asar list "/Applications/MOONKATTY AI STUDIO.app/Contents/Resources/app.asar" | grep build-info` → `/desktop/build-info.json`.
+В dev-запуске (без сборки) статус показывает `⚠ проверка возраста сборки недоступна …` — это ожидаемо.

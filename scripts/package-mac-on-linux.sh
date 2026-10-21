@@ -9,7 +9,7 @@ COMMIT=$(git rev-parse HEAD); export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct
 VER=$(node -p "require('./package.json').version"); APP="dist/mac-arm64/MOONKATTY AI STUDIO.app"; OUT="dist/MOONKATTY-AI-STUDIO-${VER}-arm64-mac.zip"
 npm ci --ignore-scripts --no-audit --no-fund      # exact versions from package-lock.json; no install scripts
 scripts/fetch-node.sh                             # official Node binary, SHA-256 verified
-node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'linux'}))"
+COMMIT="$COMMIT" node scripts/write-build-info.mjs --builder linux
 rm -rf dist
 CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac dir --arm64 --publish never
 find "$APP" -exec touch -h -d "@${SOURCE_DATE_EPOCH}" {} +
