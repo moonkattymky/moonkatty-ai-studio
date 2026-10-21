@@ -1,0 +1,1048 @@
+TAP version 13
+# Subtest: namespaces match Studio 5 constants (moonkatty_news, moonkatty_project, moonkatty_shared)
+ok 1 - namespaces match Studio 5 constants (moonkatty_news, moonkatty_project, moonkatty_shared)
+  ---
+  duration_ms: 2.085569
+  type: 'test'
+  ...
+# Subtest: listEntries({kind,direction,projectId,from,to}) shape is stable
+ok 2 - listEntries({kind,direction,projectId,from,to}) shape is stable
+  ---
+  duration_ms: 2.984456
+  type: 'test'
+  ...
+# Subtest: si_cost_entries mapping: amountUsd = amount (USD only), component=category, idempotencyKey preserved
+ok 3 - si_cost_entries mapping: amountUsd = amount (USD only), component=category, idempotencyKey preserved
+  ---
+  duration_ms: 0.633759
+  type: 'test'
+  ...
+# Subtest: fixture has every agreed Studio job field; statuses are the agreed set
+ok 4 - fixture has every agreed Studio job field; statuses are the agreed set
+  ---
+  duration_ms: 1.308669
+  type: 'test'
+  ...
+# Subtest: tolerates absence of optional fields (resourceClass, requiresNode, artifacts, idempotencyKey, safeToRetry) → safe defaults
+ok 5 - tolerates absence of optional fields (resourceClass, requiresNode, artifacts, idempotencyKey, safeToRetry) → safe defaults
+  ---
+  duration_ms: 0.211168
+  type: 'test'
+  ...
+# Subtest: opencode_task / blender_template / render_segment and requiresNode=mac-mini / gpu_heavy / llm stay local
+ok 6 - opencode_task / blender_template / render_segment and requiresNode=mac-mini / gpu_heavy / llm stay local
+  ---
+  duration_ms: 0.162633
+  type: 'test'
+  ...
+# Subtest: bridge: dispatch → node lease → poll returns Studio statuses + artifacts {path, sha256, kind}
+ok 7 - bridge: dispatch → node lease → poll returns Studio statuses + artifacts {path, sha256, kind}
+  ---
+  duration_ms: 3.948859
+  type: 'test'
+  ...
+# Subtest: cancelJob mapping and resource-class mapping (ours ↔ Studio)
+ok 8 - cancelJob mapping and resource-class mapping (ours ↔ Studio)
+  ---
+  duration_ms: 1.64869
+  type: 'test'
+  ...
+# Subtest: if Grok \#1 runner exposes createJob/getJob/cancelJob/listJobs, their shape matches (skipped when absent)
+ok 9 - if Grok \#1 runner exposes createJob/getJob/cancelJob/listJobs, their shape matches (skipped when absent) # SKIP feat/v1.2.0 jobs API not present in this tree (expected until his branch lands)
+  ---
+  duration_ms: 0.856391
+  type: 'test'
+  ...
+# Subtest: exponential backoff is capped
+ok 10 - exponential backoff is capped
+  ---
+  duration_ms: 0.594581
+  type: 'test'
+  ...
+# Subtest: retry: bounded attempts with backoff sleeps
+ok 11 - retry: bounded attempts with backoff sleeps
+  ---
+  duration_ms: 0.914727
+  type: 'test'
+  ...
+# Subtest: circuit breaker: opens, half-opens after cooldown, locks after maxTrips
+ok 12 - circuit breaker: opens, half-opens after cooldown, locks after maxTrips
+  ---
+  duration_ms: 0.350727
+  type: 'test'
+  ...
+# Subtest: circuit breaker restores persisted state
+ok 13 - circuit breaker restores persisted state
+  ---
+  duration_ms: 0.146256
+  type: 'test'
+  ...
+# Subtest: online snapshot: files, settings, manifest; NO plaintext secrets, sessions stripped
+ok 14 - online snapshot: files, settings, manifest; NO plaintext secrets, sessions stripped
+  ---
+  duration_ms: 31.891975
+  type: 'test'
+  ...
+# Subtest: verify detects tampering; test-restore in temp dir checks integrity + counts
+ok 15 - verify detects tampering; test-restore in temp dir checks integrity + counts
+  ---
+  duration_ms: 15.272956
+  type: 'test'
+  ...
+# Subtest: secret.key encrypted with passphrase; restore only into empty dir; wrong passphrase fails
+ok 16 - secret.key encrypted with passphrase; restore only into empty dir; wrong passphrase fails
+  ---
+  duration_ms: 351.537354
+  type: 'test'
+  ...
+# Subtest: retention keeps N newest; ignores foreign dirs; rejects bad ids
+ok 17 - retention keeps N newest; ignores foreign dirs; rejects bad ids
+  ---
+  duration_ms: 17.928407
+  type: 'test'
+  ...
+# Subtest: default budget 0 blocks any paid call unless confirmed; ledger + daily/monthly limits + warning
+ok 18 - default budget 0 blocks any paid call unless confirmed; ledger + daily/monthly limits + warning
+  ---
+  duration_ms: 3.175014
+  type: 'test'
+  ...
+# Subtest: flags off: mobile API absent, ops status reports flags off
+ok 19 - flags off: mobile API absent, ops status reports flags off
+  ---
+  duration_ms: 303.748257
+  type: 'test'
+  ...
+# Subtest: dry-run: spawns nothing, writes report into its own temp dir
+ok 20 - dry-run: spawns nothing, writes report into its own temp dir
+  ---
+  duration_ms: 3.124957
+  type: 'test'
+  ...
+# Subtest: full run: solo + combos, peak RSS / pressure / swap / CPU sampled, calibration = peak × 1.2, import
+ok 21 - full run: solo + combos, peak RSS / pressure / swap / CPU sampled, calibration = peak × 1.2, import
+  ---
+  duration_ms: 10.426512
+  type: 'test'
+  ...
+# Subtest: auto-abort on red pressure: kills only its own spawned tree, stops remaining scenarios
+ok 22 - auto-abort on red pressure: kills only its own spawned tree, stops remaining scenarios
+  ---
+  duration_ms: 0.994231
+  type: 'test'
+  ...
+# Subtest: auto-abort on swap growth; Ollama request aborted (not killed)
+ok 23 - auto-abort on swap growth; Ollama request aborted (not killed)
+  ---
+  duration_ms: 2.832663
+  type: 'test'
+  ...
+# Subtest: ps tree helpers
+ok 24 - ps tree helpers
+  ---
+  duration_ms: 0.340504
+  type: 'test'
+  ...
+# Subtest: macOS stats match Activity Monitor (Igor: 24 GB, Used 16.19, App 12.32, Cached 7.57, Compressed 747.7 MB, Swap 29.3 MB)
+ok 25 - macOS stats match Activity Monitor (Igor: 24 GB, Used 16.19, App 12.32, Cached 7.57, Compressed 747.7 MB, Swap 29.3 MB)
+  ---
+  duration_ms: 2.123869
+  type: 'test'
+  ...
+# Subtest: pressure levels and swap parsing
+ok 26 - pressure levels and swap parsing
+  ---
+  duration_ms: 0.902319
+  type: 'test'
+  ...
+# Subtest: Linux fallback: MemAvailable + PSI
+ok 27 - Linux fallback: MemAvailable + PSI
+  ---
+  duration_ms: 0.662538
+  type: 'test'
+  ...
+# Subtest: sampler tracks swap growth window
+ok 28 - sampler tracks swap growth window
+  ---
+  duration_ms: 0.51126
+  type: 'test'
+  ...
+# Subtest: owner creates scoped tokens; only hashes are stored
+ok 29 - owner creates scoped tokens; only hashes are stored
+  ---
+  duration_ms: 586.738474
+  type: 'test'
+  ...
+# Subtest: auth required on every mobile route
+ok 30 - auth required on every mobile route
+  ---
+  duration_ms: 13.649203
+  type: 'test'
+  ...
+# Subtest: mobile token is rejected outside /api/mobile (generic CRUD, restore, reset, backup, settings)
+ok 31 - mobile token is rejected outside /api/mobile (generic CRUD, restore, reset, backup, settings)
+  ---
+  duration_ms: 23.470896
+  type: 'test'
+  ...
+# Subtest: existing protections still apply: host check + CSRF
+ok 32 - existing protections still apply: host check + CSRF
+  ---
+  duration_ms: 13.160133
+  type: 'test'
+  ...
+# Subtest: summary / tasks / notifications
+ok 33 - summary / tasks / notifications
+  ---
+  duration_ms: 5.995975
+  type: 'test'
+  ...
+# Subtest: start/stop: allowlisted agents only, never code tasks; scopes enforced
+ok 34 - start/stop: allowlisted agents only, never code tasks; scopes enforced
+  ---
+  duration_ms: 32.856822
+  type: 'test'
+  ...
+# Subtest: materials approve/reject; queue approval needs materials:publish scope
+ok 35 - materials approve/reject; queue approval needs materials:publish scope
+  ---
+  duration_ms: 17.113822
+  type: 'test'
+  ...
+# Subtest: media: listing + safe download, unknown id 404
+ok 36 - media: listing + safe download, unknown id 404
+  ---
+  duration_ms: 8.064472
+  type: 'test'
+  ...
+# Subtest: revoke token
+ok 37 - revoke token
+  ---
+  duration_ms: 4.264358
+  type: 'test'
+  ...
+# Subtest: mobile UI page served with strict CSP
+ok 38 - mobile UI page served with strict CSP
+  ---
+  duration_ms: 2.600697
+  type: 'test'
+  ...
+# Subtest: GET /api/ops/ledger (stable read API): owner only, empty state, separation; flag off → 404
+ok 39 - GET /api/ops/ledger (stable read API): owner only, empty state, separation; flag off → 404
+  ---
+  duration_ms: 586.787632
+  type: 'test'
+  ...
+# Subtest: empty state: no data → empty, no totals (no invented numbers)
+ok 40 - empty state: no data → empty, no totals (no invented numbers)
+  ---
+  duration_ms: 1.503062
+  type: 'test'
+  ...
+# Subtest: actual requires proof; estimate/forecast require basis; future-dated actual refused; amounts validated
+ok 41 - actual requires proof; estimate/forecast require basis; future-dated actual refused; amounts validated
+  ---
+  duration_ms: 1.859626
+  type: 'test'
+  ...
+# Subtest: kinds never mixed in totals; currencies not converted; void excluded; idempotent
+ok 42 - kinds never mixed in totals; currencies not converted; void excluded; idempotent
+  ---
+  duration_ms: 2.931593
+  type: 'test'
+  ...
+# Subtest: projectId: Studio 5 format, pluggable resolver, unknown → unassigned (never dropped)
+ok 43 - projectId: Studio 5 format, pluggable resolver, unknown → unassigned (never dropped)
+  ---
+  duration_ms: 1.343339
+  type: 'test'
+  ...
+# Subtest: CSV import: validation per row, dry-run, idempotent re-import, proof columns
+ok 44 - CSV import: validation per row, dry-run, idempotent re-import, proof columns
+  ---
+  duration_ms: 1.226224
+  type: 'test'
+  ...
+# Subtest: hash chain: tampering detected → writes stopped + critical alert
+ok 45 - hash chain: tampering detected → writes stopped + critical alert
+  ---
+  duration_ms: 0.681475
+  type: 'test'
+  ...
+# Subtest: budget overrun alert uses ACTUAL expenses only
+ok 46 - budget overrun alert uses ACTUAL expenses only
+  ---
+  duration_ms: 0.656209
+  type: 'test'
+  ...
+# Subtest: Cost Controller rows shown read-only as estimates (no duplication)
+ok 47 - Cost Controller rows shown read-only as estimates (no duplication)
+  ---
+  duration_ms: 0.35518
+  type: 'test'
+  ...
+# Subtest: deals: agreed amount is not income; received = linked actual entries; no secrets in contact
+ok 48 - deals: agreed amount is not income; received = linked actual entries; no secrets in contact
+  ---
+  duration_ms: 1.644936
+  type: 'test'
+  ...
+# Subtest: monetization adapters: not connected by default; mocks return only fixtures as estimates; sync never creates actual
+ok 49 - monetization adapters: not connected by default; mocks return only fixtures as estimates; sync never creates actual
+  ---
+  duration_ms: 1.258233
+  type: 'test'
+  ...
+# Subtest: helper refuses ~/Library/Application Support and non-tmp dirs
+ok 50 - helper refuses ~/Library/Application Support and non-tmp dirs
+  ---
+  duration_ms: 0.874812
+  type: 'test'
+  ...
+# Subtest: no test file writes to Application Support or $HOME paths
+ok 51 - no test file writes to Application Support or $HOME paths
+  ---
+  duration_ms: 2.557601
+  type: 'test'
+  ...
+# Subtest: nodes flag: admin API + separate TLS node listener + runner dispatch
+ok 52 - nodes flag: admin API + separate TLS node listener + runner dispatch
+  ---
+  duration_ms: 351.316748
+  type: 'test'
+  ...
+# Subtest: 3 processes: routing by capability, TLS pin, ffprobe file transfer, X drafts only
+ok 53 - 3 processes: routing by capability, TLS pin, ffprobe file transfer, X drafts only
+  ---
+  duration_ms: 682.249424
+  type: 'test'
+  ...
+# 2026-10-21T17:44:31.237Z node-agent 0.1.0 imac → https://127.0.0.1:34999 (Node v22.23.3, linux/x64)
+# 2026-10-21T17:44:31.255Z задача nj_65863cfced1ab4c6 news.dedup попытка 1
+# 2026-10-21T17:44:33.759Z завершено nj_65863cfced1ab4c6 409 
+# 2026-10-21T17:44:33.764Z задача nj_65863cfced1ab4c6 news.dedup попытка 2
+# 2026-10-21T17:44:36.269Z завершено nj_65863cfced1ab4c6 200 
+# Subtest: faults: node drop (safeToRetry requeued / unsafe → needs_approval), duplicate delivery, bad checksum, network loss
+ok 54 - faults: node drop (safeToRetry requeued / unsafe → needs_approval), duplicate delivery, bad checksum, network loss
+  ---
+  duration_ms: 7638.266338
+  type: 'test'
+  ...
+# Subtest: tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+ok 55 - tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+  ---
+  duration_ms: 3.384795
+  type: 'test'
+  ...
+# Subtest: local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+ok 56 - local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+  ---
+  duration_ms: 1.567888
+  type: 'test'
+  ...
+# Subtest: pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+ok 57 - pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+  ---
+  duration_ms: 3.506506
+  type: 'test'
+  ...
+# Subtest: node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+ok 58 - node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+  ---
+  duration_ms: 3.15196
+  type: 'test'
+  ...
+# Subtest: heartbeat extends lease; timeout → stuck handling; low resources alert
+ok 59 - heartbeat extends lease; timeout → stuck handling; low resources alert
+  ---
+  duration_ms: 2.179746
+  type: 'test'
+  ...
+# Subtest: file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+ok 60 - file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+  ---
+  duration_ms: 1.675712
+  type: 'test'
+  ...
+# Subtest: LAN listener refuses 0.0.0.0 / public IPs
+ok 61 - LAN listener refuses 0.0.0.0 / public IPs
+  ---
+  duration_ms: 0.900263
+  type: 'test'
+  ...
+# Subtest: runner hook: runViaNode waits for node, stop() cancels the node job
+ok 62 - runner hook: runViaNode waits for node, stop() cancels the node job
+  ---
+  duration_ms: 2.055186
+  type: 'test'
+  ...
+# Subtest: adapter maps resource classes and statuses both ways
+ok 63 - adapter maps resource classes and statuses both ways
+  ---
+  duration_ms: 0.274033
+  type: 'test'
+  ...
+# Subtest: central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+ok 64 - central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+  ---
+  duration_ms: 2.138058
+  type: 'test'
+  ...
+# Subtest: disabled by default — no network
+ok 65 - disabled by default — no network
+  ---
+  duration_ms: 1.813018
+  type: 'test'
+  ...
+# Subtest: ntfy: https only, dedupe, redaction
+ok 66 - ntfy: https only, dedupe, redaction
+  ---
+  duration_ms: 0.586619
+  type: 'test'
+  ...
+# Subtest: telegram requires config; unknown kind throws
+ok 67 - telegram requires config; unknown kind throws
+  ---
+  duration_ms: 0.395248
+  type: 'test'
+  ...
+# Subtest: vm_stat parsing (macOS, mocked)
+ok 68 - vm_stat parsing (macOS, mocked)
+  ---
+  duration_ms: 2.020975
+  type: 'test'
+  ...
+# Subtest: etime and ps parsing
+ok 69 - etime and ps parsing
+  ---
+  duration_ms: 0.385439
+  type: 'test'
+  ...
+# Subtest: auto-update flags are OFF by default (all four unset) and auto-install refuses
+ok 70 - auto-update flags are OFF by default (all four unset) and auto-install refuses
+  ---
+  duration_ms: 8.589155
+  type: 'test'
+  ...
+# Subtest: empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+ok 71 - empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+  ---
+  duration_ms: 61.336084
+  type: 'test'
+  ...
+# Subtest: owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+ok 72 - owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+  ---
+  duration_ms: 64.121661
+  type: 'test'
+  ...
+# Subtest: tampered package (modified bytes) is rejected and deleted
+ok 73 - tampered package (modified bytes) is rejected and deleted
+  ---
+  duration_ms: 65.543711
+  type: 'test'
+  ...
+# Subtest: tampered manifest (bytes changed after signing) is rejected
+ok 74 - tampered manifest (bytes changed after signing) is rejected
+  ---
+  duration_ms: 59.429976
+  type: 'test'
+  ...
+# Subtest: wrong keyId, unknown key and revoked key are rejected
+ok 75 - wrong keyId, unknown key and revoked key are rejected
+  ---
+  duration_ms: 138.449526
+  type: 'test'
+  ...
+# Subtest: keyring refuses private key material (only public keys can be configured)
+ok 76 - keyring refuses private key material (only public keys can be configured)
+  ---
+  duration_ms: 42.769775
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+ok 77 - QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+  ---
+  duration_ms: 0.559259
+  type: 'test'
+  ...
+# Subtest: no private key material in git or in the packaged file list; ignore/exclude patterns present
+ok 78 - no private key material in git or in the packaged file list; ignore/exclude patterns present
+  ---
+  duration_ms: 66.768121
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: correct 0700 dir owned by current uid -> READY
+ok 79 - QA-UC-007: correct 0700 dir owned by current uid -> READY
+  ---
+  duration_ms: 33.840654
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: 0777 / 0750 dir -> BLOCKED
+ok 80 - QA-UC-007: 0777 / 0750 dir -> BLOCKED
+  ---
+  duration_ms: 34.679092
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: wrong owner (injected uid) -> BLOCKED
+ok 81 - QA-UC-007: wrong owner (injected uid) -> BLOCKED
+  ---
+  duration_ms: 35.975627
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+ok 82 - QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+  ---
+  duration_ms: 35.349479
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+ok 83 - QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+  ---
+  duration_ms: 63.270072
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: manifest without signed builtAt is not verified and download is refused
+ok 84 - QA-UC-006: manifest without signed builtAt is not verified and download is refused
+  ---
+  duration_ms: 56.477287
+  type: 'test'
+  ...
+# Subtest: release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+ok 85 - release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+  ---
+  duration_ms: 57.927036
+  type: 'test'
+  ...
+# Subtest: signed version: tampered version (manifest bytes changed after signing) is rejected
+ok 86 - signed version: tampered version (manifest bytes changed after signing) is rejected
+  ---
+  duration_ms: 60.829914
+  type: 'test'
+  ...
+# Subtest: signed version must match tag and package name
+ok 87 - signed version must match tag and package name
+  ---
+  duration_ms: 92.199079
+  type: 'test'
+  ...
+# Subtest: anti-rollback: downgrade and equal version vs current are rejected
+ok 88 - anti-rollback: downgrade and equal version vs current are rejected
+  ---
+  duration_ms: 118.55883
+  type: 'test'
+  ...
+# Subtest: builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+ok 89 - builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+  ---
+  duration_ms: 151.965345
+  type: 'test'
+  ...
+# Subtest: auto-download / auto-install stay off: check() never downloads, no timers
+ok 90 - auto-download / auto-install stay off: check() never downloads, no timers
+  ---
+  duration_ms: 63.234993
+  type: 'test'
+  ...
+# Subtest: QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+ok 91 - QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+  ---
+  duration_ms: 27.826424
+  type: 'test'
+  ...
+# Subtest: scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+ok 92 - scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+  ---
+  duration_ms: 482.244045
+  type: 'test'
+  ...
+# Subtest: packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+ok 93 - packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+  ---
+  duration_ms: 246.485141
+  type: 'test'
+  ...
+# Subtest: dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+ok 94 - dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+  ---
+  duration_ms: 81.862177
+  type: 'test'
+  ...
+# Subtest: resource classes
+ok 95 - resource classes
+  ---
+  duration_ms: 0.603565
+  type: 'test'
+  ...
+# Subtest: uncalibrated: footprints "unmeasured", max ONE heavy task at a time (no arbitrary GB limits)
+ok 96 - uncalibrated: footprints "unmeasured", max ONE heavy task at a time (no arbitrary GB limits)
+  ---
+  duration_ms: 1.386157
+  type: 'test'
+  ...
+# Subtest: heavy tasks never start unless pressure is green; swap growth blocks
+ok 97 - heavy tasks never start unless pressure is green; swap growth blocks
+  ---
+  duration_ms: 1.369508
+  type: 'test'
+  ...
+# Subtest: calibrated: admission by real available memory with measured limits (peak × 1.2)
+ok 98 - calibrated: admission by real available memory with measured limits (peak × 1.2)
+  ---
+  duration_ms: 0.474571
+  type: 'test'
+  ...
+# Subtest: Ollama unload only with explicit opt-in (never by default)
+ok 99 - Ollama unload only with explicit opt-in (never by default)
+  ---
+  duration_ms: 40.992236
+  type: 'test'
+  ...
+# Subtest: calibration file validation and loading
+ok 100 - calibration file validation and loading
+  ---
+  duration_ms: 0.605413
+  type: 'test'
+  ...
+# Subtest: light concurrency + urgent extra slots; render queue order
+ok 101 - light concurrency + urgent extra slots; render queue order
+  ---
+  duration_ms: 0.236042
+  type: 'test'
+  ...
+# Subtest: temp cleanup touches only own marked dirs inside tmpRoot (quota + TTL)
+ok 102 - temp cleanup touches only own marked dirs inside tmpRoot (quota + TTL)
+  ---
+  duration_ms: 1.851346
+  type: 'test'
+  ...
+# Subtest: runner uses admit(): skips tasks that do not fit, releases after run
+ok 103 - runner uses admit(): skips tasks that do not fit, releases after run
+  ---
+  duration_ms: 52.586074
+  type: 'test'
+  ...
+# Subtest: runner without admit behaves as before (first by priority)
+ok 104 - runner without admit behaves as before (first by priority)
+  ---
+  duration_ms: 50.220011
+  type: 'test'
+  ...
+# Subtest: integration URL allowlist (SSRF) + Docker API block
+ok 105 - integration URL allowlist (SSRF) + Docker API block
+  ---
+  duration_ms: 1.159997
+  type: 'test'
+  ...
+# Subtest: agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+ok 106 - agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+  ---
+  duration_ms: 2.691662
+  type: 'test'
+  ...
+# Subtest: second-step confirmation: single use, bound to user + action, expires
+ok 107 - second-step confirmation: single use, bound to user + action, expires
+  ---
+  duration_ms: 0.731084
+  type: 'test'
+  ...
+# Subtest: dangerous operation classifier
+ok 108 - dangerous operation classifier
+  ---
+  duration_ms: 0.291499
+  type: 'test'
+  ...
+# Subtest: audit log hash chain detects tampering; file is 0600
+ok 109 - audit log hash chain detects tampering; file is 0600
+  ---
+  duration_ms: 1.960244
+  type: 'test'
+  ...
+# Subtest: prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+ok 110 - prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+  ---
+  duration_ms: 0.330812
+  type: 'test'
+  ...
+# Subtest: security audit flags Docker integration and loose file permissions
+ok 111 - security audit flags Docker integration and loose file permissions
+  ---
+  duration_ms: 1.373966
+  type: 'test'
+  ...
+# Subtest: dangerous ops need second-step password confirmation (single-use token)
+ok 112 - dangerous ops need second-step password confirmation (single-use token)
+  ---
+  duration_ms: 393.565283
+  type: 'test'
+  ...
+# Subtest: integration URL allowlist: SSRF + Docker blocked (also stored legacy URL on /test)
+ok 113 - integration URL allowlist: SSRF + Docker blocked (also stored legacy URL on /test)
+  ---
+  duration_ms: 104.592502
+  type: 'test'
+  ...
+# Subtest: prompt-injection guard: LLM-planned tasks wait for approval and run with untrusted wrapper
+ok 114 - prompt-injection guard: LLM-planned tasks wait for approval and run with untrusted wrapper
+  ---
+  duration_ms: 10041.04195
+  type: 'test'
+  ...
+# Subtest: agent permissions: code tasks blocked without shell capability
+ok 115 - agent permissions: code tasks blocked without shell capability
+  ---
+  duration_ms: 580.68879
+  type: 'test'
+  ...
+# Subtest: generic 500 (no internal details) and uploads hardened
+ok 116 - generic 500 (no internal details) and uploads hardened
+  ---
+  duration_ms: 43.598321
+  type: 'test'
+  ...
+# Subtest: action audit log records state-changing calls with intact hash chain; security audit report
+ok 117 - action audit log records state-changing calls with intact hash chain; security audit report
+  ---
+  duration_ms: 4.441932
+  type: 'test'
+  ...
+# Subtest: cost controller: over-budget blocked; override needs confirmation
+ok 118 - cost controller: over-budget blocked; override needs confirmation
+  ---
+  duration_ms: 40.753318
+  type: 'test'
+  ...
+# Subtest: backup API: create, verify, test-restore; dashboard returns real data
+ok 119 - backup API: create, verify, test-restore; dashboard returns real data
+  ---
+  duration_ms: 20.452454
+  type: 'test'
+  ...
+# Subtest: mobile API keeps working with Security Center on; mobile token cannot reach ops endpoints
+ok 120 - mobile API keeps working with Security Center on; mobile token cannot reach ops endpoints
+  ---
+  duration_ms: 10.056048
+  type: 'test'
+  ...
+# Subtest: Update Center API: off by default, auth required, real verified backup, no install without download
+ok 121 - Update Center API: off by default, auth required, real verified backup, no install without download
+  ---
+  duration_ms: 652.81546
+  type: 'test'
+  ...
+# Subtest: repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+ok 122 - repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+  ---
+  duration_ms: 3.15484
+  type: 'test'
+  ...
+# Subtest: versions: compare, downgrade detection
+ok 123 - versions: compare, downgrade detection
+  ---
+  duration_ms: 0.399812
+  type: 'test'
+  ...
+# Subtest: security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+ok 124 - security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+  ---
+  duration_ms: 0.992433
+  type: 'test'
+  ...
+# Subtest: security: redirect to a foreign host is refused
+ok 125 - security: redirect to a foreign host is refused
+  ---
+  duration_ms: 2.330502
+  type: 'test'
+  ...
+# Subtest: check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+ok 126 - check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+  ---
+  duration_ms: 4.17904
+  type: 'test'
+  ...
+# Subtest: security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+ok 127 - security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+  ---
+  duration_ms: 6.281297
+  type: 'test'
+  ...
+# Subtest: security: tampered manifest (signature over other bytes) is rejected
+ok 128 - security: tampered manifest (signature over other bytes) is rejected
+  ---
+  duration_ms: 0.734713
+  type: 'test'
+  ...
+# Subtest: security: downgrade attack (validly signed older version) is blocked
+ok 129 - security: downgrade attack (validly signed older version) is blocked
+  ---
+  duration_ms: 3.029769
+  type: 'test'
+  ...
+# Subtest: download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+ok 130 - download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+  ---
+  duration_ms: 15.506468
+  type: 'test'
+  ...
+# Subtest: download: oversized body (more than signed size) is aborted
+ok 131 - download: oversized body (more than signed size) is aborted
+  ---
+  duration_ms: 3.279887
+  type: 'test'
+  ...
+# Subtest: download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+ok 132 - download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+  ---
+  duration_ms: 14.191467
+  type: 'test'
+  ...
+# Subtest: download: server ignores Range → restarts clean, still verified
+ok 133 - download: server ignores Range → restarts clean, still verified
+  ---
+  duration_ms: 3.218289
+  type: 'test'
+  ...
+# Subtest: crash during download: restart marks it interrupted; cleanTemp removes partial files
+ok 134 - crash during download: restart marks it interrupted; cleanTemp removes partial files
+  ---
+  duration_ms: 2.98474
+  type: 'test'
+  ...
+# Subtest: network error on check is reported, not thrown as crash
+ok 135 - network error on check is reported, not thrown as crash
+  ---
+  duration_ms: 1.113379
+  type: 'test'
+  ...
+# Subtest: security: archive path traversal / absolute paths / truncated / garbage are rejected
+ok 136 - security: archive path traversal / absolute paths / truncated / garbage are rejected
+  ---
+  duration_ms: 2.597057
+  type: 'test'
+  ...
+# Subtest: download: signed+hashed but traversal archive is rejected after hash check
+ok 137 - download: signed+hashed but traversal archive is rejected after hash check
+  ---
+  duration_ms: 4.879829
+  type: 'test'
+  ...
+# Subtest: rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+ok 138 - rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+  ---
+  duration_ms: 0.380053
+  type: 'test'
+  ...
+# Subtest: rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+ok 139 - rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+  ---
+  duration_ms: 0.295519
+  type: 'test'
+  ...
+# Subtest: compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+ok 140 - compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+  ---
+  duration_ms: 0.104744
+  type: 'test'
+  ...
+# Subtest: manifest validation rejects path-like asset names and bad identity
+ok 141 - manifest validation rejects path-like asset names and bad identity
+  ---
+  duration_ms: 0.175841
+  type: 'test'
+  ...
+# Subtest: pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+ok 142 - pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+  ---
+  duration_ms: 17.19645
+  type: 'test'
+  ...
+# Subtest: auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+ok 143 - auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+  ---
+  duration_ms: 2.615884
+  type: 'test'
+  ...
+# Subtest: rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+ok 144 - rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+  ---
+  duration_ms: 0.617714
+  type: 'test'
+  ...
+# Subtest: MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+ok 145 - MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+  ---
+  duration_ms: 4.222592
+  type: 'test'
+  ...
+# Subtest: code never bypasses macOS security
+ok 146 - code never bypasses macOS security
+  ---
+  duration_ms: 0.838547
+  type: 'test'
+  ...
+# Subtest: manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+ok 147 - manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+  ---
+  duration_ms: 0.425474
+  type: 'test'
+  ...
+# Subtest: rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+ok 148 - rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+  ---
+  duration_ms: 0.32877
+  type: 'test'
+  ...
+# Subtest: schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+ok 149 - schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+  ---
+  duration_ms: 12.46567
+  type: 'test'
+  ...
+# Subtest: test-build archive: app name taken from manifest.appName
+ok 150 - test-build archive: app name taken from manifest.appName
+  ---
+  duration_ms: 0.271385
+  type: 'test'
+  ...
+# Subtest: unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+ok 151 - unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+  ---
+  duration_ms: 2.051387
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+ok 152 - QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+  ---
+  duration_ms: 1.297382
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+ok 153 - QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+  ---
+  duration_ms: 5.069964
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+ok 154 - QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+  ---
+  duration_ms: 0.636092
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+ok 155 - QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+  ---
+  duration_ms: 2.282253
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+ok 156 - QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+  ---
+  duration_ms: 112.124894
+  type: 'test'
+  ...
+# Subtest: QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+ok 157 - QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+  ---
+  duration_ms: 5.064042
+  type: 'test'
+  ...
+# Subtest: QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+ok 158 - QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+  ---
+  duration_ms: 7.274162
+  type: 'test'
+  ...
+# Subtest: QA-UC-004: Electron shell does not check GitHub automatically
+ok 159 - QA-UC-004: Electron shell does not check GitHub automatically
+  ---
+  duration_ms: 0.278202
+  type: 'test'
+  ...
+# Subtest: QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+ok 160 - QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+  ---
+  duration_ms: 3.383559
+  type: 'test'
+  ...
+# Subtest: lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+ok 161 - lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+  ---
+  duration_ms: 0.946651
+  type: 'test'
+  ...
+# Subtest: auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+ok 162 - auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+  ---
+  duration_ms: 11.022205
+  type: 'test'
+  ...
+# Subtest: origin verification: remote, ref, on origin, clean tree
+ok 163 - origin verification: remote, ref, on origin, clean tree
+  ---
+  duration_ms: 2.06631
+  type: 'test'
+  ...
+# Subtest: artifact SHA-256 required and must match (direct or SHA256SUMS)
+ok 164 - artifact SHA-256 required and must match (direct or SHA256SUMS)
+  ---
+  duration_ms: 7.024015
+  type: 'test'
+  ...
+# Subtest: signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+ok 165 - signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+  ---
+  duration_ms: 0.601589
+  type: 'test'
+  ...
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 166 - schema compatibility + plan refuses on failed checks
+  ---
+  duration_ms: 4.655833
+  type: 'test'
+  ...
+# Subtest: healthy cycle; OpenCode 401 counts as alive; state persisted
+ok 167 - healthy cycle; OpenCode 401 counts as alive; state persisted
+  ---
+  duration_ms: 3.064115
+  type: 'test'
+  ...
+# Subtest: stale scheduler tick (>90s) detected; alert only after failAfter consecutive failures
+ok 168 - stale scheduler tick (>90s) detected; alert only after failAfter consecutive failures
+  ---
+  duration_ms: 1.614253
+  type: 'test'
+  ...
+# Subtest: restart: bounded by backoff and circuit breaker (no infinite restarts)
+ok 169 - restart: bounded by backoff and circuit breaker (no infinite restarts)
+  ---
+  duration_ms: 43.820862
+  type: 'test'
+  ...
+# Subtest: hung process detection; kill only when enabled, SIGTERM, own user only
+ok 170 - hung process detection; kill only when enabled, SIGTERM, own user only
+  ---
+  duration_ms: 1.389384
+  type: 'test'
+  ...
+# Subtest: queue/error-rate check via scoped token; RAM/disk thresholds
+ok 171 - queue/error-rate check via scoped token; RAM/disk thresholds
+  ---
+  duration_ms: 0.476615
+  type: 'test'
+  ...
+# Subtest: ollama down → alert, restart only if launchd label configured
+ok 172 - ollama down → alert, restart only if launchd label configured
+  ---
+  duration_ms: 0.613122
+  type: 'test'
+  ...
+1..172
+# tests 172
+# suites 0
+# pass 171
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 12696.21789
+EXIT:0

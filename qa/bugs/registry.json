@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T17:23:44.395Z",
+  "updatedAt": "2026-10-21T17:49:54.659Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -724,7 +724,7 @@
       "id": "QA-UC-006",
       "title": "Release age uses the unsigned GitHub date",
       "severity": "low",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "The 365-day refusal reads GitHub release published_at. That field is outside the signed manifest. A missing date skips the check. Republishing the same signed bytes with a fresh published_at is not refused for age.",
@@ -739,11 +739,12 @@
       "evidence": [
         "qa/reports/update-center-v2/REPORT.md",
         "qa/reports/update-center-v2/logs/attack.json",
-        "qa/reports/update-center-v3/REPORT.md"
+        "qa/reports/update-center-v3/REPORT.md",
+        "qa/reports/update-center-v4/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:10:00.000Z",
       "foundIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
       "blockedOn": null,
       "history": [
         {
@@ -755,6 +756,11 @@
           "at": "2026-10-21T17:23:44.341Z",
           "status": "open",
           "note": "At 3fc9573 a signed builtAt of 2020-01-01 blocks a republished published_at of 2026-10-21, and the older of the two dates wins. Still open: a manifest with no builtAt follows the unsigned GitHub date, and both dates absent skips the age check. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:49:54.581Z",
+          "status": "qa_verified",
+          "note": "At 5100568 builtAt is required. A manifest without it is unverified and prepareDownload throws UNVERIFIED. A signed builtAt of 2020-01-01 still fails the 365-day gate when published_at is 2026-10-21. release-sign.mjs writes builtAt before signing. Owner approval is not set."
         }
       ]
     },
@@ -1231,7 +1237,7 @@
       "id": "QA-UC-007",
       "title": "The external update keyring does not check mode or symlink targets",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "OPS_UPDATE_KEYRING_DIR is loaded with readFileSync. path.basename stops a .. file field. There is no mode check and no realpath containment. A mode 0777 directory with a mode 0666 keyring.json loaded a public key and signatureStatus was READY. A symlink to a public key outside the directory was loaded. keyring.json as a symlink was followed. A symlink to a PKCS8 private PEM was rejected. An external ring can revoke a built-in key and add a different public key. It cannot clear a revocation already in the base ring. With the variable unset, the prod set stays empty and the signature state stays BLOCKED.",
@@ -1244,17 +1250,85 @@
       ],
       "evidence": [
         "qa/reports/update-center-v3/REPORT.md",
-        "qa/reports/update-center-v3/logs/attack.json"
+        "qa/reports/update-center-v3/logs/attack.json",
+        "qa/reports/update-center-v4/REPORT.md"
       ],
       "foundAt": "2026-10-21T17:30:00.000Z",
       "foundIn": "feat/update-center 3fc9573, qa/reports/update-center-v3/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T17:23:44.395Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T17:49:54.610Z",
+          "status": "qa_verified",
+          "note": "At 5100568 a mode 0777 directory, a symlinked directory, a symlinked keyring.json, a symlinked public key, a mode 0666 file, and a foreign uid are BLOCKED and the key is not loaded. A parent symlink in the /var shape is READY. A swap of that symlink between the check and the second read is QA-UC-009. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-008",
+      "title": "A missing build-info does not fail the release age check",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "readBuildInfoBuiltAt returns null when desktop/build-info.json is missing or the date does not parse. signedVersionProblems then warns and still marks a newer release verified, and prepareDownload allows it. The packaged server starts from app.asar.unpacked. asarUnpack includes lib/** and does not include desktop/**, so the reader looks for app.asar.unpacked/desktop/build-info.json. An asar that contains /desktop/build-info.json was not visible to that copy. An older signed 1.3.0 stayed verified. Deleting a build-info.json that sat beside the module did the same. When the file sits beside the module, the older builtAt is unverified. A dev run shows the warning on purpose. The packaged miss uses the same warning and the same allow.",
+      "expected": "A packaged build whose build-info.json is missing or not readable by the server refuses the release. A dev checkout may say the age check is unavailable.",
+      "actual": "Both the missing file and the asar-only file leave buildAge.available false, add the warning, and leave an older signed release verified. Download is allowed. Version compare and the 5-minute future check still run.",
+      "repro": [
+        "Build an asar that contains desktop/build-info.json and copy only lib/ to app.asar.unpacked",
+        "Require app.asar.unpacked/lib/ops/update-center.js and read readBuildInfoBuiltAt",
+        "Check a signed release whose version is newer than package.json and whose builtAt is older than the asar file"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v4/REPORT.md",
+        "qa/reports/update-center-v4/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T17:45:00.000Z",
+      "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:45:00.000Z",
+          "status": "open",
+          "note": "The extracted-asar test passes because lib and desktop land in one directory. The packaged server does not run from that layout. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-009",
+      "title": "A parent symlink is checked on one path and read on another",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "externalKeyringProblem stats the given path, then realpaths it and checks the files there. loadKeyring reads the original path, so a parent symlink is followed again. Replacing the symlink after the keyring.json check and before that second read loaded an attacker key and signatureStatus was READY. The attacker directory was mode 0755 and a load that starts on it is BLOCKED. nobody cannot replace a symlink in a sticky 1777 directory. nobody can replace one in a mode 0777 directory without the sticky bit. A live race on that directory won 1 of 21077 loads, then 0 of 32815. macOS /var is not a symlink a normal user can replace.",
+      "expected": "After the directory is accepted, the bytes that are loaded are the bytes that were checked. A parent symlink that changes between the check and the read is refused.",
+      "actual": "The second read follows the symlink as it is at read time. A swap in that gap loads the new directory with no mode or owner check. A load that begins on the new directory is blocked.",
+      "repro": [
+        "Point OPS_UPDATE_KEYRING_DIR at link/kr where link points at a mode 0700 keyring you own",
+        "During the keyring.json read inside externalKeyringProblem, retarget link at a mode 0755 directory that holds a different public key",
+        "Read signatureStatus. A fresh load after the swap stays BLOCKED"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v4/REPORT.md",
+        "qa/reports/update-center-v4/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T17:45:00.000Z",
+      "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:45:00.000Z",
+          "status": "open",
+          "note": "A stable parent symlink in the /var shape is READY. The hole is a symlink another user can replace between the check and the second read. Owner approval is not set."
         }
       ]
     }
