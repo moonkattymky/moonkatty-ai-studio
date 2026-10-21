@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // MOONKATTY NODE — one app, device profiles (NEWS NODE on iMac, MONITOR NODE on MacBook) — lightweight worker for Intel Macs
-// (iMac Retina 5K 27" 2017, i5 3.4GHz 4c, 8 GB, macOS Ventura 13.7.1; MacBook 2015 ≤ Monterey 12). Zero npm dependencies (only Node built-ins).
-// Runtime: iMac → Node.js 24 LTS darwin-x64 (official min macOS 13.5, Tier 1); MacBook (macOS 11–12) → Node.js 22 LTS x64 (min macOS 11).
+// (iMac Retina 5K 27" 2017, i5 3.4GHz 4c, 8 GB, macOS Ventura 13.7.1; MacBook Pro Retina 13" Early 2015, i5 2.7GHz 2c, 8 GB DDR3, macOS Monterey 12.7.6). Zero npm dependencies (only Node built-ins).
+// Runtime: iMac → Node.js 24 LTS darwin-x64 (official min macOS 13.5, Tier 1); MacBook (Monterey 12.7.6) → Node.js 22 LTS x64 (min macOS 11; Node 24 NOT allowed there).
 // Code is kept compatible with Node ≥ 16 (no fetch, no newer syntax-only APIs).
 // NODE_TLS_MODE=tailscale: Mac mini runs `tailscale serve --bg --https=8443 https+insecure://127.0.0.1:8790` (tailnet only, never funnel).
 // Pull-only: the agent connects OUT to the coordinator over HTTPS with a pinned self-signed certificate; it listens on no port.
@@ -17,12 +17,17 @@ const PROFILES = {
   news: { title: 'NEWS NODE', heavyAI: false, blender: false, caps: ['news.collect', 'rss.fetch', 'news.dedup', 'news.prepare', 'archive.store', 'image.light', 'transfer.push', 'schedule.tick', 'telegram.notify'],
     // limits from scripts/node/news-load-sim.mjs (Node 24.22, docs/ops/sim/*.json): realistic peak 176 MB, stress peak 280 MB → soft 260 (≈1.5× realistic), hard 384
     limits: { maxRssMB: 384, softRssMB: 260, maxHeapMB: 192, maxFeeds: 50, maxFeedBytes: 2e6, maxItemsPerJob: 5000, maxConcurrent: 1, outboxMax: 200, maxInlineResultBytes: 256 * 1024, bpRestartMs: 30000 } },
-  monitor: { title: 'MONITOR NODE', heavyAI: false, blender: false, caps: ['monitor.check', 'site.check', 'result.verify', 'ffprobe.check', 'stats.compute', 'notify.send', 'queue.inspect', 'backup.light', 'x.analytics', 'x.draft'],
-    limits: { maxRssMB: 384, softRssMB: 260, maxHeapMB: 192, maxFeeds: 50, maxFeedBytes: 2e6, maxItemsPerJob: 5000, maxConcurrent: 1, outboxMax: 200, maxInlineResultBytes: 256 * 1024, bpRestartMs: 30000 } },
+  // MONITOR NODE (MacBook Pro 13" 2015, 2 cores): X GROWTH caps (x.analytics/x.draft) are OFF unless NODE_X_GROWTH=1 — and even then
+  // only analytics/drafts (never post/like/follow/repost/dm/reply; FORBIDDEN above). Limits from scripts/node/monitor-load-sim.mjs.
+  monitor: { title: 'MONITOR NODE', heavyAI: false, blender: false, xGrowthDefault: false, xCaps: ['x.analytics', 'x.draft'],
+    caps: ['monitor.check', 'site.check', 'studio.health', 'result.verify', 'ffprobe.check', 'stats.compute', 'notify.send', 'queue.inspect', 'backup.light', 'x.analytics', 'x.draft'],
+    limits: { maxRssMB: 256, softRssMB: 160, maxHeapMB: 128, maxFeeds: 20, maxFeedBytes: 2e6, maxItemsPerJob: 2000, maxConcurrent: 1, outboxMax: 200, maxInlineResultBytes: 256 * 1024, bpRestartMs: 30000, maxUrls: 20, ffprobeTimeoutMs: 120000, maxFileBytes: 4 * 1024 ** 3 } },
 };
 const PROFILE_ALIAS = { imac: 'news', 'news node': 'news', macbook: 'monitor', 'monitor node': 'monitor' };
 function profileOf(name) { const k = String(name || '').toLowerCase(); return PROFILES[PROFILE_ALIAS[k] || k] ? (PROFILE_ALIAS[k] || k) : null; }
-function allowCap(profile, cap) { if (FORBIDDEN.test(String(cap))) return 'запрещено профилем (heavy AI / Blender / render / X-действия)'; const p = PROFILES[profile]; if (p && !p.caps.includes(cap)) return `capability ${cap} не входит в профиль ${p.title}`; return null; }
+function allowCap(profile, cap, opt = {}) { if (FORBIDDEN.test(String(cap))) return 'запрещено профилем (heavy AI / Blender / render / X-действия)'; const p = PROFILES[profile];
+  if (p && p.xCaps && p.xCaps.includes(cap) && !opt.xGrowth) return 'X GROWTH выключен по умолчанию (NODE_X_GROWTH=1 — только аналитика/черновики по правилам X)'; if (p && !p.caps.includes(cap)) return `capability ${cap} не входит в профиль ${p.title}`; return null; }
+function hashFile(f) { return new Promise((res, rej) => { const h = crypto.createHash('sha256'); fs.createReadStream(f).on('data', d => h.update(d)).on('error', rej).on('end', () => res(h.digest('hex'))); }); }
 const rssMB = () => Math.round(process.memoryUsage().rss / 1048576);
 const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -39,7 +44,7 @@ async function memAvailable() {
   return os.freemem(); }
 async function disk(dir) { try { const l = (await run('/bin/df', ['-k', dir])).trim().split('\n').pop().split(/\s+/); return { total: +l[1] * 1024, free: +l[3] * 1024 }; } catch { return { total: null, free: null }; } }
 async function osVersion() { if (process.platform === 'darwin') { try { return 'macOS ' + (await run('/usr/bin/sw_vers', ['-productVersion'])).trim(); } catch {} } return os.type() + ' ' + os.release(); }
-async function which(t, extra = []) { for (const d of ['/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', ...extra]) if (fs.existsSync(path.join(d, t))) return path.join(d, t); return null; }
+async function which(t, extra = []) { for (const d of [path.join(os.homedir(), 'moonkatty-node', 'tools'), '/usr/local/bin', '/opt/homebrew/bin', '/usr/bin', ...extra]) if (fs.existsSync(path.join(d, t))) return path.join(d, t); return null; }
 const TOOLS = { ffprobe: [], ffmpeg: [], python3: [], sips: [], magick: [], convert: [], curl: [] };
 let toolCache = null; async function tools() { if (toolCache) return toolCache; const t = []; for (const k of Object.keys(TOOLS)) if (await which(k)) t.push(k); return (toolCache = t); }
 async function sysInfo(cfg) { const d = await disk(cfg.workDir); const tl = await tools(); const cpu = cpuPct();
@@ -57,10 +62,12 @@ function client(cfg) {
   const pinPem = isHttps && cfg.tlsMode !== 'tailscale' ? fs.readFileSync(cfg.certFile, 'utf8') : null; const pin = (cfg.fingerprint || '').replace(/:/g, '').toLowerCase();
   if (isHttps && cfg.tlsMode !== 'tailscale' && !/^[a-f0-9]{64}$/.test(pin)) throw new Error('COORDINATOR_FINGERPRINT (SHA-256, 64 hex) обязателен');
   const agent = isHttps && cfg.tlsMode === 'tailscale' ? new https.Agent({ keepAlive: true, minVersion: 'TLSv1.2' }) : isHttps ? new https.Agent({ ca: pinPem, keepAlive: true, checkServerIdentity: (h, cert) => { const fp = String(cert.fingerprint256 || '').replace(/:/g, '').toLowerCase(); return fp === pin ? undefined : new Error('TLS pin mismatch: ' + fp); } }) : new http.Agent({ keepAlive: true });
-  return function req(method, p, body, { raw = false, timeout = 30000 } = {}) { return new Promise((res, rej) => {
+  return function req(method, p, body, { raw = false, timeout = 30000, toFile = null, maxBytes = Infinity } = {}) { return new Promise((res, rej) => {
     const data = body == null ? null : Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
     const r = (isHttps ? https : http).request({ method, hostname: u.hostname, port: u.port || (isHttps ? 443 : 80), path: '/api/nodes' + p, agent, timeout,
       headers: { authorization: 'Bearer ' + cfg.token, 'content-type': Buffer.isBuffer(body) ? 'application/octet-stream' : 'application/json', ...(data ? { 'content-length': data.length } : {}) } }, resp => {
+      if (toFile && resp.statusCode === 200) { const h = crypto.createHash('sha256'); let n = 0; const w = fs.createWriteStream(toFile, { mode: 0o600 }); // streamed: big videos never sit in RAM
+        resp.on('data', d => { n += d.length; if (n > maxBytes) { resp.destroy(new Error('файл больше лимита')); return; } h.update(d); }); resp.on('error', rej); resp.pipe(w); w.on('error', rej); w.on('finish', () => res({ status: 200, sha256: h.digest('hex'), size: n })); return; }
       const c = []; resp.on('data', d => c.push(d)); resp.on('end', () => { const b = Buffer.concat(c); if (raw && resp.statusCode === 200) return res({ status: 200, buf: b, headers: resp.headers }); let j = null; try { j = JSON.parse(b.toString()); } catch {} res({ status: resp.statusCode, body: j }); }); });
     r.on('timeout', () => r.destroy(new Error('timeout'))); r.on('error', rej); if (data) r.write(data); r.end(); }); };
 }
@@ -91,8 +98,8 @@ function makeHandlers(cfg, ctx) {
       return { n: v.length, sum: s, mean: v.length ? s / v.length : null, min: v[0] ?? null, max: v[v.length - 1] ?? null, median: v.length ? v[Math.floor(v.length / 2)] : null }; },
     'monitor.check': async i => { const out = []; for (const u of (i.urls || []).slice(0, 20)) { const t = Date.now(); try { await getUrl(u, 1e5); out.push({ url: u, ok: true, ms: Date.now() - t }); } catch (e) { out.push({ url: u, ok: false, error: e.message }); } } return { checks: out }; },
     'queue.inspect': async () => ({ node: cfg.nodeId, running: ctx.running.size, info: await sysInfo(cfg) }),
-    'ffprobe.check': async (i, job) => { const ff = await which('ffprobe'); if (!ff) throw Object.assign(new Error('ffprobe не установлен (brew install ffmpeg)'), { retryable: false }); const out = [];
-      for (const f of job.localFiles) { const j = JSON.parse(await run(ff, ['-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', f.path], { timeout: 120000 }));
+    'ffprobe.check': async (i, job) => { const ff = await which('ffprobe'); if (!ff) throw Object.assign(new Error('ffprobe не установлен: bash ~/moonkatty-node/fetch-ffprobe.sh (сборка evermeet.cx, SHA-256 закреплён)'), { retryable: false }); const out = [];
+      for (const f of job.localFiles) { const j = JSON.parse(await run(ff, ['-v', 'error', '-threads', '1', '-print_format', 'json', '-show_format', '-show_streams', f.path], { timeout: (cfg.limits && cfg.limits.ffprobeTimeoutMs) || 120000 }));
         const v = (j.streams || []).find(s => s.codec_type === 'video'); const a = (j.streams || []).find(s => s.codec_type === 'audio'); const problems = [];
         if (!v) problems.push('нет видеодорожки'); if (i.expectAudio !== false && !a) problems.push('нет аудио'); if (i.width && v && v.width !== i.width) problems.push(`ширина ${v.width} ≠ ${i.width}`); if (i.height && v && v.height !== i.height) problems.push(`высота ${v.height} ≠ ${i.height}`);
         const dur = +(j.format || {}).duration; if (i.maxDurationSec && dur > i.maxDurationSec) problems.push(`длительность ${dur} > ${i.maxDurationSec}`);
@@ -110,7 +117,13 @@ function makeHandlers(cfg, ctx) {
       for (const f of job.localFiles) { if (!/\.(jpe?g|png|heic|tiff?|gif)$/i.test(f.name)) throw Object.assign(new Error('не изображение: ' + f.name), { retryable: false }); const dst = path.join(path.dirname(f.path), 'out-' + path.basename(f.name).replace(/\.[^.]+$/, '') + '.jpg');
         await run(sips, ['-Z', String(max), '-s', 'format', 'jpeg', f.path, '--out', dst], { timeout: 60000 }); const h = await ctx.upload(fs.readFileSync(dst)); out.push({ sha256: h, name: path.basename(dst), kind: 'image' }); } return { artifacts: out }; },
     'site.check': async i => { const out = []; for (const u of (i.urls || []).slice(0, 20)) { const t = Date.now(); try { const b = await getUrl(u, 2e5); out.push({ url: u, ok: !i.expectText || b.includes(i.expectText), ms: Date.now() - t }); } catch (e) { out.push({ url: u, ok: false, error: e.message }); } } return { checks: out, ok: out.every(c => c.ok) }; },
-    'result.verify': async (i, job) => { const out = job.localFiles.map(f => ({ name: f.name, sha256: f.sha256, ok: true, size: fs.statSync(f.path).size })); for (const r of out) { if (i.minBytes && r.size < i.minBytes) { r.ok = false; r.problem = 'слишком маленький'; } } return { files: out, ok: out.every(r => r.ok) }; },
+    // re-hashes every artifact from disk (streamed) and compares with the content address and an optional expected map {name: sha256}
+    'result.verify': async (i, job) => { const out = []; for (const f of job.localFiles) { const h = await hashFile(f.path); const exp = (i.expect || {})[f.name]; const r = { name: f.name, sha256: h, ok: h === f.sha256 && (!exp || exp === h), size: fs.statSync(f.path).size };
+        if (h !== f.sha256) r.problem = 'SHA-256 не совпадает с адресом'; else if (exp && exp !== h) r.problem = 'SHA-256 ≠ ожидаемого'; if (r.ok && i.minBytes && r.size < i.minBytes) { r.ok = false; r.problem = 'слишком маленький'; } out.push(r); } return { files: out, ok: out.every(r => r.ok) }; },
+    // health of the central studio (Mac mini): authenticated read-only ping of the node API + optional URLs; never changes state
+    'studio.health': async i => { const t = Date.now(); const r = await ctx.req('GET', '/ping'); const checks = [{ name: 'node-api', ok: r.status === 200, status: r.status, ms: Date.now() - t }];
+      for (const u of (i.urls || []).slice(0, (cfg.limits || {}).maxUrls || 20)) { const t2 = Date.now(); try { await getUrl(u, 1e5); checks.push({ name: u, ok: true, ms: Date.now() - t2 }); } catch (e) { checks.push({ name: u, ok: false, error: e.message }); } }
+      return { ok: checks.every(c => c.ok), checks }; },
     'notify.send': async i => localNotify(cfg, i), 'telegram.notify': async i => localNotify(cfg, i),
   };
 }
@@ -138,7 +151,7 @@ async function main(cfg) {
   const act = (a, extra = {}) => { const e = { at: new Date().toISOString(), a, ...extra }; ctx.recent.push(e); if (ctx.recent.length > 50) ctx.recent.shift(); try { fs.mkdirSync(path.dirname(cfg.actionLog), { recursive: true }); fs.appendFileSync(cfg.actionLog, JSON.stringify(e) + '\n', { mode: 0o600 }); } catch {} };
   ctx.act = act; let localPause = false; if (cfg.statusPort) startStatusPage(cfg, ctx, { pause: v => { localPause = v; act(v ? 'локальная пауза' : 'продолжить'); } }); act('старт ' + VERSION); const fault = cfg.fault || ''; let backoff = 1000;
   ctx.upload = async buf => { let h = sha256(buf); const body = fault === 'bad-checksum' ? Buffer.concat([buf, Buffer.from('X')]) : buf; const r = await req('PUT', '/files/' + h, body); if (r.status !== 200) throw Object.assign(new Error('upload: ' + (r.body && r.body.error)), { retryable: true }); return h; };
-  const H = makeHandlers(cfg, ctx); fs.mkdirSync(cfg.workDir, { recursive: true }); const outbox = makeOutbox(cfg);
+  ctx.req = req; const H = makeHandlers(cfg, ctx); fs.mkdirSync(cfg.workDir, { recursive: true }); const outbox = makeOutbox(cfg);
   ctx.mem = { rssMB: rssMB(), peakRssMB: rssMB(), backpressure: 0, limits: cfg.limits };
   const log = (...a) => console.log(new Date().toISOString(), ...a);
   log(`node-agent ${VERSION} ${cfg.nodeId} → ${cfg.url} (Node ${process.version}, ${process.platform}/${process.arch})`);
@@ -164,11 +177,11 @@ async function main(cfg) {
       ctx.current = { id: job.id, capability: job.capability, startedAt: new Date().toISOString(), progress: null }; act('задача ' + job.capability, { job: job.id });
       const hb = setInterval(() => req('POST', `/jobs/${job.id}/heartbeat`, { leaseId: job.leaseId, checkpoint: { progress: ctx.current && ctx.current.progress } }).then(h => { if (h.body && h.body.command) ctx.command = h.body.command; }).catch(() => {}), Math.max(1000, Math.floor(job.leaseMs / 3)));
       try {
-        const deny = allowCap(cfg.profileKey, job.capability); if (deny) throw Object.assign(new Error(deny), { retryable: false });
+        const deny = allowCap(cfg.profileKey, job.capability, { xGrowth: cfg.xGrowth }); if (deny) throw Object.assign(new Error(deny), { retryable: false });
         const h = H[job.capability]; if (!h) throw Object.assign(new Error('capability не поддерживается агентом: ' + job.capability), { retryable: false });
         const dir = fs.mkdtempSync(path.join(cfg.workDir, 'job-')); job.localFiles = [];
-        for (const f of job.files || []) { const g = await req('GET', '/files/' + f.sha256, null, { raw: true, timeout: 600000 }); if (g.status !== 200) throw Object.assign(new Error('скачивание ' + f.sha256 + ': ' + g.status), { retryable: true });
-          if (sha256(g.buf) !== f.sha256) throw Object.assign(new Error('SHA-256 скачанного файла не совпадает'), { retryable: true }); const p = path.join(dir, path.basename(f.name || f.sha256)); fs.writeFileSync(p, g.buf, { mode: 0o600 }); job.localFiles.push({ ...f, path: p }); }
+        for (const f of job.files || []) { const p = path.join(dir, path.basename(f.name || f.sha256)); const g = await req('GET', '/files/' + f.sha256, null, { toFile: p, timeout: 600000, maxBytes: cfg.limits.maxFileBytes || Infinity }); if (g.status !== 200) throw Object.assign(new Error('скачивание ' + f.sha256 + ': ' + g.status), { retryable: true });
+          if (g.sha256 !== f.sha256) { fs.rmSync(p, { force: true }); throw Object.assign(new Error('SHA-256 скачанного файла не совпадает'), { retryable: true }); } job.localFiles.push({ ...f, path: p }); }
         if (cfg.slowMs) await sleep(cfg.slowMs);
         const out = await h(job.input || {}, job); fs.rmSync(dir, { recursive: true, force: true });
         if (job.capability === 'news.collect' || job.capability === 'news.prepare') ctx.lastNews = { at: new Date().toISOString(), bySource: out.bySource || null, headlines: (out.items || []).slice(0, 8).map(x => ({ title: x.title, source: x.source || null, date: x.date || null })), total: (out.items || []).length };
@@ -210,12 +223,13 @@ async function config(env = process.env) {
   const profileKey = profileOf(e.NODE_PROFILE || (nodeId === 'imac' ? 'news' : nodeId === 'macbook' ? 'monitor' : ''));
   if (profileKey && (e.NODE_ALLOW_HEAVY_AI === '1' || e.NODE_ALLOW_BLENDER === '1')) throw new Error(`профиль ${PROFILES[profileKey].title}: heavy AI / Blender запрещены профилем и не включаются переменными окружения`);
   const base = (PROFILES[profileKey] || PROFILES.news).limits; const limits = { ...base, ...(e.NODE_MAX_RSS_MB ? { maxRssMB: Math.min(1024, +e.NODE_MAX_RSS_MB) } : {}), ...(e.NODE_SOFT_RSS_MB ? { softRssMB: +e.NODE_SOFT_RSS_MB } : {}) };
+  const xGrowth = profileKey === 'monitor' && e.NODE_X_GROWTH === '1';
   const tlsMode = e.NODE_TLS_MODE === 'tailscale' ? 'tailscale' : 'pinned';
-  return { profileKey, limits, tlsMode, outboxDir: e.NODE_OUTBOX_DIR || path.join(e.NODE_WORK_DIR ? path.dirname(e.NODE_WORK_DIR) : home, 'outbox'), nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
+  return { profileKey, limits, tlsMode, xGrowth, outboxDir: e.NODE_OUTBOX_DIR || path.join(e.NODE_WORK_DIR ? path.dirname(e.NODE_WORK_DIR) : home, 'outbox'), nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
     workDir: e.NODE_WORK_DIR || path.join(home, 'work'), actionLog: e.NODE_ACTION_LOG || path.join(e.NODE_WORK_DIR || path.join(home, 'work'), '..', 'actions.log'), statusPort: e.NODE_STATUS_PORT === '0' ? 0 : +(e.NODE_STATUS_PORT || 8791), profile: e.NODE_PROFILE || '', archiveDir: e.NODE_ARCHIVE_DIR || path.join(home, 'archive'), pollMs: +(e.NODE_POLL_MS || 5000), ntfyUrl: e.NODE_NTFY_URL || '', fault: e.NODE_AGENT_FAULT || '', slowMs: +(e.NODE_AGENT_SLOW_MS || 0) };
 }
 if (require.main === module) {
   if (process.argv.includes('--info')) config().catch(() => ({ workDir: os.tmpdir() })).then(c => sysInfo(c)).then(i => { console.log(JSON.stringify(i, null, 2)); });
   else config().then(main).catch(e => { console.error('node-agent:', e.message); process.exit(1); });
 }
-module.exports = { parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };
+module.exports = { hashFile, parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };

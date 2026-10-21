@@ -19,6 +19,7 @@ const env = { PATH: process.env.PATH, HOME: dir, NODE_AGENT_ENV: path.join(dir, 
 // same flags as the LaunchAgent plist; exit 75 → restarted like launchd KeepAlive (counted)
 let agent, log = '', restarts = 0, stopping = false; const start = () => { agent = spawn(process.execPath, [`--max-old-space-size=${HEAP}`, '--expose-gc', path.join(ROOT, 'node-agent/agent.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
   agent.stdout.on('data', d => log += d); agent.stderr.on('data', d => log += d); agent.on('exit', c => { if (!stopping && c === 75) { restarts++; m.sweep(); start(); } }); }; start();
+process.on('exit', () => { stopping = true; try { agent.kill('SIGKILL'); } catch {} }); for (const sg of ['SIGINT', 'SIGTERM']) process.on(sg, () => process.exit(130));
 const sweeper = setInterval(() => m.sweep(), 1000);
 const rssOf = pid => { try { return +execFileSync('ps', ['-o', 'rss=', '-p', String(pid)]).toString().trim() / 1024; } catch { return 0; } };
 const samples = []; const sampler = setInterval(() => samples.push({ t: Date.now(), mb: rssOf(agent.pid) }), 100);

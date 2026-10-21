@@ -11,14 +11,14 @@ const admin = (c, p, b = {}) => new Promise((res, rej) => { const r = http.reque
 function agent(c, id, token, { port = c.port, fault = '', fingerprint = c.fingerprint, slow = 0 } = {}) {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-' + id + '-')); const out = [];
   const p = spawn(process.execPath, [path.join(ROOT, 'node-agent/agent.js')], { env: { PATH: process.env.PATH, HOME: home, NODE_AGENT_ENV: path.join(home, 'none.env'), NODE_ID: id, NODE_TOKEN: token, COORDINATOR_URL: `https://127.0.0.1:${port}`,
-    COORDINATOR_CERT: c.cert, COORDINATOR_FINGERPRINT: fingerprint, NODE_POLL_MS: '150', NODE_STATUS_PORT: '0', NODE_AGENT_FAULT: fault, NODE_AGENT_SLOW_MS: String(slow), NODE_ARCHIVE_DIR: path.join(home, 'archive') }, stdio: ['ignore', 'pipe', 'pipe'] });
+    COORDINATOR_CERT: c.cert, COORDINATOR_FINGERPRINT: fingerprint, NODE_POLL_MS: '150', NODE_X_GROWTH: id === 'macbook' ? '1' : '0', NODE_STATUS_PORT: '0', NODE_AGENT_FAULT: fault, NODE_AGENT_SLOW_MS: String(slow), NODE_ARCHIVE_DIR: path.join(home, 'archive') }, stdio: ['ignore', 'pipe', 'pipe'] });
   p.stdout.on('data', d => out.push(String(d))); p.stderr.on('data', d => out.push(String(d))); procs.push(p); p.out = out; p.home = home; return p; }
 async function until(fn, ms = 15000) { const t = Date.now(); while (Date.now() - t < ms) { const v = await fn(); if (v) return v; await sleep(100); } throw new Error('timeout ' + fn.toString().slice(0, 80)); }
 const job = async (c, id) => (await admin(c, '/status')).jobsFull[id];
 function proxy(target) { const socks = new Set(); let up = true; const s = net.createServer(cl => { if (!up) return cl.destroy(); const t = net.connect(target, '127.0.0.1'); socks.add(cl); socks.add(t); cl.pipe(t).pipe(cl); const k = () => { cl.destroy(); t.destroy(); }; cl.on('error', k); t.on('error', k); cl.on('close', k); });
   return new Promise(r => s.listen(0, '127.0.0.1', () => r({ port: s.address().port, cut() { up = false; socks.forEach(x => x.destroy()); }, restore() { up = true; }, close: () => s.close() }))); }
 test('3 processes: routing by capability, TLS pin, ffprobe file transfer, X drafts only', { timeout: 60000 }, async () => {
-  const c = await startCoord(); const im = await admin(c, '/register', { id: 'imac', role: 'imac' }); const mb = await admin(c, '/register', { id: 'macbook', role: 'macbook' });
+  const c = await startCoord(); const im = await admin(c, '/register', { id: 'imac', role: 'imac' }); const mb = await admin(c, '/register', { id: 'macbook', role: 'macbook', caps: require('../../lib/ops/nodes.js').ROLES.macbook.caps }); // X GROWTH explicitly enabled for this test
   const ai = agent(c, 'imac', im.token), am = agent(c, 'macbook', mb.token);
   await until(async () => (await admin(c, '/status')).nodes.every(n => n.status === 'online'));
   const st = await admin(c, '/status'); const n = st.nodes.find(x => x.id === 'imac'); assert.ok(n.info.cpus > 0 && n.info.memTotal > 0 && n.info.os, 'self-report');
