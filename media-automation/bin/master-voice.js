@@ -2,8 +2,10 @@
 'use strict';
 // Usage: node media-automation/bin/master-voice.js show | check | lock --by <owner> | unlock --by <owner> --reason <text>
 const { MasterVoice } = require('../src/video/master-voice');
+const { loadOwnerConfig } = require('../../news-launch/azure-tts/owner-config');
 const a = process.argv.slice(2); const opt = k => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : null; };
-const mv = new MasterVoice();
+const owner = loadOwnerConfig();
+const mv = new MasterVoice({ approvalPublicKeyPem: owner.publicKeyPem, approvalMinSerial: owner.serial });
 try {
   if (a[0] === 'lock') console.log(mv.lock(opt('by')));
   else if (a[0] === 'unlock') console.log(mv.unlock(opt('by'), opt('reason')));

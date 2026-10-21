@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { isHdVoice, utcMonth, warnThreshold, withFileLock, writeState } = require('./budget');
 const { inspectLedger, ledgerPath } = require('./ledger');
+const { BUDGET_CEILING_USD, budgetMicro, verifyBudgetGrant } = require('./approval');
 
 /**
  * Retail Prices API, queried 21 October 2026.
@@ -31,7 +32,7 @@ function retailFloor(voice) {
   return isHdVoice(voice) ? HD_USD_PER_MILLION : NEURAL_USD_PER_MILLION;
 }
 
-function resolvePrice({ voice, pricePerMillionChars = null, monthlyBudgetUsd = null } = {}) {
+function resolvePrice({ voice, pricePerMillionChars = null, monthlyBudgetUsd = null, budgetGrant = null, approvalPublicKeyPem = null, now } = {}) {
   const floor = retailFloor(voice);
   const pricePerMillion = pricePerMillionChars == null ? floor : pricePerMillionChars;
   const budgetUsd = monthlyBudgetUsd == null ? DEFAULT_MONTHLY_BUDGET_USD : monthlyBudgetUsd;
@@ -40,7 +41,17 @@ function resolvePrice({ voice, pricePerMillionChars = null, monthlyBudgetUsd = n
   if (pricePerMillion + 1e-9 < floor) {
     throw new Error(`Azure Speech pricePerMillionChars ${pricePerMillion} is below the retail floor of ${floor.toFixed(2)}. Refusing to run.`);
   }
-  return { pricePerMillionChars: pricePerMillion, monthlyBudgetUsd: budgetUsd, floor };
+  const micro = budgetMicro(budgetUsd);
+  const ceiling = budgetMicro(BUDGET_CEILING_USD);
+  if (micro == null || micro < 1) throw new Error('Azure Speech monthlyBudgetUsd must be a positive number. Refusing to run.');
+  let grant = null;
+  if (micro > ceiling) {
+    if (!verifyBudgetGrant(budgetGrant, approvalPublicKeyPem, { micro, now })) {
+      throw new Error(`Azure Speech monthlyBudgetUsd ${budgetUsd} is above the ceiling of ${BUDGET_CEILING_USD.toFixed(2)}. An owner-signed budget record is required. Refusing to run.`);
+    }
+    grant = budgetGrant;
+  }
+  return { pricePerMillionChars: pricePerMillion, monthlyBudgetUsd: micro / 1000000, floor, budgetGrant: grant };
 }
 
 function toMicro(usd) {
@@ -93,9 +104,11 @@ function pidAlive(pid) {
  * reserve() runs before HTTP. A blocked request is not added. Failures are not refunded.
  */
 class UsdBudget {
-  constructor({ stateFile, ledgerDir = null, monthlyBudgetUsd = DEFAULT_MONTHLY_BUDGET_USD, pricePerMillionChars = NEURAL_USD_PER_MILLION, voice = null, now = () => new Date() } = {}) {
+  constructor({ stateFile, ledgerDir = null, monthlyBudgetUsd = DEFAULT_MONTHLY_BUDGET_USD, pricePerMillionChars = NEURAL_USD_PER_MILLION, voice = null, budgetGrant = null, approvalPublicKeyPem = null, now = () => new Date() } = {}) {
     if (!stateFile) throw new Error('Azure Speech usage state file is required.');
-    const price = resolvePrice({ voice, pricePerMillionChars, monthlyBudgetUsd });
+    const price = resolvePrice({
+      voice, pricePerMillionChars, monthlyBudgetUsd, budgetGrant, approvalPublicKeyPem, now: now(),
+    });
     this.stateFile = stateFile;
     this.ledgerDir = ledgerDir || path.dirname(stateFile);
     this.monthlyBudgetUsd = price.monthlyBudgetUsd;
@@ -196,6 +209,9 @@ class UsdBudget {
   reconcile({ actualUsd, by, at = null, note = '' } = {}) {
     assertUsd(actualUsd, 'actualUsd');
     if (!by || !String(by).trim()) throw new Error('Azure Speech reconciliation needs the owner name. Nothing was changed.');
+    if (/[A-Za-z0-9+/_=-]{12,}/.test(String(note || ''))) {
+      throw new Error('Azure Speech reconciliation note was refused. Nothing was changed.');
+    }
     return withFileLock(this.lockFile, () => {
       const state = this._load();
       const actualMicro = toMicro(actualUsd);

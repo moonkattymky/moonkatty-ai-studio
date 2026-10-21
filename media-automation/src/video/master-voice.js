@@ -3,6 +3,7 @@ const fs = require('fs'); const path = require('path'); const crypto = require('
 const { KokoroTTS, PiperTTS, MacSayTTS } = require('./tts');
 const { OWNER_ONLY_FIELDS } = require('../../../news-launch/azure-tts/approval');
 const { PRICE_FILE } = require('../../../news-launch/azure-tts/price');
+const { loadOwnerConfig } = require('../../../news-launch/azure-tts/owner-config');
 const DEFAULT = path.join(__dirname, '..', '..', 'config', 'master-voice.json');
 const expand = (s, env) => String(s || '').replace(/\$\{(\w+)\}/g, (_, k) => env[k] || '');
 const hashCache = new Map();
@@ -15,8 +16,17 @@ function sha256File(f) { const st = fs.statSync(f); const k = `${f}|${st.size}|$
  * - status 'candidate' until owner locks it; a locked config can only be changed via unlock(by, reason) (audit trail).
  */
 class MasterVoice {
-  constructor({ file = process.env.MA_MASTER_VOICE || DEFAULT, env = process.env, approvalPublicKeyPem = null } = {}) {
-    this.file = file; this.env = env; this.approvalPublicKeyPem = approvalPublicKeyPem || null; this.cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
+  constructor({ file = process.env.MA_MASTER_VOICE || DEFAULT, env = process.env, approvalPublicKeyPem = undefined, approvalMinSerial = undefined } = {}) {
+    this.file = file; this.env = env;
+    if (approvalPublicKeyPem === undefined && approvalMinSerial === undefined) {
+      const owner = loadOwnerConfig();
+      this.approvalPublicKeyPem = owner.publicKeyPem;
+      this.approvalMinSerial = owner.serial;
+    } else {
+      this.approvalPublicKeyPem = approvalPublicKeyPem || null;
+      this.approvalMinSerial = Number.isInteger(approvalMinSerial) ? approvalMinSerial : 0;
+    }
+    this.cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
   }
   get locked() { return this.cfg.status === 'locked'; }
   _save() { fs.writeFileSync(this.file + '.tmp', JSON.stringify(this.cfg, null, 2) + '\n'); fs.renameSync(this.file + '.tmp', this.file); }
@@ -30,8 +40,9 @@ class MasterVoice {
         enabled: true, voice: c.voice, region: c.region, tier: c.tier, rate: c.rate,
         allowPaid: c.allowPaid === true, paidEnabled: c.paidEnabled === true, paidApproval: c.paidApproval || null,
         approvalPublicKeyPem: this.approvalPublicKeyPem,
+        approvalMinSerial: this.approvalMinSerial,
         limitChars: c.limitChars, maxAttempts: c.maxAttempts,
-        stateFile: expand(c.stateFile, this.env) || undefined, keyService: c.keyService,
+        stateFile: expand(c.stateFile, this.env) || undefined,
         priceFile: fs.existsSync(PRICE_FILE) ? PRICE_FILE : undefined,
       });
       provider.assertConfig();

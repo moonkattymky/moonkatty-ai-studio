@@ -16,7 +16,7 @@ function assertOwnerOnly(file) {
   }
 }
 
-function readOwnerPrice(file, voice) {
+function readOwnerPrice(file, voice, { approvalPublicKeyPem = null, now } = {}) {
   assertOwnerOnly(file);
   let data;
   try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch {
@@ -27,17 +27,22 @@ function readOwnerPrice(file, voice) {
     voice,
     pricePerMillionChars: data.pricePerMillionChars,
     monthlyBudgetUsd: data.monthlyBudgetUsd == null ? null : data.monthlyBudgetUsd,
+    budgetGrant: data.budgetGrant || null,
+    approvalPublicKeyPem,
+    now,
   });
 }
 
-function writeOwnerPrice(file, { pricePerMillionChars, monthlyBudgetUsd = null, voice } = {}) {
-  const resolved = resolvePrice({ voice, pricePerMillionChars, monthlyBudgetUsd });
+function writeOwnerPrice(file, { pricePerMillionChars, monthlyBudgetUsd = null, voice, budgetGrant = null, approvalPublicKeyPem = null, now } = {}) {
+  const resolved = resolvePrice({ voice, pricePerMillionChars, monthlyBudgetUsd, budgetGrant, approvalPublicKeyPem, now });
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  const body = JSON.stringify({
+  const stored = {
     pricePerMillionChars: resolved.pricePerMillionChars,
     monthlyBudgetUsd: resolved.monthlyBudgetUsd,
-  }) + '\n';
+  };
+  if (resolved.budgetGrant) stored.budgetGrant = resolved.budgetGrant;
+  const body = JSON.stringify(stored) + '\n';
   fs.writeFileSync(tmp, body, { mode: 0o600 });
   fs.renameSync(tmp, file);
   fs.chmodSync(file, 0o600);

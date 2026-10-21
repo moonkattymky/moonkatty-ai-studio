@@ -35,11 +35,13 @@ class VoiceSession {
   async render(text, outWav, { episodeId = null, final = false } = {}) {
     try {
       const spoken = await this.azure.synthesize(text, outWav);
+      let episodeFinal = final === true;
+      if (spoken.cached === true && (!spoken.requestId || spoken.ledgerRequestId !== spoken.requestId)) episodeFinal = false;
       const record = this._store(episodeRecord({
         episodeId,
         engine: this.azure.name,
         voice: this.azure.voice,
-        final,
+        final: episodeFinal,
         summary: this.summary,
         showCaption: this.showCaption,
       }));
@@ -51,7 +53,7 @@ class VoiceSession {
           episodeId,
           engine: `${this.fallback.engine}:${this.fallback.voice}`,
           voice: 'fallback',
-          final: true,
+          final: false,
           summary: this.summary,
           azureStatus,
         }));

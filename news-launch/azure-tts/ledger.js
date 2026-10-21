@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { withFileLock } = require('./budget');
 
-const FIELDS = ['at', 'chars', 'estCostUsd', 'status', 'requestId', 'attempt', 'month'];
+const FIELDS = ['at', 'chars', 'estCostUsd', 'status', 'requestId', 'attempt', 'month', 'mac'];
 const CHAIN_BROKEN = 'Azure Speech ledger chain does not match. Refusing to run.';
 
 function ledgerPath(dir, month) {
@@ -37,15 +37,27 @@ function inspectLedger(file) {
   return { lines: lines.length, spentMicro, head: prev };
 }
 
-function ledgerHasOk(dir, requestId) {
-  if (!dir || !fs.existsSync(dir)) return false;
+function ledgerOkMac(cacheKey, requestId) {
+  return crypto.createHmac('sha256', String(cacheKey)).update('ok\0').update(String(requestId)).digest('hex');
+}
+
+function macMatches(expected, actual) {
+  if (typeof actual !== 'string' || !actual) return false;
+  const left = Buffer.from(expected);
+  const right = Buffer.from(actual);
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function ledgerHasOk(dir, requestId, cacheKey) {
+  if (!cacheKey || !dir || !fs.existsSync(dir)) return false;
+  const expected = ledgerOkMac(cacheKey, requestId);
   for (const name of fs.readdirSync(dir)) {
     if (!/^ledger-\d{4}-\d{2}\.jsonl$/.test(name)) continue;
     const lines = fs.readFileSync(path.join(dir, name), 'utf8').split('\n').filter(line => line.length > 0);
     for (const line of lines) {
       let row;
       try { row = JSON.parse(line); } catch { return false; }
-      if (row.status === 'ok' && row.requestId === requestId) return true;
+      if (row.status === 'ok' && row.requestId === requestId && macMatches(expected, row.mac)) return true;
     }
   }
   return false;
@@ -72,4 +84,4 @@ function appendLedger(file, entry, secret) {
   });
 }
 
-module.exports = { appendLedger, ledgerPath, inspectLedger, ledgerHasOk, FIELDS, CHAIN_BROKEN };
+module.exports = { appendLedger, ledgerPath, inspectLedger, ledgerHasOk, ledgerOkMac, FIELDS, CHAIN_BROKEN };

@@ -10,6 +10,7 @@ const OWNER_ACCOUNT = 'azure-speech-owner';
 const MISSING = 'Azure Speech key is not in the Keychain.';
 const MAC_ONLY = 'Azure Speech Keychain is macOS-only.';
 const NOT_STORED = 'Azure Speech key was not stored.';
+const OWNER_UNREADABLE = 'Azure Speech owner key is not readable by this process.';
 
 function redact(value, secret) {
   let out = String(value == null ? '' : value);
@@ -30,6 +31,7 @@ function assertKeyMaterial(key) {
  * This module does not read the environment.
  */
 function readKey({ service = SERVICE, account = ACCOUNT, spawnFn = spawn, platform = process.platform } = {}) {
+  if (service === OWNER_SERVICE || account === OWNER_ACCOUNT) return Promise.reject(new Error(OWNER_UNREADABLE));
   if (platform !== 'darwin') return Promise.reject(new Error(MAC_ONLY));
   return new Promise((resolve, reject) => {
     let proc;
@@ -58,11 +60,12 @@ function readKey({ service = SERVICE, account = ACCOUNT, spawnFn = spawn, platfo
  * add-generic-password command, including the secret, is written to stdin.
  * The secret is never placed in argv.
  */
-function storeKey(key, { service = SERVICE, account = ACCOUNT, spawnFn = spawn, platform = process.platform } = {}) {
+function storeKey(key, { service = SERVICE, account = ACCOUNT, spawnFn = spawn, platform = process.platform, lockdown = false } = {}) {
   if (platform !== 'darwin') return Promise.reject(new Error(MAC_ONLY));
   try { assertKeyMaterial(key); }
   catch (e) { return Promise.reject(e); }
-  const command = `add-generic-password -U -s "${service}" -a "${account}" -w "${key}"\n`;
+  const acl = lockdown ? ' -T ""' : '';
+  const command = `add-generic-password -U -s "${service}" -a "${account}" -w "${key}"${acl}\n`;
   return new Promise((resolve, reject) => {
     let proc;
     let settled = false;
@@ -85,5 +88,5 @@ function storeKey(key, { service = SERVICE, account = ACCOUNT, spawnFn = spawn, 
 }
 
 module.exports = {
-  SERVICE, TEST_SERVICE, ACCOUNT, OWNER_SERVICE, OWNER_ACCOUNT, readKey, storeKey, redact, MISSING, MAC_ONLY, NOT_STORED,
+  SERVICE, TEST_SERVICE, ACCOUNT, OWNER_SERVICE, OWNER_ACCOUNT, readKey, storeKey, redact, MISSING, MAC_ONLY, NOT_STORED, OWNER_UNREADABLE,
 };

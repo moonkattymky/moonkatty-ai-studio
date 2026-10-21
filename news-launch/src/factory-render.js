@@ -10,6 +10,7 @@ const { Publisher, DEFAULT_ACCOUNTS } = require('../../media-automation/src/publ
 const { defaultAdapters } = require('../../media-automation/src/publish');
 const { layoutFor } = require('../../media-automation/src/media/library');
 const { assertLaunchPaths } = require('./studio-boundary');
+const { loadOwnerConfig } = require('../azure-tts/owner-config');
 
 const HOST_NAME = 'host3d-stub';
 const KOKORO_MODEL = path.join(__dirname, '..', 'models', 'kokoro', 'kokoro-v1.0.onnx');
@@ -23,7 +24,8 @@ function kokoroEnv() {
 /** Their candidate. Does not call MasterVoice.lock. */
 function masterSpeech() {
   kokoroEnv();
-  const master = new MasterVoice();
+  const owner = loadOwnerConfig();
+  const master = new MasterVoice({ approvalPublicKeyPem: owner.publicKeyPem, approvalMinSerial: owner.serial });
   if (master.cfg.voice !== 'am_michael') {
     throw new Error(`MasterVoice voice is ${master.cfg.voice}. This launch uses the am_michael candidate and does not substitute another voice.`);
   }
