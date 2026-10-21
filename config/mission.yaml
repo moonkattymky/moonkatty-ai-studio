@@ -1,0 +1,24 @@
+# WORLD CLASS MODE — every agent loads this at startup. No secrets.
+id: world-class
+version: "1.3.0-test"
+title: WORLD CLASS MODE
+monthly_goals_usd: [1000, 5000, 10000, 20000]
+savings_item: Mac Studio
+qc_pass_score: 70
+qc_max_regenerations: 3
+streams: [games, news, main_media, ad_services, sponsors, affiliates, other_legal]
+views_are_revenue: false
+revenue_requires: confirmed_payout
+news_fact_check: mandatory
+auto_publish: false
+audience_goal_subscribers: 1000000
+audience_milestones: [1000, 10000, 100000, 500000, 1000000]
+merge_youtube: false
+audience_channels:
+  - { id: youtube-news, name: "YouTube MOONKATTY NEWS" }
+  - { id: youtube-project, name: "YouTube MOONKATTY" }
+  - { id: instagram, name: Instagram }
+  - { id: facebook, name: Facebook }
+  - { id: telegram, name: Telegram }
+  - { id: x, name: X }
+  - { id: tiktok, name: TikTok }
