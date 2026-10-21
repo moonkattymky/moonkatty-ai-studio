@@ -1,0 +1,515 @@
+{
+  "summary": {
+    "commit": "322023fd6f8e98dbddd38341e07227ded149c1fb",
+    "controls": 40,
+    "failed": []
+  },
+  "results": [
+    {
+      "name": "setup leased news.collect to imac",
+      "ok": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "unauth foreign token left node records unchanged",
+      "ok": true,
+      "detail": {
+        "calls": [
+          {
+            "kind": "none",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          },
+          {
+            "kind": "foreign-shape",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          },
+          {
+            "kind": "wrong-secret",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          },
+          {
+            "kind": "unknown-id",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          },
+          {
+            "kind": "empty-bearer",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          },
+          {
+            "kind": "basic",
+            "statuses": [
+              401
+            ],
+            "diskWrote": false,
+            "nodeChanged": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "unauth foreign token left jobs unchanged",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "unauth foreign token did not change nodes.json",
+      "ok": true,
+      "detail": {
+        "diskWrote": false,
+        "diskConn": false
+      }
+    },
+    {
+      "name": "wrong secret is remembered only in memory",
+      "ok": true,
+      "detail": {
+        "code": "E_UNAUTHORIZED",
+        "at": "2026-10-21T13:33:27.979Z"
+      }
+    },
+    {
+      "name": "unauth PUT did not create a file",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "enroll and status without a real code left node records and jobs unchanged",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "path": "/api/nodes/enroll",
+            "auth": "none",
+            "status": 403,
+            "code": "E_CODE_INVALID"
+          },
+          {
+            "path": "/api/nodes/enroll",
+            "auth": "bearer",
+            "status": 403,
+            "code": "E_CODE_INVALID"
+          },
+          {
+            "path": "/api/nodes/enroll",
+            "auth": "bearer",
+            "status": 403,
+            "code": "E_CODE_INVALID"
+          },
+          {
+            "path": "/api/nodes/enroll/status",
+            "auth": "none",
+            "status": 404,
+            "code": "E_NOT_FOUND"
+          },
+          {
+            "path": "/api/nodes/enroll/status",
+            "auth": "bearer",
+            "status": 404,
+            "code": "E_NOT_FOUND"
+          },
+          {
+            "path": "/api/nodes/enroll/status",
+            "auth": "bearer",
+            "status": 404,
+            "code": "E_NOT_FOUND"
+          }
+        ],
+        "diskChanged": true
+      }
+    },
+    {
+      "name": "other node token left the victim node and its job unchanged",
+      "ok": true,
+      "detail": {
+        "cross": [
+          {
+            "method": "POST",
+            "path": "/api/nodes/rotate",
+            "status": 409,
+            "code": "E_NOT_ENROLLED"
+          },
+          {
+            "method": "POST",
+            "path": "/api/nodes/jobs/nj_0b91be77d9b5e0fa/heartbeat",
+            "status": 409,
+            "code": 409
+          },
+          {
+            "method": "POST",
+            "path": "/api/nodes/jobs/nj_0b91be77d9b5e0fa/complete",
+            "status": 409,
+            "code": 409
+          },
+          {
+            "method": "POST",
+            "path": "/api/nodes/jobs/nj_0b91be77d9b5e0fa/fail",
+            "status": 409,
+            "code": 409
+          },
+          {
+            "method": "GET",
+            "path": "/api/nodes/files/cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            "status": 403,
+            "code": null
+          },
+          {
+            "method": "PUT",
+            "path": "/api/nodes/files/cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+            "status": 422,
+            "code": 422
+          }
+        ]
+      }
+    },
+    {
+      "name": "status audit and nodes.json omit bearer secrets",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "a new manager does not see the memory connection error",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "loopback peer is unverified and hides 127.0.0.1",
+      "ok": true,
+      "detail": {
+        "key": "loopback",
+        "label": "адрес Tailscale не определён (запрос через локальный прокси)",
+        "ip": null,
+        "name": null,
+        "login": null,
+        "via": "loopback",
+        "verified": false
+      }
+    },
+    {
+      "name": "stub whois names the tailnet peer",
+      "ok": true,
+      "detail": {
+        "key": "tsnode:nMB",
+        "label": "macbook · 100.101.1.2 · igor@x",
+        "ip": "100.101.1.2",
+        "name": "macbook",
+        "login": "igor@x",
+        "via": "tailscale serve",
+        "verified": true
+      }
+    },
+    {
+      "name": "whois miss stays unverified",
+      "ok": true,
+      "detail": {
+        "key": "ip:100.101.1.9",
+        "label": "100.101.1.9 (устройство Tailscale не определено: whois недоступен)",
+        "ip": "100.101.1.9",
+        "name": null,
+        "login": null,
+        "via": "direct",
+        "verified": false
+      }
+    },
+    {
+      "name": "defaultWhois on this host returns null",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "unknown peer confirm is 409 E_PEER_UNVERIFIED until the second ack",
+      "ok": true,
+      "detail": {
+        "code": "E_PEER_UNVERIFIED",
+        "state": "confirmed"
+      }
+    },
+    {
+      "name": "the second ack is one audit row",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "pending view keeps the unverified peer text",
+      "ok": true,
+      "detail": {
+        "peer": "адрес Tailscale не определён (запрос через локальный прокси)"
+      }
+    },
+    {
+      "name": "loopback XFF plus stub whois still confirms without the second ack",
+      "ok": true,
+      "detail": {
+        "skipped": "confirmed"
+      }
+    },
+    {
+      "name": "code and request secret stay out of list audit and nodes.json",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "status poll returns the enrolled token once",
+      "ok": true,
+      "detail": {
+        "status": "enrolled"
+      }
+    },
+    {
+      "name": "signed 0.2.0 and 0.2.1 pass the version gate",
+      "ok": true,
+      "detail": {
+        "v020": 200,
+        "v021": 200
+      }
+    },
+    {
+      "name": "signed 0.2.2 is online and 0.3.0 is 426",
+      "ok": true,
+      "detail": {
+        "v022": 200,
+        "v030": 426
+      }
+    },
+    {
+      "name": "a missing agentVersion is accepted",
+      "ok": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "an enrolled token without a signature is 401",
+      "ok": true,
+      "detail": {
+        "status": 401
+      }
+    },
+    {
+      "name": "a signature without a nonce is 426",
+      "ok": true,
+      "detail": {
+        "status": 426,
+        "code": "E_AGENT_VERSION"
+      }
+    },
+    {
+      "name": "a second process cannot open the same nodes directory",
+      "ok": true,
+      "detail": {
+        "out": "ERR каталог узлов /tmp/qa-dlt-lock-9j789Z уже используется процессом 50100 (второй координатор запрещён)\n",
+        "err": "",
+        "holder": 50100
+      }
+    },
+    {
+      "name": "an unreaped SIGKILL pid still counts as alive",
+      "ok": true,
+      "detail": {
+        "out": "ERR каталог узлов /tmp/qa-dlt-lock-9j789Z уже используется процессом 50100 (второй координатор запрещён)"
+      }
+    },
+    {
+      "name": "a dead lock pid is taken over",
+      "ok": true,
+      "detail": {
+        "out": "PID 50122",
+        "thirdPid": 50122,
+        "holder": 50100,
+        "status": 0
+      }
+    },
+    {
+      "name": "OPS_NODES_DOWN_MS 500 is raised to 2000",
+      "ok": true,
+      "detail": {
+        "nodeDownMs": 2000,
+        "enabled": true
+      }
+    },
+    {
+      "name": "enroll without a session is 401",
+      "ok": true,
+      "detail": [
+        {
+          "name": "no-session",
+          "status": 401
+        },
+        {
+          "name": "no-header",
+          "status": 403
+        },
+        {
+          "name": "evil-origin",
+          "status": 403
+        },
+        {
+          "name": "cross-site",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "name": "enroll without X-Studio-Request is 403",
+      "ok": true,
+      "detail": [
+        {
+          "name": "no-session",
+          "status": 401
+        },
+        {
+          "name": "no-header",
+          "status": 403
+        },
+        {
+          "name": "evil-origin",
+          "status": 403
+        },
+        {
+          "name": "cross-site",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "name": "evil origin and cross-site are 403",
+      "ok": true,
+      "detail": [
+        {
+          "name": "no-session",
+          "status": 401
+        },
+        {
+          "name": "no-header",
+          "status": 403
+        },
+        {
+          "name": "evil-origin",
+          "status": 403
+        },
+        {
+          "name": "cross-site",
+          "status": 403
+        }
+      ]
+    },
+    {
+      "name": "confirm word and password are both required",
+      "ok": true,
+      "detail": {
+        "missing": 400,
+        "bad": 403,
+        "ok": 200
+      }
+    },
+    {
+      "name": "device enroll over TLS reaches pending",
+      "ok": true,
+      "detail": {
+        "status": 200,
+        "enrollStatus": "pending"
+      }
+    },
+    {
+      "name": "HTTP confirm of a loopback peer is 409 until boolean true",
+      "ok": true,
+      "detail": {
+        "noAck": 409,
+        "strAck": 409,
+        "ack": 200,
+        "code": "E_PEER_UNVERIFIED"
+      }
+    },
+    {
+      "name": "peer_unverified_acknowledged is in the owner audit",
+      "ok": true,
+      "detail": {
+        "types": [
+          "confirmed",
+          "peer_unverified_acknowledged",
+          "code_accepted",
+          "request_created"
+        ]
+      }
+    },
+    {
+      "name": "reject of a pending request still skips the password",
+      "ok": true,
+      "detail": {
+        "enroll": 200,
+        "status": 200,
+        "body": {
+          "requestId": "9WQ5M",
+          "state": "rejected",
+          "role": "monitor",
+          "name": "MacBook",
+          "nodeId": "macbook-test",
+          "reenroll": false,
+          "attempts": 0,
+          "createdAt": "2026-10-21T13:33:28.896Z",
+          "expiresAt": "2026-10-21T13:38:28.896Z",
+          "device": {
+            "deviceId": "dev_ad822bd78ef2fcc7b6e1f47fd218a0c5",
+            "pubKeyFingerprint": "c6b5e99a1e6512652e3f7a48aef0d89fce860b6e0dff265987f7c996c872283b",
+            "pubKeyShort": "C6B5-E99A-1E65-1265",
+            "hostname": "mb",
+            "model": "",
+            "os": "",
+            "arch": "",
+            "agentVersion": "0.2.2",
+            "ip": "адрес Tailscale не определён (запрос через локальный прокси)",
+            "peer": "адрес Tailscale не определён (запрос через локальный прокси)",
+            "peerVerified": false,
+            "peerInfo": {
+              "ip": null,
+              "name": null,
+              "login": null,
+              "via": "loopback"
+            },
+            "deviceFieldsUnverified": true
+          }
+        }
+      }
+    },
+    {
+      "name": "the owner password is absent from stdout, logs, and data files",
+      "ok": true,
+      "detail": {
+        "logChars": 409333
+      }
+    },
+    {
+      "name": "the one-time code is absent from the log store",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "studio helper register is refused as a legacy token",
+      "ok": true,
+      "detail": {
+        "body": "{\"error\":\"Прямые токены 0.2.0 отключены. Подключайте компьютеры по коду («Подключить компьютер»). Для совместимости: STUDIO_NODES_LEGACY_TOKENS=1\"}"
+      }
+    }
+  ]
+}

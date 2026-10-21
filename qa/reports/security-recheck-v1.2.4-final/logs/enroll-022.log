@@ -1,0 +1,95 @@
+TAP version 13
+# Subtest: code: 15 chars from 31-symbol alphabet, TTL 300 s, HMAC only (code never in state/list/logs), default node id carries -test
+ok 1 - code: 15 chars from 31-symbol alphabet, TTL 300 s, HMAC only (code never in state/list/logs), default node id carries -test
+  ---
+  duration_ms: 22.852176
+  type: 'test'
+  ...
+# Subtest: lifecycle: expired after 5 min, single use, foreign/wrong code refused, 5 wrong → locked, IP lockout, rate limit
+ok 2 - lifecycle: expired after 5 min, single use, foreign/wrong code refused, 5 wrong → locked, IP lockout, rate limit
+  ---
+  duration_ms: 13.046523
+  type: 'test'
+  ...
+# Subtest: owner confirmation required: pending/rejected get no token; wrong device key refused; confirm → token once
+ok 3 - owner confirmation required: pending/rejected get no token; wrong device key refused; confirm → token once
+  ---
+  duration_ms: 10.114832
+  type: 'test'
+  ...
+# Subtest: signed requests: enrolled (0.2.1) token useless without a valid Ed25519 signature; 0.2.0 bearer tokens keep working
+ok 4 - signed requests: enrolled (0.2.1) token useless without a valid Ed25519 signature; 0.2.0 bearer tokens keep working
+  ---
+  duration_ms: 6.400807
+  type: 'test'
+  ...
+# Subtest: rotation: owner requests → hello/pull rotate:true → node rotates, old token dead; revoke kills token + device key; re-enroll invalidates old token
+ok 5 - rotation: owner requests → hello/pull rotate:true → node rotates, old token dead; revoke kills token + device key; re-enroll invalidates old token
+  ---
+  duration_ms: 9.042735
+  type: 'test'
+  ...
+# Subtest: addresses (38bce84 fix): strict octets, 100.64.0.0/10 and fd7a:115c:a1e0::/48 only for listeners
+ok 6 - addresses (38bce84 fix): strict octets, 100.64.0.0/10 and fd7a:115c:a1e0::/48 only for listeners
+  ---
+  duration_ms: 9.404328
+  type: 'test'
+  ...
+# Subtest: protocol 2 / agentVersion range over HTTP: hello protocol:1 + range, 426 E_AGENT_VERSION outside, pull carries rotate
+ok 7 - protocol 2 / agentVersion range over HTTP: hello protocol:1 + range, 426 E_AGENT_VERSION outside, pull carries rotate
+  ---
+  duration_ms: 33.593796
+  type: 'test'
+  ...
+# Subtest: end-to-end over real TLS (pinned): enroll → owner confirm → signed hello/pull → rotate:true → POST /rotate
+ok 8 - end-to-end over real TLS (pinned): enroll → owner confirm → signed hello/pull → rotate:true → POST /rotate
+  ---
+  duration_ms: 61.164396
+  type: 'test'
+  ...
+# Subtest: 0.2.2 replay: same nonce twice → E_REPLAY (audited); fresh nonce ok; nonce scoped per node; bad nonce format refused
+ok 9 - 0.2.2 replay: same nonce twice → E_REPLAY (audited); fresh nonce ok; nonce scoped per node; bad nonce format refused
+  ---
+  duration_ms: 6.773278
+  type: 'test'
+  ...
+# Subtest: 0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment status replay → E_REPLAY, stale ts → E_BAD_SIGNATURE
+ok 10 - 0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment status replay → E_REPLAY, stale ts → E_BAD_SIGNATURE
+  ---
+  duration_ms: 8.191712
+  type: 'test'
+  ...
+# Subtest: 0.2.2 lockouts per Tailscale device (whois), not per shared loopback; persisted across restart; X-Forwarded-For trusted only from loopback
+ok 11 - 0.2.2 lockouts per Tailscale device (whois), not per shared loopback; persisted across restart; X-Forwarded-For trusted only from loopback
+  ---
+  duration_ms: 5.176647
+  type: 'test'
+  ...
+# Subtest: 0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, nodes.lock: one coordinator per dir
+ok 12 - 0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, nodes.lock: one coordinator per dir
+  ---
+  duration_ms: 41.788798
+  type: 'test'
+  ...
+# Subtest: peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)
+ok 13 - peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)
+  ---
+  duration_ms: 3.542699
+  type: 'test'
+  ...
+# Subtest: statuses: connection errors in memory (revoked / 426 / unauthorized), cleared on success; unauthenticated requests never write nodes.json; node goes down after nodeDownMs
+ok 14 - statuses: connection errors in memory (revoked / 426 / unauthorized), cleared on success; unauthenticated requests never write nodes.json; node goes down after nodeDownMs
+  ---
+  duration_ms: 12.272835
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 334.356273
+EXIT:0

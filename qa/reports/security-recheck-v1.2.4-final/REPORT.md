@@ -1,46 +1,87 @@
 # Final audit of integrated v1.2.4-test
 
-Read-only on `feat/v1.2.4-test-nodes` @ `b7101c437466599558bf14653ff782677a2ec95b`. Compared with v1.2.3-test `a2a35c8` (previous PASS) and with the NODE 0.2.2 audit of `feat/studio-operations` @ `db4720b`. Nothing on the product branch was modified. Fake passwords only. No publish. No Meta, Facebook, Instagram, or Telegram calls.
+Read-only on `feat/v1.2.4-test-nodes`. Base `b7101c437466599558bf14653ff782677a2ec95b` plus one commit `322023fd6f8e98dbddd38341e07227ded149c1fb` (the Computers/Nodes port of `d38c682..fe8e4ab`). The product trees were not modified. Fake passwords only. No publish. No Meta, Facebook, Instagram, or Telegram calls.
 
-Studio will put Computers fixes `d38c682..fe8e4ab` (currently `origin/feat/studio-operations` @ `fe8e4ab`) on top of this commit. Findings that delta is expected to replace are marked **pending delta**. Those paths were measured on `b7101c4` and were not re-tested against `fe8e4ab`.
+The 3D and install measurements below are the `b7101c4` run. This commit touches eight files (`+93/−30`) and does not touch the 3D writer, Blender job, flavor guard, or publish guard. Those results still apply to `322023f`. The zip and the node delta were rebuilt and executed on `322023f`.
 
 ## Result
 
-**PASS** for installing the isolated test zip and running 3D on the Mac mini.
+**PASS** for installing the isolated test zip, running 3D, and for the Computers/Nodes fixes claimed in `322023f`.
 
-**Computers / node connect stays forbidden on this commit.** The gaps below are pending delta. The later check covers only that delta.
+Blocking bugs: none.
 
-Blocking bugs for the allowed install: none.
-
-Real publishing and real social accounts stay forbidden. A production launch stays blocked. The zip is ad-hoc signed and is not notarized.
+Real publishing and real social accounts stay forbidden. A production launch stays blocked. The zip is ad-hoc signed and is not notarized. macOS Keychain, `launchd`, Gatekeeper, and a live `tailscale whois` were not run.
 
 ## Allowed on the Mac mini
 
-- Install `MOONKATTY-AI-STUDIO-TEST-1.2.4-test-arm64-mac.zip` only after the SHA-256 is `879aef8e9a7386a5bd8332eb1473d37f3cc5ef44bad730a360b3591a4d7f76ba`.
+- Install `MOONKATTY-AI-STUDIO-TEST-1.2.4-test-arm64-mac.zip` only after the SHA-256 is `fdefbabd3a5e9369c1569f452b960e8b43b6ff15fa470c0968561fc45a0819ad`. That is the `322023f` build. The earlier `b7101c4` zip `879aef8e9a7386a5bd8332eb1473d37f3cc5ef44bad730a360b3591a4d7f76ba` is the previous commit.
 - Run the TEST app (`com.moonkatty.aistudio.test`, port 8687, Keychain `MOONKATTY AI STUDIO.test`, data directory of `MOONKATTY AI STUDIO TEST`).
 - Run a 3D job with OpenCode and Blender 4.2 or newer.
 - Leave `STUDIO_OPS_UPDATE` and the four Update Center auto-install flags unset.
-- Leave Node API off. Do not enroll a computer, do not set `STUDIO_NODES=1`, and do not set `STUDIO_NODES_LEGACY_TOKENS=1`.
+- Node API may be turned on for a separate agent that signs protocol 2 (`x-node-ts`, `x-node-nonce`, `x-node-sig`) on a private tailnet address. Leave `STUDIO_NODES_LEGACY_TOKENS` unset. Leave Tailscale Funnel off. The agent shipped in this zip is `node-agent/agent.js` `VERSION = '0.2.0'` and sends `Authorization: Bearer` only, so that agent stops at 401 on an enrolled device key.
+- An unverified peer (loopback, or a tailnet address whose whois returns nothing) stays at 409 `E_PEER_UNVERIFIED` until the owner sends `acknowledgeUnverifiedPeer: true` with the password and the confirm word. That second confirmation is one `peer_unverified_acknowledged` audit row.
 
 ## Zip
 
-`FLAVOR=test scripts/package-mac-on-linux.sh` in a clean detached tree at `b7101c4`. `rcodesign` 0.29.0. `SOURCE_DATE_EPOCH` from that commit (`1792586484`).
+`FLAVOR=test scripts/package-mac-on-linux.sh` in a clean detached tree at `322023f`. `rcodesign` ad-hoc. `SOURCE_DATE_EPOCH` `1792587340`. Electron 44.9.1. Bundled Node v24.22.0.
 
-Rebuilt SHA-256 matches the claim: `879aef8e9a7386a5bd8332eb1473d37f3cc5ef44bad730a360b3591a4d7f76ba`. `BUILD-INFO.txt` records commit `b7101c4`, bundle id `com.moonkatty.aistudio.test`, Electron 44.9.1. The packager left tracked files clean.
+Independent `sha256sum` matches the claim and `dist/BUILD-INFO.txt`: `fdefbabd3a5e9369c1569f452b960e8b43b6ff15fa470c0968561fc45a0819ad`. The packager removed `lib/flavor.baked.js` and left tracked files clean. Copy: `logs/BUILD-INFO.txt`.
 
-## Invariants (v1.2.3 harness)
+## Delta `322023f` (only this commit)
 
-`attack.mjs`: **68 controls, 0 failed**.
+Port of Studio 3 `d38c682..fe8e4ab`. Own exploit: `delta-attack.cjs`, **40 controls, 0 failed** (`logs/delta-attack.json`). Their `test/ops/enroll-022.test.js`: **14 pass, 0 fail**.
+
+### Whois peer
+
+Loopback with no forwarding header is unverified, `ip` null, and the label is «адрес Tailscale не определён (запрос через локальный прокси)». A stub whois for `100.101.1.2` returns `macbook · 100.101.1.2 · igor@x` and `verified: true`. A whois miss stays unverified. `defaultWhois` on this Linux host returns null.
+
+Confirm of the loopback peer throws `E_PEER_UNVERIFIED` until `acknowledgeUnverifiedPeer === true`. The string `"true"` stays 409. The boolean writes one audit row. The same sequence through the owner HTTP API (password `fake-password-123`, word `ПОДТВЕРДИТЬ`, TLS enroll) is 409, 409, then 200, and `GET /api/ops/nodes/audit` contains `peer_unverified_acknowledged`.
+
+`QA-NODE-002` remains open. A loopback request with `X-Forwarded-For` set to an address the stub whois names still confirms without the second acknowledgement.
+
+### Statuses and `OPS_NODES_DOWN_MS`
+
+`OPS_NODES_DOWN_MS=500` is reported as `nodeDownMs: 2000` (`Math.max(2000, …)`). A wrong bearer is stored only in the in-memory map (`E_UNAUTHORIZED`). A new manager on the same directory does not see it. `nodes.json` from the six unauthenticated shapes has no `lastConnError`. Their enroll-022 status test also passed (memory error, five wrong-secret hellos leave the file bytes alone, 426, clear on success, sweep to down, revoke then `E_REVOKED`).
+
+In a source checkout, `STUDIO_NODES_DOWN_MS` is applied after that floor because `FLAVOR_SOURCE` starts with `env`. A packaged app has `FLAVOR_SOURCE` `baked`, so that override is absent and the floored `OPS_NODES_DOWN_MS` is the timer.
+
+### Unauthenticated and foreign-token writes
+
+On every authenticated node route (`hello`, `pull`, `rotate`, job heartbeat, complete, fail, `ping`, `GET` and `PUT` files, unknown path), six shapes (no header, `Bearer foreign-token`, `Bearer nk_imac.` plus a wrong secret, an unknown id, an empty bearer, `Basic`) returned 401. Node records, jobs, and `nodes.json` bytes stayed the same. The `PUT` did not create the target file.
+
+A second enrolled node’s bearer on the victim’s job, rotate, and file routes left the victim node and the job unchanged and did not create the file. Rotate of that legacy node is 409 `E_NOT_ENROLLED`. Heartbeat, complete, and fail are 409. `GET` files is 403. `PUT` with a body that is not the URL hash is 422.
+
+`POST /api/nodes/enroll` with a garbage code is 403 `E_CODE_INVALID`. `POST /api/nodes/enroll/status` for an unknown request is 404 `E_NOT_FOUND`. Node records and jobs stay the same and `lastConnError` stays off disk. The file bytes do change: the enroll rate limiter persists the loopback bucket. That is the lockout counter, and it does not alter a node token or a job.
+
+Status, audit, and `nodes.json` omit the bearer secrets. The one-time code and the owner password are absent from stdout, `GET /api/logs`, and the data directory.
+
+### Deviations
+
+**`VIEWS[ROUTE]`.** `public/app.js` still assigns `v.innerHTML = VIEWS[ROUTE]()`. The hash handler sets `ROUTE` to a `NAV` entry, and an unknown hash becomes the dashboard, before that call. `NAV` includes `nodes` and `VIEWS.nodes` is assigned. The Studio 3 crash (a Computers nav entry with no view function) is absent on this tree. This is safe here.
+
+**Password field, no Security Center.** Enroll requires the word `ПОДКЛЮЧИТЬ` and the owner password. A missing word is 400 `confirm_required`. A wrong password is 403 `password_required`. CSRF on `POST /api/ops/nodes/enroll`: no session 401, missing `X-Studio-Request` 403, `Origin: https://evil.example` 403, `Sec-Fetch-Site: cross-site` 403. `log()` stores `sec.redact(message)`. The node log line records the request id and the state. The fake password was absent from stdout, the log API, and every file under the data directory. `QA-NODE-003` stays open: reject of a pending device with an empty body returned 200 `state: rejected` and did not return `password_required`.
+
+**`ENROLLED_MIN`.** The symbol is absent here and on `fe8e4ab`. `agentOk` accepts any `0.2.x` and a missing version. Measured: signed `0.2.0` and `0.2.1` with a nonce are 200, a missing `agentVersion` is 200, `0.3.0` is 426 `E_AGENT_VERSION`, a signature without a nonce is 426, a bearer with no signature is 401. The version is whatever the client sends. The device key is the gate. `QA-NODE-006` is open, low, and does not block the install. The bundled 0.2.0 bearer agent still cannot speak protocol 2.
+
+### `test:ops:studio` and `nodes.lock`
+
+`npm run test:ops:studio` with `STUDIO_FLAVOR`, `STUDIO_NODES_LEGACY_TOKENS`, and `DB_PATH` unset: **0 pass, 2 fail** (`logs/ops-studio.log`). The studio helper `POST /api/ops/nodes` returns «Прямые токены 0.2.0 отключены» (`E_LEGACY_DISABLED`). The test does not check that status. `nodes.every(...)` on an empty list is true, then `n.info` throws. The second test times out waiting for `needs_approval`. The log contains no second-coordinator error.
+
+`nodes.lock` itself: a second process on a live pid throws «второй координатор запрещён». `kill(pid, 0)` still sees an unreaped `SIGKILL` child, so takeover waits until the parent reaps it. After the `exit` event, the new process writes its own pid. Their enroll-022 test takes over a stale pid `999999` in the same process. This 0/2 result does not hide a lock race. `QA-NODE-005` records the test gap. It does not block the install.
+
+## Invariants (v1.2.3 harness, on `b7101c4`)
+
+`attack.mjs`: **68 controls, 0 failed**. This commit does not touch those files. The harness was not repeated.
 
 Publish guard holds. `POST /api/queue` with `published` is stored as `pending_approval`. `PUT` of `published` or `externalId` is 403 `published_internal_only`. `POST /publish` is 403 `publishing_disabled`. A pre-migration backup exists and matches its SHA-256 sidecar. Flavor markers agree on `test`. A missing flavor, a rewritten baked file, deleted markers, or the production data path exits 78. `NODE_ENV=production` does not select the production flavor. Facebook, Instagram, and Telegram are blocked before DNS. `meta.js` refuses to load when the flavor is test. The built TEST app has no `meta.js`. `checkUpdates` is false on the test flavor and the automatic check returns immediately. The seal key moved through fake `security` with argv `["-i"]` only and is absent from `studio.db`, the WAL, stdout, and `GET /api/backup`.
 
 `POST /api/comments` with status `approved` is stored as `new`. The reply route is 403 `publishing_disabled`. That closes `QA-CMT-001` for this commit.
 
-Residual lows, same as v1.2.3, still reproduced and still not blocking: a published row inserted into the live database stays visible until the next start; rewriting every marker and planting `meta.js`, then starting `node server.js`, loads the publisher. `desktop/flavor-guard.js` still refuses that tree because the asar lock says test.
+Residual lows, same as v1.2.3, still reproduced on `b7101c4` and still not blocking: a published row inserted into the live database stays visible until the next start; rewriting every marker and planting `meta.js`, then starting `node server.js`, loads the publisher. `desktop/flavor-guard.js` still refuses that tree because the asar lock says test.
 
 ## 1. QA-3D-001
 
-**Fixed on this commit. Status `qa_verified`. Owner approval is not set.**
+**Fixed on `b7101c4`. Status `qa_verified`. Owner approval is not set.** `322023f` does not touch these files.
 
 `36fc193`, merged by `5b7e000`. The agent step passes `NO_TOOLS` (write, edit, bash, webfetch, and the rest false). `extractJson` takes one object from the reply (fence or the first balanced `{...}`) and rejects text longer than 20000 characters. `validate` is a strict schema. `writeParamsSafe` checks `realpath` containment, refuses a symlink version directory, opens a temp file with `O_EXCL` and `O_NOFOLLOW` mode `0600`, then renames it to `scene_params.json`. The agent loop tries twice, then fails in Russian. The idle timeout is `STUDIO_3D_AGENT_TIMEOUT_MS` (the e2e used 6000 ms).
 
@@ -52,33 +93,21 @@ A symlink `scene_params.json` is refused before the write. The refusal string on
 
 A real Ollama model was not used. The model was the test double inside `opencode-json-test.mjs`.
 
-## 2. NODE 0.2.2 port (`70073ac`) — deviations
+## 2. NODE 0.2.2 on this tree
 
-Protocol 2 is enforced for an enrolled device key. A signature without `x-node-nonce` is HTTP **426** `E_AGENT_VERSION` with `protocol: 2`. A signed hello that includes a nonce returns `protocol: 2`. These measurements are on `b7101c4`.
+Protocol 2 is enforced for an enrolled device key. A signature without `x-node-nonce` is HTTP **426** `E_AGENT_VERSION`. A signed hello that includes a nonce returns protocol 2. Re-measured on `322023f` in the delta exploit.
 
-| Measured on b7101c4 | Computers delta (`d38c682..fe8e4ab`) | Mark |
-| --- | --- | --- |
-| Owner password is `body.password` plus a confirm word. Missing or wrong password is 403 `password_required`. There is no 428 and no `/api/ops/confirm` on this route. Eight wrong passwords stayed 403. CSRF holds: missing `X-Studio-Request`, `Origin: https://evil.example`, and `Sec-Fetch-Site: cross-site` are 403. The fake password was absent from logs, stdout, `studio.db`, and `nodes.json`. | `lib/ops/protected.js` accepts `node-confirm`, `node-revoke`, `node-rotate`, and `node-legacy-token` on `/api/ops/confirm`. | **pending delta** |
-| `enrollKey` is `crypto.randomBytes(32)` in RAM and `delete S.enrollKey` removes it from `nodes.json`. A second manager in the same process cannot verify the outstanding code (`E_CODE_INVALID`). The `awaiting_code` row and `codeHash` remain on disk. The plaintext code does not. | `S.enrollKey` is created once and kept in `nodes.json` (`S.enrollKey \|\|= …`). | **pending delta** |
-| `node-agent/agent.js` is `VERSION = '0.2.0'` and sends `Authorization: Bearer` only. No `x-node-nonce`, `x-node-ts`, or `x-node-sig`. That bearer call against an enrolled device key is 401. Legacy direct tokens stay off unless `STUDIO_NODES_LEGACY_TOKENS=1`. | `node-agent/agent.js` `VERSION = '0.2.2'`. | **pending delta** |
+`enrollKey` stays `crypto.randomBytes(32)` in RAM. `delete S.enrollKey` keeps it out of `nodes.json`. That v1.2.4 choice is unchanged by this port. `fe8e4ab` persists `S.enrollKey`.
 
-Reject still does not ask for the password (`QA-NODE-003`, still open, low). A reject of an `awaiting_code` request returned the pending-state error and did not return `password_required`. The delta's step-up list does not add reject. This item is not pending delta. It does not block the isolated test install.
-
-`QA-NODE-001` (nonce cache memory-only) and `QA-NODE-002` (shared loopback bucket) were not re-opened. The nonce map in this tree is still process memory.
+`node-agent/agent.js` is unchanged by `322023f`. `VERSION` is `0.2.0`. The coordinator call sets `authorization: Bearer` and does not set `x-node-nonce`.
 
 ## 3. «Подключить компьютер» panel
 
-On `b7101c4` the panel is `public/app.js` `VIEWS.nodes`. The certificate fingerprint, the one-time code, `pubKeyFingerprint`, and device hostname/model/os go through `esc()` (`& < > " '` → entities). A hostname `<img src=x onerror=alert(1)>&"'` is stored as that text and the template escapes it. Enroll, confirm, revoke, and settings posts send `X-Studio-Request` via `api()` and sit behind `csrfCheck`. The hostile-name enroll response was JSON, which does not execute markup.
+The panel is `public/app.js` `VIEWS.nodes`. Confirm posts the password, the word `ПОДТВЕРДИТЬ`, and `acknowledgeUnverifiedPeer` through `api()`, which sends `X-Studio-Request`. The peer line uses `nodePeer()` and `esc()`. The instructional copy still names `127.0.0.1:8791` as the node status screen. There is no `public/ops-ui.js` route named Computers.
 
-`e86382b` replaces the Computers view in `public/ops-ui.js` (route crash, Online/Offline, `E_PEER_UNVERIFIED`). That view is **pending delta** and was not reviewed here.
+## Their suite on `b7101c4`
 
-## Update Center and Studio 2/5
-
-Absent from `a2a35c8..b7101c4`. `lib/ops/update-center.js`, `lib/ops/update.js`, `lib/studio-intelligence.js`, and `lib/media-automation.js` are not in the tree. `package.json` has no `electron-updater`. `video_render` is still the stub that fails with «Не подключено». `desktop/main.js` still schedules `checkUpdates(false)` at 5 seconds. On the test flavor `checkUpdates` is false, so that call returns immediately. The test menu omits the update item.
-
-## Their suite
-
-Claimed total 663. This run did not produce that number. Linux-runnable results below. `test:3d`, `test:3c`, and `test:e2e-test-build` were not started. `test:opencode-json` is the Blender 4.2.9 e2e those scripts would repeat.
+Claimed total 663. That run did not produce that number. Linux-runnable results below were executed on `b7101c4` and were not repeated, because this commit does not touch those suites. `test:3d`, `test:3c`, and `test:e2e-test-build` were not started. `test:opencode-json` is the Blender 4.2.9 e2e those scripts would repeat.
 
 | Script | Result |
 | --- | --- |
@@ -92,15 +121,16 @@ Claimed total 663. This run did not produce that number. Linux-runnable results 
 | test:nodes | 52 pass, 0 fail |
 | test:ops | 38 pass, 0 fail |
 | test:opencode-json | 21 pass, 0 fail |
-| **Executed and accepted** | **448 pass, 0 fail** |
-| test:ops:studio | 0 pass, 2 fail under `STUDIO_FLAVOR=test` (`imac` does not satisfy the `-test` id suffix, then `n.info` throws). Not re-run. The script launches `node-agent` 0.2.0. **pending delta** |
+| **Executed and accepted on b7101c4** | **448 pass, 0 fail** |
+| enroll-022 on 322023f | 14 pass, 0 fail |
+| test:ops:studio on 322023f | 0 pass, 2 fail (`QA-NODE-005`). The lock probe passed. |
 
 ## NOT VERIFIED
 
-macOS Keychain, `launchd`, Gatekeeper, quarantine, `sandbox-exec`, notarization, a real Ollama model, and a live `tailscale whois`. The Computers delta `d38c682..fe8e4ab` was read for file names and the three replacements above. It was not executed.
+macOS Keychain, `launchd`, Gatekeeper, quarantine, `sandbox-exec`, notarization, a real Ollama model, and a live `tailscale whois`. `defaultWhois` on this host returns null.
 
 ## Registry
 
-19 bugs: 12 open, 6 qa_verified, 1 blocked. None are owner-approved.
+23 bugs: 11 open, 11 qa_verified, 1 blocked. None are owner-approved.
 
-`QA-3D-001` is `qa_verified` on `b7101c4`. `QA-CMT-001` is `qa_verified` on `b7101c4`. `QA-NODE-003` stays open.
+`QA-3D-001` and `QA-CMT-001` stay `qa_verified` on `b7101c4`. `QA-NODE-001`, `QA-NODE-002`, and `QA-NODE-003` stay open on `322023f`. `QA-NODE-005` and `QA-NODE-006` are open and low. `QA-NODE-004` is the Computers UI e2e on `fe8e4ab` and was not part of this tree.

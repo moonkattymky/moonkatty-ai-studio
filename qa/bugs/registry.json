@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T13:22:52.066Z",
+  "updatedAt": "2026-10-21T13:33:55.190Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -569,7 +569,8 @@
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
         "qa/reports/node-0.2.2/logs/attack.json",
-        "qa/reports/computers-nodes-fixes/REPORT.md"
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
@@ -585,6 +586,11 @@
           "at": "2026-10-21T13:22:52.002Z",
           "status": "open",
           "note": "fe8e4ab still keeps the used-nonce map in memory (lib/ops/nodes.js). This re-audit did not repeat the restart capture. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.042Z",
+          "status": "open",
+          "note": "322023f still keeps the used-nonce map in memory (lib/ops/nodes.js). This delta did not repeat the restart capture. Owner approval is not set."
         }
       ]
     },
@@ -608,7 +614,8 @@
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
         "qa/reports/node-0.2.2/logs/attack.json",
-        "qa/reports/computers-nodes-fixes/REPORT.md"
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
@@ -624,6 +631,11 @@
           "at": "2026-10-21T13:22:52.037Z",
           "status": "open",
           "note": "fe8e4ab: loopback plus X-Forwarded-For 100.101.1.2 and a stub whois still confirms without acknowledgeUnverifiedPeer. defaultWhois on this host returned null. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.079Z",
+          "status": "open",
+          "note": "322023f still confirms a loopback request whose X-Forwarded-For whois names a peer, without acknowledgeUnverifiedPeer. Measured in the delta exploit. Owner approval is not set."
         }
       ]
     },
@@ -646,7 +658,8 @@
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
         "qa/reports/node-0.2.2/logs/their-tests.log",
-        "qa/reports/computers-nodes-fixes/REPORT.md"
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, lib/ops/security-center.js classify",
@@ -662,6 +675,11 @@
           "at": "2026-10-21T13:22:52.065Z",
           "status": "open",
           "note": "fe8e4ab: reject stays outside classify. A session reached the handler (400 E_BAD_REQUEST on an awaiting_code request). Confirm without the password token was 428. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.117Z",
+          "status": "open",
+          "note": "322023f has no Security Center. Confirm requires the password field and the word. Reject of a pending device with an empty body returned 200 state rejected and did not return password_required. Owner approval is not set."
         }
       ]
     },
@@ -763,6 +781,69 @@
           "at": "2026-10-21T13:25:00.000Z",
           "status": "open",
           "note": "The panel issued a new code. The test read the previous one. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-005",
+      "title": "Studio multiprocess test fails before a second nodes.lock",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "On 322023f, npm run test:ops:studio is 0/2 with STUDIO_FLAVOR unset. The studio helper registers a node through POST /api/ops/nodes while STUDIO_NODES_LEGACY_TOKENS is unset, so the register body is E_LEGACY_DISABLED. The test reads that body as a token. An empty node list makes every() true, then n.info throws. The second test times out waiting for a job. A separate probe refuses a second live process on the same directory and takes the lock after the killed holder is reaped.",
+      "expected": "The studio helper enrolls a protocol-2 node, or the test stops on the legacy-disabled error before it reads node info.",
+      "actual": "0 pass, 2 fail. The first error is TypeError reading info at nodes.multiprocess.test.js:24. Register returns the legacy-disabled message. nodes.lock still rejects a live second pid.",
+      "repro": [
+        "From a clean environment at 322023f run npm run test:ops:studio",
+        "POST the studio helper /register and read the E_LEGACY_DISABLED body",
+        "Hold nodes.lock in one process, open it from a second process, kill the holder, reap it, and open it again"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/logs/ops-studio.log",
+        "qa/reports/security-recheck-v1.2.4-final/logs/delta-attack.json"
+      ],
+      "foundAt": "2026-10-21T13:32:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 322023f, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:33:55.158Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-006",
+      "title": "Signed 0.2.0 and 0.2.1 hellos pass the version gate",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "ENROLLED_MIN is absent from 322023f and from fe8e4ab. agentOk accepts any 0.2.x and a missing version. A signed hello that claimed 0.2.0 or 0.2.1 and sent x-node-nonce returned 200. A missing agentVersion returned 200. 0.3.0 returned 426 E_AGENT_VERSION. A signature without a nonce returned 426. The bundled node-agent is still 0.2.0 and sends only a bearer token, so that agent cannot pass. The version string is chosen by the client. The device key is the gate.",
+      "expected": "An enrolled node below a stated minimum is rejected even when the request carries a valid nonce.",
+      "actual": "0.2.0 and 0.2.1 with a nonce are online. A missing version is accepted. 0.3.0 and a signature without a nonce are 426.",
+      "repro": [
+        "Enroll a device key on 322023f and poll the one-time status for the token",
+        "POST /api/nodes/hello with agentVersion 0.2.0 and 0.2.1 plus x-node-nonce",
+        "Repeat with 0.3.0 and with a signature that omits the nonce"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/logs/delta-attack.json"
+      ],
+      "foundAt": "2026-10-21T13:32:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 322023f, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:33:55.190Z",
+          "status": "open",
+          "note": "added"
         }
       ]
     }

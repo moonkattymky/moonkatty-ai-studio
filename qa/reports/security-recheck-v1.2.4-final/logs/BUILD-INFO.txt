@@ -1,0 +1,17 @@
+MOONKATTY AI STUDIO TEST 1.2.4-test (macOS arm64, ad-hoc signed, NOT notarized, built on Linux) — flavor: test
+bundle id: com.moonkatty.aistudio.test
+branch: HEAD
+commit: 322023fd6f8e98dbddd38341e07227ded149c1fb
+SOURCE_DATE_EPOCH: 1792587340 (2026-10-21T12:55:40Z)
+electron: 44.9.1  electron-builder: 26.15.3  bundled node: v24.22.0
+zip sha256: fdefbabd3a5e9369c1569f452b960e8b43b6ff15fa470c0968561fc45a0819ad
+fuses:
+  RunAsNode is Disabled
+  EnableCookieEncryption is Enabled
+  EnableNodeOptionsEnvironmentVariable is Disabled
+  EnableNodeCliInspectArguments is Disabled
+  EnableEmbeddedAsarIntegrityValidation is Enabled
+  OnlyLoadAppFromAsar is Enabled
+  LoadBrowserProcessSpecificV8Snapshot is Disabled
+  GrantFileProtocolExtraPrivileges is Enabled
+  WasmTrapHandlers is Enabled
