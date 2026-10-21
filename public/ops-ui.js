@@ -31,6 +31,13 @@
     ${D.nodes ? `<div class="card"><h3>Узлы (Node Manager)</h3>${D.nodes.nodes.length ? D.nodes.nodes.map(n => `<div class="row small"><b>${esc(n.name)}</b> <span class="mut">${esc(n.id)} · ${esc(n.role)}</span> <span class="badge ${n.status === 'online' ? 'b-ok' : n.status === 'down' ? 'b-err' : 'b-warn'}">${esc(n.status)}</span>
       ${n.info ? `<span class="mut">${esc(n.info.os)} · CPU ${n.info.cpus} · load ${n.info.load1 != null ? n.info.load1.toFixed(1) : '?'} · RAM своб. ${gb(n.info.memAvailable)} из ${gb(n.info.memTotal)} · диск ${gb(n.info.diskFree)}</span>` : ''} · задач ${n.running} · ошибок ${n.errors}${n.lastError ? ` <span class="mut">(${esc(n.lastError)})</span>` : ''}</div>`).join('') : '<div class="small mut">Узлы не зарегистрированы (docs/ops/NODES.md)</div>'}
       <div class="small">Очередь узлов: ${Object.entries(D.nodes.counts).map(([k, v]) => esc(k) + ' ' + v).join(' · ') || 'пусто'}</div>
+      <div class="row"><select id="enRole"><option value="news">news (iMac)</option><option value="monitor">monitor (MacBook)</option></select> <input id="enName" placeholder="ожидаемое имя" maxlength="64"> <button class="btn sm" id="enNew">Подключить компьютер</button></div>
+      <div id="enOut" class="small"></div>
+      ${(D.enroll || []).filter(q => ['pending', 'awaiting_code', 'locked'].includes(q.state)).map(q => `<div class="row small"><b>${esc(q.name)}</b> <span class="mut">${esc(q.nodeId)} · ${esc(q.role)} · ${esc(q.state)}${q.reenroll ? ' · повторное подключение' : ''}</span>
+        ${q.device ? `<div class="mut">deviceId ${esc(q.device.deviceId)} · ${esc(q.device.hostname)} · ${esc(q.device.model)} · ${esc(q.device.os)} · ${esc(q.device.arch)} · ключ ${esc(q.device.pubKeyShort)} · IP ${esc(q.device.ip)}</div>` : ''}
+        ${q.state === 'pending' ? `<button class="btn sm" data-enc="${esc(q.requestId)}">Подтвердить</button> <button class="btn sm" data-enr="${esc(q.requestId)}">Отклонить</button>` : ''}</div>`).join('')}
+      ${D.nodes.nodes.map(n => `<span class="small"><button class="btn sm" data-rot="${esc(n.id)}">Ротация токена ${esc(n.id)}</button> <button class="btn sm" data-rev="${esc(n.id)}">Отозвать ${esc(n.id)}</button></span>`).join(' ')}
+      <details class="small"><summary>Журнал событий узлов</summary>${(D.audit || []).slice(0, 50).map(e => `<div class="mut">${esc(e.at)} · ${esc(e.type)} · ${esc(e.nodeId || e.requestId || e.ip || '')}</div>`).join('')}</details>
       ${D.nodes.jobs.filter(j => j.status === 'needs_approval').map(j => `<div class="small">⚠ ${esc(j.capability)} ${esc(j.id)}: ${esc(j.error || '')}</div>`).join('')}</div>` : ''}
     <div class="grid g2">
       <div class="card"><h3>Последние ошибки</h3>${D.errors.map(e => `<div class="small"><span class="mut">${esc(e.at.slice(5, 16))}</span> <b>${esc(e.source)}</b> ${esc(e.message)}</div>`).join('') || '<div class="small mut">Нет</div>'}</div>
@@ -44,10 +51,16 @@
       <div class="small mut">Журнал действий: ${D.audit.ok ? 'цепочка цела' : 'НАРУШЕНА'}, записей ${D.audit.entries ?? '—'}</div>` : '<div class="small mut">Security Center выключен</div>'}</div>
     <div class="small mut">Данные: ${esc(D.at)} · v${esc(D.version)} · флаги: ${esc(Object.entries(D.flags).filter(([, v]) => v).map(([k]) => k).join(', '))}</div>`;
   };
-  async function load() { try { D = await api('GET', '/api/ops/dashboard'); ERR = null; } catch (e) { ERR = e.message; } if (ROUTE === 'ops') render(); }
+  async function load() { try { D = await api('GET', '/api/ops/dashboard'); if (D && D.nodes) { const [e, a] = await Promise.all([api('GET', '/api/ops/nodes/enroll').catch(() => null), api('GET', '/api/ops/nodes/audit').catch(() => null)]); D.enroll = e ? e.requests : []; D.audit = a ? a.events : []; } ERR = null; } catch (e) { ERR = e.message; } if (ROUTE === 'ops') render(); }
   BIND.ops = v => {
     if (!D && !ERR) load();
     const act = async fn => { try { const r = await fn(); if (r) toast ? toast(JSON.stringify(r).slice(0, 200)) : alert(JSON.stringify(r)); } catch (e) { alert(e.message); } load(); };
+    const en = v.querySelector('#enNew'); if (en) en.onclick = async () => { try { const r = await api('POST', '/api/ops/nodes/enroll', { role: v.querySelector('#enRole').value, name: v.querySelector('#enName').value });
+      v.querySelector('#enOut').innerHTML = `Код (одноразовый, 5 минут): <b style="font-size:18px;letter-spacing:2px">${esc(r.code)}</b><br>Адрес: https://&lt;mac-mini&gt;:8790 или https://mac-mini.&lt;tailnet&gt;.ts.net:8443<br>Отпечаток сертификата: <code>${esc(r.fingerprint || '—')}</code><br>Короткая сверка: <b>${esc(r.fingerprintShort || '—')}</b><br><span class="mut">Код показывается один раз и нигде не сохраняется.</span>`; } catch (e) { alert(e.message); } };
+    v.querySelectorAll('[data-enc]').forEach(b => b.onclick = () => confirm('Подтвердить устройство ' + b.dataset.enc + '? Сверьте имя, deviceId и ключ.') && act(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, {})));
+    v.querySelectorAll('[data-enr]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enr)}/reject`, {})));
+    v.querySelectorAll('[data-rot]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.rot)}/rotate`, {})));
+    v.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => confirm('Отозвать токен узла ' + b.dataset.rev + '?') && act(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.rev)}/revoke`, {})));
     v.querySelectorAll('[data-plan]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/tasks/${encodeURIComponent(b.dataset.plan)}/approve-plan`, {})));
     v.querySelectorAll('[data-bv]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/backups/${encodeURIComponent(b.dataset.bv)}/verify`, {})));
     v.querySelectorAll('[data-bt]').forEach(b => b.onclick = () => act(() => api('POST', `/api/ops/backups/${encodeURIComponent(b.dataset.bt)}/test-restore`, {})));
