@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "moonkatty/animation-cues-file/v1",
+  "title": "<basename>.cues.json top-level (PROVISIONAL, pending Studio stage D)",
+  "type": "object",
+  "required": ["contract", "video", "voice", "voiceLabel", "segments"],
+  "properties": {
+    "contract": { "const": "moonkatty/animation-cues/v1" },
+    "video": { "type": "string" },
+    "voice": { "type": "object", "required": ["voiceProfileId", "modelSha256", "voicesSha256"],
+      "properties": { "voiceProfileId": { "const": "MOONKATTY_NEWS_MASTER_VOICE" }, "modelSha256": { "type": ["string", "null"] }, "voicesSha256": { "type": ["string", "null"] } } },
+    "voiceLabel": { "type": "string", "description": "TTS provider label, e.g. for comparison renders" },
+    "segments": { "type": "array", "description": "each item validates against animation-cues.schema.json" }
+  }
+}

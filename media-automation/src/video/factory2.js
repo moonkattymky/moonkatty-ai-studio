@@ -1,4 +1,6 @@
 'use strict';
+/* cues.json top-level voice object (PROVISIONAL, pending Studio stage D) */
+const cuesVoice = () => { try { const c = require('../../config/master-voice.json'); return { voiceProfileId: c.id, modelSha256: c.model.sha256, voicesSha256: c.voicesSha256 }; } catch { return { voiceProfileId: 'MOONKATTY_NEWS_MASTER_VOICE', modelSha256: null, voicesSha256: null }; } };
 const fs = require('fs'); const path = require('path');
 const { run, probeDuration } = require('./exec'); const { getPreset } = require('./presets');
 const { buildSrt } = require('./subtitles'); const { parseSrt, validateSrt } = require('./srtcheck'); const { buildAss } = require('./ass');
@@ -88,7 +90,7 @@ class NewsVideoFactory {
     const check = validateSrt(srtText, { maxChars: V ? 28 : 46, totalSec: total }); if (!check.ok) throw new Error('subtitle validation failed: ' + check.errors.join('; '));
     const srt = path.join(outDir, `${basename}.srt`); fs.writeFileSync(srt, srtText);
     const ass = path.join(work, 'subs.ass'); fs.writeFileSync(ass, buildAss(cues, { W, H }));
-    const cuesFile = path.join(outDir, `${basename}.cues.json`); fs.writeFileSync(cuesFile, JSON.stringify({ contract: 'moonkatty/animation-cues/v1', video: `${basename}.mp4`, voice: this.tts.name, segments: segs.filter(x => x.cues).map(x => x.cues) }, null, 2));
+    const cuesFile = path.join(outDir, `${basename}.cues.json`); fs.writeFileSync(cuesFile, JSON.stringify({ contract: 'moonkatty/animation-cues/v1', video: `${basename}.mp4`, voice: cuesVoice(), voiceLabel: this.tts.name, segments: segs.filter(x => x.cues).map(x => x.cues) }, null, 2));
     // ---- clips
     const clips = []; const pad = Math.round(Math.min(W, H) * 0.05); const padX = Math.round(W * 0.05), padY = Math.round(H * 0.05); // title-safe 5%
     for (const [i, s] of segs.entries()) {

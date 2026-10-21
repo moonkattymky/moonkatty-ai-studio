@@ -298,3 +298,17 @@ Produced by the Voice&Emotion stage per segment; consumed by the future 3D host 
 ```
 
 Rules: word timestamps come from forced alignment of the final audio (Kokoro gives no timestamps; Stage 2 will use per-sentence durations + alignment). SERIOUS/EMPATHETIC: smile ≤ 0.1, no ear flicks, no playful gestures. Blink default from mode `blinkRate`/s with jitter. All times ≤ `audio.durationSec`.
+
+## cues.json file (top level) — PROVISIONAL, pending Studio stage D
+Each render writes `<basename>.cues.json` in this shape:
+
+```json
+{ "contract": "moonkatty/animation-cues/v1", "video": "<basename>.mp4",
+  "voice": { "voiceProfileId": "MOONKATTY_NEWS_MASTER_VOICE", "modelSha256": "7d5df8ec…", "voicesSha256": "bca610b8…" },
+  "voiceLabel": "<tts provider label, e.g. kokoro-blend / comparison voice>",
+  "segments": [ /* per-segment cue docs (schema above) */ ] }
+```
+
+- `voice` used to be a string. It is now an object, with the hashes taken from `config/master-voice.json`.
+- `voiceLabel` keeps the old string, so comparison renders can still be compared.
+- The schema is at `media-automation/config/animation-cues.file.schema.json`.
