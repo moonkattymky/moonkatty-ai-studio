@@ -90,7 +90,7 @@ try {
     const s = start({ flavor: 'prod', port: 8845, UD }); await ready(s); const api = await login(s);
     const x = (await api('GET', '/api/queue/old-pub')).j; ok('v1 DB migrated: published row → pending_approval, historical_externalId kept', x.status === 'pending_approval' && x.historical_externalId === '5555566666' && x.historical_publishedAt === '2025-12-01T00:00:00Z');
     const e = await api('PUT', '/api/queue/old-pub', { title: 'v1 title edit' }); ok('v1 migrated row: title edit does NOT restore published', e.s === 200 && e.j.status === 'pending_approval' && !e.j.externalId);
-    ok('v1 migrated row: pre-migration backup written', fs.readdirSync(UD + '/backups').some(f => /^pre-migration-v1-to-v4-.*\.db$/.test(f))); await stop(s); }
+    ok('v1 migrated row: pre-migration backup written', fs.readdirSync(UD + '/backups').some(f => /^pre-migration-v1-to-v6-.*\.db$/.test(f))); await stop(s); }
 
   // ---------- C. Flavor markers (source copy of studio-config) ----------
   const mk = (flavor, opts = {}) => { const T = tmp('flv'); fs.mkdirSync(T + '/lib'); fs.copyFileSync('lib/studio-config.js', T + '/lib/studio-config.js');

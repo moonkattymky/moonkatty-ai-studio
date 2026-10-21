@@ -72,6 +72,11 @@ async function localRoute(method, path, body) {
   if (col === 'queue' && method === 'PUT' && body.status === 'approved') { const cur = LD.queue.find(x => x.id === id); const cand = Object.assign({}, cur, body);
     const issues = [...MKSocial.guardrails(cand, LD), ...MKSocial.dailyCheck(cand, LD.queue, LD.workspaces)]; if (issues.length) { llog('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`); local.save(LD); throw new Error(issues.join('; ')); } }
   if (col === 'queue' && method === 'PUT' && body.status) { const cur = LD.queue.find(x => x.id === id); if (cur && body.status !== cur.status) body.history = [...(cur.history || []), { at: C.now(), event: body.status, user: USER }]; }
+  if (col === 'world') {
+    const nd = 'НЕТ ДАННЫХ';
+    if (method !== 'GET') throw new Error('Нужен сервер. ' + nd);
+    return { mission: null, viewsAreRevenue: false, recommendations: [nd], approvals: [], platforms: [], readPlatforms: [], audience: { mergeYoutube: false, channels: [], note: nd }, savings: { item: 'Mac Studio', target: nd, progress: nd }, growth: { metrics: {}, note: nd }, news: { separate: true, episodes: (LD.episodes || []).length, openTasks: 0, note: nd }, revenue: { day: nd, month: nd, year: nd, opex: { day: nd, month: nd, year: nd }, pretax: { day: nd, month: nd, year: nd }, byStream: {}, goals: [], history: nd, recommendations: [nd], viewsAreRevenue: false, cac: nd, demo: nd, forecast: nd, accrued: { month: nd }, estimates: { month: nd } } };
+  }
   if (!C.COLLECTIONS.includes(col)) throw new Error('Не поддерживается в браузерном режиме');
   const arr = LD[col];
   if (method === 'GET') return id ? arr.find(x => x.id === id) : arr;
@@ -135,7 +140,7 @@ const confirmDo = (text, fn) => { modal(`<h2>Подтвердите</h2><p>${esc
 
 // ================= Navigation =================
 const NAV = [
-  ['dashboard', '◈', 'Dashboard'], ['agents', '✦', 'AI Agents'], ['news', '◉', 'MOONKATTY NEWS'], ['project', '☾', 'MOONKATTY PROJECT'],
+  ['dashboard', '◈', 'Dashboard'], ['revenue', '$', 'Revenue Command Center'], ['agents', '✦', 'AI Agents'], ['news', '◉', 'MOONKATTY NEWS'], ['project', '☾', 'MOONKATTY PROJECT'],
   ['video', '▶', 'Video Production'], ['studio3d', '⬡', '3D Studio'], ['social', '◎', 'Social Media'], ['pr', '✶', 'PR & Marketing'],
   ['calendar', '▦', 'Calendar'], ['analytics', '▤', 'Analytics'], ['reports', '▧', 'Reports'], ['files', '▣', 'Files & Projects'],
   ['nodes', '⌬', 'Узлы (Nodes)'], ['logs', '›_', 'Terminal & Logs'], ['settings', '⚙', 'Settings']
@@ -757,7 +762,7 @@ async function start() {
 })();
 
 // ================= Concept-style dashboard =================
-const AV = { news: 'av-news', social: 'av-social', games: 'av-games', pr: 'av-brand', director: 'av-news', video: 'av-social', mkty: 'av-brand', analytics: 'av-games', marketing: 'av-brand', design3d: 'av-games' };
+const AV = { news: 'av-news', social: 'av-social', games: 'av-games', pr: 'av-brand', director: 'av-news', video: 'av-social', mkty: 'av-brand', analytics: 'av-games', marketing: 'av-brand', design3d: 'av-games', ceo: 'av-news', creative: 'av-brand', revenue: 'av-games', growth: 'av-games' };
 function avatar(a) { return `<img class="av-img" src="img/${AV[a.id] || 'av-news'}.jpg" alt="" style="${a.enabled ? '' : 'filter:grayscale(1);opacity:.6'}">`; }
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
 function renderPills() {
@@ -815,10 +820,58 @@ VIEWS.dashboard = () => {
       ${acts.length ? acts.map(l => `<div class="list-item small" style="padding:5px 0"><span class="mut">${new Date(l.at).toLocaleTimeString(i18n.locale(), { hour: '2-digit', minute: '2-digit' })}</span><span class="badge b-none ${l.level === 'error' ? 'b-err' : l.level === 'warn' ? 'b-warn' : 'b-ok'}">●</span><span class="sp" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message)}</span></div>`).join('') : '<div class="empty">Активности нет</div>'}</div>
     <div class="card"><h3>Analytics</h3>${DB.channels.map(c => `<div class="list-item small"><span class="sp">${esc(c.name)}</span><span class="badge">Не подключено</span></div>`).join('')}
       <p class="small mut" style="margin-bottom:0">Без подключения API — никаких цифр (${DEV()}).</p></div>
-  </div>`;
+  </div>
+  <div class="card" id="revStrip" style="margin-top:16px"><h3>Revenue Command Center <button class="btn sm" data-go="revenue">Открыть</button></h3><p class="small">Загрузка…</p></div>`;
 };
 BIND.dashboard = v => {
   v.querySelector('#dashChat').onsubmit = async e => { e.preventDefault(); const t = e.target.text.value; e.target.reset(); openChat(); await sendChat(t); };
   v.querySelectorAll('[data-done]').forEach(c => c.onchange = () => setTaskStatus(c.dataset.done, c.checked ? 'done' : 'queued'));
   v.querySelectorAll('[data-dcal]').forEach(b => b.onclick = () => { SUB.dcal = b.dataset.dcal; render(); });
+  const strip = v.querySelector('#revStrip');
+  if (strip) api('GET', '/api/world/command-center').then(d => { if (ROUTE !== 'dashboard' || !strip.isConnected) return; strip.innerHTML = revStrip(d); strip.querySelectorAll('[data-go]').forEach(b => b.onclick = () => navTo(b.dataset.go)); }).catch(e => { strip.innerHTML = `<h3>Revenue Command Center</h3><p>${esc(e.message)}</p>`; });
+};
+function moneyText(v) { return !v || v === 'НЕТ ДАННЫХ' ? 'НЕТ ДАННЫХ' : esc(v.label || String(v)); }
+function revStrip(d) { const r = d.revenue || {}; return `<h3>Revenue Command Center <button class="btn sm" data-go="revenue">Открыть</button></h3><p class="small">Просмотры не являются выручкой. День ${moneyText(r.day)} · месяц ${moneyText(r.month)} · год ${moneyText(r.year)} · расходы месяца ${moneyText(r.opex && r.opex.month)}</p>`; }
+function revHtml(d) {
+  const r = d.revenue || {}; const nd = 'НЕТ ДАННЫХ';
+  const streams = Object.entries(r.byStream || {});
+  const plats = d.platforms || [];
+  const goals = r.goals || [];
+  const hist = r.history === nd || !r.history ? `<p>${nd}</p>` : r.history.map(h => `<div class="list-item small"><span class="sp">${esc(h.month)}</span><span>${moneyText(h.revenue)}</span></div>`).join('');
+  const rec = (d.recommendations || []).map(x => `<li>${esc(x)}</li>`).join('') || `<li>${nd}</li>`;
+  const appr = (d.approvals || []).filter(a => a.status === 'pending');
+  const g = d.growth && d.growth.metrics || {};
+  return `<div class="card" style="margin-bottom:16px"><h3>Revenue Command Center <small>${d.mission ? esc(d.mission.title) + ' ' + esc(d.mission.version) : 'миссия не загружена'}</small></h3>
+    <p class="small">Просмотры не являются выручкой. Факт — только подтверждённая выплата. Прогноз не подмешивается в факт.</p>
+    <div class="grid g4"><div><div class="stat-l">День</div><div class="stat">${moneyText(r.day)}</div></div><div><div class="stat-l">Месяц</div><div class="stat">${moneyText(r.month)}</div></div><div><div class="stat-l">Год</div><div class="stat">${moneyText(r.year)}</div></div><div><div class="stat-l">Расходы месяца</div><div class="stat">${moneyText(r.opex && r.opex.month)}</div></div></div>
+    <p class="small">Результат до налога, месяц: <b>${moneyText(r.pretax && r.pretax.month)}</b> · CAC: ${moneyText(r.cac)} · DEMO: ${r.demo && r.demo !== nd ? esc(r.demo.label) : nd} · прогноз: ${r.forecast === nd || !r.forecast ? nd : 'ПРОГНОЗ (не факт)'}</p>
+    <p class="small">Начислено, не кэш: ${moneyText(r.accrued && r.accrued.month)}. Не подтверждено: ${moneyText(r.estimates && r.estimates.month)}. Эти суммы не входят в факт.</p></div>
+  <div class="grid g2"><div class="card"><h3>Направления</h3>${streams.length ? streams.map(([k, v]) => `<div class="list-item small"><span class="sp">${esc(k)}</span><span>${moneyText(v)}</span></div>`).join('') : `<p>${nd}</p>`}</div>
+    <div class="card"><h3>Площадки</h3><p class="small mut">Строка есть только если площадка уже заведена в студии. Деньги — только из подтверждённой выплаты.</p>${plats.map(p => `<div class="list-item small"><span class="sp">${esc(p.name)} <span class="mut">${esc(p.project || '')}</span></span><span>${moneyText(p.revenue)}</span></div>`).join('') || `<p>${nd}</p>`}
+      <h3>Чтение 8 площадок</h3><p class="small mut">${esc((d.readApi && d.readApi.source) || '')}${d.readApi && d.readApi.demo ? ' · DEMO' : ''} · без публикации</p>${(d.readPlatforms || []).map(p => `<div class="list-item small"><span class="sp">${esc(p.label || p.id)}</span><span>${moneyText(p.confirmed)} · ${typeof p.estimate === 'string' ? esc(p.estimate) : esc((p.estimate && p.estimate.label) || nd)}</span></div>`).join('')}</div></div>
+  <div class="grid g2" style="margin-top:16px"><div class="card"><h3>Цели месяца</h3>${goals.map(x => `<div class="list-item small"><span class="sp">${esc(x.label)}</span><span>${x.progress === nd ? nd : esc(x.progress.label)}</span></div>`).join('')}</div>
+    <div class="card"><h3>Mac Studio</h3><p>Цель: ${moneyText(d.savings && d.savings.target)}</p><p>Прогресс: ${d.savings && d.savings.progress !== nd && d.savings.progress ? esc(d.savings.progress.percent + '%') : nd}</p>
+      <form id="savForm" class="row"><input name="target" type="number" min="0" step="1" placeholder="Сумма цели, USD" style="width:180px"><button class="btn sm">Запросить подтверждение</button></form></div></div>
+  <div class="grid g2" style="margin-top:16px"><div class="card"><h3>История</h3>${hist}</div>
+    <div class="card"><h3>Рекомендации Revenue Director</h3><ul>${rec}</ul></div></div>
+  <div class="grid g2" style="margin-top:16px"><div class="card"><h3>Очередь владельца</h3>${appr.length ? appr.map(a => `<div class="list-item"><span class="sp">${esc(a.action)}<div class="small mut">${esc(a.detail || '')}</div></span><button class="btn sm" data-ap="${esc(a.id)}" data-dec="approve">Подтвердить</button><button class="btn sm" data-ap="${esc(a.id)}" data-dec="reject">Отклонить</button></div>`).join('') : '<p class="small">Пусто</p>'}</div>
+    <div class="card"><h3>Рост игры</h3>${['new_players', 'dau', 'mau', 'retention', 'stage_completion', 'referrals', 'iap', 'ad_clicks', 'marketing_efficiency'].map(k => `<div class="list-item small"><span class="sp">${k}</span><span>${g[k] == null || g[k] === nd ? nd : (d.growth.demo ? 'DEMO ' : '') + esc(String(g[k]))}</span></div>`).join('')}</div></div>
+  <div class="card" style="margin-top:16px"><h3>План дня и импорт</h3>
+    <form id="planForm" class="row"><input name="goal" class="sp" placeholder="Цель владельца"><button class="btn primary sm">План CEO</button></form>
+    <form id="impForm" style="margin-top:10px"><textarea name="csv" rows="4" placeholder="date,stream,kind,amount_usd,platform,payout_confirmed,demo,note" style="width:100%"></textarea><button class="btn sm">Импорт CSV</button></form>
+    <p class="small mut">NEWS отдельно: выпусков ${d.news ? d.news.episodes : 0}. ${esc(d.news && d.news.note || '')}</p></div>
+  <div class="card" style="margin-top:16px"><h3>Million Audience</h3><p class="small">Цель 1 000 000 реальных подписчиков на канал. YouTube NEWS и YouTube MOONKATTY не складываются. DEMO не является фактом.</p>
+    ${(d.audience && d.audience.channels || []).map(c => `<div class="list-item small"><span class="sp">${esc(c.name)}</span><span>${c.subscribers === 'НЕТ ДАННЫХ' ? 'НЕТ ДАННЫХ' : esc(c.subscribers.label || '')}</span></div>`).join('') || '<p>НЕТ ДАННЫХ</p>'}</div>`;
+}
+const WC = { data: null };
+VIEWS.revenue = () => WC.data ? revHtml(WC.data) : '<div class="card"><h3>Revenue Command Center</h3><p>Загрузка…</p></div>';
+BIND.revenue = v => {
+  const bind = root => {
+    const plan = root.querySelector('#planForm'); if (plan) plan.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/plan', { goal: new FormData(plan).get('goal') }); WC.data = null; }, 'План записан'); };
+    const imp = root.querySelector('#impForm'); if (imp) imp.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/import', { csv: new FormData(imp).get('csv') }); WC.data = null; }, 'Импорт записан'); };
+    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { try { await api('POST', '/api/world/savings', { target_usd: n }); } finally { WC.data = null; } }, 'Запрос записан'); };
+    root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => act(async () => { await api('POST', '/api/world/approvals/' + b.dataset.ap, { decision: b.dataset.dec }); WC.data = null; }, 'Решение записано'));
+  };
+  if (WC.data) { bind(v); return; }
+  api('GET', '/api/world/command-center').then(d => { WC.data = d; if (ROUTE !== 'revenue') return; const el = $('#view'); el.innerHTML = revHtml(d); bindCommon(el); bind(el); }).catch(e => { v.innerHTML = `<div class="card"><h3>Revenue Command Center</h3><p>${esc(e.message)}</p></div>`; });
 };

@@ -23,7 +23,7 @@ const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'studio.db');
 try { CFG.assertTestPath(DATA_DIR, 'STUDIO_DATA_DIR'); CFG.assertTestPath(DB_PATH, 'DB_PATH'); } catch (e) { console.error(e.message); process.exit(78); }
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 // QA-DB-001: schema version + automatic SQLite backup (VACUUM INTO, SHA-256) BEFORE any migration of an existing DB.
-const DB_SCHEMA_VERSION = 4; // 1 = items/meta (v1.0–v1.1.x) · 2 = jobs/job_events (v1.2.0) · 3 = jobs v1.2.0 extra cols + mig_120 · 4 = schemaVersion meta + v1.2.2
+const DB_SCHEMA_VERSION = 6; // 1 = items/meta (v1.0–v1.1.x) · 2 = jobs/job_events (v1.2.0) · 3 = jobs v1.2.0 extra cols + mig_120 · 4 = schemaVersion meta + v1.2.2 · 5 = world tables · 6 = ledger payout_id/currency/state (v1.3.0-test)
 const PRE_MIG = require('./lib/db-backup.js');
 const preMigration = PRE_MIG.backupBeforeMigration(DB_PATH, DB_SCHEMA_VERSION, openDb);
 const db = openDb(DB_PATH);
@@ -138,7 +138,8 @@ const metaCtx = { q, get, put, list, log, DB_PATH, express, db, sealPublication 
 const meta = CFG.IS_TEST ? (() => { metaCtx.keySource = require('./lib/keystore.js').loadKey(path.dirname(DB_PATH)).source; return { mountProtected() {}, tick: async () => ({ disabled: true }), disabled: true }; })()
   : (() => { try { return require('./meta.js')(app, metaCtx); } catch (e) { console.error('ОТКАЗ: модуль публикации недоступен для prod-сборки (' + e.message + ')'); process.exit(78); } })();
 const nodeHooks = {}; // v1.2.4: Node Manager (lib/ops/nodes-server.js) is mounted after auth; runner reaches it late-bound
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, runViaNode: (a, t, s) => nodeHooks.runViaNode ? nodeHooks.runViaNode(a, t, s) : Promise.reject(Object.assign(new Error('Node Manager выключен'), { blocked: true })) });
+const worldHooks = {};
+const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, onAgentStart: a => worldHooks.onAgentStart && worldHooks.onAgentStart(a), runViaNode: (a, t, s) => nodeHooks.runViaNode ? nodeHooks.runViaNode(a, t, s) : Promise.reject(Object.assign(new Error('Node Manager выключен'), { blocked: true })) });
 // ---- v1.2.0: job engine + 3D DESIGN agent (OpenCode server + Blender) ----
 const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
 const ws3d = require('./lib/workspace.js')(path.dirname(DB_PATH));
@@ -153,6 +154,8 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
   const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
   const llm = null; /* no Ollama unload hook in this build */
   services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm })); }
+const world = require('./lib/world')({ db, q, get, put, list, log, core, runner, services, CFG, sec });
+worldHooks.onAgentStart = world.onAgentStart; world.boot();
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
   q.setMeta.run('mig_120_design3d', core.now()); }
 q.setMeta.run('schemaVersion', String(DB_SCHEMA_VERSION)); // all migrations above are done
@@ -202,10 +205,11 @@ meta.mountProtected();
 // ---- Backup / restore ----
 // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
 const dump = () => ({ app: 'moonkatty-ai-studio', version: 2, flavor: CFG.flavor, schemaVersion: DB_SCHEMA_VERSION, exportedAt: core.now(), data: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])),
-  jobs: db.prepare('SELECT * FROM jobs ORDER BY created_at').all(), jobEvents: db.prepare('SELECT * FROM job_events ORDER BY seq').all(),
+  jobs: db.prepare('SELECT * FROM jobs ORDER BY created_at').all(), jobEvents: db.prepare('SELECT * FROM job_events ORDER BY seq').all(), worldLedger: world.exportLedger(),
   users: Object.entries(getUsers()).map(([username, hash]) => ({ username, passwordHash: hash })),
   si: SIX.exportSi(db) }); // Studio 5: si_* tables (docs/studio-intelligence/patches/server-dump-include-si.md)
 const SIX = require('./studio-intelligence/src/si-export');
+
 function scheduledBackup() {
   const f = path.join(BACKUP_DIR, 'backup-' + core.now().replace(/[:.]/g, '-') + '.json'); fs.writeFileSync(f, JSON.stringify(dump()));
   const all = fs.readdirSync(BACKUP_DIR).filter(x => x.endsWith('.json')).sort(); for (const x of all.slice(0, Math.max(0, all.length - 14))) fs.unlinkSync(path.join(BACKUP_DIR, x));
@@ -227,7 +231,7 @@ app.post('/api/restore/prepare', express.json({ limit: '50mb' }), (req, res) => 
   const d = req.body?.data; if (!d || typeof d !== 'object' || Array.isArray(d)) return res.status(400).json({ error: 'Неверный файл резервной копии' });
   for (const [k, v] of pendingRestore) if (v.exp < Date.now()) pendingRestore.delete(k);
   const token = crypto.randomBytes(24).toString('hex'); const counts = Object.fromEntries(core.COLLECTIONS.filter(c => Array.isArray(d[c])).map(c => [c, d[c].length]));
-  pendingRestore.set(hashTok(token), { data: d, user: req.user, exp: Date.now() + RESTORE_TTL, sha256: crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex') });
+  pendingRestore.set(hashTok(token), { data: d, worldLedger: Array.isArray(req.body.worldLedger) ? req.body.worldLedger : null, si: req.body.si && typeof req.body.si === 'object' ? req.body.si : null, user: req.user, exp: Date.now() + RESTORE_TTL, sha256: crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex') });
   res.json({ token, expiresInSec: RESTORE_TTL / 1000, counts, confirm: 'ЗАМЕНИТЬ' });
 });
 app.post('/api/restore', express.json({ limit: '1mb' }), (req, res) => {
@@ -239,8 +243,8 @@ app.post('/api/restore', express.json({ limit: '1mb' }), (req, res) => {
   let bk; try { bk = DBB.snapshot(db, BACKUP_DIR, 'pre-restore'); } catch (e) { log('error', 'backup', 'Восстановление отменено: не удалось сделать копию — ' + e.message, req.user); return res.status(500).json({ error: 'Не удалось сделать резервную копию — данные НЕ заменены' }); }
   const d = p.data;
   let demoted = 0;
-  db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o0 of d[c]) if (o0 && o0.id) { const o = c === 'queue' ? sanitizeRestoredQueue(o0) : o0; if (o !== o0) demoted++; put(c, o); } } })();
-  if (d.si) { try { SIX.importSi(db, d.si); } catch (e) { log('warn', 'backup', 'si_* не восстановлены: ' + e.message, req.user); } }
+  db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o0 of d[c]) if (o0 && o0.id) { const o = c === 'queue' ? sanitizeRestoredQueue(o0) : o0; if (o !== o0) demoted++; put(c, o); } } if (Array.isArray(p.worldLedger)) world.replaceLedger(p.worldLedger); })();
+  if (p.si) { try { SIX.importSi(db, p.si); } catch (e) { log('warn', 'backup', 'si_* не восстановлены: ' + e.message, req.user); } }
   if (demoted) log('warn', 'backup', `Восстановление: ${demoted} элемент(ов) очереди переведены в «На утверждении» (исторический статус сохранён только для аудита)`, req.user);
   log('info', 'backup', `Данные восстановлены из резервной копии (предварительная копия ${path.basename(bk.file)}, SHA-256 ${bk.sha256})`, req.user);
   res.json({ ok: true, backup: { file: path.basename(bk.file), sha256: bk.sha256, size: bk.size } });
@@ -462,6 +466,7 @@ app.post('/api/projects3d/:pid/:ver/rerender', (req, res) => { if (!projOk(req, 
     log('info', 'studio3d', `Перерендер ${req.params.pid}/${req.params.ver}`, req.user); res.status(201).json(t); } catch (e) { res.status(e.status || 500).json({ error: e.message }); } });
 
 
+world.mount(app); // v1.3.0-test: mission, CEO, QC, revenue, growth. Social publisher is not mounted here.
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
@@ -548,7 +553,7 @@ function tick() {
     q.setMeta.run('lastTick', core.now());
   } catch (e) { log('error', 'scheduler', e.message); }
 }
-function startBackground() { const rj = jobs.recover(); if (rj.length) log('warn', 'jobs', 'Восстановлено после перезапуска заданий: ' + rj.length); runner.recover(); services.resume(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
+function startBackground() { const rj = jobs.recover(); if (rj.length) log('warn', 'jobs', 'Восстановлено после перезапуска заданий: ' + rj.length); runner.recover(); world.recover(); services.resume(); setInterval(tick, 30000); tick(); setInterval(() => runner.tick(), 5000); }
 
 process.on('uncaughtException', e => { try { log('error', 'process', e.stack || e.message); } catch {} console.error(e); });
 // Single instance: if the port is taken by our own server, exit cleanly (launchd will not restart on success).

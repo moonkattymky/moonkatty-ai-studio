@@ -71,7 +71,7 @@ module.exports = function createRunner(ctx) {
     if (!r.ok) throw new Error('Ollama HTTP ' + r.status); return r.json(); }, signal); return { json: JSON.parse(String(j.message?.content || '{}').replace(/<think>[\s\S]*?<\/think>/g, '')), model };
   }
   const blocked = msg => Object.assign(new Error(msg), { blocked: true });
-  const draftPrompt = (a, t) => `Ты агент «${a.name}» студии ${ctx.brand || 'MOONKATTY'}. Роль: ${a.role}.\nЗадача: ${t.title}\n${t.description || ''}\nПодготовь черновик результата (на русском, если не указано иное). Не выдумывай факты, цифры и источники; если данных не хватает — перечисли, что нужно уточнить. Результат пойдёт на утверждение человеку.`;
+  const draftPrompt = (a, t) => { const missionLine = a.mission ? `Миссия «${a.mission.title}» ${a.mission.version} загружена.\n` : ''; return `Ты агент «${a.name}» студии ${ctx.brand || 'MOONKATTY'}. ${missionLine}Роль: ${a.role}.\nЗадача: ${t.title}\n${t.description || ''}\nПодготовь черновик результата (на русском, если не указано иное). Не выдумывай факты, цифры и источники; если данных не хватает — перечисли, что нужно уточнить. Результат пойдёт на утверждение человеку.`; };
   const HANDLERS = {
     async analytics(a, t) { const data = Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c)])); const rep = core.buildReport(data, 3); rep.trigger = 'agent'; put('reports', rep);
       return { status: 'done', result: `Отчёт сформирован: задач ${rep.totals.tasks}, выполнено за 3 дня ${rep.totals.doneInPeriod}, ошибок в журнале ${rep.totals.errorsInPeriod} (id ${rep.id})` }; },
@@ -120,6 +120,7 @@ module.exports = function createRunner(ctx) {
     }
   }
   function start(id, user) { const a = get('agents', id); if (!a) throw new Error('not found'); if (!a.enabled || a.inDevelopment) throw new Error('Агент выключен или в разработке');
+    if (ctx.onAgentStart) ctx.onAgentStart(a);
     Object.assign(a, { status: 'working', startedAt: core.now(), startedBy: user }); addLog(a, 'info', 'Агент запущен (фоновый исполнитель)'); put('agents', a); tick(); return get('agents', id); }
   function stop(id, user) { const a = get('agents', id); if (!a) throw new Error('not found'); const b = busy.get(id);
     if (b) { b.abort.abort(); const t = get('tasks', b.taskId); if (t && t.status === 'in_progress') { t.status = 'queued'; put('tasks', t); } }

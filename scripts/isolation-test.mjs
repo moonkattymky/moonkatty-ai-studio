@@ -31,7 +31,7 @@ delete ENV.STUDIO_SECRET_KEY;
   const sv = spawnSync(process.execPath, ['server.js'], { env: { ...ENV, NODE_ENV: 'production', STUDIO_FLAVOR: '', PORT: '8829' }, timeout: 8000 });
   ok('server.js without baked flavor and without STUDIO_FLAVOR refuses to start (exit 78, clear error)', sv.status === 78 && /сборка не определена/.test(String(sv.stderr))); }
 // grep: no hardcoded identifiers outside lib/studio-config.js (code that runs in the app)
-{ const files = ['server.js', 'runner.js', 'meta.js', ...fs.readdirSync('lib').filter(f => f.endsWith('.js')).map(f => 'lib/' + f), 'lib/executors/design3d.js', ...fs.readdirSync('desktop').filter(f => f.endsWith('.js')).map(f => 'desktop/' + f)];
+{ const files = ['server.js', 'runner.js', 'meta.js', ...fs.readdirSync('lib').filter(f => f.endsWith('.js')).map(f => 'lib/' + f), 'lib/executors/design3d.js', ...fs.readdirSync('lib/world').filter(f => f.endsWith('.js')).map(f => 'lib/world/' + f), ...fs.readdirSync('desktop').filter(f => f.endsWith('.js')).map(f => 'desktop/' + f)];
   const bad = []; for (const f of files) { if (f === 'lib/studio-config.js') continue; fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => { const code = l.replace(/\/\/.*$/, '');
     if (/'MOONKATTY AI STUDIO|com\.moonkatty\.aistudio|Application Support|\b8787\b|'opencode-server-password'|'studio-master-key'|127\.0\.0\.1:4096/.test(code)) bad.push(f + ':' + (i + 1)); }); }
   ok('no hardcoded app name / bundle id / label / Keychain service / port outside studio-config.js', !bad.length, bad.join(' ')); }
@@ -59,9 +59,9 @@ const srv = spawn(process.execPath, ['server.js'], { env: { ...ENV, STUDIO_DATA_
 let slog = ''; srv.stdout.on('data', d => slog += d); srv.stderr.on('data', d => slog += d);
 for (let i = 0; i < 60; i++) { try { if ((await fetch(B + '/api/health')).ok) break; } catch {} await sleep(250); }
 const h = await (await fetch(B + '/api/health')).json();
-ok('health reports flavor=test, product TEST, schemaVersion 4', h.flavor === 'test' && h.product === 'MOONKATTY AI STUDIO TEST' && h.schemaVersion === 4, JSON.stringify(h).slice(0, 200));
-const bks = fs.readdirSync(TD + '/backups').filter(f => /^pre-migration-v1-to-v4-.*\.db$/.test(f));
-ok('QA-DB-001: automatic pre-migration SQLite backup (v1 → v4) with matching .sha256', bks.length === 1 && fs.readFileSync(TD + '/backups/' + bks[0] + '.sha256', 'utf8').startsWith(sha(TD + '/backups/' + bks[0])), bks.join());
+ok('health reports flavor=test, product TEST, schemaVersion 6', h.flavor === 'test' && h.product === 'MOONKATTY AI STUDIO TEST' && h.schemaVersion === 6, JSON.stringify(h).slice(0, 200));
+const bks = fs.readdirSync(TD + '/backups').filter(f => /^pre-migration-v1-to-v6-.*\.db$/.test(f));
+ok('QA-DB-001: automatic pre-migration SQLite backup (v1 → v6) with matching .sha256', bks.length === 1 && fs.readFileSync(TD + '/backups/' + bks[0] + '.sha256', 'utf8').startsWith(sha(TD + '/backups/' + bks[0])), bks.join());
 { const { DatabaseSync } = require('node:sqlite'); const d = new DatabaseSync(TD + '/backups/' + bks[0], { readOnly: true }); const t = d.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(x => x.name); d.close();
   ok('pre-migration backup is the OLD schema (no jobs table)', !t.includes('jobs') && t.includes('items')); }
 const tok = fs.readFileSync(TD + '/app-token', 'utf8').trim(); const H = { 'x-studio-app-token': tok, 'content-type': 'application/json', 'x-studio-request': '1' };

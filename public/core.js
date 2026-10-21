@@ -24,7 +24,11 @@
         A('content', 'CONTENT', 'Content Agent: адаптирует один материал под каждую платформу (длина, хэштеги, формат)'),
         A('publishing', 'PUBLISHING', 'Publishing Agent: очередь, расписание, публикация через официальные API, повторы при ошибках'),
         A('community', 'COMMUNITY', 'Community Agent: черновики ответов на комментарии (только с утверждением)'),
-        A('design3d', '3D DESIGN', '3D-модели и сцены MOONKATTY: OpenCode-агент + Blender (headless)')
+        A('design3d', '3D DESIGN', '3D-модели и сцены MOONKATTY: OpenCode-агент + Blender (headless)'),
+        A('ceo', 'AI CEO', 'Берёт цель владельца, планирует день, назначает задачи существующим агентам, следит за сроками и пишет внутренний отчёт. Не публикует и не тратит'),
+        A('creative', 'AI Creative Director', 'Оценка материала по доказательствам. Для новостей фактчек обязателен независимо от балла'),
+        A('revenue', 'AI Revenue Director', 'Считает только подтверждённые выплаты и расходы. Без данных пишет НЕТ ДАННЫХ'),
+        A('growth', 'AI Game Growth', 'Игроки, удержание и покупки из импорта. Код игры не меняет')
       ],
       projects: [
         { id: 'news', name: 'MOONKATTY NEWS', description: 'Новостные выпуски на EN/RU/UK', plan: [], createdAt: t },
