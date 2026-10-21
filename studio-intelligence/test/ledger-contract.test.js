@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { setup } = require('./helpers');
 const { createLedgerStub } = require('../src/ledger-stub');
 const { validate } = require('../src/validate');
+const { resolveProject } = require('../src/projects');
 
 function row(extra) {
   return Object.assign({
@@ -14,6 +15,12 @@ function row(extra) {
 
 test('resolveProject знает согласованные id и не теряет неизвестные', () => {
   const { si } = setup();
+  assert.equal(typeof resolveProject, 'function');
+  assert.equal(resolveProject('moonkatty_project:games').namespace, 'moonkatty_project');
+  assert.equal(resolveProject('moonkatty_shared').known, true);
+  assert.equal(resolveProject('moonkatty_project:nope').projectId, 'unassigned');
+  assert.equal(resolveProject('moonkatty_project:nope').dropped, false);
+  assert.equal(typeof resolveProject('moonkatty_shared').then, 'undefined');
   const games = si.projects.resolveProject('moonkatty_project:games');
   assert.equal(games.known, true);
   assert.equal(games.namespace, 'moonkatty_project');
@@ -50,7 +57,7 @@ test('адаптер читает listEntries и не смешивает фак�
   assert.equal(stub.listEntries({ direction: 'income', projectId: 'moonkatty_news:episodes' }).length, 1);
   const { si, owner, agent } = setup({ ledger: stub });
   const query = si.ledger.toQuery({ kind: 'actual', from: '2026-10-20T00:00:00.000Z', to: '2026-10-21T00:00:00.000Z' });
-  assert.deepEqual(query, { kind: 'actual', from: '2026-10-20T00:00:00.000Z', to: '2026-10-21T00:00:00.000Z' });
+  assert.deepEqual(query, { kind: 'actual', from: '2026-10-20', to: '2026-10-20' });
   const read = si.ledger.read({ from: '2026-10-20T00:00:00.000Z', to: '2026-10-21T00:00:00.000Z' });
   assert.equal(read.length, 5);
   const lost = read.find(item => item.id === 'f1');

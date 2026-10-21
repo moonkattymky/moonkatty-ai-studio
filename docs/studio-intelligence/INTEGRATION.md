@@ -400,7 +400,7 @@ JSON-копия панели (`data/backups/backup-*.json`) собирает т�
 
 ## Деньги
 
-Источник правды — журнал Studio 3: `listEntries({ kind, direction, projectId, from, to })` в `lib/ops/ledger` и `GET /api/ops/ledger`. Код ещё не запушен, адаптер вызывает переданную функцию с этой сигнатурой. `recordCost` больше не пишет в `si_cost_entries`. Факт, оценка и прогноз в отчёте лежат в разных полях. Неизвестный `projectId` становится `unassigned`, исходная строка не выбрасывается. Формат id: `docs/studio-intelligence/contracts/PROJECT-ATTRIBUTION.md`.
+Источник правды — журнал Studio 3: `listEntries({ kind, direction, projectId, from, to })` в `lib/ops/ledger` и `GET /api/ops/ledger` (`feat/studio-operations` @ `e9a46bf`). Адаптер вызывает переданную функцию. Дата у них `YYYY-MM-DD` (включительно), сумма на проводе — строка, подтверждение — объект. `recordCost` не пишет в `si_cost_entries`. Факт, оценка и прогноз в отчёте лежат в разных полях. Неизвестный `projectId` становится `unassigned`, исходная строка не выбрасывается. Формат id: `docs/studio-intelligence/contracts/PROJECT-ATTRIBUTION.md`.
 
 ## Реестр мастер-модели
 

@@ -7,8 +7,8 @@
   "additionalProperties": false,
   "required": ["projectId", "rawProjectId", "known", "namespace", "slug", "dropped"],
   "properties": {
-    "projectId": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "rawProjectId": { "type": ["string", "null"], "maxLength": 80 },
+    "projectId": { "type": "string", "minLength": 1, "maxLength": 140 },
+    "rawProjectId": { "type": ["string", "null"], "maxLength": 140 },
     "known": { "type": "boolean" },
     "namespace": { "type": ["string", "null"], "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared", null] },
     "slug": { "type": ["string", "null"], "maxLength": 64 },

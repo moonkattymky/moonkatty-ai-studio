@@ -19,7 +19,7 @@ const { createEditorial } = require('./editorial');
 const { createVersions } = require('./versions');
 const { createNotices } = require('./notices');
 const { createAuditFeed } = require('./audit-feed');
-const { createProjects } = require('./projects');
+const { createProjects, resolveProject } = require('./projects');
 const { createLedgerAdapter } = require('./ledger-adapter');
 const { createCharacterRegistry } = require('./character-registry');
 const { schemas, validate, schemaNames } = require('./validate');
@@ -106,4 +106,4 @@ function openStudioIntelligence(options = {}) {
   };
 }
 
-module.exports = { openStudioIntelligence, StudioError, SCHEMA_VERSION };
+module.exports = { openStudioIntelligence, StudioError, SCHEMA_VERSION, resolveProject };
