@@ -21,5 +21,5 @@ build() { local MAJ="$1" SUF="$2" NV="${3:-}"; local NAME="moonkatty-node-$VER-$
   tar -czf "$OUT/$NAME.tar.gz" "$NAME"; (cd "$OUT" && shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256"); echo "$NAME: $MACHO"; }
 build 24 darwin-x64 "${NODE24_VERSION:-}"
 build 22 darwin-x64-monterey "${NODE22_VERSION:-}"
-J="moonkatty-node-$VER-js-only"; mkdir -p "$J/app"; cp "moonkatty-node-$VER-darwin-x64"/app/* "$J/app/"; cp "moonkatty-node-$VER-darwin-x64"/*.sh "$J/"; (cd "$J" && find . -type f | LC_ALL=C sort | xargs shasum -a 256 > MANIFEST.sha256); tar -czf "$OUT/$J.tar.gz" "$J"; (cd "$OUT" && shasum -a 256 "$J.tar.gz" > "$J.tar.gz.sha256")
+J="moonkatty-node-$VER-js-only"; mkdir -p "$J/app"; cp "moonkatty-node-$VER-darwin-x64"/app/* "$J/app/"; cp "moonkatty-node-$VER-darwin-x64"/*.sh "$J/"; (cd "$J" && find . -type f ! -name MANIFEST.sha256 | LC_ALL=C sort | xargs shasum -a 256 > MANIFEST.sha256); tar -czf "$OUT/$J.tar.gz" "$J"; (cd "$OUT" && shasum -a 256 "$J.tar.gz" > "$J.tar.gz.sha256")
 echo "Готово: $OUT"; ls -la "$OUT"; cat "$OUT"/*.sha256
