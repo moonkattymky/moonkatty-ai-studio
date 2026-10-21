@@ -10,6 +10,7 @@ const S = MKSocial;
 const crypto = require('crypto');
 const sec = require('./lib/security.js');
 const CFG = require('./lib/studio-config.js'); // build flavor: prod | isolated TEST (names, ports, Keychain, data dir)
+if (!CFG.FLAVOR) { console.error(`ОТКАЗ: сборка не определена (flavor отсутствует, источник: ${CFG.FLAVOR_SOURCE}). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod.`); process.exit(78); }
 const egress = require('./lib/egress.js'), heavy = require('./lib/heavy-lock.js');
 
 const PORT = +process.env.PORT || CFG.defaultPort;
@@ -38,7 +39,28 @@ const q = {
 };
 const list = col => q.list.all(col).map(r => JSON.parse(r.data));
 const get = (col, id) => { const r = q.get.get(col, id); return r ? JSON.parse(r.data) : null; };
-const put = (col, obj) => { q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
+// Publication seal: the ONLY way a queue item can be stored with status "published". The key lives in the DB meta table
+// and is never exposed over HTTP; sealPublication() is handed exclusively to the internal publisher (meta.js), which calls
+// it only after a verified official platform API response. Every put('queue', …) of a published item re-verifies it.
+let SEAL_KEY = null; const sealKey = () => SEAL_KEY || (SEAL_KEY = (() => { let k = q.meta.get('publishSealKey')?.v; if (!k) { k = crypto.randomBytes(32).toString('hex'); q.setMeta.run('publishSealKey', k); } return Buffer.from(k, 'hex'); })());
+const PUB_PLATFORMS = { facebook: /^\d{5,32}(_\d{5,32})?$/, instagram: /^\d{5,32}$/ };
+const sealOf = (id, p) => crypto.createHmac('sha256', sealKey()).update([id, p.platform, p.responseId, p.at, p.callerModule].join('|')).digest('hex');
+function sealPublication(item, prov, caller) {
+  if (caller !== 'meta-publisher') throw new Error('publication: caller not authorised');
+  const re = PUB_PLATFORMS[prov && prov.platform]; const rid = String(prov && prov.responseId || '');
+  if (!re || !re.test(rid)) throw new Error('publication: invalid platform response id');
+  const p = { platform: prov.platform, responseId: rid, at: core.now(), callerModule: caller }; p.seal = sealOf(item.id, p);
+  return Object.assign(item, { status: 'published', externalId: rid, publishedAt: p.at, publication: p });
+}
+const validSeal = it => { const p = it.publication; if (!p || typeof p.seal !== 'string' || p.callerModule !== 'meta-publisher' || it.externalId !== p.responseId) return false;
+  const re = PUB_PLATFORMS[p.platform]; if (!re || !re.test(String(p.responseId))) return false; const a = Buffer.from(sealOf(it.id, p), 'hex'), b = Buffer.from(p.seal, 'hex'); return a.length === b.length && crypto.timingSafeEqual(a, b); };
+// Items published by v1.1.x–v1.2.1 (before seals) stay as they are: allowed only if the stored row is already published
+// with the SAME externalId and no seal — an unchanged legacy record, never a new publication.
+const legacyPublished = obj => { const r = q.get.get('queue', obj.id); if (!r) return false; const cur = JSON.parse(r.data);
+  return cur.status === 'published' && !cur.publication && !obj.publication && obj.status === 'published' && cur.externalId === obj.externalId; };
+const put = (col, obj) => {
+  if (col === 'queue' && obj && (obj.status === 'published' || obj.externalId || obj.publication) && !validSeal(obj) && !legacyPublished(obj)) { const e = new Error('Статус «опубликовано» ставит только модуль публикации после ответа платформы'); e.code = 'published_internal_only'; throw e; }
+  q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
 function log(level, source, message, user) {
   put('logs', { id: core.uid(), at: core.now(), level, source, message: sec.redact(message), user: user || null });
   const logs = list('logs'); if (logs.length > 2000) { logs.sort((a, b) => a.at.localeCompare(b.at)); for (const l of logs.slice(0, logs.length - 2000)) q.del.run('logs', l.id); }
@@ -83,8 +105,10 @@ function newSession(res, user) {
   res.setHeader('Set-Cookie', `mk_session=${tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL / 1000}`);
 }
 const STARTED_AT = new Date().toISOString(); const BRAND = process.env.STUDIO_BRAND || 'MOONKATTY';
-const metaCtx = { q, get, put, list, log, DB_PATH, express, db };
-const meta = require('./meta.js')(app, metaCtx);
+const metaCtx = { q, get, put, list, log, DB_PATH, express, db, sealPublication };
+// TEST build: the publisher module is NOT loaded at all (no Graph API code, no scheduler, no /publish routes).
+// The master key (Keychain «MOONKATTY AI STUDIO.test») is still created/loaded so key storage stays exercised.
+const meta = CFG.IS_TEST ? (() => { metaCtx.keySource = require('./lib/keystore.js').loadKey(path.dirname(DB_PATH)).source; return { mountProtected() {}, tick: async () => ({ disabled: true }), disabled: true }; })() : require('./meta.js')(app, metaCtx);
 const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND });
 // ---- v1.2.0: job engine + 3D DESIGN agent (OpenCode server + Blender) ----
 const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
@@ -153,6 +177,13 @@ app.post('/api/backups/run', (req, res) => { scheduledBackup(); res.json({ ok: t
 // Risk fix (a): restore is two-step. 1) /api/restore/prepare uploads the file → server keeps it in memory and returns a
 // one-time confirmation token (5 min) + a summary. 2) /api/restore with {token, confirm:"ЗАМЕНИТЬ"} → the server FIRST
 // makes an automatic SQLite copy (VACUUM INTO, SHA-256 sidecar) and only then replaces the data.
+// Restore never authorises publishing: every restored queue item enters pending_approval; its old status / externalId /
+// publishedAt are kept read-only under historical_* for audit only (PROTECTED: cannot be written via CRUD either).
+const sanitizeRestoredQueue = o0 => { const o = Object.assign({}, o0); const keep = ['pending_approval', 'rejected', 'draft'];
+  if (keep.includes(o.status) && !o.externalId && !o.publishedAt && !o.publication) { delete o.nextRetryAt; return o.status === o0.status && !('nextRetryAt' in o0) ? o0 : o; }
+  for (const k of ['status', 'externalId', 'publishedAt']) if (o[k] != null && o['historical_' + k] == null) o['historical_' + k] = o[k];
+  delete o.externalId; delete o.publishedAt; delete o.publication; delete o.nextRetryAt; o.status = 'pending_approval';
+  o.history = [...(Array.isArray(o.history) ? o.history : []), { at: core.now(), event: 'restored_pending_approval', from: o0.status }]; return o; };
 const DBB = require('./lib/db-backup.js'); const pendingRestore = new Map(); const RESTORE_TTL = 5 * 60000;
 app.post('/api/restore/prepare', express.json({ limit: '50mb' }), (req, res) => {
   const d = req.body?.data; if (!d || typeof d !== 'object' || Array.isArray(d)) return res.status(400).json({ error: 'Неверный файл резервной копии' });
@@ -169,7 +200,9 @@ app.post('/api/restore', express.json({ limit: '1mb' }), (req, res) => {
   pendingRestore.delete(k);
   let bk; try { bk = DBB.snapshot(db, BACKUP_DIR, 'pre-restore'); } catch (e) { log('error', 'backup', 'Восстановление отменено: не удалось сделать копию — ' + e.message, req.user); return res.status(500).json({ error: 'Не удалось сделать резервную копию — данные НЕ заменены' }); }
   const d = p.data;
-  db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o of d[c]) if (o && o.id) put(c, o); } })();
+  let demoted = 0;
+  db.transaction(() => { for (const c of core.COLLECTIONS) if (Array.isArray(d[c])) { db.prepare('DELETE FROM items WHERE col = ?').run(c); for (const o0 of d[c]) if (o0 && o0.id) { const o = c === 'queue' ? sanitizeRestoredQueue(o0) : o0; if (o !== o0) demoted++; put(c, o); } } })();
+  if (demoted) log('warn', 'backup', `Восстановление: ${demoted} элемент(ов) очереди переведены в «На утверждении» (исторический статус сохранён только для аудита)`, req.user);
   log('info', 'backup', `Данные восстановлены из резервной копии (предварительная копия ${path.basename(bk.file)}, SHA-256 ${bk.sha256})`, req.user);
   res.json({ ok: true, backup: { file: path.basename(bk.file), sha256: bk.sha256, size: bk.size } });
 });
@@ -395,22 +428,20 @@ const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? ne
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
 app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
 // Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).
-const PROTECTED = { integrations: ['password', 'authorization', 'lastTest'], tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId'], comments: ['repliedAt', 'replyId'] };
+const PROTECTED = { integrations: ['password', 'authorization', 'lastTest'], tasks: ['codeApproved', 'codeApprovedBy', 'codeApprovedAt', 'startedAt', 'finishedAt'], agents: ['actionLog'], queue: ['history', 'publishedAt', 'externalId', 'publication', 'historical_status', 'historical_externalId', 'historical_publishedAt'], comments: ['repliedAt', 'replyId'] };
 const stripProtected = (col, b) => { const o = Object.assign({}, b); for (const k of PROTECTED[col] || []) delete o[k]; if (col === 'tasks' && 'kind' in o) o.codeApproved = false; return o; };
 // QA-APR-001/002: publishing queue status rules (server-enforced; the UI cannot bypass them).
 //  • new items always start as pending_approval (POST cannot create approved/retry/published items);
 //  • approved/retry only via PUT, and only after fact-check guardrails + daily limits pass;
-//  • published only with a non-empty externalId (manual publication record); otherwise 400.
+//  • published ONLY via the internal publisher (sealPublication) after a verified platform response; any HTTP attempt → 403.
 //  • TEST build: publishing is disabled entirely (no meta.tick, no /publish, no reply).
 const QUEUE_ENTRY = 'pending_approval', QUEUE_GATED = ['approved', 'retry'];
 app.use('/api/queue', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
   if (req.method === 'POST' && req.path === '/') { req.body.status = QUEUE_ENTRY; delete req.body.nextRetryAt; return next(); }
-  if (req.method === 'PUT' && req.body.status === 'published') { const x = req.body.externalId;
-    if (typeof x !== 'string' || !/^[A-Za-z0-9_:.\-]{1,128}$/.test(x.trim())) return res.status(400).json({ error: 'Статус «опубликовано» требует externalId (ID публикации на платформе)', code: 'external_id_required' });
-    if (CFG.IS_TEST) return res.status(403).json({ error: 'Тестовая сборка: публикация отключена', code: 'publishing_disabled' });
-    req.queueExternalId = x.trim(); }
+  // Security recheck v1.2.2-test: NO HTTP route can set "published"/externalId — on every flavor.
+  if (req.method === 'PUT' && (req.body.status === 'published' || 'externalId' in req.body || 'publication' in req.body)) return res.status(403).json({ error: 'Статус «опубликовано» и externalId ставит только модуль публикации после ответа платформы', code: 'published_internal_only' });
   next(); });
-app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); if (req.queueExternalId) req.body.externalId = req.queueExternalId; next(); });
+app.use('/api/:col', (req, res, next) => { if (['POST', 'PUT'].includes(req.method) && req.body && typeof req.body === 'object' && PROTECTED[req.params.col]) req.body = stripProtected(req.params.col, req.body); next(); });
 // OpenCode URL must pass the same loopback validation when written through generic CRUD.
 app.use('/api/integrations', (req, res, next) => { if (!['POST', 'PUT'].includes(req.method) || !req.body || typeof req.body !== 'object') return next();
   const id = req.path.split('/')[1] || req.body.id; if (id !== 'opencode') return next();
@@ -455,6 +486,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use((err, req, res, next) => { // body-parser messages can quote the request body (e.g. a password) — never log/return them
   if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') { log('warn', 'http', `${req.method} ${req.path}: неверное тело запроса (${err.type})`); return res.status(400).json({ error: 'Неверное тело запроса' }); }
+  if (err.code === 'published_internal_only') return res.status(403).json({ error: err.message, code: err.code });
   log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: sec.redact(err.message) }); });
 
 // Scheduler: every 30s; auto-report every 3 days.

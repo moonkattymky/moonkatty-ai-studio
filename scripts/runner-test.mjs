@@ -7,7 +7,7 @@ const mock = http.createServer((q, r) => { let b = ''; q.on('data', d => b += d)
   if (q.url === '/api/tags') return r.end(JSON.stringify({ models: [{ name: 'qwen3:8b' }] }));
   if (q.url === '/api/chat') { const go = () => r.end(JSON.stringify({ message: { content: '<think>x</think>MOCK DRAFT for: ' + JSON.parse(b).messages[0].content.split('\n')[1] } })); return slow ? setTimeout(go, 20000) : go(); }
   r.statusCode = 404; r.end(); }); }).listen(OPORT);
-const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, STUDIO_DATA_DIR: UD, PORT }, stdio: 'ignore' });
+const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: UD, PORT }, stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms)); await sleep(2500);
 const tok = fs.readFileSync(UD + '/app-token', 'utf8').trim(); const H = { 'x-studio-app-token': tok, 'content-type': 'application/json', 'x-studio-request': '1' };
 const api = async (m, p, b) => (await fetch(`http://127.0.0.1:${PORT}${p}`, { method: m, headers: H, body: b && JSON.stringify(b) })).json();

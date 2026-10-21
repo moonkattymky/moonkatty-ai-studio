@@ -11,9 +11,11 @@ VER=$(node -p "require('./package.json').version"); APP="dist/mac-arm64/MOONKATT
 npm ci --ignore-scripts --no-audit --no-fund
 scripts/fetch-node.sh
 node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'macos'}))"
+# Native Mac build is the PRODUCTION flavor only (TEST build: FLAVOR=test scripts/package-mac-on-linux.sh). Flavor is baked.
+printf "'use strict';\nmodule.exports = 'prod';\n" > lib/flavor.baked.js; trap 'rm -f lib/flavor.baked.js' EXIT
 rm -rf dist
 export CSC_IDENTITY_AUTO_DISCOVERY="${CSC_IDENTITY_AUTO_DISCOVERY:-false}"
-npx electron-builder --mac dir --arm64 --publish never
+npx electron-builder --mac dir --arm64 --publish never -c.extraMetadata.studioFlavor=prod
 if [[ "$CSC_IDENTITY_AUTO_DISCOVERY" == "false" ]]; then
   codesign --force --deep --sign - "$APP"     # ad-hoc
 fi

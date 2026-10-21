@@ -6,3 +6,4 @@ data/
 dist/
 build/node/
 desktop/build-info.json
+lib/flavor.baked.js

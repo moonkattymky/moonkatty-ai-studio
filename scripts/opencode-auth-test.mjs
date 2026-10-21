@@ -17,7 +17,7 @@ const m403 = http.createServer((q, r) => { r.writeHead(403); r.end('Forbidden ' 
 const hang = net.createServer(() => {}).listen(OCHANG, '127.0.0.1');
 const outLog = [];
 function start(port, dir, kc) {
-  const env = { ...process.env, STUDIO_DATA_DIR: dir, PORT: String(port), NODE_ENV: 'test' }; delete env.STUDIO_TEST_SECURITY_BIN;
+  const env = { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: dir, PORT: String(port), NODE_ENV: 'test' }; delete env.STUDIO_TEST_SECURITY_BIN;
   if (kc) Object.assign(env, { STUDIO_TEST_SECURITY_BIN: path.resolve('scripts/test-fixtures/fake-security.mjs'), FAKE_KEYCHAIN_FILE: KC + '/kc.json', FAKE_KEYCHAIN_ARGV_LOG: KC + '/argv.log' });
   const s = spawn(process.execPath, ['server.js'], { env, stdio: ['ignore', 'pipe', 'pipe'] }); s.stdout.on('data', d => outLog.push(String(d))); s.stderr.on('data', d => outLog.push(String(d))); return s;
 }

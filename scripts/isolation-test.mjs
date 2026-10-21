@@ -4,7 +4,7 @@
 // Runs the real server.js with STUDIO_FLAVOR=test (NODE_ENV=test) and a FAKE $HOME that contains a fake "production" install.
 import { spawn, spawnSync, execFileSync } from 'child_process'; import fs from 'fs'; import path from 'path'; import http from 'http'; import crypto from 'crypto'; import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const T = '/tmp/mk-iso-test', HOME = T + '/home', PROD = HOME + '/Library/Application Support/MOONKATTY AI STUDIO', TD = HOME + '/Library/Application Support/MOONKATTY AI STUDIO TEST', KC = T + '/kc';
+const T = '/tmp/mk-iso-test-' + process.pid, HOME = T + '/home', PROD = HOME + '/Library/Application Support/MOONKATTY AI STUDIO', TD = HOME + '/Library/Application Support/MOONKATTY AI STUDIO TEST', KC = T + '/kc';
 fs.rmSync(T, { recursive: true, force: true }); fs.mkdirSync(PROD, { recursive: true }); fs.mkdirSync(KC, { recursive: true });
 const res = []; const ok = (n, c, x = '') => { res.push([n, !!c]); console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' — ' + String(x).slice(0, 300) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -22,10 +22,12 @@ delete ENV.STUDIO_SECRET_KEY;
 { const r = spawnSync(process.execPath, ['-e', 'console.log(JSON.stringify(require("./lib/studio-config.js")))'], { env: ENV }); const c = JSON.parse(r.stdout);
   ok('TEST flavor: product / bundle id / launchd label', c.product === 'MOONKATTY AI STUDIO TEST' && c.appId === 'com.moonkatty.aistudio.test' && c.launchdLabel === 'com.moonkatty.aistudio.test.server');
   ok('TEST flavor: Keychain service .test, port ≠ 8787, autostart off, no update checks', c.keychainService === 'MOONKATTY AI STUDIO.test' && c.defaultPort !== 8787 && c.defaultPort === 8687 && c.autoStartServer === false && c.checkUpdates === false);
-  const p = JSON.parse(spawnSync(process.execPath, ['-e', 'console.log(JSON.stringify(require("./lib/studio-config.js")))'], { env: { ...ENV, STUDIO_FLAVOR: '' } }).stdout);
+  const p = JSON.parse(spawnSync(process.execPath, ['-e', 'console.log(JSON.stringify(require("./lib/studio-config.js")))'], { env: { ...ENV, STUDIO_FLAVOR: 'prod' } }).stdout);
   ok('prod flavor unchanged (v1.1.2 identifiers)', p.product === 'MOONKATTY AI STUDIO' && p.appId === 'com.moonkatty.aistudio' && p.launchdLabel === 'com.moonkatty.aistudio.server' && p.keychainService === 'MOONKATTY AI STUDIO' && p.defaultPort === 8787);
   const pr = spawnSync(process.execPath, ['-e', 'console.log(require("./lib/studio-config.js").FLAVOR)'], { env: { ...ENV, NODE_ENV: 'production' } });
-  ok('STUDIO_FLAVOR ignored outside NODE_ENV=test (flavor is build-time)', String(pr.stdout).trim() === 'prod'); }
+  ok('STUDIO_FLAVOR ignored outside NODE_ENV=test; no baked flavor → FLAVOR null (no default)', String(pr.stdout).trim() === 'null');
+  const sv = spawnSync(process.execPath, ['server.js'], { env: { ...ENV, NODE_ENV: 'production', PORT: '8829' }, timeout: 8000 });
+  ok('server.js without baked flavor and without STUDIO_FLAVOR refuses to start (exit 78, clear error)', sv.status === 78 && /сборка не определена/.test(String(sv.stderr))); }
 // grep: no hardcoded identifiers outside lib/studio-config.js (code that runs in the app)
 { const files = ['server.js', 'runner.js', 'meta.js', ...fs.readdirSync('lib').filter(f => f.endsWith('.js')).map(f => 'lib/' + f), 'lib/executors/design3d.js', ...fs.readdirSync('desktop').filter(f => f.endsWith('.js')).map(f => 'desktop/' + f)];
   const bad = []; for (const f of files) { if (f === 'lib/studio-config.js') continue; fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => { const code = l.replace(/\/\/.*$/, '');
@@ -87,9 +89,9 @@ ok('OpenCode default URL in TEST build is 127.0.0.1:4097', (await api('GET', '/a
     if (E.classify(ip) !== 'blocked') ok('classify blocks ' + ip, false);
   ok('classify: private / link-local / metadata / CGNAT / ULA / mapped addresses blocked', ['10.0.0.5', '169.254.169.254', 'fd00:ec2::254', '::ffff:10.0.0.1'].every(i => E.classify(i) === 'blocked') && E.classify('127.0.0.1') === 'loopback' && E.classify('157.240.1.1') === 'public');
   const fakeDns = map => async h => (map[h] || []).map(address => ({ address, family: address.includes(':') ? 6 : 4 }));
-  let v = await E.vet('meta', 'https://graph.facebook.com/v19.0/me', { resolver: fakeDns({ 'graph.facebook.com': ['169.254.169.254'] }) }); ok('allowlisted host resolving to metadata IP → blocked after DNS', !v.ok && v.code === 'blocked_ip');
+  let v = await E.vet('meta', 'https://api.github.com/v19.0/me', { resolver: fakeDns({ 'api.github.com': ['169.254.169.254'] }) }); ok('allowlisted host resolving to metadata IP → blocked after DNS', !v.ok && v.code === 'blocked_ip');
   v = await E.vet('meta', 'https://graph.facebook.com/x', { resolver: fakeDns({ 'graph.facebook.com': ['157.240.1.1', '10.1.1.1'] }) }); ok('any one private address among several → blocked (no rebinding race)', !v.ok);
-  v = await E.vet('meta', 'https://graph.facebook.com/x', { resolver: fakeDns({ 'graph.facebook.com': ['157.240.1.1'] }) }); ok('allowlisted host with public IP → allowed', v.ok);
+  v = await E.vet('meta', 'https://api.github.com/x', { resolver: fakeDns({ 'api.github.com': ['157.240.1.1'] }) }); ok('allowlisted host with public IP → allowed', v.ok);
   v = await E.vet('custom', 'https://evil.example.com/', { resolver: fakeDns({ 'evil.example.com': ['93.184.216.34'] }) }); ok('host not in allowlist → blocked', !v.ok && v.code === 'blocked_url');
   v = await E.vet('ollama', 'http://localhost:11434/api/tags', { resolver: fakeDns({ localhost: ['127.0.0.1'] }) }); ok('local integration on loopback + known port → allowed', v.ok);
   v = await E.vet('ollama', 'http://localhost:22/', { resolver: fakeDns({ localhost: ['127.0.0.1'] }) }); ok('local integration on other port → blocked', !v.ok);
@@ -143,9 +145,9 @@ ok('OpenCode default URL in TEST build is 127.0.0.1:4097', (await api('GET', '/a
   for (let i = 0; i < lim + 1; i++) { const x = await api('POST', '/api/queue', { title: 'p' + i, channelId: ws.channelId, platform: 'facebook', scheduledAt: day }); ids.push(x.j.id); }
   let lastErr = null; for (const qid of ids) { const x = await api('PUT', '/api/queue/' + qid, { status: 'approved' }); if (x.s !== 200) lastErr = x; }
   ok('daily limit enforced on approve', lastErr && lastErr.s === 400 && /Лимит/.test(lastErr.j.error));
-  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published' }); ok('QA-APR-002: published without externalId → 400', r.s === 400 && r.j.code === 'external_id_required');
-  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published', externalId: '   ' }); ok('published with blank externalId → 400', r.s === 400);
-  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published', externalId: '123_456' }); ok('TEST build: manual published record refused (publishing disabled)', r.s === 403 && r.j.code === 'publishing_disabled');
+  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published' }); ok('published via HTTP → 403 (internal publisher only)', r.s === 403 && r.j.code === 'published_internal_only');
+  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published', externalId: '   ' }); ok('published with blank externalId → 403', r.s === 403);
+  r = await api('PUT', '/api/queue/' + ids[0], { status: 'published', externalId: '123_456' }); ok('TEST build: manual published record refused', r.s === 403 && r.j.code === 'published_internal_only');
   r = await api('POST', '/api/queue/' + ids[0] + '/publish'); ok('TEST build: /api/queue/:id/publish → 403', r.s === 403 && r.j.code === 'publishing_disabled');
   ok('TEST build: scheduler never calls meta.tick (source check)', /if \(!CFG\.IS_TEST\) meta\.tick\(\)/.test(fs.readFileSync('server.js', 'utf8'))); }
 

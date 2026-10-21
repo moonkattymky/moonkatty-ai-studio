@@ -28,6 +28,12 @@
 - QA-OC-001: профиль sandbox для OpenCode больше не разрешает запись в `/private/tmp` и `/private/var/folders`, только во временную подпапку задачи (`TMPDIR`).
 - QA-INFO-001: в BUILD-INFO больше нет «undefined» для fuse №8: используется закреплённая версия `@electron/fuses@2.1.3` (WasmTrapHandlers).
 - Совместимость с Studio 2: добавлен `services.videoRender.hasExecutor()`, `isStub()` остаётся псевдонимом. Исполнитель Studio 2 не подключался.
+**Повторная проверка безопасности (Studio 4, блокеры перед тестом)** — подробности в `docs/SECURITY_RECHECK_v1.2.2-test.md`
+- Статус `published` ставит только внутренний модуль публикации (`meta.js`) после проверенного ответа официального API платформы. Сохраняется происхождение публикации (`publication`: платформа, ID ответа, время, модуль-источник) с HMAC-печатью. Сервер проверяет формат ID и права вызывающего модуля. Ни один HTTP-маршрут не может выставить `published`, `externalId` или `publication`: ответ 403 `published_internal_only` во всех сборках.
+- Восстановление из резервной копии: каждый элемент очереди публикаций получает статус `pending_approval`. Прежние статус, `externalId` и `publishedAt` хранятся только для аудита в полях `historical_*`, доступных лишь для чтения. Публиковать на их основании нельзя.
+- Сборка вшивается при упаковке: `lib/flavor.baked.js` (константа) и `studioFlavor` в упакованном `package.json`. Переменные окружения, настройки и аргументы командной строки её не меняют. У упаковщика нет значения по умолчанию: без `FLAVOR=test|prod` он завершается с ошибкой. `server.js` без вшитой сборки и без `STUDIO_FLAVOR` (только `NODE_ENV=test`) не запускается: код 78.
+- TEST-сборка: модуль публикации не загружается, а из белого списка исходящих соединений исключены все соцсети (Graph Facebook/Instagram, Telegram).
+- Тесты: `npm run test:publish-guard`.
 **Релиз**: новый ассет `release-manifest.json` (формат в `docs/RELEASE_MANIFEST.md`). Инструкция для Mac: `docs/MAC_TEST_ISOLATED.md`. Тесты: `npm run test:isolation`, E2E: `npm run test:e2e-test-build`.
 
 ## 1.2.1-mac-preview — 3D Studio, этап C: ревью, версии, перерендер, экспорт (2026-10-21)

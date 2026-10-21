@@ -185,7 +185,10 @@ module.exports = function mountMeta(app, ctx) {
         for (let i = 0; i < 30; i++) { const st = await graph('GET', '/' + cont.id, { fields: 'status_code' }, tok); if (st.status_code === 'FINISHED') break; if (st.status_code === 'ERROR') throw new Error('Instagram: ошибка обработки медиа'); await new Promise(r => setTimeout(r, 5000)); }
         result = await graph('POST', `/${ig}/media_publish`, { creation_id: cont.id }, tok);
       }
-      Object.assign(it, { status: 'published', publishedAt: core.now(), externalId: result.id || result.post_id, lastError: null, nextRetryAt: null });
+      // Only after a verified official Graph API response: provenance + HMAC seal from server.js (caller authority checked there).
+      if (!result || typeof result !== 'object' || !(result.id || result.post_id)) throw new Error('Платформа не вернула ID публикации');
+      ctx.sealPublication(it, { platform: it.platform, responseId: String(result.post_id || result.id) }, 'meta-publisher');
+      Object.assign(it, { lastError: null, nextRetryAt: null });
       it.history.push({ at: core.now(), event: 'published', externalId: it.externalId, user: user || 'scheduler' });
       put('queue', it); log('info', 'publishing', `Опубликовано: ${it.title} → ${w.title}`, user); return it;
     } catch (e) {

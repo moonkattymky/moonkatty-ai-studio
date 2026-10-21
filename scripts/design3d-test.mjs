@@ -20,7 +20,7 @@ const ocEnv = (cfg, h = '/ochome') => ({ PATH: process.env.PATH, HOME: T + h, OP
 sp(OC_BIN, ['serve', '--hostname', '127.0.0.1', '--port', String(OC)], ocEnv(T + '/oc-policy.json'), '[oc] ');
 sp(OC_BIN, ['serve', '--hostname', '127.0.0.1', '--port', String(OCPERM)], ocEnv(T + '/oc-permissive.json', '/ochome2'), '[oc2] ');
 let studio;
-const startStudio = () => { studio = sp(process.execPath, ['server.js'], { ...process.env, STUDIO_DATA_DIR: UD, PORT: String(P), NODE_ENV: 'test', STUDIO_BLENDER_BIN: BL_BIN,
+const startStudio = () => { studio = sp(process.execPath, ['server.js'], { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: UD, PORT: String(P), NODE_ENV: 'test', STUDIO_BLENDER_BIN: BL_BIN,
   STUDIO_TEST_SECURITY_BIN: path.resolve('scripts/test-fixtures/fake-security.mjs'), FAKE_KEYCHAIN_FILE: KC + '/kc.json', FAKE_KEYCHAIN_ARGV_LOG: KC + '/argv.log', STUDIO_3D_AGENT_TIMEOUT_MS: '60000' }, '[studio] '); return studio; };
 startStudio();
 const waitHttp = async (u, h) => { for (let i = 0; i < 120; i++) { try { const r = await fetch(u, { headers: h, signal: AbortSignal.timeout(3000) }); if (r.status < 500) return r.status; } catch {} await sleep(500); } return 0; };
