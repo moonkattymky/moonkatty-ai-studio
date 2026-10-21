@@ -40,8 +40,8 @@ function fakeGitHub(releases, { redirectHost = 'objects.githubusercontent.com', 
     const r = releases.find(x => u.search.includes(x.tag)); const b = r && r.files[decodeURIComponent(path.basename(u.pathname))]; if (!b) return resp(404, Buffer.alloc(0));
     const range = opts.headers && opts.headers.range; if (range && !ignoreRange) { const s = +/bytes=(\d+)-/.exec(range)[1]; return resp(206, b.subarray(s)); } return resp(200, b); };
 }
-// manifest string fields only (never used as a path by the tests); split so the no-user-data guard does not flag data literals
-const MANIFEST_DATA_DIR = ['~', 'Library', 'Application' + ' Support', APP, ''].join('/'), MANIFEST_LOG_DIR = ['~', 'Library', 'Logs', APP, ''].join('/');
+// neutral placeholders for the optional manifest path fields (tests never use real user paths)
+const MANIFEST_DATA_DIR = '<dataDir>', MANIFEST_LOG_DIR = '<logDir>';
 const TESTM = () => ({ ...release({ version: '1.2.2-test' }).m, channel: 'test', bundleId: 'com.moonkatty.aistudio.test', appName: APP + ' TEST', dataDirName: APP + ' TEST', launchdLabel: 'com.moonkatty.aistudio.test.server', keychainServicePrefix: APP + '.test', defaultPort: 8687, dbSchemaVersion: 4, minUpgradeFrom: null, isolated: true, isolatedFrom: ['com.moonkatty.aistudio'] });
 function center(o = {}) { const k = o.kp || keys(); const dir = o.dir || tmp();
   return { k, dir, uc: UC.createUpdateCenter({ dir, current: o.current || '1.1.2', fetchImpl: o.fetchImpl, keys: o.keys || [k.publicKey], update: o.update, db: o.db, backups: o.backups, nodes: o.nodes, env: o.env || {}, healthUrl: 'http://127.0.0.1:1/api/health' }) }; }
