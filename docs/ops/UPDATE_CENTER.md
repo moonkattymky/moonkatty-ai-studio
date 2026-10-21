@@ -117,7 +117,7 @@ Manifest обязан совпадать с профилем своего кан
 `OPS_UPDATE_ROLLBACK_TESTED_ON_MAC=1` (откат проверен на реальном Mac). Даже тогда действует gate (§3). Не тестировалась на macOS.
 
 ## 7. MOONKATTY NODE (iMac / MacBook)
-Выключено: `OPS_UPDATE_NODES=1`. Сначала `…/nodes/:id/:tag/check` — сравнение `arch`, версии macOS (iMac Intel 12.5.1 ⇒ требования manifest `node.minMacOS`), версии Node с секцией `node` подписанного manifest. Только после успешной проверки `deliver` ставит job `node.update` (safeToRetry=false, 1 попытка, idempotency key) в режиме «download-verify-manual». Агент узла пока **не реализует** `node.update`, а пресеты ролей его не содержат — job останется в очереди; это следующий шаг.
+Выключено: `OPS_UPDATE_NODES=1`. Сначала `…/nodes/:id/:tag/check` — сравнение `arch`, версии macOS (iMac Intel 13.7.1 ⇒ требования manifest `node.minMacOS`), версии Node с секцией `node` подписанного manifest. Только после успешной проверки `deliver` ставит job `node.update` (safeToRetry=false, 1 попытка, idempotency key) в режиме «download-verify-manual». Агент узла пока **не реализует** `node.update`, а пресеты ролей его не содержат — job останется в очереди; это следующий шаг.
 
 ## 8. План ввода подписанных обновлений
 1. **Ключ офлайн (шаг владельца)**: на отключённом от сети Mac `node scripts/release-keygen.mjs --channel prod --out /Volumes/<зашифрованный носитель>/moonkatty-keys` (пароль ≥12 символов; скрипт отказывается писать внутрь репозитория). Приватный ключ (PKCS#8, AES-256, 0600) + резервная копия — в сейф. В репозиторий через ревью: только `.pub.pem` в `lib/ops/update-keys/` и запись в `keyring.json` (сначала `next`, затем `active`). Аналогично отдельный ключ для `--channel test`. Заглушка остаётся только в наборе test.

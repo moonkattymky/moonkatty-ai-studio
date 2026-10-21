@@ -203,13 +203,13 @@ test('rollback (non-dry-run, mocked macOS exec): restores previous app and check
   const h = await uc.healthCheck(); assert.equal(h.ok, false); healthy = true; assert.equal((await uc.healthCheck()).ok, true);
 });
 test('MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check', async () => {
-  assert.equal(UC.nodeCompat({ arch: 'x64', os: 'macOS 12.5.1', node: 'v20.19.2' }, { arch: ['x64', 'arm64'], minMacOS: '12.0', minNode: '20.0.0' }).ok, true);
+  assert.equal(UC.nodeCompat({ arch: 'x64', os: 'macOS 13.7.1', node: 'v20.19.2' }, { arch: ['x64', 'arm64'], minMacOS: '12.0', minNode: '20.0.0' }).ok, true);
   assert.equal(UC.nodeCompat({ arch: 'x64', os: 'macOS 11.7', node: 'v20.1.0' }, { minMacOS: '12.0' }).ok, false);
   assert.equal(UC.nodeCompat({ arch: 'ia32', os: 'macOS 13.0', node: 'v20.1.0' }, { arch: ['x64', 'arm64'] }).ok, false);
-  assert.equal(UC.nodeCompat({ arch: 'x64', os: 'macOS 12.5.1', node: 'v18.0.0' }, { minNode: '20.0.0' }).ok, false);
+  assert.equal(UC.nodeCompat({ arch: 'x64', os: 'macOS 13.7.1', node: 'v18.0.0' }, { minNode: '20.0.0' }).ok, false);
   assert.equal(UC.nodeCompat({}, { arch: ['x64'] }).ok, false);
   const kp = keys(); const r = release({ priv: kp.privateKey }); const submitted = [];
-  const nodes = { status: () => ({ nodes: [{ id: 'imac', info: { arch: 'x64', os: 'macOS 12.5.1', node: 'v20.19.2' } }, { id: 'old', info: { arch: 'x64', os: 'macOS 11.7', node: 'v20.19.2' } }] }), submit: j => { submitted.push(j); return { jobId: 'nj_1' }; } };
+  const nodes = { status: () => ({ nodes: [{ id: 'imac', info: { arch: 'x64', os: 'macOS 13.7.1', node: 'v20.19.2' } }, { id: 'old', info: { arch: 'x64', os: 'macOS 11.7', node: 'v20.19.2' } }] }), submit: j => { submitted.push(j); return { jobId: 'nj_1' }; } };
   const { uc } = center({ kp, fetchImpl: fakeGitHub([r]), nodes }); await uc.check();
   assert.throws(() => uc.nodeDeliver('imac', r.tag), /выключены/);
   const { uc: on } = center({ kp, fetchImpl: fakeGitHub([r]), nodes, env: { OPS_UPDATE_NODES: '1' } }); await on.check();
