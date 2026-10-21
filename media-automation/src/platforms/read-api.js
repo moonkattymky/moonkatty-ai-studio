@@ -6,21 +6,21 @@
  * ({ publisher, ledger, approvals, analytics }) which are only READ.
  */
 const fs = require('fs'); const path = require('path');
-const { PLATFORMS, getPlatform, liveMode } = require('./registry');
+const { PLATFORMS, getPlatform, liveMode, platformState } = require('./registry');
 const { capabilitiesFor } = require('./capabilities');
 const READ_API_VERSION = '1.0.0';
 const SAMPLE = path.join(__dirname, '..', '..', 'fixtures', 'platforms-snapshot.sample.json');
 const freeze = o => { if (o && typeof o === 'object') { Object.values(o).forEach(freeze); Object.freeze(o); } return o; };
 const out = o => freeze(JSON.parse(JSON.stringify(o)));
-function createReadApi({ snapshot = null, snapshotPath = SAMPLE, publisher = null, ledger = null, approvals = null, analytics = null, liveFlags = {}, env = {} } = {}) {
+function createReadApi({ snapshot = null, snapshotPath = SAMPLE, publisher = null, ledger = null, approvals = null, analytics = null, liveFlags = {}, env = process.env, experimental } = {}) {
   const snap = snapshot || (publisher || ledger || analytics ? null : JSON.parse(fs.readFileSync(snapshotPath, 'utf8')));
   const need = id => { const p = getPlatform(id); if (!p) { const e = new Error('unknown platform ' + id); e.status = 404; throw e; } return p; };
   const fromSnap = (key, id) => snap?.platforms?.[id]?.[key];
   const api = {
     version: READ_API_VERSION,
-    getPlatforms: () => out(PLATFORMS.map(p => ({ id: p.id, kind: p.kind, label: p.label, formats: p.formats, scheduling: p.scheduling, implemented: p.implemented !== false, dataMode: snap ? (snap.platforms?.[p.id]?.dataMode || 'mock') : 'real' }))),
+    getPlatforms: () => out(PLATFORMS.map(p => ({ id: p.id, kind: p.kind, label: p.label, formats: p.formats, scheduling: p.scheduling, implemented: p.implemented !== false, ...platformState(p, { experimental, env }), dataMode: snap ? (snap.platforms?.[p.id]?.dataMode || 'mock') : 'real' }))),
     getPlatformStatus(id) { const p = need(id); if (snap) return out(fromSnap('status', id));
-      const lm = liveMode(id, { liveFlags, env, approvals }); const posts = publisher ? publisher.posts({ platform: p.kind }) : [];
+      const lm = liveMode(id, { liveFlags, env, approvals, experimental }); const posts = publisher ? publisher.posts({ platform: p.kind }) : [];
       const counts = {}; posts.forEach(x => { counts[x.status] = (counts[x.status] || 0) + 1; });
       return out({ platformId: id, dataMode: 'real', mode: lm.live ? 'LIVE' : 'DRY-RUN', liveGate: lm, connected: null, postCounts: counts, asOf: new Date().toISOString() }); },
     getContentPipeline(id) { const p = need(id); if (snap) return out(fromSnap('pipeline', id));

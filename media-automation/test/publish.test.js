@@ -13,10 +13,10 @@ function router(routes, calls = []) { // routes: [ [regex, fn(url,opts)->{status
 }
 const video = () => { const f = path.join(tmp(), 'v.mp4'); fs.writeFileSync(f, Buffer.alloc(1024)); return f; };
 const ytRoutes = (seq = []) => [[/upload\/youtube.*uploadType=resumable/, () => seq.shift() || { status: 200, headers: { location: 'https://upload.example/session1' } }], [/upload\.example\/session1/, { status: 200, body: { id: 'vid123' } }], [/youtube\/v3\/videos\?part=status/, { status: 200, body: { items: [{ status: { uploadStatus: 'processed', privacyStatus: 'private' }, processingDetails: { processingStatus: 'succeeded' } }] } }]];
-const mk = (fetchFn, extra = {}) => { let t = 1e6; const pub = new Publisher({ statePath: path.join(tmp(), 'p.json'), adapters: defaultAdapters({ fetchFn, pollMs: 1 }), accounts: DEFAULT_ACCOUNTS.map(a => ({ ...a, live: true })), secrets, env: {}, now: () => t, backoffMs: 10, ...extra }); pub.tick = ms => { t += ms; }; return pub; };
+const mk = (fetchFn, extra = {}) => { let t = 1e6; const pub = new Publisher({ statePath: path.join(tmp(), 'p.json'), adapters: defaultAdapters({ experimental: true, fetchFn, pollMs: 1 }), accounts: DEFAULT_ACCOUNTS.map(a => ({ ...a, live: true })), secrets, env: {}, now: () => t, backoffMs: 10, ...extra }); pub.tick = ms => { t += ms; }; return pub; };
 
 test('DRY-RUN is default: no network, account.live false or no owner flag', async () => {
-  const calls = []; const p = new Publisher({ statePath: path.join(tmp(), 'p.json'), adapters: defaultAdapters({ fetchFn: router([], calls) }), accounts: DEFAULT_ACCOUNTS, secrets, env: {} });
+  const calls = []; const p = new Publisher({ statePath: path.join(tmp(), 'p.json'), adapters: defaultAdapters({ experimental: true, fetchFn: router([], calls) }), accounts: DEFAULT_ACCOUNTS, secrets, env: {} });
   const post = p.enqueue({ accountId: 'youtube-news', contentId: 'ep1', payload: { videoPath: video(), title: 'Ep 1' }, content: { reviewStatus: 'approved' } });
   const [r] = await p.processDue(); assert.equal(r.status, 'dry_run'); assert.equal(calls.length, 0); assert.equal(r.remote.preview.privacy, 'private');
   const p2 = mk(router([], calls)); assert.equal(p2.isLive('youtube-news'), false, 'account live but no owner flag -> dry');

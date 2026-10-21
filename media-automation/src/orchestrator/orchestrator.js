@@ -118,6 +118,7 @@ class Orchestrator {
       const it = this.approval.get(id); if (it.status !== 'approved') { all = false; continue; }
       const results = [];
       for (const acc of it.targets || []) { const platform = this.publisher.accounts.get(acc)?.platform;
+        if (platform && !this.publisher.adapters[this.publisher.accounts.get(acc).adapter || platform]) { results.push({ acc, skipped: 'experimental' }); continue; } /* X/Telegram off unless MA_EXPERIMENTAL */
         const payload = it.kind === 'text' ? (platform === 'x' ? { text: it.text, imagePath: it.thumbPath } : { text: it.text, imagePath: it.thumbPath }) : platform === 'youtube' ? { videoPath: it.videoPath, title: it.title.slice(0, 100), description: it.description, shorts: it.preset !== 'youtube', privacy: 'private' }
           : platform === 'tiktok' ? { videoPath: it.videoPath, title: `${it.headline}\n${it.description}`.slice(0, 2200) }
           : { targetId: 'CONFIGURE', videoUrl: 'https://example.invalid/needs-public-hosting.mp4', caption: `${it.headline}\n\n${it.description}`.slice(0, 2200) };

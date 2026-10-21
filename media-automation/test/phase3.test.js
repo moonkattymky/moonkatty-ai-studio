@@ -95,9 +95,9 @@ test('editorial: anchor lines, major-event pause, corrections via ports and appr
   const d = tmp(); const sch = new Scheduler({ statePath: path.join(d, 's.json') });
   const big = { id: 'b', headline: 'Big', breaking: true, corroboration: 'confirmed', verification: { independentOrigins: 3 } };
   assert.equal(detectMajorEvent([{ ...big, verification: { independentOrigins: 1 } }]).length, 0);
-  applyMajorEventPolicy({ stories: [big], scheduler: sch }); assert.equal(sch.settings().paused, true); assert.match(sch.settings().pausedReason, /major event/);
+  applyMajorEventPolicy({ stories: [big], scheduler: sch, experimental: true }); assert.equal(sch.settings().paused, true); assert.match(sch.settings().pausedReason, /major event/);
   const logged = []; const approval = new ApprovalCenter({ statePath: path.join(d, 'a.json') });
-  const desk = new CorrectionsDesk({ statePath: path.join(d, 'c.json'), approval, logPort: { append: async e => logged.push(e) }, verifier: { verifyCorrection: async () => ({ verdict: 'confirmed_error', verifiedBy: 'studio4' }) } });
+  const desk = new CorrectionsDesk({ experimental: true, statePath: path.join(d, 'c.json'), approval, logPort: { append: async e => logged.push(e) }, verifier: { verifyCorrection: async () => ({ verdict: 'confirmed_error', verifiedBy: 'studio4' }) } });
   const c = await desk.report({ episodeId: 'ep1', claim: 'wrong distance', reportedBy: 'viewer' });
   await assert.rejects(desk.draft(c.id, { text: 'x' }), /confirmed/); await desk.verify(c.id); await desk.draft(c.id, { text: 'Correction: the distance is 3 km.' });
   const it = approval.get(`correction-${c.id}`); assert.equal(it.status, 'pending'); assert.deepEqual(logged.map(e => e.type), ['correction_reported', 'correction_verified', 'correction_drafted']);
