@@ -1,0 +1,193 @@
+TAP version 13
+# Subtest: code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+ok 1 - code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+  ---
+  duration_ms: 19.364513
+  type: 'test'
+  ...
+# Subtest: expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+ok 2 - expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+  ---
+  duration_ms: 5.70784
+  type: 'test'
+  ...
+# Subtest: code of another request does not work (code bound to its requestId)
+ok 3 - code of another request does not work (code bound to its requestId)
+  ---
+  duration_ms: 1.615816
+  type: 'test'
+  ...
+# Subtest: brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+ok 4 - brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+  ---
+  duration_ms: 13.173814
+  type: 'test'
+  ...
+# Subtest: unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+ok 5 - unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+  ---
+  duration_ms: 5.4654
+  type: 'test'
+  ...
+# Subtest: end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+ok 6 - end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+  ---
+  duration_ms: 583.740861
+  type: 'test'
+  ...
+# Subtest: plaintext refused (client and server), wrong fingerprint refused before any data is sent
+ok 7 - plaintext refused (client and server), wrong fingerprint refused before any data is sent
+  ---
+  duration_ms: 16.153427
+  type: 'test'
+  ...
+# Subtest: 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+ok 8 - 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+  ---
+  duration_ms: 13.251885
+  type: 'test'
+  ...
+# Subtest: CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+ok 9 - CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+  ---
+  duration_ms: 0.533251
+  type: 'test'
+  ...
+# Subtest: anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426
+ok 10 - anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426
+  ---
+  duration_ms: 235.508799
+  type: 'test'
+  ...
+# Subtest: auth timing: wrong token and right token + bad signature do the same work (dummy verify)
+ok 11 - auth timing: wrong token and right token + bad signature do the same work (dummy verify)
+  ---
+  duration_ms: 17.258169
+  type: 'test'
+  ...
+# Subtest: peer buckets behind tailscale serve: per tailnet device (whois, mocked) / per Tailscale user; headers trusted only from loopback; persisted locks; single coordinator per dir
+ok 12 - peer buckets behind tailscale serve: per tailnet device (whois, mocked) / per Tailscale user; headers trusted only from loopback; persisted locks; single coordinator per dir
+  ---
+  duration_ms: 13.45255
+  type: 'test'
+  ...
+# Subtest: confirmation screens: node shows device-key fingerprint equal to panel; panel shows full+short key, labels device-reported fields unverified; CLI code not via argv; tailscale mode needs *.ts.net
+ok 13 - confirmation screens: node shows device-key fingerprint equal to panel; panel shows full+short key, labels device-reported fields unverified; CLI code not via argv; tailscale mode needs *.ts.net
+  ---
+  duration_ms: 230.379936
+  type: 'test'
+  ...
+# Subtest: confirmation peer: via tailscale serve (XFF + mocked whois) shows device name/100.x; direct tailnet peer; unknown → «адрес Tailscale не определён» + ack required; never 127.0.0.1
+ok 14 - confirmation peer: via tailscale serve (XFF + mocked whois) shows device name/100.x; direct tailnet peer; unknown → «адрес Tailscale не определён» + ack required; never 127.0.0.1
+  ---
+  duration_ms: 21.335377
+  type: 'test'
+  ...
+# Subtest: NEWS NODE 0.2.2 + MONITOR NODE 0.2.2: full lifecycle against the coordinator
+ok 15 - NEWS NODE 0.2.2 + MONITOR NODE 0.2.2: full lifecycle against the coordinator
+  ---
+  duration_ms: 15949.079677
+  type: 'test'
+  ...
+# Subtest: nodes flag: admin API + separate TLS node listener + runner dispatch
+ok 16 - nodes flag: admin API + separate TLS node listener + runner dispatch
+  ---
+  duration_ms: 455.106255
+  type: 'test'
+  ...
+# Subtest: nodes defaults: legacy bearer-only tokens off; device confirm / revoke / rotate need owner password step-up
+ok 17 - nodes defaults: legacy bearer-only tokens off; device confirm / revoke / rotate need owner password step-up
+  ---
+  duration_ms: 433.49441
+  type: 'test'
+  ...
+# Subtest: node step-up actions also work with Security Center ON (STUDIO_OPS_SECURITY=1)
+ok 18 - node step-up actions also work with Security Center ON (STUDIO_OPS_SECURITY=1)
+  ---
+  duration_ms: 445.452071
+  type: 'test'
+  ...
+# Subtest: integration URL allowlist (SSRF) + Docker API block
+ok 19 - integration URL allowlist (SSRF) + Docker API block
+  ---
+  duration_ms: 1.30901
+  type: 'test'
+  ...
+# Subtest: agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+ok 20 - agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+  ---
+  duration_ms: 4.945376
+  type: 'test'
+  ...
+# Subtest: second-step confirmation: single use, bound to user + action, expires
+ok 21 - second-step confirmation: single use, bound to user + action, expires
+  ---
+  duration_ms: 0.992884
+  type: 'test'
+  ...
+# Subtest: dangerous operation classifier
+ok 22 - dangerous operation classifier
+  ---
+  duration_ms: 0.537835
+  type: 'test'
+  ...
+# Subtest: audit log hash chain detects tampering; file is 0600
+ok 23 - audit log hash chain detects tampering; file is 0600
+  ---
+  duration_ms: 2.239545
+  type: 'test'
+  ...
+# Subtest: prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+ok 24 - prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+  ---
+  duration_ms: 0.491677
+  type: 'test'
+  ...
+# Subtest: security audit flags Docker integration and loose file permissions
+ok 25 - security audit flags Docker integration and loose file permissions
+  ---
+  duration_ms: 7.392555
+  type: 'test'
+  ...
+# Subtest: Funnel check is real: parses serve/funnel status JSON; on → critical fail; unknown → warn (never ok by default)
+ok 26 - Funnel check is real: parses serve/funnel status JSON; on → critical fail; unknown → warn (never ok by default)
+  ---
+  duration_ms: 1.582267
+  type: 'test'
+  ...
+# Subtest: UI: Computers (Nodes) end-to-end with Security Center ON
+not ok 27 - UI: Computers (Nodes) end-to-end with Security Center ON
+  ---
+  duration_ms: 23698.617359
+  type: 'test'
+  location: '/tmp/mk-nodes/test/ops/ui-computers.e2e.test.js:16:1'
+  failureType: 'unhandledRejection'
+  error: 'E_CODE_USED: код уже использован или запрос закрыт'
+  code: 'E_CODE_USED'
+  stack: |-
+    Object.enroll (/tmp/mk-nodes/node-agent/enroll.js:46:45)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+  ...
+# Error: Test "UI: Computers (Nodes) end-to-end with Security Center ON" at test/ops/ui-computers.e2e.test.js:16:1 generated asynchronous activity after the test ended. This activity created the error "Error: E_RATE_LIMIT: слишком часто" and would have caused the test to fail, but instead triggered an unhandledRejection event.
+# Subtest: every sidebar route has a view function (static registry check)
+ok 28 - every sidebar route has a view function (static registry check)
+  ---
+  duration_ms: 3.241149
+  type: 'test'
+  ...
+# Subtest: ops-ui view functions render without throwing (Computers with online / offline / 426 / revoked / unverified peer)
+ok 29 - ops-ui view functions render without throwing (Computers with online / offline / 426 / revoked / unverified peer)
+  ---
+  duration_ms: 54.324165
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 28
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45404.722637
+EXIT:1

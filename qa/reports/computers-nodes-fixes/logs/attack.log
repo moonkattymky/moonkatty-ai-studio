@@ -1,0 +1,56 @@
+PASS fe8e4ab setup leased the news job to imac {"status":200}
+PASS fe8e4ab unauth foreign token left jobs unchanged
+PASS fe8e4ab unauth foreign token did not write a file
+PASS fe8e4ab unauth foreign token left node records unchanged {"calls":[{"kind":"none","nodeChanged":false,"statuses":[401]},{"kind":"foreign-shape","nodeChanged":false,"statuses":[401]},{"kind":"wrong-secret","nodeChanged":false,"statuses":[401]},{"kind":"unknown-id","nodeChanged":false,"statuses":[401]},{"kind":"empty-bearer","nodeChanged":false,"statuses":[401]},{"kind":"basic","nodeChanged":false,"statuses":[401]}]}
+PASS fe8e4ab unauth foreign token did not change nodes.json {"diskWrote":false,"bytes":2739}
+PASS fe8e4ab nodes.json has no lastConnError {"diskConn":false,"enrollDiskConn":false}
+PASS fe8e4ab enroll attempts did not change node or job records {"enrollRows":[{"kind":"none","enroll":403,"status":404},{"kind":"foreign-shape","enroll":403,"status":404},{"kind":"wrong-secret","enroll":403,"status":404},{"kind":"unknown-id","enroll":403,"status":404},{"kind":"empty-bearer","enroll":403,"status":404},{"kind":"basic","enroll":429,"status":429}]}
+PASS fe8e4ab other node token did not change the victim node or its job {"victimDenied":false,"victim":[{"method":"POST","path":"/api/nodes/rotate","status":409,"code":"E_NOT_ENROLLED"},{"method":"POST","path":"/api/nodes/jobs/nj_5fbd088497f5e1b8/heartbeat","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_5fbd088497f5e1b8/complete","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_5fbd088497f5e1b8/fail","status":409,"code":409},{"method":"GET","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":403,"code":null},{"method":"PUT","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":422,"code":422},{"method":"POST","path":"/api/nodes/nope","status":404,"code":null}],"imacStatus":"online"}
+PASS fe8e4ab status audit and nodes.json omit bearer secrets {"leaked":0}
+PASS 343d645 setup leased the news job to imac {"status":200}
+PASS 343d645 unauth foreign token left jobs unchanged
+PASS 343d645 unauth foreign token did not write a file
+PASS 343d645 pre-fix wrong secret persisted lastConnError {"diskWrote":true,"diskConn":true,"nodeChanged":true}
+PASS 343d645 enroll attempts did not change node or job records {"enrollRows":[{"kind":"none","enroll":403,"status":404},{"kind":"foreign-shape","enroll":403,"status":404},{"kind":"wrong-secret","enroll":403,"status":404},{"kind":"unknown-id","enroll":403,"status":404},{"kind":"empty-bearer","enroll":403,"status":404},{"kind":"basic","enroll":429,"status":429}]}
+PASS 343d645 other node token did not change the victim node or its job {"victimDenied":false,"victim":[{"method":"POST","path":"/api/nodes/rotate","status":409,"code":"E_NOT_ENROLLED"},{"method":"POST","path":"/api/nodes/jobs/nj_ed44fdc7204ba35f/heartbeat","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_ed44fdc7204ba35f/complete","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_ed44fdc7204ba35f/fail","status":409,"code":409},{"method":"GET","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":403,"code":null},{"method":"PUT","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":422,"code":422},{"method":"POST","path":"/api/nodes/nope","status":404,"code":null}],"imacStatus":"online"}
+PASS 343d645 status audit and nodes.json omit bearer secrets {"leaked":0}
+PASS b7101c4 setup leased the news job to imac {"status":200}
+PASS b7101c4 unauth foreign token left jobs unchanged
+PASS b7101c4 unauth foreign token did not write a file
+PASS b7101c4 unauth foreign token left node records unchanged {"calls":[{"kind":"none","nodeChanged":false,"statuses":[401]},{"kind":"foreign-shape","nodeChanged":false,"statuses":[401]},{"kind":"wrong-secret","nodeChanged":false,"statuses":[401]},{"kind":"unknown-id","nodeChanged":false,"statuses":[401]},{"kind":"empty-bearer","nodeChanged":false,"statuses":[401]},{"kind":"basic","nodeChanged":false,"statuses":[401]}]}
+PASS b7101c4 unauth foreign token did not change nodes.json {"diskWrote":false,"bytes":2676}
+PASS b7101c4 nodes.json has no lastConnError {"diskConn":false,"enrollDiskConn":false}
+PASS b7101c4 enroll attempts did not change node or job records {"enrollRows":[{"kind":"none","enroll":403,"status":404},{"kind":"foreign-shape","enroll":403,"status":404},{"kind":"wrong-secret","enroll":403,"status":404},{"kind":"unknown-id","enroll":403,"status":404},{"kind":"empty-bearer","enroll":403,"status":404},{"kind":"basic","enroll":429,"status":429}]}
+PASS b7101c4 other node token did not change the victim node or its job {"victimDenied":false,"victim":[{"method":"POST","path":"/api/nodes/rotate","status":409,"code":"E_NOT_ENROLLED"},{"method":"POST","path":"/api/nodes/jobs/nj_83d9aa6868019751/heartbeat","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_83d9aa6868019751/complete","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_83d9aa6868019751/fail","status":409,"code":409},{"method":"GET","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":403,"code":null},{"method":"PUT","path":"/api/nodes/files/abababababababababababababababababababababababababababababababab","status":422,"code":422},{"method":"POST","path":"/api/nodes/nope","status":404,"code":null}],"imacStatus":"online"}
+PASS b7101c4 status audit and nodes.json omit bearer secrets {"leaked":0}
+PASS fe8e4ab records the failed token in memory {"code":"E_UNAUTHORIZED","at":"2026-10-21T13:16:17.046Z"}
+PASS b7101c4 does not record a connection error for a foreign token
+PASS 343d645 is the build that wrote the error {"code":"E_UNAUTHORIZED","at":"2026-10-21T13:16:17.113Z"}
+PASS wrong secret sets an in-memory connection error {"code":"E_UNAUTHORIZED","at":"2026-10-21T13:16:17.209Z"}
+PASS a new manager on the same directory does not see that error {"disk":false,"gone":null}
+PASS loopback peer label hides 127.0.0.1 and is unverified {"key":"loopback","label":"адрес Tailscale не определён (запрос через локальный прокси)","ip":null,"name":null,"login":null,"via":"loopback","verified":false}
+PASS stub whois names the tailnet peer {"key":"tsnode:nMB","label":"macbook · 100.101.1.2 · igor@x","ip":"100.101.1.2","name":"macbook","login":"igor@x","via":"tailscale serve","verified":true}
+PASS whois miss stays unverified {"key":"ip:100.101.1.9","label":"100.101.1.9 (устройство Tailscale не определено: whois недоступен)","ip":"100.101.1.9","name":null,"login":null,"via":"tailscale serve","verified":false}
+PASS login header without a tailnet address is unverified {"key":"tsuser:igor@x","label":"адрес Tailscale не определён · пользователь igor@x","ip":null,"name":null,"login":"igor@x","via":"tailscale serve","verified":false}
+PASS direct tailnet ignores a spoofed forwarded header {"key":"tsnode:nMB","label":"macbook · 100.101.1.2 · igor@x","ip":"100.101.1.2","name":"macbook","login":"igor@x","via":"direct","verified":true}
+PASS defaultWhois on this host returns null {"live":null}
+PASS unknown peer confirm throws E_PEER_UNVERIFIED {"unverified":"E_PEER_UNVERIFIED","state":"confirmed"}
+PASS unverified ack is audited once {"auditAck":1}
+PASS pending view carries the unverified peer and no loopback address {"peer":"адрес Tailscale не определён (запрос через локальный прокси)"}
+PASS code and request secret stay out of list status audit and nodes.json
+PASS loopback XFF plus stub whois still confirms without the second ack {"skipped":"confirmed"}
+PASS reject of an unverified peer does not require the second ack {"state":"rejected"}
+PASS classify maps confirm revoke rotate and legacy token
+PASS classify leaves reject and command outside the password set {"reject":null,"command":null}
+PASS owner node routes reject a missing session [{"method":"POST","path":"/api/ops/nodes/enroll","status":401},{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/command","status":401},{"method":"POST","path":"/api/ops/nodes/jobs","status":401},{"method":"GET","path":"/api/ops/nodes","status":401},{"method":"POST","path":"/api/ops/nodes/enroll/R7K2Q/confirm","status":403},{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/rotate","status":401},{"method":"POST","path":"/api/ops/nodes/enroll/R7K2Q/reject","status":401}]
+PASS confirm without the studio request header is 403 [{"method":"POST","path":"/api/ops/nodes/enroll","status":401},{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/command","status":401},{"method":"POST","path":"/api/ops/nodes/jobs","status":401},{"method":"GET","path":"/api/ops/nodes","status":401},{"method":"POST","path":"/api/ops/nodes/enroll/R7K2Q/confirm","status":403},{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/rotate","status":401},{"method":"POST","path":"/api/ops/nodes/enroll/R7K2Q/reject","status":401}]
+PASS a node bearer is not a studio session [{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/revoke","status":401},{"method":"POST","path":"/api/ops/nodes/imac/rotate","status":401},{"method":"POST","path":"/api/ops/nodes/enroll/R7K2Q/reject","status":401}]
+PASS security center confirm without a password token is 428 {"error":"Требуется подтверждение паролем","confirmRequired":true,"action":"node-confirm"}
+PASS wrong password is 403 and the right password issues a token {"bad":403,"ok":200}
+PASS password token reaches confirm and does not treat the action as unknown {"status":400,"body":{"error":"подтверждать можно только pending (сейчас awaiting_code)","code":"E_BAD_REQUEST"}}
+PASS revoke and rotate still require the password {"rev":428,"rot":428}
+PASS legacy token stays disabled after the password {"leg":428,"leg2":403,"code":"E_LEGACY_DISABLED"}
+PASS reject still skips the password {"status":400,"body":{"error":"подтверждать можно только pending (сейчас awaiting_code)","code":"E_BAD_REQUEST"}}
+PASS owner GET responses omit the one-time code and the fake password {"codeLen":17}
+PASS studio log omits the fake password
+{"commit":"fe8e4ab56fdc756a22e128724502ea45a73c3660","pre":"343d645","v124":"b7101c437466599558bf14653ff782677a2ec95b","controls":55,"failed":[]}

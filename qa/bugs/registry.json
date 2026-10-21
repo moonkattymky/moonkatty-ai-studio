@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T13:06:50.610Z",
+  "updatedAt": "2026-10-21T13:22:52.066Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -568,7 +568,8 @@
       ],
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
-        "qa/reports/node-0.2.2/logs/attack.json"
+        "qa/reports/node-0.2.2/logs/attack.json",
+        "qa/reports/computers-nodes-fixes/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
@@ -579,6 +580,11 @@
           "at": "2026-10-21T12:45:00.000Z",
           "status": "open",
           "note": "The in-process replay fix holds. The cache does not survive a restart. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.002Z",
+          "status": "open",
+          "note": "fe8e4ab still keeps the used-nonce map in memory (lib/ops/nodes.js). This re-audit did not repeat the restart capture. Owner approval is not set."
         }
       ]
     },
@@ -601,7 +607,8 @@
       ],
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
-        "qa/reports/node-0.2.2/logs/attack.json"
+        "qa/reports/node-0.2.2/logs/attack.json",
+        "qa/reports/computers-nodes-fixes/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
@@ -612,6 +619,11 @@
           "at": "2026-10-21T12:45:00.000Z",
           "status": "open",
           "note": "whois was injected. The real tailscale binary was not run. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.037Z",
+          "status": "open",
+          "note": "fe8e4ab: loopback plus X-Forwarded-For 100.101.1.2 and a stub whois still confirms without acknowledgeUnverifiedPeer. defaultWhois on this host returned null. Owner approval is not set."
         }
       ]
     },
@@ -633,7 +645,8 @@
       ],
       "evidence": [
         "qa/reports/node-0.2.2/REPORT.md",
-        "qa/reports/node-0.2.2/logs/their-tests.log"
+        "qa/reports/node-0.2.2/logs/their-tests.log",
+        "qa/reports/computers-nodes-fixes/REPORT.md"
       ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, lib/ops/security-center.js classify",
@@ -644,6 +657,11 @@
           "at": "2026-10-21T12:45:00.000Z",
           "status": "open",
           "note": "Their integration test asserts reject is not 428. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.065Z",
+          "status": "open",
+          "note": "fe8e4ab: reject stays outside classify. A session reached the handler (400 E_BAD_REQUEST on an awaiting_code request). Confirm without the password token was 428. Owner approval is not set."
         }
       ]
     },
@@ -713,6 +731,38 @@
           "at": "2026-10-21T13:10:00.000Z",
           "status": "open",
           "note": "Downgrade by version still blocks. Revocation still blocks. The date itself is GitHub metadata. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-004",
+      "title": "Computers UI e2e reads the enrollment code already on screen",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "test/ops/ui-computers.e2e.test.js waits for #enOut .enroll-code and then reads it. After the first computer that element is already present, so the second click returns the first code. Both agents post that code. The second POST /enroll returns E_CODE_USED. The same script, waiting until the code text changes and polling every 3 seconds, passed the Computers UI path including the secret scan.",
+      "expected": "The Computers UI e2e reads the code from the enrollment it just created.",
+      "actual": "The committed test at fe8e4ab failed with E_CODE_USED. A rerun that waited for a new code string passed in 83835 ms.",
+      "repro": [
+        "On fe8e4ab run node --test test/ops/ui-computers.e2e.test.js",
+        "Create a news code and then a monitor code",
+        "The second enrollment posts the first code and the run ends with E_CODE_USED"
+      ],
+      "evidence": [
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/computers-nodes-fixes/logs/their-tests.log",
+        "qa/reports/computers-nodes-fixes/logs/ui-rerun.log"
+      ],
+      "foundAt": "2026-10-21T13:25:00.000Z",
+      "foundIn": "feat/studio-operations fe8e4ab, test/ops/ui-computers.e2e.test.js",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:25:00.000Z",
+          "status": "open",
+          "note": "The panel issued a new code. The test read the previous one. Owner approval is not set."
         }
       ]
     }
