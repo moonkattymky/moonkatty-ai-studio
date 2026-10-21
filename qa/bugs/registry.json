@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T13:45:18.444Z",
+  "updatedAt": "2026-10-21T14:21:13.544Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -851,7 +851,7 @@
       "id": "QA-AZR-001",
       "title": "Azure usage file resets the dollar cap when it is removed or incomplete",
       "severity": "high",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "The $1 S0 guard is news-launch/azure-tts state usage.json with no signature. Deleting the file, omitting spentMicro, or writing a different YYYY-MM starts the current month at the new charge and the next reserve succeeds. Moving the clock to another month and back does the same, because a month mismatch replaces the file. Truncated JSON, a negative spentMicro, and a fractional spentMicro are refused.",
@@ -864,17 +864,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
-        "qa/reports/azure-tts/logs/attack.json"
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T13:45:18.236Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.390Z",
+          "status": "qa_verified",
+          "note": "At 148ff2b every synthesize, including tier F0, reserves the USD guard. A sku probe of S0 or B0 refuses before the key and the mock. Deleting usage.json while the ledger remains, a broken ledger link, a low spentMicro, and a clock return fail closed or restore history. Eight processes stayed at 800010 micro-dollars. Deleting both files still resets; that residual is QA-AZR-007."
         }
       ]
     },
@@ -882,7 +888,7 @@
       "id": "QA-AZR-002",
       "title": "Azure paid approval is a voice-config field with no owner session",
       "severity": "high",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "S0 calls require paidEnabled true and paidApproval.at plus paidApproval.by. Those fields are read from the voice JSON or the provider constructor. There is no password, signature, or studio login. MasterVoice.setCandidate followed by lock('agent') wrote paidEnabled true and paidApproval.by agent, then synthesize called the mock. The shipped master-voice.json stays on Kokoro and does not set these fields.",
@@ -895,17 +901,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
-        "qa/reports/azure-tts/logs/attack.json"
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T13:45:18.277Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.419Z",
+          "status": "qa_verified",
+          "note": "S0 requires an Ed25519 signature over at, by, voice, and region. setCandidate cannot set the paid flags. An unsigned record and a foreign key send nothing. A swapped voice or region fails closed. provider.js does not name the owner service. Replay and same-user readKey of that service are QA-AZR-008."
         }
       ]
     },
@@ -913,7 +925,7 @@
       "id": "QA-AZR-003",
       "title": "Azure tier and price in the config are not the Azure bill",
       "severity": "high",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "The REST call sends the key and SSML. It does not send a tier or SKU. tier F0 with paidEnabled false still called the mock. A Standard resource behind that key would be billed while the dollar cap does not run. pricePerMillionChars 0.0000004 rounds to zero micro-dollars, so two half-million character reserves left spentMicro at 0 and a later synthesize still called the mock.",
@@ -926,17 +938,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
-        "qa/reports/azure-tts/logs/attack.json"
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T13:45:18.321Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.449Z",
+          "status": "qa_verified",
+          "note": "Prices below 15 neural or 22 HD are refused, including 0.0000004. Mode 0644 sends nothing. writeOwnerPrice creates mode 0600. The voice JSON price and budget are ignored. A 0600 price file can still set monthlyBudgetUsd to 1000; that is QA-AZR-007."
         }
       ]
     },
@@ -944,7 +962,7 @@
       "id": "QA-AZR-004",
       "title": "A prewritten Azure speech cache is returned as the Azure voice",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "The cache file is the sha256 of voice, rate, SSML, and text, with no signature. Writing those bytes before synthesize returned cached true, made no mock call, and left the episode record on the Azure voice with final true and review null.",
@@ -957,17 +975,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
-        "qa/reports/azure-tts/logs/attack.json"
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T13:45:18.363Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.477Z",
+          "status": "qa_verified",
+          "note": "A planted file and a valid MAC with no ledger ok line are misses. The MAC is HMAC-SHA256 under the speech key from Keychain service MOONKATTY AI STUDIO.azure-speech, account azure-speech. The cache file does not contain the key. A process that has that key can still seal an ok line and a hit."
         }
       ]
     },
@@ -975,7 +999,7 @@
       "id": "QA-AZR-005",
       "title": "A long YouTube dry-run description drops the synthetic voice line",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "azure-tts",
       "summary": "dryRunAzureEpisode appends Voice: AI-generated (Microsoft Azure) and then slices the description to 5000 characters. A 5000 character summary produced a dry-run payload of 5000 characters with the disclosure sentence absent. A short summary kept the sentence in the description. showCaption false leaves caption unset, which is fine when the description still has the line.",
@@ -988,17 +1012,23 @@
       ],
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
-        "qa/reports/azure-tts/logs/attack.json"
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T13:45:18.408Z",
           "status": "open",
           "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.509Z",
+          "status": "qa_verified",
+          "note": "A 5000-character dry-run description ends with Voice: AI-generated (Microsoft Azure) and the payload length is 5000. global fetch was not called."
         }
       ]
     },
@@ -1020,7 +1050,8 @@
       "evidence": [
         "qa/reports/azure-tts/REPORT.md",
         "qa/reports/azure-tts/logs/attack.json",
-        "qa/reports/azure-tts/logs/lengths.json"
+        "qa/reports/azure-tts/logs/lengths.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
       ],
       "foundAt": "2026-10-21T13:40:00.000Z",
       "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
@@ -1029,6 +1060,75 @@
       "history": [
         {
           "at": "2026-10-21T13:45:18.443Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.543Z",
+          "status": "open",
+          "note": "Still open at 148ff2b. reconcile stores a pasted key in usage.json. A preview with no local engine is stored voice fallback and final true."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-007",
+      "title": "The local Azure dollar cap resets or rises for the same user",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "At 148ff2b the ledger hash chain refuses a missing usage file while any ledger line exists, a spentMicro below the reserved sum, and a broken prev link. Deleting both usage.json and the ledger starts the next reserve at the new charge, and a second synthesize then calls the mock once. Rewriting the ledger as one valid genesis line and setting spentMicro to 15000 dropped a file from 800010 to a later 30000. setCandidate can set stateFile, which is not an owner-only field, and a full $1 file then left the mock call on an empty directory at 2670 micro-dollars. writeOwnerPrice accepts monthlyBudgetUsd 1000 at mode 0600, and a 100000-character reserve succeeded at 1500000 micro-dollars. The Azure portal spending limit is the control that still applies. This process cannot set it.",
+      "expected": "The $1 monthly guard survives deletion, a new state path, a rewritten ledger, and an edit to the price file.",
+      "actual": "Both files removed, a valid replacement chain, setCandidate stateFile, and price.json monthlyBudgetUsd 1000 each let a later reserve proceed. Eight honest processes stayed at 800010 micro-dollars.",
+      "repro": [
+        "Reserve on UsdBudget, delete usage.json and ledger-YYYY-MM.jsonl, and reserve again",
+        "Overwrite the ledger with one line whose prev is genesis and set spentMicro to match, then reserve",
+        "setCandidate({ stateFile }) on an enabled F0 voice file whose current file is at 999990 micro-dollars and synthesize",
+        "writeOwnerPrice with monthlyBudgetUsd 1000 and begin 100000 characters"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:20:00.000Z",
+      "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:21:13.328Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-008",
+      "title": "Azure owner signatures do not expire and the signing key is same-user",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "S0 at 148ff2b requires an Ed25519 signature over at, by, voice, and region, checked with the public key passed to MasterVoice. A signature dated 2020-01-01 still verifies. Writing paidEnabled true plus that record called the mock, paidEnabled false refused, and writing the same record back called the mock again. readKey on service MOONKATTY AI STUDIO.azure-speech-owner and account azure-speech-owner returned PKCS8 material that signApproval turned into a verifying signature. store-owner writes that item with add-generic-password and no -T flag. provider.js does not name the service. setCandidate keyService makes createTTS call security on the owner service with the speech account azure-speech, which is not the owner account. A provider constructed with the owner account does read that item. macOS ACL was not run.",
+      "expected": "An owner approval is bound to an authentication step the episode agent cannot repeat, and a turned-off paidEnabled stays off.",
+      "actual": "Any holder of an old signature for the same voice and region can write it back. Any same-user process that can read the owner Keychain item can mint a new signature. The default provider path does not read that item.",
+      "repro": [
+        "Sign an Ed25519 approval with at 2020-01-01 and verifyApproval against the owner public key",
+        "Put that record in a voice file with paidEnabled true and synthesize against a mock",
+        "Set paidEnabled false, then write true and the same record, and synthesize again",
+        "readKey the owner service and account through a mock security, then signApproval with the returned PKCS8"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:20:00.000Z",
+      "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:21:13.361Z",
           "status": "open",
           "note": "added"
         }

@@ -1,0 +1,470 @@
+{
+  "controls": 67,
+  "failed": [],
+  "findings": [
+    "deleting usage.json and the ledger starts the counter at the new charge",
+    "a second synthesize after both files are gone is one mock call and one charge",
+    "a rewritten ledger chain with a matching usage file lowers the guard",
+    "setCandidate can point stateFile at an empty ledger and the mock is called",
+    "a signature from 2020 still verifies",
+    "pasting that signature with paidEnabled true reaches the mock",
+    "writing paidEnabled back to true with the same signature reaches the mock again",
+    "readKey on the owner service returns material that can sign",
+    "setCandidate keyService makes the provider call security on the owner service with the speech account",
+    "a provider constructed with the owner account reads that Keychain item",
+    "price.json can set a budget far above $1 and the reserve succeeds",
+    "the speech key plus a forged ok line returns the planted audio with no mock call",
+    "that hit is stored as the Azure voice with final true",
+    "reconcile stores a pasted key in usage.json",
+    "a preview with no local engine is stored final true and voice fallback"
+  ],
+  "results": [
+    {
+      "kind": "hold",
+      "name": "F0 synthesize reserves USD and calls the mock once",
+      "ok": true,
+      "detail": {
+        "spent": 2670,
+        "fetches": 1
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "F0 request URL has no tier and the body does not name F0 or S0",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "limitChars is not the synthesize gate",
+      "ok": true,
+      "detail": {
+        "characters": 178
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "sku probe mismatch refuses before the key and the mock",
+      "ok": true,
+      "detail": {
+        "fetches": 0,
+        "keys": 0
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "unknown sku refuses before the mock",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "MasterVoice createTTS does not attach a sku probe",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "paidEnabled false sends nothing and does not read the key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "HD on F0 refuses before the mock",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "tier S1 refuses before the mock",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a missing tier refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "deleting usage.json while the ledger remains refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "deleting usage.json and the ledger starts the counter at the new charge",
+      "ok": true,
+      "detail": {
+        "spent": 15000
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "a second synthesize after both files are gone is one mock call and one charge",
+      "ok": true,
+      "detail": {
+        "fetches": 2,
+        "spent": 2670,
+        "once": 2670
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "spentMicro below the ledger refuses and the file stays",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "truncated usage.json refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "negative spentMicro refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a broken ledger link refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a clock return restores the January total from history",
+      "ok": true,
+      "detail": {
+        "back": 15150,
+        "january": 15000
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "a rewritten ledger chain with a matching usage file lowers the guard",
+      "ok": true,
+      "detail": {
+        "high": 800010,
+        "after": 30000
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "setCandidate can point stateFile at an empty ledger and the mock is called",
+      "ok": true,
+      "detail": {
+        "filled": 999990,
+        "moved": 1,
+        "fresh": 2670
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "eight processes stay inside the dollar cap",
+      "ok": true,
+      "detail": {
+        "successes": 2,
+        "total": 800010,
+        "errors": [
+          "Azure Speech monthly budget reached ($0.80 + $0.400005 > $1.00 for 2026-10). No request was sent.",
+          "Azure Speech monthly budget reached ($0.80 + $0.400005 > $1.00 for 2026-10). No request was sent.",
+          "Azure Speech monthly budget reached ($0.80 + $0.400005 > $1.00 for 2026-10). No request was sent."
+        ]
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "owner signature verifies for the same voice and region",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "swapping the voice fails verification",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "swapping the region fails verification",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an unsigned at/by record fails verification",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "an agent key does not verify against the owner public key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a foreign signature sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a signature from 2020 still verifies",
+      "ok": true,
+      "detail": {
+        "at": "2020-01-01T00:00:00Z"
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "pasting that signature with paidEnabled true reaches the mock",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "paidEnabled false refuses even with a valid signature",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "writing paidEnabled back to true with the same signature reaches the mock again",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "setCandidate region swap fails closed against the old signature",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "setCandidate refuses the paid flags and does not save",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "paid flags on the prototype are not copied",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a voice-file public key is ignored and a missing constructor key refuses S0",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "provider.js does not name the owner Keychain service",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "readKey on the owner service returns material that can sign",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "store-owner keeps the key off argv and writes the owner service",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "setCandidate keyService makes the provider call security on the owner service with the speech account",
+      "ok": true,
+      "detail": {
+        "account": "azure-speech"
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "a provider constructed with the owner account reads that Keychain item",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "approval message binds voice and region and not the price",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "stateFile and keyService are not owner-only fields",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price NaN is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price Infinity is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price -1 is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price 0 is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price 4e-7 is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "price 14.99 is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "HD below $22 is refused",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a written price file is mode 0600",
+      "ok": true,
+      "detail": {
+        "mode": "600"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "mode 0644 refuses",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a loose price file sends nothing",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "price.json can set a budget far above $1 and the reserve succeeds",
+      "ok": true,
+      "detail": {
+        "spent": 1500000
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "the product price file is absent",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "dust price and a large budget in the voice JSON are ignored",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a planted cache file is a miss",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a valid MAC without a ledger ok line is a miss",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the sealed cache file does not contain the speech key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "the speech key plus a forged ok line returns the planted audio with no mock call",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "that hit is stored as the Azure voice with final true",
+      "ok": true,
+      "detail": {
+        "voice": "en-US-AndrewMultilingualNeural",
+        "final": true
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a MAC under a different key is a miss",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the cache MAC is HMAC-SHA256 under the speech key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a 5000 character dry-run keeps the disclosure inside the limit",
+      "ok": true,
+      "detail": {
+        "length": 5000
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a short dry-run keeps the disclosure",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "the HTTP error, ledger, and usage file do not contain the key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "reconcile stores a pasted key in usage.json",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "residual",
+      "name": "a preview with no local engine is stored final true and voice fallback",
+      "ok": true,
+      "detail": null
+    }
+  ]
+}
