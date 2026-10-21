@@ -25,7 +25,7 @@ sp(process.execPath, ['server.js'], { ...process.env, HOME, NODE_ENV: 'test', ST
 const waitHttp = async u => { for (let i = 0; i < 120; i++) { try { const r = await fetch(u, { signal: AbortSignal.timeout(3000) }); if (r.status < 500) return r.status; } catch {} await sleep(500); } return 0; };
 await waitHttp(`http://127.0.0.1:${P}/api/health`); await waitHttp(`http://127.0.0.1:${OC}/global/health`);
 const h = await (await fetch(`http://127.0.0.1:${P}/api/health`)).json();
-ok('studio runs as TEST flavor on 8687 with schema 4', h.flavor === 'test' && h.product === 'MOONKATTY AI STUDIO TEST' && h.schemaVersion === 4);
+ok('studio runs as TEST flavor on 8687 with schema 6', h.flavor === 'test' && h.product === 'MOONKATTY AI STUDIO TEST' && h.schemaVersion === 6);
 const TOK = fs.readFileSync(UD + '/app-token', 'utf8').trim(); const H = { 'x-studio-app-token': TOK, 'content-type': 'application/json', 'x-studio-request': '1' };
 const api = async (m, p, b) => { const r = await fetch(`http://127.0.0.1:${P}${p}`, { method: m, headers: H, body: b === undefined ? undefined : JSON.stringify(b) }); let j = {}; try { j = await r.json(); } catch {} return { s: r.status, j }; };
 await api('POST', '/api/auth/setup', { username: 'igor', password: 'fake-admin-pw-1' });

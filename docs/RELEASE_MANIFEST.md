@@ -37,7 +37,9 @@
 | 1 | только `items` + `meta` | v1.0 – v1.1.x (**v1.1.2 = 1**) |
 | 2 | + `jobs`, `job_events` | ранние сборки v1.2.0 |
 | 3 | + колонки `jobs.resource_class/requires_node/idempotency_key/safe_to_retry/input`, миграция `mig_120_design3d` | v1.2.0 – **v1.2.1 = 3** |
-| 4 | + `meta.schemaVersion`, автоматический бэкап перед миграцией | **v1.2.2-test = 4** |
+| 4 | + `meta.schemaVersion`, автоматический бэкап перед миграцией | v1.2.2-test … v1.2.4-test = 4 |
+| 5 | + `world_journal`, `world_ledger`, `world_approvals` | v1.3.0-test, до выплаты |
+| 6 | ledger: `payout_id`, `currency`, `state`, `confirmation_source`; уникальность `(platform, payout_id)` | **v1.3.0-test = 6** |
 
 Перед любой миграцией существующей БД (схема ниже текущей) сервер делает `VACUUM INTO backups/pre-migration-v<from>-to-v<to>-<время>.db` и рядом кладёт `.sha256`.
 
