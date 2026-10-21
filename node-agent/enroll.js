@@ -7,7 +7,7 @@ const sha256 = b => crypto.createHash('sha256').update(b).digest('hex');
 const shortFp = hex => String(hex || '').slice(0, 16).toUpperCase().match(/.{4}/g).join('-');
 // ---------- Keychain ----------
 function keychain(env = process.env) { const bin = env.NODE_KEYCHAIN_BIN || '/usr/bin/security'; const avail = env.NODE_KEYCHAIN_BIN || process.platform === 'darwin';
-  const run = (args, input) => new Promise((res, rej) => { const p = spawn(bin, args, { stdio: ['pipe', 'pipe', 'pipe'] }); let o = ''; p.stdout.on('data', d => o += d); p.on('error', rej); p.on('close', c => c === 0 ? res(o) : rej(new Error('keychain ' + c))); if (input) p.stdin.end(input); else p.stdin.end(); });
+  const run = (args, input) => new Promise((res, rej) => { const p = spawn(bin, args, { env: env === process.env ? process.env : { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'] }); let o = ''; p.stdout.on('data', d => o += d); p.on('error', rej); p.on('close', c => c === 0 ? res(o) : rej(new Error('keychain ' + c))); if (input) p.stdin.end(input); else p.stdin.end(); });
   const safe = v => { if (!/^[A-Za-z0-9_.+/=-]+$/.test(v)) throw new Error('keychain: недопустимые символы'); return v; };
   return { available: !!avail,
     async get(service, account) { if (!avail) return null; try { return (await run(['find-generic-password', '-s', service, '-a', account, '-w'])).trim() || null; } catch { return null; } },
