@@ -4,6 +4,7 @@
 const test = require('node:test'); const assert = require('node:assert/strict');
 const fs = require('fs'), os = require('os'), path = require('path'), http = require('http'), crypto = require('crypto');
 const N = require('../../lib/ops/nodes.js'); const E = require('../../lib/ops/node-enroll.js'); const EN = require('../../node-agent/enroll.js'); const A = require('../../node-agent/agent.js');
+const ACK = { acknowledgeUnverifiedPeer: true };
 const tmp = p => fs.mkdtempSync(path.join(os.tmpdir(), p || 'enr-'));
 let clock = Date.now(); const now = () => clock;
 function kcEnv() { const d = tmp('kc-'); return { NODE_KEYCHAIN_BIN: path.join(__dirname, '..', 'fixtures', 'fake-security.js'), FAKE_KC_FILE: path.join(d, 'kc.json'), FAKE_KC_ARGV: path.join(d, 'argv.log'), _dir: d }; }
@@ -59,7 +60,7 @@ test('end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, 
   try { const r = c.m.enrollment.create({ role: 'news', name: 'iMac 27' }); const states = [];
     const p = EN.enroll({ url: c.url, fingerprint: c.fp, code: r.code, home, env: kc, info: { hostname: 'iMac', agentVersion: '0.2.1' }, pollMs: 50, onState: s => states.push(s.step) });
     let q; for (let i = 0; i < 200 && !(q = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); assert.ok(q, 'pending');
-    assert.equal(q.device.hostname, 'iMac'); c.m.enrollment.confirm(q.requestId); const res = await p; assert.equal(res.nodeId, 'imac'); assert.deepEqual([...new Set(states)], ['pin', 'device', 'pending', 'enrolled']);
+    assert.equal(q.device.hostname, 'iMac'); c.m.enrollment.confirm(q.requestId, ACK); const res = await p; assert.equal(res.nodeId, 'imac'); assert.deepEqual([...new Set(states)], ['pin', 'device', 'pending', 'enrolled']);
     const store = JSON.parse(fs.readFileSync(kc.FAKE_KC_FILE, 'utf8')); const token = store['moonkatty-node-imac|node-token']; assert.match(token, /^nk_imac\.[A-Za-z0-9_-]{20,}$/);
     assert.ok(!Object.keys(store).some(k => k.startsWith('moonkatty-node-enroll|')), 'request secret removed');
     for (const f of [...walk(home), ...walk(c.dir)]) assert.ok(!fs.readFileSync(f, 'latin1').includes(token.split('.')[1]), 'token leaked into ' + f);
@@ -83,7 +84,7 @@ test('end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, 
     // re-enroll: new code for the same node; old token invalidated at confirm
     const r2 = c.m.enrollment.create({ role: 'news' }); assert.equal(r2.reenroll, true); const home2 = tmp('home2-');
     const p2 = EN.enroll({ url: c.url, fingerprint: c.fp, code: r2.code, home: home2, env: kc, info: {}, pollMs: 50 });
-    let q2; for (let i = 0; i < 200 && !(q2 = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); c.m.enrollment.confirm(q2.requestId);
+    let q2; for (let i = 0; i < 200 && !(q2 = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); c.m.enrollment.confirm(q2.requestId, ACK);
     assert.equal((await A.client({ ...base, token: t2, deviceKey: dk.key })('GET', '/ping')).status, 401, 'old token dead after re-enroll confirm'); await p2;
     const t3 = JSON.parse(fs.readFileSync(kc.FAKE_KC_FILE, 'utf8'))['moonkatty-node-imac|node-token']; const dk2 = await EN.deviceIdentity(home2, EN.keychain(kc), { create: false });
     assert.equal((await A.client({ ...base, token: t3, deviceKey: dk2.key })('GET', '/ping')).status, 200);
@@ -118,14 +119,14 @@ test('CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no p
 test('anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426', async () => {
   const c = await coord(); const kc = kcEnv(); const home = tmp('home-'); clock = Date.now();
   try { const r = c.m.enrollment.create({ role: 'news' }); const p = EN.enroll({ url: c.url, fingerprint: c.fp, code: r.code, home, env: kc, info: {}, pollMs: 30 });
-    let q; for (let i = 0; i < 200 && !(q = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); c.m.enrollment.confirm(q.requestId); await p;
+    let q; for (let i = 0; i < 200 && !(q = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); c.m.enrollment.confirm(q.requestId, ACK); await p;
     const token = JSON.parse(fs.readFileSync(kc.FAKE_KC_FILE, 'utf8'))['moonkatty-node-imac|node-token']; const dk = await EN.deviceIdentity(home, EN.keychain(kc), { create: false });
     c.m.submit({ capability: 'news.collect', input: { feeds: [] } }); c.m.submit({ capability: 'news.collect', input: { feeds: [] } });
     const body = Buffer.from(JSON.stringify({ info: { agentVersion: '0.2.2' } })); const h = A.signHeaders({ deviceKey: dk.key }, 'POST', '/api/nodes/pull', body);
     const raw = (hd) => new Promise((ok, no) => { const u = new URL(c.url); const q2 = require('https').request({ method: 'POST', host: u.hostname, port: u.port, path: '/api/nodes/pull', ca: fs.readFileSync(path.join(c.dir, 'nodes-tls.crt')), checkServerIdentity: () => undefined, headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json', ...hd } }, rs => { let b = ''; rs.on('data', x => b += x); rs.on('end', () => ok({ s: rs.statusCode, b: JSON.parse(b) })); }); q2.on('error', no); q2.end(body); });
     const r1 = await raw(h); assert.equal(r1.s, 200); assert.ok(r1.b.job); const r2 = await raw(h); assert.equal(r2.s, 401); assert.equal(r2.b.code, 'E_REPLAY');
     assert.equal(Object.values(c.m.status().jobs || {}).length >= 0, true); assert.ok(c.m.audit().some(a => a.type === 'replay_rejected'));
-    clock += 31e3; assert.equal((await raw(A.signHeaders({ deviceKey: dk.key }, 'POST', '/api/nodes/pull', body))).s, 401, 'old ts (clock moved 31 s) refused'); clock -= 31e3;
+    clock = Date.now() + 31e3; assert.equal((await raw(A.signHeaders({ deviceKey: dk.key }, 'POST', '/api/nodes/pull', body))).s, 401, 'old ts (clock moved 31 s) refused'); clock = Date.now();
     const tsOld = clock - 31e3; const nn = crypto.randomBytes(18).toString('base64url'); assert.equal((await raw({ 'x-node-ts': String(tsOld), 'x-node-nonce': nn, 'x-node-sig': EN.sign(dk.key, `POST\n/api/nodes/pull\n${tsOld}\n${nn}\n${crypto.createHash('sha256').update(body).digest('hex')}`) })).s, 401);
     const ts = clock; const v021 = await raw({ 'x-node-ts': String(ts), 'x-node-sig': EN.sign(dk.key, `POST\n/api/nodes/pull\n${ts}\n${crypto.createHash('sha256').update(body).digest('hex')}`) }); assert.equal(v021.s, 426); assert.equal(v021.b.code, 'E_AGENT_VERSION');
     // node may not self-rotate without owner flag
@@ -138,7 +139,7 @@ test('anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job
 test('auth timing: wrong token and right token + bad signature do the same work (dummy verify)', () => {
   const m = mgr(); const src = fs.readFileSync(require.resolve('../../lib/ops/nodes.js'), 'utf8'); assert.match(src, /DUMMY\.pub/);
   const t = (f) => { const a = []; for (let i = 0; i < 300; i++) { const s = process.hrtime.bigint(); f(); a.push(Number(process.hrtime.bigint() - s)); } a.sort((x, y) => x - y); return a[150]; };
-  const d = devKeys(); const r = m.enrollment.create({ role: 'news' }); const e = m.enrollment.enroll(enBody(r.code, d), '10.10.0.1'); m.enrollment.confirm(e.requestId);
+  const d = devKeys(); const r = m.enrollment.create({ role: 'news' }); const e = m.enrollment.enroll(enBody(r.code, d), '10.10.0.1'); m.enrollment.confirm(e.requestId, ACK);
   const ts = clock, nonce = crypto.randomBytes(18).toString('base64url'); const tok = m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ts, nonce, sig: EN.sign(d.key, `status:${e.requestId}:${ts}:${nonce}`) }, '10.10.0.1').token;
   const sig = { method: 'GET', path: '/api/nodes/ping', ts: clock, nonce: 'n'.repeat(22), sig: 'AA==' };
   const wrong = t(() => m.authNode('Bearer nk_imac.' + 'z'.repeat(32), sig)), right = t(() => m.authNode('Bearer ' + tok, sig));
@@ -157,7 +158,7 @@ test('peer buckets behind tailscale serve: per tailnet device (whois, mocked) / 
   const d = devKeys(); const evil = await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.2' })); const imac = await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.1' }));
   for (let i = 0; i < 10; i++) errCode(() => m.enrollment.enroll(enBody('ZZZZZ-22222-2222' + (i % 8 + 2), d), evil)); const r = m.enrollment.create({ role: 'news' });
   assert.equal(errCode(() => m.enrollment.enroll(enBody(r.code, d), evil)), 'E_IP_LOCKED'); const ok = m.enrollment.enroll(enBody(r.code, d), imac); assert.equal(ok.status, 'pending');
-  const v = m.enrollment.list()[0].device; assert.equal(v.peerVerified, true); assert.match(v.peer, /imac · igor@x/);
+  const v = m.enrollment.list()[0].device; assert.equal(v.peerVerified, true); assert.match(v.peer, /imac · 100\.101\.1\.1 · igor@x/); assert.equal(v.peerInfo.ip, '100.101.1.1'); assert.equal(v.peerInfo.name, 'imac');
   // persisted across restart (same process → lock re-entrant)
   const dir = tmp(); const m1 = N.createNodeManager({ dir, now }); for (let i = 0; i < 10; i++) errCode(() => m1.enrollment.enroll(enBody('ZZZZZ-22222-2222' + (i % 8 + 2), d), '10.8.8.8'));
   const m2 = N.createNodeManager({ dir, now }); const r2 = m2.enrollment.create({ role: 'news' }); assert.equal(errCode(() => m2.enrollment.enroll(enBody(r2.code, d), '10.8.8.8')), 'E_IP_LOCKED');

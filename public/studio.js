@@ -10,7 +10,7 @@
   const hhmm = t => { const d = new Date(t); return isNaN(d) ? '' : d.toTimeString().slice(0, 5); };
   let nodesBadge = 0;
   const NAV = [['Dashboard', '⌂', '/studio.html'], ['AI Agents', '✦', '/#agents'], ['3D Studio', '⬡', '/#studio3d'], ['News Production', '◉', '/#news'], ['Video Production', '▶', '/#video'],
-    ['Assets Library', '▣', '/#files'], ['Projects', '☾', '/#project'], ['Computers (Nodes)', '🖥', '#nodes'], ['Tasks', '☑', '/#agents'], ['Schedule', '▦', '/#calendar'], ['Analytics', '▤', '/#analytics'], ['Settings', '⚙', '/#settings']];
+    ['Assets Library', '▣', '/#files'], ['Projects', '☾', '/#project'], ['Computers (Nodes)', '🖥', '/#computers'], ['Tasks', '☑', '/#agents'], ['Schedule', '▦', '/#calendar'], ['Analytics', '▤', '/#analytics'], ['Settings', '⚙', '/#settings']];
   const nav = () => { $('nav').innerHTML = NAV.map(([n, i, h], k) => `<a href="${h}" class="${k === 0 ? 'on' : ''}"><span class="i">${i}</span>${n}${n.startsWith('Computers') && nodesBadge ? `<span class="b">${nodesBadge}</span>` : ''}</a>`).join(''); };
   function macCard(name, role, sub, ico, st, cpu, ram, disk) {
     const cls = st === 'online' ? 'on' : st === 'down' ? 'off' : st === 'paused' ? 'pz' : 'na'; const label = { online: 'Online', down: 'Offline', paused: 'Paused', 'never-seen': 'Не подключён', 'not-registered': 'Не подключён', revoked: 'Отозван' }[st] || st;

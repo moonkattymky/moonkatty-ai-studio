@@ -150,7 +150,7 @@ function renderNav() { $('#nav').innerHTML = NAV.map(([k, i, l]) => `<a href="#$
 function render() {
   if (!DB.agents) return;
   const n = NAV.find(x => x[0] === ROUTE) || NAV[0]; ROUTE = n[0]; renderNav(); $('#pageTitle').textContent = n[2];
-  renderPills(); const v = $('#view'); v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); updateBell();
+  renderPills(); const v = $('#view'); if (typeof VIEWS[ROUTE] !== 'function') { v.innerHTML = `<div class="card"><b>Раздел «${esc(n[2])}» недоступен</b> <span class="mut">(нет представления для маршрута ${esc(ROUTE)})</span></div>`; console.error('no view for route', ROUTE); return; } v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); updateBell();
   if (!$('#chatDrawer').classList.contains('hidden')) renderChat();
 }
 function bindCommon(root) {
