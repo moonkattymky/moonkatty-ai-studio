@@ -17,7 +17,7 @@
 .cur{display:flex;align-items:center;gap:14px;margin-top:12px}.cur .bar{flex:1}button{background:#1b2a55;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
 .empty{color:var(--mut);font-size:13px;padding:10px 0}svg{width:100%;height:46px}
 </style></head><body><div class="app"><aside class="side"><div class="logo"><img class="cat" src="/logo.jpg" alt=""><div><b>MOONKATTY</b><small>AI STUDIO</small></div></div><nav class="nav" id="nav"></nav></aside>
-<main class="main"><div class="hdr"><div><h1 id="title">MOONKATTY NODE</h1><div class="sub" id="sub"></div></div><span class="pill" id="pill">…</span></div>
+<main class="main"><div class="hdr"><div><h1 id="title">MOONKATTY NODE</h1><div class="sub" id="sub"></div></div><span class="pill" id="pill">…</span></div><div id="connErr" class="sub" style="color:#ef4444;margin:-6px 0 10px"></div>
 <div class="grid g3" id="mets"></div><div class="grid g2" style="margin-top:12px" id="body"></div>
 <div class="card cur" id="cur"></div><div class="mut" style="margin-top:10px" id="foot"></div></main></div>
 <script>
@@ -29,7 +29,7 @@ const ago=t=>{const s=(Date.now()-Date.parse(t))/1000;return s<60?Math.round(s)+
 async function load(){let s;try{s=await (await fetch('/status',{cache:'no-store'})).json()}catch{return}
  const news=/NEWS/.test(s.profile||'');const mon=/MONITOR/.test(s.profile||'');
  $('title').textContent=s.profile||'MOONKATTY NODE';$('sub').textContent=`${s.info&&s.info.model||s.info&&s.info.hostname||''} — ${news?'News Collection':mon?'Quality Control & Monitoring':'узел'} · ${s.node}`;
- const pill=$('pill');pill.className='pill '+(s.state==='paused'||s.state==='drained'?'p':s.online?'on':'off');pill.textContent=s.state==='paused'?'Пауза':s.state==='drained'?'Drain':s.online?'Online':'Offline';
+ const pill=$('pill');pill.className='pill '+(s.state==='paused'||s.state==='drained'?'p':s.online?'on':'off');pill.textContent=s.state==='paused'?'Пауза':s.state==='drained'?'Drain':s.online?'Online':s.connError?'Ошибка':'Offline';$('connErr').textContent=s.connError?'Ошибка подключения ('+s.connError.code+'): '+s.connError.message:'';
  const N=news?['Dashboard','News Sources','Collected News','Processing','Archive','Tasks','System','Settings']:['Dashboard','Quality Check','System Monitor','Task Results','Notifications','Logs','Settings'];
  $('nav').innerHTML=N.map((n,i)=>`<a href="#" class="${i?'':'on'}">${n}${n==='Notifications'&&s.stats.failed?`<span class="b">${s.stats.failed}</span>`:''}</a>`).join('');
  const i=s.info||{};const mem=i.memTotal?Math.round(100*(1-i.memAvailable/i.memTotal)):null,dsk=i.diskTotal?Math.round(100*(1-i.diskFree/i.diskTotal)):null;

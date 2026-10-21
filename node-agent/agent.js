@@ -56,6 +56,12 @@ let lastCpu = null; function cpuPct() { const c = os.cpus().reduce((a, x) => { c
 let modelCache; async function hwModel() { if (modelCache !== undefined) return modelCache; try { modelCache = process.platform === 'darwin' ? (await run('/usr/sbin/sysctl', ['-n', 'hw.model'])).trim() : null; } catch { modelCache = null; } return modelCache; }
 // ---------- coordinator client (pinned TLS) ----------
 // 0.2.1: an enrolled node signs every request with its device Ed25519 key (token is bound to that key on the coordinator)
+// classify a transport error for the local status screen (no secrets: message text only)
+function connErrorOf(e) { const m = String(e && (e.message || e.code) || ''); const at = new Date().toISOString();
+  if (/pin mismatch|fingerprint|отпечат/i.test(m)) return { code: 'E_PIN', message: 'отпечаток сертификата Mac mini не совпадает — проверьте COORDINATOR_FINGERPRINT', at };
+  if (/CERT|certificate|self.signed|SSL|TLS|alert/i.test(m) || /^ERR_TLS|^DEPTH_ZERO|^UNABLE_TO/.test(String(e && e.code))) return { code: 'E_TLS', message: 'ошибка TLS: ' + m.slice(0, 120), at };
+  if (/ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|timeout|ENOTFOUND|ECONNRESET/i.test(m + ' ' + (e && e.code))) return { code: 'E_NETWORK', message: 'Mac mini недоступен: ' + m.slice(0, 120), at };
+  return { code: 'E_CONNECT', message: m.slice(0, 160), at }; }
 function signHeaders(cfg, method, p, data) { if (!cfg.deviceKey) return {}; const ts = Date.now(); const nonce = crypto.randomBytes(18).toString('base64url'); return { 'x-node-ts': String(ts), 'x-node-nonce': nonce, 'x-node-sig': EN.sign(cfg.deviceKey, `${method}\n${p}\n${ts}\n${nonce}\n${sha256(data || Buffer.alloc(0))}`) }; }
 function client(cfg) {
   const u = new URL(cfg.url); const isHttps = u.protocol === 'https:';
@@ -144,7 +150,7 @@ function startStatusPage(cfg, ctx, { pause }) {
     if (req.method === 'GET' && req.url === '/') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'", 'x-frame-options': 'DENY' }); return res.end(page); }
     if (req.method === 'GET' && req.url === '/logo.jpg') { res.writeHead(200, { 'content-type': 'image/jpeg', 'cache-control': 'max-age=86400' }); return res.end(logo); }
     if (req.method === 'GET' && req.url === '/status') { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
-      return res.end(JSON.stringify({ node: cfg.nodeId, profile: cfg.profile, version: VERSION, state: ctx.state, command: ctx.command, online: !!ctx.online, current: ctx.current, stats: ctx.stats, mem: ctx.mem || null, lastError: ctx.lastError || null, info: ctx.info || null, recent: ctx.recent.slice(-20).reverse(), coordinator: cfg.url, lastNews: ctx.lastNews || null, qc: ctx.qc || [], history: ctx.history || [], localPause: ctx.state === 'paused' })); }
+      return res.end(JSON.stringify({ node: cfg.nodeId, profile: cfg.profile, version: VERSION, state: ctx.state, command: ctx.command, online: !!ctx.online, connError: ctx.connError || null, current: ctx.current, stats: ctx.stats, mem: ctx.mem || null, lastError: ctx.lastError || null, info: ctx.info || null, recent: ctx.recent.slice(-20).reverse(), coordinator: cfg.url, lastNews: ctx.lastNews || null, qc: ctx.qc || [], history: ctx.history || [], localPause: ctx.state === 'paused' })); }
     if (req.method === 'POST' && (req.url === '/pause' || req.url === '/resume')) { if (req.headers['x-node-local'] !== tok) { res.writeHead(403); return res.end(); } pause(req.url === '/pause'); res.writeHead(200); return res.end('{}'); }
     res.writeHead(404); res.end(); });
   srv.on('error', e => console.error('status page:', e.message)); srv.listen(cfg.statusPort, '127.0.0.1'); srv.unref(); return srv;
@@ -171,10 +177,10 @@ async function main(cfg) {
       if (outbox.size() >= cfg.limits.outboxMax) { ctx.state = 'backpressure'; await sleep(cfg.pollMs); continue; }
       if (localPause) { ctx.state = 'paused'; ctx.info = await sysInfo(cfg); await sleep(cfg.pollMs); continue; }
       const r = await req('POST', '/pull', { info: (ctx.info = await sysInfo(cfg)), state: ctx.state }); sample(ctx);
-      if (!cfg.profile) { const hh = await req('POST', '/hello', { info: ctx.info }); if (hh.status === 200) { cfg.profile = hh.body.title || hh.body.role; } } if (r.status === 401) { log('токен отклонён (отозван?) — пауза 60 с'); await sleep(60000); continue; }
-      if (r.status === 426) { log('координатор: ' + ((r.body && r.body.error) || 'несовместимая версия')); await sleep(60000); continue; }
+      if (!cfg.profile) { const hh = await req('POST', '/hello', { info: ctx.info }); if (hh.status === 200) { cfg.profile = hh.body.title || hh.body.role; } } if (r.status === 401) { ctx.online = false; ctx.state = 'error'; ctx.connError = { code: (r.body && r.body.code) || 'E_UNAUTHORIZED', message: 'координатор отклонил токен/подпись (узел отозван или токен устарел)', at: new Date().toISOString() }; log('токен отклонён (отозван?) — пауза 60 с'); await sleep(+process.env.NODE_AUTH_RETRY_MS || 60000); continue; }
+      if (r.status === 426) { ctx.online = false; ctx.state = 'error'; ctx.connError = { code: 'E_AGENT_VERSION', message: 'координатор требует другую версию агента: ' + ((r.body && r.body.agentVersionRange) || ''), at: new Date().toISOString() }; log('координатор: ' + ((r.body && r.body.error) || 'несовместимая версия')); await sleep(60000); continue; }
       if (r.status === 200 && r.body.rotate) await rotate(cfg, req, act);
-      if (r.status !== 200) throw new Error('pull HTTP ' + r.status); backoff = 1000; const job = r.body.job; ctx.command = r.body.command || 'run'; ctx.online = true;
+      if (r.status !== 200) throw new Error('pull HTTP ' + r.status); backoff = 1000; ctx.connError = null; const job = r.body.job; ctx.command = r.body.command || 'run'; ctx.online = true;
       if (ctx.command === 'stop') { act('остановка по команде координатора'); log('команда stop — выхожу'); break; }
       if (ctx.command !== 'run') { if (ctx.state !== ctx.command) act('команда ' + ctx.command); ctx.state = ctx.command === 'drain' ? 'drained' : 'paused'; await sleep(cfg.pollMs); continue; } ctx.state = job ? 'busy' : 'idle';
       if (!job) { await sleep(cfg.pollMs); continue; }
@@ -207,7 +213,7 @@ async function main(cfg) {
       finally { clearInterval(hb); const busyMs = Date.now() - Date.parse(ctx.current ? ctx.current.startedAt : new Date().toISOString()); ctx.current = null; if (global.gc) global.gc();
         // CPU budget (2-core MacBook): duty cycle — after a job of T ms rest T×(1/duty−1) ms, so the agent averages ≤ duty of one core
         const duty = cfg.limits.dutyCycle || 1; if (duty < 1 && busyMs > 50) await sleep(Math.min(60000, Math.round(busyMs * (1 / duty - 1)))); }
-    } catch (e) { if (ctx.online !== false) act('нет связи: ' + e.message); ctx.online = false; ctx.state = 'offline'; log('нет связи с координатором:', e.message, `— повтор через ${backoff / 1000} с`); await sleep(backoff); backoff = Math.min(backoff * 2, 60000); }
+    } catch (e) { if (ctx.online !== false) act('нет связи: ' + e.message); ctx.online = false; ctx.state = 'offline'; ctx.connError = connErrorOf(e); log('нет связи с координатором:', e.message, `— повтор через ${backoff / 1000} с`); await sleep(backoff); backoff = Math.min(backoff * 2, 60000); }
   }
   log('остановлен');
 }
@@ -264,4 +270,4 @@ function enrollUi(port = +(process.env.NODE_STATUS_PORT || 8791)) { const tok = 
       catch (e) { state = { step: 'error', error: e.message, code: e.code || null }; console.error('enroll:', e.message); } }); return; }
     s.writeHead(404); s.end(); });
   srv.listen(port, '127.0.0.1', () => console.log(`Узел не подключён. Откройте http://127.0.0.1:${port} и введите код из панели Mac mini (или: agent.js --enroll --url … --fingerprint … --code …)`)); return srv; }
-module.exports = { enrollUi, rotate, signHeaders, hashFile, parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };
+module.exports = { connErrorOf, enrollUi, rotate, signHeaders, hashFile, parseRss, dedup, sysInfo, config, loadEnvFile, makeHandlers, client, makeOutbox, allowCap, profileOf, PROFILES, FORBIDDEN, VERSION };
