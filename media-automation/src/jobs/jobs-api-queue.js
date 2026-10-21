@@ -7,7 +7,9 @@
  * PROVISIONAL (not confirmed by Studio): job type names and resource classes. Both are configurable via
  * `typeMap` / `resourceClasses` (or MA_JOBS_TYPE_MAP / MA_JOBS_RESOURCE_CLASS JSON env). Defaults below are our proposal.
  * Rules enforced here:
- *  - idempotency key is SERVER-ASSIGNED: we never send idempotencyKey (Studio computes it, e.g. <runId>:<preset>).
+ *  - idempotency: video_render key is SERVER-ASSIGNED (<runId>:<preset>), never sent; other types: client key, 1..128 printable ASCII.
+ *  - Registered in Studio @322023f: design3d, blender_template, opencode_task, render_segment, video_render.
+ *    PROPOSED (not registered yet): news_collect/news_script (llm), tts (gpu_heavy), publish_dry_run (light, no network).
  *  - publish_dry_run jobs are dry-run only: input.dryRun is forced true, any live flag -> rejected before submit.
  *  - tts and video render are heavy: resourceClass 'gpu_heavy' => Studio's shared heavy lock (withHeavy) serializes them
  *    with Blender and Ollama.
@@ -15,8 +17,9 @@
 const { waitForJob } = require('./port');
 const { StudioJobQueueAdapter } = require('./studio-adapter');
 const PROVISIONAL = true;
-const DEFAULT_TYPE_MAP = { video_render: 'video_render', tts: 'tts_synthesize', publish_dry_run: 'publish_dry_run', render_segment: 'render_segment', llm_generate: 'llm_generate' };
-const DEFAULT_RESOURCE = { video_render: 'gpu_heavy', tts: 'gpu_heavy', render_segment: 'gpu_heavy', llm_generate: 'llm', publish_dry_run: 'light' };
+const REGISTERED = new Set(['design3d', 'blender_template', 'opencode_task', 'render_segment', 'video_render']);
+const DEFAULT_TYPE_MAP = { video_render: 'video_render', tts: 'tts', publish_dry_run: 'publish_dry_run', render_segment: 'render_segment', news_collect: 'news_collect', news_script: 'news_script' };
+const DEFAULT_RESOURCE = { video_render: 'gpu_heavy', tts: 'gpu_heavy', render_segment: 'gpu_heavy', news_collect: 'llm', news_script: 'llm', publish_dry_run: 'light' };
 const HEAVY_LOCK_TYPES = new Set(['video_render', 'tts']);
 const json = (s, d) => { try { return s ? JSON.parse(s) : d; } catch { return d; } };
 class JobsApiQueue {
@@ -31,12 +34,14 @@ class JobsApiQueue {
   spec(kind, input = {}, { timeoutSec = 1800, maxAttempts } = {}) {
     const type = this.typeMap[kind]; if (!type) throw new Error('JobsApiQueue: unmapped job kind ' + kind);
     let inp = input;
+    if (input && input.idempotencyKey === undefined) void 0;
     if (kind === 'publish_dry_run') { if (input.live === true || input.dryRun === false || input.mode === 'LIVE') throw new Error('publish_dry_run is dry-run only'); inp = { ...input, dryRun: true }; }
-    if ('idempotencyKey' in inp) { inp = { ...inp }; delete inp.idempotencyKey; }
+    let key = inp.idempotencyKey; if ('idempotencyKey' in inp) { inp = { ...inp }; delete inp.idempotencyKey; }
     const s = { type, agent: this.agent, input: inp, timeoutSec, resourceClass: this.resourceClasses[kind] };
     if (maxAttempts) s.maxAttempts = maxAttempts;
     if (s.resourceClass === 'gpu_heavy') { s.requiresNode = this.requiresNode; s.safeToRetry = true; }
-    return s; /* no idempotencyKey: server-assigned */
+    if (kind !== 'video_render' && key != null) { if (!/^[\x20-\x7E]{1,128}$/.test(String(key))) throw new Error('idempotencyKey must be 1..128 printable ASCII'); s.idempotencyKey = String(key); }
+    return s; /* video_render: no idempotencyKey (server-assigned) */
   }
   async submit(kind, input, opts) { return this.adapter.createJob(this.spec(kind, input, opts)); }
   async run(kind, input, opts) { const { jobId } = await this.submit(kind, input, opts); const j = await waitForJob(this.adapter, jobId, { pollMs: this.pollMs, timeoutMs: (opts?.timeoutSec || 1800) * 1000 + 60e3 }); void j; return this.adapter.getJob(jobId); } /* full normalized job record */
@@ -48,4 +53,4 @@ function selectJobQueue({ env = process.env, local, jobsApi = null, videoRender 
     return { queue: new JobsApiQueue({ jobsApi, videoRender, env, ...rest }), backend: 'jobsapi', reason: 'flag on' }; }
   return { queue: local, backend: 'local', reason: 'flag off (default)' };
 }
-module.exports = { JobsApiQueue, selectJobQueue, DEFAULT_TYPE_MAP, DEFAULT_RESOURCE, HEAVY_LOCK_TYPES, PROVISIONAL };
+module.exports = { REGISTERED, JobsApiQueue, selectJobQueue, DEFAULT_TYPE_MAP, DEFAULT_RESOURCE, HEAVY_LOCK_TYPES, PROVISIONAL };

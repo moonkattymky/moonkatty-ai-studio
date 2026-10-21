@@ -45,9 +45,9 @@ test('QueuedHost3D enqueues render_segment with contract signature', async () =>
 });
 test('Studio adapter stub: NotConnected; with injected client follows contract', async () => {
   await assert.rejects(new StudioJobQueueAdapter().createJob({ type: 'x' }), NotConnectedError);
-  const db = {}; const client = { createJob: async s => { db.j = { ...s, jobId: 'j', status: 'succeeded', result: { videoPath: 'v' } }; return { jobId: 'j' }; }, getJob: async () => db.j, cancelJob: async () => {}, listJobs: async () => [] };
+  const db = {}; const client = { createJob: async s => { db.j = { ...s, jobId: 'j', status: 'succeeded', internalStatus: 'done', artifacts: [{ kind: 'mp4', path: 'v' }] }; return { jobId: 'j' }; }, getJob: async () => db.j, cancelJob: async () => {}, listJobs: async () => [] };
   const a = new StudioJobQueueAdapter({ client, pollMs: 1 });
-  assert.deepEqual(await a.runExclusive({ type: 'render_segment', agent: 'v', input: {}, timeoutSec: 1, maxAttempts: 1 }), { videoPath: 'v' });
+  assert.deepEqual(await a.runExclusive({ type: 'render_segment', agent: 'v', input: {}, timeoutSec: 1, maxAttempts: 1 }), { artifacts: [{ kind: 'mp4', path: 'v' }], videoPath: 'v' });
   await assert.rejects(a.runExclusive({ type: 'x' }, () => 1), /inline/);
 });
 test('Ollama heavy generations go through job queue when configured', async () => {

@@ -53,10 +53,10 @@ Inject Studio `jobsApi` (feat/v1.2.0 docs/JOBS_API.md) into `StudioJobQueueAdapt
    - To try the Studio queue, set `MA_JOBS_BACKEND=jobsapi` and inject the Studio `jobsApi` into `selectJobQueue({ local, jobsApi, videoRender })`.
    - Job types and resource classes are **provisional**. Override them with `MA_JOBS_TYPE_MAP='{"tts":"…"}'` and `MA_JOBS_RESOURCE_CLASS='{…}'`.
    - tts and video_render must stay `gpu_heavy`, which is the shared heavy lock.
-   - The idempotency key is assigned by the server.
+   - Idempotency: video_render uses a server key (`runId:preset`); other types use a client key of 1–128 printable ASCII characters.
    - `publish_dry_run` always forces `dryRun: true`.
 6. **video_render executor:**
    - Review `docs/media-automation/integration/video-render.setExecutor.snippet.js`. It is not applied. Studio decides whether to apply it, and media-automation is not in v1.2.4-test.
-   - On the Mac with a Studio checkout that has `services.videoRender`, a manual test would be: set `MA_VIDEO_RENDER=on`, paste the snippet into a **local, uncommitted** copy of the Studio server, run `POST /api/jobs {type:'video_render', input:{runId, preset:'shorts', episodeRef}}`, then check that the artifacts mp4, srt and jpg are under `<dataDir>/media/<runId>/`.
+   - On the Mac with a Studio checkout that has `services.videoRender`, a manual test would be: set `MA_VIDEO_RENDER=on`, paste the snippet into a **local, uncommitted** copy of the Studio server, run `POST /api/jobs {type:'video_render', input:{runId, preset:'shorts', episodeRef}}`, then check that the artifacts mp4, srt and jpg are directly in `<dataDir>/media/` (`<runId>-<preset>.*`).
    - Until that is done, the integration is verified only against `test/fixtures/studio-jobs-mock.js`.
 7. **Animation cues:** the schema is PROVISIONAL (`version: "1"`). Studio reviews it at stage D, so do not treat it as final.

@@ -14,6 +14,7 @@ test('video_render via services.videoRender.setExecutor: artifacts verified by c
   const j = await q.run('video_render', { runId: 'r1', preset: 'shorts', episodeRef: 'news/2026-10-21/a', idempotencyKey: 'mine' });
   assert.equal(j.status, 'succeeded'); assert.deepEqual(j.artifacts.map(a => a.kind).sort(), ['jpg', 'mp4', 'srt']); assert.equal(j.idempotencyKey, 'r1:shorts'); assert.equal(unload.n, 1);
   const again = await q.submit('video_render', { runId: 'r1', preset: 'shorts', episodeRef: 'news/2026-10-21/a' }); assert.equal(again.existing, true);
+  const raw = jobsApi.getJob(j.jobId); assert.equal(raw.internalStatus, 'done'); assert.equal('publicStatus' in raw, false); assert.ok(j.artifacts.every(a => a.path.startsWith(path.join(dataDir, 'media') + path.sep)));
 });
 test('no executor -> stub failure; bad input -> 400; artifact outside media -> failed', async () => {
   const { dataDir, services, jobsApi } = setup(); const q = new JobsApiQueue({ jobsApi, env: {}, pollMs: 5 });
@@ -28,7 +29,8 @@ test('tts + render share the heavy lock (never overlap); publish_dry_run is dry-
   await Promise.all([q.run('tts', { text: 'hi' }), q.run('video_render', { runId: 'r5', preset: 'youtube', episodeRef: 'news/2026-10-21/a' }), q.run('tts', { text: 'yo' })]);
   let depth = 0; for (const [ev] of lock.log) { depth += ev === 'start' ? 1 : -1; assert.ok(depth <= 1, 'overlap'); } assert.equal(lock.log.length, 6);
   assert.throws(() => q.spec('publish_dry_run', { live: true }), /dry-run only/); const s = q.spec('publish_dry_run', { postId: 'p' }); assert.equal(s.input.dryRun, true); assert.equal(s.resourceClass, 'light');
-  assert.equal('idempotencyKey' in q.spec('tts', { idempotencyKey: 'k' }), false); assert.equal('idempotencyKey' in q.spec('tts', { idempotencyKey: 'k' }).input, false);
+  assert.equal(q.spec('tts', { idempotencyKey: 'k' }).idempotencyKey, 'k'); assert.equal('idempotencyKey' in q.spec('tts', { idempotencyKey: 'k' }).input, false);
+  assert.equal('idempotencyKey' in q.spec('video_render', { runId: 'r', preset: 'youtube', episodeRef: 'e', idempotencyKey: 'x' }), false); assert.throws(() => q.spec('tts', { idempotencyKey: 'é' }), /printable/);
   assert.throws(() => new JobsApiQueue({ jobsApi, env: {}, resourceClasses: { tts: 'light' } }), /heavy lock/);
   assert.equal(new JobsApiQueue({ jobsApi, env: { MA_JOBS_TYPE_MAP: '{"tts":"tts_v2"}' } }).spec('tts', {}).type, 'tts_v2');
 });
@@ -37,4 +39,12 @@ test('flag gate: default OFF keeps LocalJobQueue; only MA_JOBS_BACKEND=jobsapi +
   assert.equal(selectJobQueue({ env: {}, local, jobsApi }).queue, local);
   assert.equal(selectJobQueue({ env: { MA_JOBS_BACKEND: 'jobsapi' }, local }).backend, 'local');
   const s = selectJobQueue({ env: { MA_JOBS_BACKEND: 'jobsapi' }, local, jobsApi }); assert.equal(s.backend, 'jobsapi'); assert.ok(s.queue.provisional);
+});
+
+test('executor: cancel -> e.cancelled; extra input fields forbidden; blocked maps to failed', async () => {
+  const { dataDir } = setup(); const ex = createVideoRenderExecutor({ dataDir, factory: fakeFactory }); const ac = new AbortController(); ac.abort();
+  await assert.rejects(ex({ runId: 'c1', preset: 'youtube', episodeRef: 'news/2026-10-21/a', jobId: 'j', outDir: path.join(dataDir, 'media'), signal: ac.signal }), e => e.cancelled === true);
+  await assert.rejects(ex({ runId: 'c2', preset: 'youtube', episodeRef: 'news/2026-10-21/a', jobId: 'j', outDir: path.join(dataDir, 'media'), extra: 1 }), /unknown input/);
+  const { StudioJobQueueAdapter } = require('../src/jobs'); const a = new StudioJobQueueAdapter({ client: { getJob: () => ({ id: 'x', status: 'blocked', internalStatus: 'blocked' }) } });
+  assert.equal((await a.getJob('x')).status, 'failed');
 });

@@ -22,8 +22,8 @@ function createStudioMock({ dataDir }) {
   async function runVideo(j) {
     j.status = 'queued'; await lock.withHeavy('video_render:' + j.id, async () => { if (j.status === 'cancelled') return; j.status = 'running'; const ac = new AbortController(); j._ac = ac;
       try { if (!executor) throw new Error('video_render: Не подключено — executor not set');
-        const r = await executor({ ...j.input, jobId: j.id, outDir: media, signal: ac.signal }); verify(r?.artifacts); j.artifacts = r.artifacts; j.status = 'done'; }
-      catch (e) { if (j.status !== 'cancelled') { j.status = 'failed'; j.error = e.message; j.artifacts = []; } } });
+        const r = await executor({ runId: j.input.runId, preset: j.input.preset, episodeRef: j.input.episodeRef, jobId: j.id, outDir: media, signal: ac.signal }); verify(r?.artifacts); j.artifacts = r.artifacts; j.status = 'done'; }
+      catch (e) { if (e.cancelled) j.status = 'cancelled'; if (j.status !== 'cancelled') { j.status = 'failed'; j.error = e.message; j.artifacts = []; } } });
   }
   const jobsApi = {
     createJob(spec) { const { type, input = {} } = spec;
@@ -41,7 +41,7 @@ function createStudioMock({ dataDir }) {
       const work = async () => { j.status = 'running'; await new Promise(r => setTimeout(r, 5)); j.status = 'done'; j.result = { ok: true, input }; };
       j._p = (j.resourceClass === 'gpu_heavy' || j.resourceClass === 'llm') ? lock.withHeavy(type + ':' + j.id, work) : work(); return { jobId: j.id };
     },
-    getJob(id) { const j = jobs.get(id); if (!j) return null; const { _p, _ac, ...rest } = j; return { ...rest, jobId: j.id, publicStatus: j.status === 'done' ? 'succeeded' : j.status }; },
+    getJob(id) { const j = jobs.get(id); if (!j) return null; const { _p, _ac, status, ...rest } = j; const MAP = { done: 'succeeded', blocked: 'failed', waiting_confirmation: 'needs_approval', waiting_approval: 'needs_approval' }; return { ...rest, jobId: j.id, status: MAP[status] || status, internalStatus: status }; },
     cancelJob(id) { const j = jobs.get(id); if (j && !['done', 'failed'].includes(j.status)) { j.status = 'cancelled'; j._ac?.abort(); } return this.getJob(id); },
     listJobs({ status } = {}) { return [...jobs.values()].filter(j => !status || j.status === status).map(j => this.getJob(j.id)); },
     _wait: id => jobs.get(id)._p,
