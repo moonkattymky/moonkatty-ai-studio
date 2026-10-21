@@ -35,7 +35,7 @@
     const b = U.backup, s = U.schema || {}; const avail = U.releases.find(r => r.tag === U.available);
     return `<div class="card" id="updateCenter" style="grid-column:1/-1"><h3>Центр обновлений</h3>
       <div class="grid g3"><div><div class="small mut">Текущая версия</div><b>v${esc(U.current)}</b><div class="small mut">${esc(U.identity.bundleId)} · схема БД ${esc(s.schemaVersion ?? '—')} ${s.ok === false ? '(ошибка)' : ''}</div></div>
-        <div><div class="small mut">Доступная версия</div><b>${avail ? esc(avail.tag) : '—'}</b><div class="small mut">${U.lastCheck ? 'проверено ' + esc(U.lastCheck.at.replace('T', ' ').slice(0, 16)) : 'ещё не проверялось'} · ${esc(U.repos.join(', '))}</div></div>
+        <div><div class="small mut">Доступная версия</div><b>${avail ? esc(avail.tag) : '—'}</b><div class="small mut">${U.lastCheck ? 'проверено ' + esc(new Date(U.lastCheck.at).toLocaleString('ru-RU')) : 'ещё не проверялось'} · ${esc(U.repos.join(', '))}</div></div>
         <div><div class="small mut">Бэкап перед обновлением</div>${b ? `${badge(b.verified, b.verified ? 'проверен' : 'ошибка')} <span class="small">${esc(b.id)} · checksum ${b.checksum ? 'OK' : '✗'} · тест-восстановление ${b.testRestore ? 'OK' : '✗'}</span>` : '<span class="small mut">нет</span>'}</div></div>
       <div class="row" style="margin-top:8px"><button class="btn sm primary" id="ucCheck" ${BUSY ? 'disabled' : ''}>${BUSY === 'check' ? 'Проверка…' : 'Проверить обновления'}</button> <button class="btn sm" id="ucBackup" ${BUSY ? 'disabled' : ''}>${BUSY === 'backup' ? 'Бэкап…' : 'Сделать проверенный бэкап'}</button> <button class="btn sm" id="ucHealth">Health</button> <button class="btn sm" id="ucRollback">План отката</button></div>
       ${U.keysLoaded ? '' : '<div class="small">⚠ закреплённый ключ подписи не найден — ни один релиз не будет считаться проверенным</div>'}
@@ -45,7 +45,7 @@
   };
   async function load() { try { U = await api('GET', '/api/ops/update-center'); ERR = null; } catch (e) { ERR = e.message; } if (ROUTE === 'settings') render(); }
   const prevV = VIEWS.settings, prevB = BIND.settings;
-  VIEWS.settings = () => { const h = prevV(); return ON ? h.replace(/<\/div>\s*$/, card() + '</div>') : h; };
+  VIEWS.settings = () => { const h = prevV(); return ON ? h + '<div style="margin-top:16px">' + card() + '</div>' : h; };
   let timer = null;
   BIND.settings = v => {
     if (prevB) prevB(v); if (!ON) return; if (!U && !ERR) load();
