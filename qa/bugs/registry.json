@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T19:20:36.561Z",
+  "updatedAt": "2026-10-21T20:20:58.603Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -1398,7 +1398,7 @@
       "id": "QA-UC-011",
       "title": "Update Center port puts macOS 12.5.1 back into the ops tree",
       "severity": "low",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "update-center",
       "summary": "news-node.test.js on b813ac4 passed: the iMac profile is macOS Ventura 13.7.1 and the string 12.5.1 is absent from lib, node-agent, docs/ops, scripts/node, deploy, and test/ops, except lines that mark it wrong. On 035571f the same test fails. git ls-files now finds 12.5.1 in docs/ops/UPDATE_CENTER.md, docs/ops/UPDATE_CENTER_MAC_TEST.md, and test/ops/update-center.test.js. lib/ops/nodes.js still says the iMac is Ventura 13.7.1. The scanner drops a line that contains ошибочн, WRONG, wrong, or неверн.",
@@ -1411,7 +1411,8 @@
       ],
       "evidence": [
         "qa/reports/update-center-v130/REPORT.md",
-        "qa/reports/update-center-v130/logs/test-ops.log"
+        "qa/reports/update-center-v130/logs/test-ops.log",
+        "qa/reports/final-v1.3.0-test-r3/REPORT.md"
       ],
       "foundAt": "2026-10-21T18:57:30.000Z",
       "foundIn": "feat/update-center-v130 035571ffb4984187d70ca2c440536e5cdac2a5af",
@@ -1422,6 +1423,11 @@
           "at": "2026-10-21T18:57:30.000Z",
           "status": "open",
           "note": "Regression against b813ac4, where the same test passed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T20:20:58.603Z",
+          "status": "qa_verified",
+          "note": "d1adf4d replaces the three 12.5.1 hits with 13.7.1. On Node v22.23.3, test:ops is 119 pass, 0 fail, and news-node test 22 passes. Owner approval is not set."
         }
       ]
     }

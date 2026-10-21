@@ -1,0 +1,84 @@
+
+> moonkatty-ai-studio@1.3.0-test test:publish-guard
+> node scripts/publish-guard-test.mjs
+
+(node:84779) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS [prod] POST cannot create published/externalId
+PASS [prod] PUT {"status":"published"} → 403 — HTTP 403
+PASS [prod] PUT {"status":"published","externalId":"123456_789012"} → 403 — HTTP 403
+PASS [prod] PUT {"externalId":"123456_789012"} → 403 — HTTP 403
+PASS [prod] PUT {"publishedAt":"2026-01-01"} → 403 — HTTP 403
+PASS [prod] PUT {"publication":{"platform":"facebook","responseId":"123456", → 403 — HTTP 403
+PASS [prod] restore: every queue item enters pending_approval (incl. rejected-with-externalId)
+PASS [prod] restore: forged externalId/publishedAt/publication dropped, historical_* kept
+PASS [prod] historical_* not writable via CRUD
+PASS [prod] /publish on restored item does not publish — HTTP 400
+PASS [prod] no seal key created without a real publication (Keychain item absent, DB meta absent)
+PASS [test] POST cannot create published/externalId
+PASS [test] PUT {"status":"published"} → 403 — HTTP 403
+PASS [test] PUT {"status":"published","externalId":"123456_789012"} → 403 — HTTP 403
+PASS [test] PUT {"externalId":"123456_789012"} → 403 — HTTP 403
+PASS [test] PUT {"publishedAt":"2026-01-01"} → 403 — HTTP 403
+PASS [test] PUT {"publication":{"platform":"facebook","responseId":"123456", → 403 — HTTP 403
+PASS [test] restore: every queue item enters pending_approval (incl. rejected-with-externalId)
+PASS [test] restore: forged externalId/publishedAt/publication dropped, historical_* kept
+PASS [test] historical_* not writable via CRUD
+PASS [test] /publish → 403 publishing_disabled
+PASS [test] egress: graph.facebook.com blocked (not in allowlist)
+PASS [test] no seal key created without a real publication (Keychain item absent, DB meta absent)
+PASS seal key migrated into Keychain service «MOONKATTY AI STUDIO» / publish-seal-key
+PASS seal key never in argv of `security` (stdin -X only)
+PASS seal key removed from studio.db (meta.publishSealKey absent)
+PASS studio.db contains no copy of the key anywhere
+PASS validly sealed row stays published
+PASS title edit on validly sealed row allowed, stays published
+PASS startup migration demotes legacy published + externalId (no seal) → pending_approval + historical_*
+PASS startup migration demotes legacy published without externalId → pending_approval + historical_*
+PASS startup migration demotes seal made with another key → pending_approval + historical_*
+PASS startup migration demotes seal valid but externalId swapped → pending_approval + historical_*
+PASS title edit on demoted legacy row stays pending_approval
+PASS edit of a directly-written unsealed published row → 403 (no legacy pass)
+PASS edit of a row sealed with a foreign key → 403
+PASS restart demotes rows written behind the server's back
+PASS sealed row still valid after restart (key read from Keychain)
+PASS no Keychain: key still removed from studio.db (never kept as fallback)
+PASS no Keychain: even the formerly valid sealed row is demoted (publishing refused without key)
+PASS v1 DB migrated: published row → pending_approval, historical_externalId kept
+PASS v1 migrated row: title edit does NOT restore published
+PASS v1 migrated row: pre-migration backup written
+PASS markers: baked TEST not overridable: STUDIO_FLAVOR=prod NODE_ENV=test — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: STUDIO_FLAVOR=prod NODE_ENV=production — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: MK_FLAVOR/FLAVOR=prod — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: CLI --flavor=prod --prod — test|baked|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js rewritten to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js bytes changed, value kept (SHA-256 mismatch) → FLAVOR null — null|baked-sha256-mismatch|com.moonkatty.aistudio.test
+PASS tamper (source copy): studioFlavor in package.json changed to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.lock.json flavor changed to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js deleted → FLAVOR null — null|markers-missing:baked|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.lock.json deleted → FLAVOR null — null|markers-missing:lock|com.moonkatty.aistudio.test
+PASS tamper (source copy): studioFlavor* removed from package.json → FLAVOR null — null|markers-missing:pkg|com.moonkatty.aistudio.test
+PASS tamper (source copy): invalid baked value staging → FLAVOR null — null|baked-invalid|com.moonkatty.aistudio.test
+PASS tamper (source copy): all markers removed (packaged tree has no scripts/) + STUDIO_FLAVOR=prod → FLAVOR null — null|none|com.moonkatty.aistudio.test
+PASS TEST egress allowlist excludes all social APIs — api.github.com,ollama.com,registry.ollama.ai
+PASS meta.js refuses to load in TEST flavor
+PASS meta.js refuses to load with unknown flavor
+PASS bundle: meta.js NOT shipped (absent from app.asar and app.asar.unpacked)
+PASS bundle: markers consistent (baked test, lock, studioFlavor, SHA-256 in package.json + asar lock)
+PASS bundle: Electron flavor-guard (asar lock) accepts the untouched tree
+PASS bundle: untouched + STUDIO_FLAVOR=prod NODE_ENV=production --flavor=prod → still TEST — {"ok":true,"app":"moonkatty-ai-studio","flavor":"test","product":"MOONKATTY AI STUDIO TEST","schemaVersion":6,"mode":"server","version":"1.3.0-test","pid":85177,"uptimeSec":0,"db":"ok","dbDriver":"nod
+PASS bundle tamper: flavor.baked.js → prod → exit 78 — ует, источник: markers-disagree). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod.
+
+PASS bundle tamper: … and Electron guard refuses
+PASS bundle tamper: ALL unpacked markers consistently rewritten to prod → server exit 78 (publisher not shipped) — ОТКАЗ: модуль публикации недоступен для prod-сборки (Cannot find module './meta.js'
+Require stack:
+- /tmp/mk-pg-unp-DWEfW5/server.js)
+
+PASS bundle tamper: … and Electron guard refuses (asar lock still test)
+PASS bundle tamper: flavor.baked.js deleted → exit 78
+PASS bundle tamper: all markers removed + STUDIO_FLAVOR=prod NODE_ENV=production → exit 78
+PASS bundle tamper: all markers removed + STUDIO_FLAVOR=prod NODE_ENV=test → exit 78
+PASS bundle tamper: meta.js planted into TEST tree → server stays TEST, publisher not loaded
+PASS bundle tamper: … Electron guard refuses (publisher present)
+PASS bundle tamper: studioFlavorSha256 changed → exit 78
+{"passed":73,"failed":[]}

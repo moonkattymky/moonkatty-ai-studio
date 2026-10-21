@@ -1,0 +1,301 @@
+{
+  "fails": 0,
+  "notes": [
+    {
+      "name": "HARD_GATE.closed is the code constant true",
+      "ok": true,
+      "detail": "{\"closed\":true,\"reason\":\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\"}"
+    },
+    {
+      "name": "mechanismStatus has no env switch for the hard gate",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "lib/ops/update-center-mount.js does not pass hardGateOverrideForTests",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "server.js does not pass hardGateOverrideForTests",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "public/update-ui.js does not pass hardGateOverrideForTests",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "lib/studio-config.js does not pass hardGateOverrideForTests",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Linux read mode is fd-relative",
+      "ok": true,
+      "detail": "{\"mode\":\"fd-relative\"}"
+    },
+    {
+      "name": "keyring bytes are opened under /proc/self/fd",
+      "ok": true,
+      "detail": "/proc/self/fd/20/keyring.json | /proc/self/fd/20/owner.pub.pem"
+    },
+    {
+      "name": "env does not enable download: key-only",
+      "ok": true,
+      "detail": "{\"sig\":\"READY\",\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\",\"нет явного разрешения владельца OPS_UPDATE_DOWNLOAD_ENABLED=1\"],\"hardGate\":true,\"keyringReadMode\":\"fd-relative\"}}"
+    },
+    {
+      "name": "env does not enable download: OPS_UPDATE_DOWNLOAD_ENABLED",
+      "ok": true,
+      "detail": "{\"sig\":\"READY\",\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\"],\"hardGate\":true,\"keyringReadMode\":\"fd-relative\"}}"
+    },
+    {
+      "name": "env does not enable download: OPS_UPDATE_DOWNLOAD_ENABLED",
+      "ok": true,
+      "detail": "{\"sig\":\"READY\",\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\",\"нет явного разрешения владельца OPS_UPDATE_DOWNLOAD_ENABLED=1\"],\"hardGate\":true,\"keyringReadMode\":\"fd-relative\"}}"
+    },
+    {
+      "name": "env does not enable download: OPS_UPDATE_DOWNLOAD_ENABLED,OPS_UPDATE_AUTO_INSTALL,OPS_UPDATE_SIGNATURE_READY,OPS_UPDATE_BACKUP_VERIFIED_READY,OPS_UPDATE_ROLLBACK_TESTED_ON_MAC,OPS_UPDATE_NODES,STUDIO_OPS_UPDATE",
+      "ok": true,
+      "detail": "{\"sig\":\"READY\",\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\"],\"hardGate\":true,\"keyringReadMode\":\"fd-relative\"}}"
+    },
+    {
+      "name": "env does not enable download: HARD_GATE,HARD_GATE_CLOSED,OPS_UPDATE_HARD_GATE,OPS_UPDATE_HARD_GATE_CLOSED,hardGateOverrideForTests,STUDIO_HARD_GATE",
+      "ok": true,
+      "detail": "{\"sig\":\"READY\",\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\",\"нет явного разрешения владельца OPS_UPDATE_DOWNLOAD_ENABLED=1\"],\"hardGate\":true,\"keyringReadMode\":\"fd-relative\"}}"
+    },
+    {
+      "name": "constructor flag hardGateOverrideForTests is what opens the gate",
+      "ok": true,
+      "detail": "{\"downloadEnabled\":true,\"installEnabled\":true,\"reasons\":[],\"hardGate\":false,\"keyringReadMode\":null}"
+    },
+    {
+      "name": "in-process HARD_GATE.closed=false plus the download flag enables download",
+      "ok": true,
+      "detail": "{\"downloadEnabled\":true,\"installEnabled\":true,\"reasons\":[],\"hardGate\":false,\"keyringReadMode\":\"fd-relative\"}"
+    },
+    {
+      "name": "mutating the constant without OPS_UPDATE_DOWNLOAD_ENABLED=1 stays disabled",
+      "ok": true,
+      "detail": "{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\":[\"нет явного разрешения владельца OPS_UPDATE_DOWNLOAD_ENABLED=1\"],\"hardGate\":false,\"keyringReadMode\":\"fd-relative\"}"
+    },
+    {
+      "name": "constant restored",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "KNOWN_SCHEMAS is 1..6",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "schemaCheck accepts 1",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":1,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck accepts 2",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":2,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck accepts 3",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":3,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck accepts 4",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":4,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck accepts 5",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":5,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck accepts 6",
+      "ok": true,
+      "detail": "{\"ok\":true,\"schemaVersion\":6,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"совместимо\"}"
+    },
+    {
+      "name": "schemaCheck rejects 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "schemaCheck rejects 7",
+      "ok": true,
+      "detail": "{\"ok\":false,\"schemaVersion\":7,\"source\":\"meta\",\"supported\":6,\"tables\":[\"items\",\"meta\"],\"detail\":\"схема новее или повреждена — не обновлять/не откатывать без бэкапа\"}"
+    },
+    {
+      "name": "compat known schema 1 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема релиза (1) старше текущей (6) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "name": "compat known schema 2 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема релиза (2) старше текущей (6) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "name": "compat known schema 3 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема релиза (3) старше текущей (6) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "name": "compat known schema 4 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема релиза (4) старше текущей (6) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "name": "compat known schema 5 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема релиза (5) старше текущей (6) — откат схемы невозможен без восстановления бэкапа"
+    },
+    {
+      "name": "compat known schema 6 is not rejected as unknown",
+      "ok": true,
+      "detail": "схема без изменений (6, из meta.schemaVersion)"
+    },
+    {
+      "name": "compat rejects schema 7",
+      "ok": true,
+      "detail": "неизвестная версия схемы 7 (известны 1, 2, 3, 4, 5, 6)"
+    },
+    {
+      "name": "compat rejects schema 0",
+      "ok": true,
+      "detail": "неизвестная версия схемы 0 (известны 1, 2, 3, 4, 5, 6)"
+    },
+    {
+      "name": "backup create returns sha256",
+      "ok": true,
+      "detail": "14b385b7b68e9a8e54c0ee4fe01a7531b8a1782439c56614d3508464254b22fc"
+    },
+    {
+      "name": "backup verify matches sidecar",
+      "ok": true,
+      "detail": "{\"ok\":true,\"sha256\":\"14b385b7b68e9a8e54c0ee4fe01a7531b8a1782439c56614d3508464254b22fc\",\"problems\":[]}"
+    },
+    {
+      "name": "trial restore integrity ok with items and meta",
+      "ok": true,
+      "detail": "{\"ok\":true,\"integrity\":\"ok\",\"error\":null}"
+    },
+    {
+      "name": "live db still has the row",
+      "ok": true,
+      "detail": "[{\"id\":\"row1\"}]"
+    },
+    {
+      "name": "tampered sidecar fails SHA-256",
+      "ok": true,
+      "detail": "{\"ok\":false,\"sha256\":\"14b385b7b68e9a8e54c0ee4fe01a7531b8a1782439c56614d3508464254b22fc\",\"problems\":[\"SHA-256 бэкапа не совпадает\"]}"
+    },
+    {
+      "name": "tampered database bytes fail SHA-256",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "restored bytes verify again",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "routes absent without STUDIO_OPS_UPDATE",
+      "ok": true,
+      "detail": "404 {\"error\":\"unknown collection\"}"
+    },
+    {
+      "name": "default server is TEST flavor",
+      "ok": true,
+      "detail": "{\"ok\":true,\"app\":\"moonkatty-ai-studio\",\"flavor\":\"test\",\"product\":\"MOONKATTY AI STUDIO TEST\",\"schemaVersion\":6,\"mode\":\"server\",\"version\":\"1.3.0-test\",\"pid\":82015,\"uptimeSec\":0,\"db\":\"ok\",\"dbDriver\":\"node:sqlite\",\"keySource\":\"file\",\"startedAt\""
+    },
+    {
+      "name": "unauthenticated GET is 401",
+      "ok": true,
+      "detail": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "unauthenticated POST is 401",
+      "ok": true,
+      "detail": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "missing CSRF header is 403",
+      "ok": true,
+      "detail": "{\"error\":\"CSRF check failed (missing X-Studio-Request header)\"}"
+    },
+    {
+      "name": "foreign Origin is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Cross-origin request rejected\"}"
+    },
+    {
+      "name": "Origin null is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Cross-origin request rejected\"}"
+    },
+    {
+      "name": "Sec-Fetch-Site cross-site is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Cross-site request rejected\"}"
+    },
+    {
+      "name": "node-agent bearer is 401",
+      "ok": true,
+      "detail": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "wrong app token is 401",
+      "ok": true,
+      "detail": "{\"error\":\"auth required\"}"
+    },
+    {
+      "name": "authenticated status is TEST and the gate stays closed",
+      "ok": true,
+      "detail": "{\"id\":{\"flavor\":\"test\",\"channels\":[\"test\"],\"bundleId\":\"com.moonkatty.aistudio.test\",\"appName\":\"MOONKATTY AI STUDIO TEST\",\"dataDirName\":\"MOONKATTY AI STUDIO TEST\",\"launchdLabel\":\"com.moonkatty.aistudio.test.server\",\"keychainServicePrefix\":\"MOONKATTY AI STUDIO.test\",\"defaultPort\":8687,\"known\":true,\"source\":\"env:STUDIO_APP_BUNDLE_ID\",\"bundlePath\":null,\"appPath\":\"/Applications/MOONKATTY AI STUDIO TEST.app\",\"problems\":[],\"working\":true},\"mech\":{\"downloadEnabled\":false,\"installEnabled\":false,\"reasons\""
+    },
+    {
+      "name": "download stays disabled on TEST with every flag",
+      "ok": true,
+      "detail": "{\"error\":\"Update Center: загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\",\"code\":\"UPDATE_DISABLED\"}"
+    },
+    {
+      "name": "approve without a password is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Неверный пароль владельца\"}"
+    },
+    {
+      "name": "approve with the wrong password is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Неверный пароль владельца\"}"
+    },
+    {
+      "name": "auto-install with the wrong password is 403",
+      "ok": true,
+      "detail": "{\"error\":\"Неверный пароль владельца\"}"
+    },
+    {
+      "name": "right password still cannot auto-install",
+      "ok": true,
+      "detail": "{\"error\":\"Update Center: загрузка/установка через Update Center отключены до закрытия QA-UC-010 (жёсткий запрет в коде; ключ владельца это не меняет)\",\"code\":\"UPDATE_DISABLED\"}"
+    },
+    {
+      "name": "TEST publish route stays 403",
+      "ok": true,
+      "detail": "queue 201 publish {\"error\":\"Тестовая сборка: публикация отключена\",\"code\":\"publishing_disabled\"}"
+    },
+    {
+      "name": "prod bundle id on the TEST server stays unknown and download stays off",
+      "ok": true,
+      "detail": "{\"id\":{\"flavor\":\"prod\",\"channels\":[\"preview\",\"stable\"],\"bundleId\":\"com.moonkatty.aistudio\",\"appName\":\"MOONKATTY AI STUDIO\",\"dataDirName\":\"MOONKATTY AI STUDIO\",\"launchdLabel\":\"com.moonkatty.aistudio.server\",\"keychainServicePrefix\":\"MOONKATTY AI STUDIO\",\"defaultPort\":8787,\"known\":false,\"source\":\"env:STUDIO_APP_BUNDLE_ID\",\"bundlePath\":null,\"appPath\":\"/Applications/MOONKATTY AI STUDIO.app\",\"problems\":[\"STUDIO_FLAVOR=test противоречит bundle id com.moonkatty.aistudio\"],\"working\":true},\"mech\":{\"downlo"
+    }
+  ],
+  "failed": []
+}

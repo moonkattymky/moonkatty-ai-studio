@@ -1,0 +1,10 @@
+
+> moonkatty-ai-studio@1.3.0-test test:runner
+> node scripts/runner-test.mjs
+
+PASS content via (mock) Ollama → waiting_approval with result
+PASS task in_progress while LLM works
+PASS stop aborts and returns task to queue
+PASS OpenCode task blocked until explicit approval
+PASS after approval: runs, or blocked with «OpenCode не найден» when CLI absent — OpenCode отключён (по умолчанию). Включение — только вручную: STUDIO_OPENCODE=1, см. docs/SECURITY_AUDIT.md
+EXIT:0

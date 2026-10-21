@@ -1,0 +1,14 @@
+
+> moonkatty-ai-studio@1.3.0-test smoke
+> node scripts/smoke.mjs
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.goto: url: expected string, got undefined
+    at run (/tmp/mk-v130r3/scripts/smoke.mjs:10:11)
+    at async file:///tmp/mk-v130r3/scripts/smoke.mjs:17:15
+
+Node.js v22.23.3
+EXIT:1
