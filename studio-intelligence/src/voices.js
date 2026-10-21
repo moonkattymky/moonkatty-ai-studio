@@ -3,14 +3,18 @@ const { StudioError } = require('./errors');
 const { validate } = require('./validate');
 const { containsSecret } = require('./secrets');
 
+const RECOGNIZERS = new Set(['phonetic', 'pocketSphinx', 'tts-timing']);
+const SHA256 = /^[a-f0-9]{64}$/i;
+
 /** Профиль голоса ведущего. Задаёт студия 2, для мимики читает основная студия. Синтез здесь не вызывается. */
 function createVoices(db, { now, permissions, transaction }) {
   const getStmt = db.prepare('SELECT * FROM si_voice_profiles WHERE voice_profile_id = ?');
   const approvedStmt = db.prepare(`SELECT * FROM si_voice_profiles WHERE namespace = 'moonkatty_news' AND status = 'approved' LIMIT 1`);
   const insert = db.prepare(`INSERT INTO si_voice_profiles (
       voice_profile_id, namespace, label, note, sample_asset_id, status, defined_by, defined_at, approved_by, approved_at,
-      sample_rate, recognizer, gain, mouth_scale
-    ) VALUES (?, 'moonkatty_news', ?, ?, ?, 'draft', ?, ?, NULL, NULL, ?, ?, ?, ?)`);
+      sample_rate, recognizer, gain, mouth_scale,
+      engine, voice, speed, pitch_shift, model_sha256, voices_sha256
+    ) VALUES (?, 'moonkatty_news', ?, ?, ?, 'draft', ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const supersede = db.prepare(`UPDATE si_voice_profiles SET status = 'superseded' WHERE namespace = 'moonkatty_news' AND status = 'approved'`);
   const approveStmt = db.prepare(`UPDATE si_voice_profiles SET status = 'approved', approved_by = ?, approved_at = ? WHERE voice_profile_id = ? AND status = 'draft'`);
 
@@ -32,8 +36,23 @@ function createVoices(db, { now, permissions, transaction }) {
       sampleRate: row.sample_rate == null ? null : row.sample_rate,
       recognizer: row.recognizer,
       gain: row.gain == null ? null : row.gain,
-      mouthScale: row.mouth_scale == null ? null : row.mouth_scale
+      mouthScale: row.mouth_scale == null ? null : row.mouth_scale,
+      engine: row.engine ?? null,
+      voice: row.voice ?? null,
+      speed: row.speed == null ? null : row.speed,
+      pitchShift: row.pitch_shift == null ? null : row.pitch_shift,
+      modelSha256: row.model_sha256 ?? null,
+      voicesSha256: row.voices_sha256 ?? null
     };
+  }
+
+  function hashOrNull(value, label) {
+    if (value == null || value === '') return null;
+    const text = String(value);
+    if (!SHA256.test(text)) {
+      throw new StudioError('VALIDATION', label + ': нужен SHA-256 из 64 hex-символов', { retryable: false });
+    }
+    return text.toLowerCase();
   }
 
   function define({ principal, profile }) {
@@ -48,12 +67,18 @@ function createVoices(db, { now, permissions, transaction }) {
       sampleRate: profile.sampleRate ?? null,
       recognizer: profile.recognizer ?? null,
       gain: profile.gain ?? null,
-      mouthScale: profile.mouthScale ?? null
+      mouthScale: profile.mouthScale ?? null,
+      engine: profile.engine ?? null,
+      voice: profile.voice ?? null,
+      speed: profile.speed ?? null,
+      pitchShift: profile.pitchShift ?? null,
+      modelSha256: hashOrNull(profile.modelSha256, 'modelSha256'),
+      voicesSha256: hashOrNull(profile.voicesSha256, 'voicesSha256')
     };
     const errors = validate('voice-profile', input);
     if (errors.length) throw new StudioError('VALIDATION', errors[0], { retryable: false, details: { errors } });
-    if (input.recognizer && input.recognizer !== 'phonetic' && input.recognizer !== 'pocketSphinx') {
-      throw new StudioError('VALIDATION', 'Распознаватель: phonetic или pocketSphinx', { retryable: false });
+    if (input.recognizer && !RECOGNIZERS.has(input.recognizer)) {
+      throw new StudioError('VALIDATION', 'Распознаватель: phonetic, pocketSphinx или tts-timing', { retryable: false });
     }
     if (containsSecret(input)) throw new StudioError('SECRET_REJECTED', 'В профиль голоса нельзя записывать секреты', { retryable: false });
     if (actor.role !== 'owner') permissions.assertPermission(actor, 'write', { namespace: 'moonkatty_news', agentId: actor.agentId });
@@ -61,7 +86,11 @@ function createVoices(db, { now, permissions, transaction }) {
       const prev = getStmt.get(input.voiceProfileId);
       if (prev) return map(prev);
       const who = actor.role === 'agent' ? actor.agentId : actor.id;
-      insert.run(input.voiceProfileId, input.label, input.note, input.sampleAssetId, who, now(), input.sampleRate, input.recognizer, input.gain, input.mouthScale);
+      insert.run(
+        input.voiceProfileId, input.label, input.note, input.sampleAssetId, who, now(),
+        input.sampleRate, input.recognizer, input.gain, input.mouthScale,
+        input.engine, input.voice, input.speed, input.pitchShift, input.modelSha256, input.voicesSha256
+      );
       return map(getStmt.get(input.voiceProfileId));
     });
   }
@@ -98,7 +127,13 @@ function createVoices(db, { now, permissions, transaction }) {
       sampleRate: row.sampleRate,
       recognizer: row.recognizer,
       gain: row.gain,
-      mouthScale: row.mouthScale
+      mouthScale: row.mouthScale,
+      engine: row.engine,
+      voice: row.voice,
+      speed: row.speed,
+      pitchShift: row.pitchShift,
+      modelSha256: row.modelSha256,
+      voicesSha256: row.voicesSha256
     };
     const errors = validate('voice-profile-for-studio', shape);
     if (errors.length) throw new StudioError('VALIDATION', errors[0], { retryable: false, details: { errors } });

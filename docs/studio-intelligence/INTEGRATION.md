@@ -404,4 +404,4 @@ JSON-копия панели (`data/backups/backup-*.json`) собирает т�
 
 ## Реестр мастер-модели
 
-Основная студия владеет моделью, ригом, анимацией и файлом `.blend` (ветка `feat/v1.2.0`, `docs/ROADMAP_3D_CHARACTER.md`). Здесь хранятся только SHA-256, статус утверждения, права на референсы и ссылка `voiceProfileId`. Файл не создаётся и не копируется. Профиль голоса задаёт студия 2, для мимики его читает основная студия. Поля профиля для студии: `{id, approved, sampleRate, recognizer, gain, mouthScale}`.
+Основная студия владеет моделью, ригом, анимацией и файлом `.blend` (ветка `feat/v1.2.0`, `docs/ROADMAP_3D_CHARACTER.md`). Здесь хранятся только SHA-256, статус утверждения, права на референсы и ссылка `voiceProfileId`. Файл не создаётся и не копируется. Профиль голоса задаёт студия 2, для мимики его читает основная студия. Поля профиля для студии: `{id, approved, sampleRate, recognizer, gain, mouthScale, engine, voice, speed, pitchShift, modelSha256, voicesSha256}`. Импорт `MOONKATTY_NEWS_MASTER_VOICE` пишет только черновик. Утверждает владелец, `executed` остаётся `false`.

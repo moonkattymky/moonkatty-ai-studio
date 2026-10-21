@@ -369,6 +369,21 @@ function migrate(db) {
     db.exec('ALTER TABLE si_voice_profiles ADD COLUMN gain REAL');
     db.exec('ALTER TABLE si_voice_profiles ADD COLUMN mouth_scale REAL');
   }
+  const voiceNow = db.prepare('PRAGMA table_info(si_voice_profiles)').all();
+  if (voiceNow.length) {
+    const have = new Set(voiceNow.map(col => col.name));
+    const extra = [
+      ['engine', 'engine TEXT'],
+      ['voice', 'voice TEXT'],
+      ['speed', 'speed REAL'],
+      ['pitch_shift', 'pitch_shift REAL'],
+      ['model_sha256', 'model_sha256 TEXT'],
+      ['voices_sha256', 'voices_sha256 TEXT']
+    ];
+    for (const [name, ddl] of extra) {
+      if (!have.has(name)) db.exec(`ALTER TABLE si_voice_profiles ADD COLUMN ${ddl}`);
+    }
+  }
   const costCols = db.prepare('PRAGMA table_info(si_cost_entries)').all();
   if (costCols.length && !costCols.some(col => col.name === 'direction')) {
     db.exec("ALTER TABLE si_cost_entries ADD COLUMN direction TEXT NOT NULL DEFAULT 'expense'");

@@ -16,6 +16,12 @@
     "sampleRate": { "type": ["integer", "null"], "minimum": 16000, "maximum": 48000 },
     "recognizer": { "type": ["string", "null"], "maxLength": 32 },
     "gain": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
-    "mouthScale": { "type": ["number", "null"], "minimum": 0, "maximum": 4 }
+    "mouthScale": { "type": ["number", "null"], "minimum": 0, "maximum": 4 },
+    "engine": { "type": ["string", "null"], "maxLength": 64 },
+    "voice": { "type": ["string", "null"], "maxLength": 64 },
+    "speed": { "type": ["number", "null"] },
+    "pitchShift": { "type": ["number", "null"] },
+    "modelSha256": { "type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$" },
+    "voicesSha256": { "type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$" }
   }
 }
