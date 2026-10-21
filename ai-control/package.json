@@ -1,0 +1,16 @@
+{
+  "name": "moonkatty-ai-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MOONKATTY AI CONTROL — Stage 1 PWA prototype (DEMO data only)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "build": "node build.mjs",
+    "test": "playwright test -c test/playwright.config.mjs",
+    "shots": "node test/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
