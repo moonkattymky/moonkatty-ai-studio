@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.3-test.1 (TEST, не публикуется)
+- 3D DESIGN: агент OpenCode больше не пишет файлы. На шаге «Агент OpenCode» инструменты не выдаются (`tools` = false, `edit/write/patch: deny`), агент возвращает JSON текстом, студия проверяет строгой схемой и сама пишет `scene_params.json` только в папку версии (realpath, без symlink). Один повторный запрос при неверном JSON; понятные ошибки (модель, таймаут, пустой ответ). Причина и инструкции: docs/FIX_v1.2.3-test.1_OPENCODE.md. Тесты: scripts/opencode-json-test.mjs.
+
 ## Unreleased
 (см. 1.2.2-test ниже; video_render из этого раздела вошёл в 1.2.2-test)
 - Новый тип задания **`video_render`** (запрос Studio 2, feat/media-automation INTEGRATION.md §10): `resourceClass:'gpu_heavy'`, `requiresNode:'mac-mini'`, `safeToRetry:true`, `idempotencyKey:'<runId>:<preset>'` (повторное создание возвращает то же задание). Вход `{runId, preset:'youtube'|'shorts', episodeRef}` проверяется строго: лишние поля, неизвестные значения и опасные символы отклоняются.

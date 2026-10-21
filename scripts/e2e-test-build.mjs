@@ -47,7 +47,7 @@ let job = null; const t0 = Date.now();
 while (Date.now() - t0 < 300000) { const l = (await api('GET', '/api/jobs?limit=20')).j; job = Array.isArray(l) && l.find(j => j.kind === '3d'); if (job && ['waiting_approval', 'failed', 'blocked', 'cancelled', 'done'].includes(job.status)) break; await sleep(1500); }
 job = job && (await api('GET', '/api/jobs/' + job.id)).j; const ev = (job?.events || []).map(e => `[${e.stage}] ${e.msg}`).join('\n');
 ok('job from panel phrase reaches waiting_approval (all stages)', job?.status === 'waiting_approval' && ['preflight', 'params', 'agent', 'validate', 'build', 'render', 'verify'].every(s => ev.includes('[' + s + ']')), job?.status + ' ' + (job?.error || '') + '\n' + ev.slice(-1500));
-ok('agent step done by REAL OpenCode (session + write tool)', /Сессия OpenCode/.test(ev) && /инструмент write: completed/.test(ev));
+ok('agent step done by REAL OpenCode (session, JSON answer, params written by the studio — no agent tools)', /Сессия OpenCode/.test(ev) && /записаны студией/.test(ev) && !/пытался вызвать/.test(ev));
 const cp = job?.checkpoint || {}; const vdir = path.join(UD, 'projects3d', cp.projectId || 'x', cp.version || 'x');
 const blend = path.join(vdir, 'scene.blend'), png = path.join(vdir, 'renders', 'preview.png');
 const sha = f => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
