@@ -6,7 +6,7 @@ const fs = require('fs'), os = require('os'), path = require('path'), http = req
 const N = require('../../lib/ops/nodes.js'); const E = require('../../lib/ops/node-enroll.js'); const EN = require('../../node-agent/enroll.js'); const A = require('../../node-agent/agent.js');
 const tmp = p => fs.mkdtempSync(path.join(os.tmpdir(), p || 'enr-'));
 let clock = Date.now(); const now = () => clock;
-function kcEnv() { const d = tmp('kc-'); return { NODE_KEYCHAIN_BIN: path.join(__dirname, 'fixtures', 'fake-security.js'), FAKE_KC_FILE: path.join(d, 'kc.json'), FAKE_KC_ARGV: path.join(d, 'argv.log'), _dir: d }; }
+function kcEnv() { const d = tmp('kc-'); return { NODE_KEYCHAIN_BIN: path.join(__dirname, '..', 'fixtures', 'fake-security.js'), FAKE_KC_FILE: path.join(d, 'kc.json'), FAKE_KC_ARGV: path.join(d, 'argv.log'), _dir: d }; }
 async function coord() { const dir = tmp('coord-'); const logs = []; const m = N.createNodeManager({ dir, now, log: (...x) => logs.push(x.join(' ')) }); const tlsc = N.ensureCert(dir);
   const srv = await N.listen(m, { host: '127.0.0.1', port: 0, tls: tlsc }); const url = `https://127.0.0.1:${srv.address().port}`;
   return { m, dir, logs, url, fp: tlsc.fingerprint, close: () => new Promise(r => { srv.closeAllConnections && srv.closeAllConnections(); srv.close(r); }) }; }
