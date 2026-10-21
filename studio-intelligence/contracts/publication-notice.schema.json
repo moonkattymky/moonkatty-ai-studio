@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/publication-notice.schema.json",
+  "title": "PublicationNotice",
+  "description": "Поправка или опровержение. Процедуру решает студия 4, здесь только запись.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "kind", "publicationId", "publicationVersion", "text", "status"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "kind": { "enum": ["correction", "retraction"] },
+    "publicationId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "publicationVersion": { "type": ["integer", "null"], "minimum": 1 },
+    "text": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "status": { "const": "draft" }
+  }
+}

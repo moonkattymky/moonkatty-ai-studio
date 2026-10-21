@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/asset-rights.schema.json",
+  "title": "AssetRights",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["basis", "license", "licenseUrl", "holder", "territory", "expiresAt", "attributionRequired", "attributionText"],
+  "properties": {
+    "basis": { "enum": ["own", "licensed", "generated", "cc0", "unknown"] },
+    "license": { "type": ["string", "null"], "maxLength": 200 },
+    "licenseUrl": { "type": ["string", "null"], "maxLength": 500 },
+    "holder": { "type": ["string", "null"], "maxLength": 200 },
+    "territory": { "type": ["string", "null"], "maxLength": 200 },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "attributionRequired": { "type": "boolean" },
+    "attributionText": { "type": ["string", "null"], "maxLength": 500 }
+  }
+}

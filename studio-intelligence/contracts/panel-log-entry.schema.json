@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/panel-log-entry.schema.json",
+  "title": "PanelLogEntry",
+  "description": "Строка существующей коллекции logs. Журнал панели хранит не больше 2000 таких строк.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "at", "level", "source", "message", "user"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "at": { "type": "string", "format": "date-time" },
+    "level": { "enum": ["info", "warn", "error"] },
+    "source": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "user": { "type": ["string", "null"], "maxLength": 64 }
+  }
+}

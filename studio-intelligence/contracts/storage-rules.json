@@ -1,0 +1,27 @@
+{
+  "databaseFile": "data/studio.db",
+  "engine": "sqlite",
+  "reuseExistingFile": true,
+  "separateDatabaseForbidden": true,
+  "tablePrefix": "si_",
+  "doNotModifyTables": ["items", "meta"],
+  "tables": [
+    "si_meta", "si_records", "si_records_fts", "si_idempotency", "si_grants", "si_progress",
+    "si_assets", "si_asset_rights", "si_asset_usage",
+    "si_approvals", "si_approval_events",
+    "si_cost_entries", "si_health_samples", "si_qa_findings",
+    "si_asset_events", "si_asset_tasks", "si_asset_files",
+    "si_voice_profiles", "si_source_history", "si_editorial_decisions",
+    "si_content_versions", "si_publication_notices",
+    "si_projects", "si_character_versions"
+  ],
+  "money": "Studio 3 ledger via listEntries({kind,direction,projectId,from,to}). si_cost_entries is not written.",
+  "characterRegistry": "SHA-256, approval, reference rights, voiceProfileId. No blend bytes.",
+  "namespaces": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"],
+  "fts": "FTS5 unicode61, without embeddings",
+  "embeddings": false,
+  "idempotency": "unique (namespace, key); same hash replays the record; different hash conflicts unless versionPolicy is bump",
+  "secrets": "rejected before insert",
+  "approvalExecution": "rows are stored with auto_execute = 0; decide never publishes or substitutes files",
+  "assetDedup": "content hash, else normalized source URL without utm_*, else idempotency key"
+}

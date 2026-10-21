@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/progress-event.schema.json",
+  "title": "ProgressEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "taskId", "namespace", "at", "kind", "message", "actorId"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "taskId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "at": { "type": "string", "format": "date-time" },
+    "kind": { "enum": ["queued", "started", "progress", "blocked", "waiting_approval", "done", "failed", "cancelled"] },
+    "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "actorId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "pct": { "type": "integer", "minimum": 0, "maximum": 100 }
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/studio-daily-report.schema.json",
+  "title": "StudioDailyReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["from", "to", "namespaces", "compact", "work", "publications", "errors", "costs", "ledger", "health", "approvals", "qa", "attention"],
+  "properties": {
+    "from": { "type": "string", "format": "date-time" },
+    "to": { "type": "string", "format": "date-time" },
+    "namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] }
+    },
+    "compact": { "type": "boolean" },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tasks", "progressEvents"],
+      "properties": {
+        "tasks": { "type": "integer", "minimum": 0 },
+        "progressEvents": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "publications": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versions", "usages"],
+      "properties": {
+        "versions": { "type": "integer", "minimum": 0 },
+        "usages": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "errors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failedProgress", "qaFailed"],
+      "properties": {
+        "failedProgress": { "type": "integer", "minimum": 0 },
+        "qaFailed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "costs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entries", "totalUsd", "available", "scope"],
+      "properties": {
+        "entries": { "type": "integer", "minimum": 0 },
+        "totalUsd": { "type": "number", "minimum": 0 },
+        "available": { "type": "boolean" },
+        "scope": { "const": "actual" }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "available", "actual", "estimate", "forecast", "unassignedEntries", "otherCurrencies", "attribution"],
+      "properties": {
+        "source": { "enum": ["studio3", "none"] },
+        "available": { "type": "boolean" },
+        "actual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entries", "expenseUsd", "incomeUsd"],
+          "properties": {
+            "entries": { "type": "integer", "minimum": 0 },
+            "expenseUsd": { "type": "number", "minimum": 0 },
+            "incomeUsd": { "type": "number", "minimum": 0 }
+          }
+        },
+        "estimate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entries", "expenseUsd", "incomeUsd"],
+          "properties": {
+            "entries": { "type": "integer", "minimum": 0 },
+            "expenseUsd": { "type": "number", "minimum": 0 },
+            "incomeUsd": { "type": "number", "minimum": 0 }
+          }
+        },
+        "forecast": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entries", "expenseUsd", "incomeUsd"],
+          "properties": {
+            "entries": { "type": "integer", "minimum": 0 },
+            "expenseUsd": { "type": "number", "minimum": 0 },
+            "incomeUsd": { "type": "number", "minimum": 0 }
+          }
+        },
+        "unassignedEntries": { "type": "integer", "minimum": 0 },
+        "otherCurrencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "direction", "currency", "amount", "projectId"],
+            "properties": {
+              "kind": { "enum": ["actual", "estimate", "forecast"] },
+              "direction": { "enum": ["income", "expense"] },
+              "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+              "amount": { "type": "number", "minimum": 0 },
+              "projectId": { "type": "string", "minLength": 1, "maxLength": 80 }
+            }
+          }
+        },
+        "attribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["projectId", "known", "rawProjectIds", "actualExpenseUsd", "actualIncomeUsd", "estimateExpenseUsd", "estimateIncomeUsd", "forecastExpenseUsd", "forecastIncomeUsd"],
+            "properties": {
+              "projectId": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "known": { "type": "boolean" },
+              "rawProjectIds": { "type": "array", "items": { "type": "string", "maxLength": 80 } },
+              "actualExpenseUsd": { "type": "number", "minimum": 0 },
+              "actualIncomeUsd": { "type": "number", "minimum": 0 },
+              "estimateExpenseUsd": { "type": "number", "minimum": 0 },
+              "estimateIncomeUsd": { "type": "number", "minimum": 0 },
+              "forecastExpenseUsd": { "type": "number", "minimum": 0 },
+              "forecastIncomeUsd": { "type": "number", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "components"],
+      "properties": {
+        "available": { "type": "boolean" },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["component", "ok"],
+            "properties": {
+              "component": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "ok": { "type": "boolean" },
+              "detail": { "type": "string", "maxLength": 500 }
+            }
+          }
+        }
+      }
+    },
+    "approvals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pending", "approved", "rejected"],
+      "properties": {
+        "pending": { "type": "integer", "minimum": 0 },
+        "approved": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "qa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["failed", "passed"],
+      "properties": {
+        "failed": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "attention": { "type": "array", "maxItems": 40, "items": { "type": "string", "maxLength": 500 } }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/task-dependency.schema.json",
+  "title": "TaskDependency",
+  "description": "Задача становится runnable, только когда все dependsOn в статусе done (policy all_done).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["taskId", "namespace", "dependsOn", "policy"],
+  "properties": {
+    "taskId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "dependsOn": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" }
+    },
+    "policy": { "const": "all_done" }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/content-version.schema.json",
+  "title": "ContentVersionInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "contentType", "contentKey", "title", "body", "storagePath", "checksum", "status"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "contentType": { "enum": ["script", "video"] },
+    "contentKey": { "type": "string", "pattern": "^[A-Za-z0-9_.:/-]{1,80}$" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "body": { "type": "string", "maxLength": 200000 },
+    "storagePath": { "type": ["string", "null"], "maxLength": 500 },
+    "checksum": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "status": { "const": "draft" }
+  }
+}

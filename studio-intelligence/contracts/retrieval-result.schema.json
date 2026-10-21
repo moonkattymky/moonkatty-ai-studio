@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/retrieval-result.schema.json",
+  "title": "RetrievalResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query", "namespaces", "answer", "citations"],
+  "properties": {
+    "query": { "type": "string" },
+    "namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] }
+    },
+    "answer": { "type": "string", "minLength": 1 },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recordId", "filePath", "version", "namespace", "title", "snippet"],
+        "properties": {
+          "recordId": { "type": "string", "minLength": 1 },
+          "filePath": { "type": ["string", "null"], "maxLength": 500 },
+          "version": { "type": "integer", "minimum": 1 },
+          "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+          "title": { "type": "string", "minLength": 1 },
+          "snippet": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

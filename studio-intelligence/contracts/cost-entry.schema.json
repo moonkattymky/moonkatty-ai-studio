@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/cost-entry.schema.json",
+  "title": "CostEntry",
+  "description": "Устарело. Деньги читаются из журнала Studio 3. recordCost эту схему больше не сохраняет.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "component", "amountUsd", "idempotencyKey"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "component": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "amountUsd": { "type": "number", "minimum": 0 },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" },
+    "at": { "type": "string", "format": "date-time" },
+    "note": { "type": "string", "maxLength": 500 },
+    "direction": { "enum": ["expense", "revenue"] },
+    "projectId": { "type": "string", "minLength": 1, "maxLength": 64 }
+  }
+}

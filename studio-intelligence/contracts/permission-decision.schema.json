@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/permission-decision.schema.json",
+  "title": "PermissionDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["allowed", "reason"],
+  "properties": {
+    "allowed": { "type": "boolean" },
+    "reason": { "type": "string", "minLength": 1 }
+  }
+}

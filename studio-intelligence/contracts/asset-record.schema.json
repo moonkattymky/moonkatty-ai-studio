@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/asset-record.schema.json",
+  "title": "AssetRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "kind", "title", "sourceName", "sourceUrl", "storagePath", "contentHash", "status", "idempotencyKey"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "kind": { "enum": ["image", "video", "audio", "music", "model", "texture", "animation", "logo", "subtitle", "other"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "sourceName": { "type": ["string", "null"], "maxLength": 200 },
+    "sourceUrl": { "type": ["string", "null"], "maxLength": 500 },
+    "storagePath": { "type": ["string", "null"], "maxLength": 500 },
+    "contentHash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["draft", "approved"] },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" }
+  }
+}
