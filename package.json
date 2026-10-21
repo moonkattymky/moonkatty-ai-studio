@@ -65,6 +65,11 @@
       "desktop/**",
       "config/WORLD_CLASS_MISSION.md",
       "config/mission.yaml",
+      "node-agent/**",
+      "studio-intelligence/src/**",
+      "media-automation/src/**",
+      "media-automation/config/**",
+      "!media-automation/config/experimental.json",
       "build/icon.png",
       "!build/node/**",
       "!node_modules/better-sqlite3/**",
@@ -109,7 +114,12 @@
       "blender/**",
       "opencode/**",
       "config/WORLD_CLASS_MISSION.md",
-      "config/mission.yaml"
+      "config/mission.yaml",
+      "node-agent/**",
+      "studio-intelligence/src/**",
+      "media-automation/src/**",
+      "media-automation/config/**",
+      "media-automation/package.json"
     ],
     "extraResources": [
       {
