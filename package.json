@@ -119,7 +119,8 @@
       "studio-intelligence/src/**",
       "media-automation/src/**",
       "media-automation/config/**",
-      "media-automation/package.json"
+      "media-automation/package.json",
+      "desktop/build-info.json"
     ],
     "extraResources": [
       {
