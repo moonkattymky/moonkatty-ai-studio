@@ -1,0 +1,166 @@
+{
+  "failed": 0,
+  "out": [
+    {
+      "name": "source adapter uses studio2-read-api",
+      "ok": true,
+      "extra": "studio2-read-api"
+    },
+    {
+      "name": "source mock revenue is DEMO",
+      "ok": true,
+      "extra": {
+        "label": "DEMO USD 12.50",
+        "excludedFromActual": true,
+        "demo": true,
+        "count": 1,
+        "payoutId": "MOCK-PAYOUT-0001"
+      }
+    },
+    {
+      "name": "packaged server has no read-api module and reports absent",
+      "ok": true,
+      "extra": "absent"
+    },
+    {
+      "name": "MA_EXPERIMENTAL default is off",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "MA_EXPERIMENTAL=1 turns the flag on",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "MA_EXPERIMENTAL=yes stays off",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "video_render rejects a published field in the job input",
+      "ok": true,
+      "extra": [
+        "input: неизвестное поле \"status\""
+      ]
+    },
+    {
+      "name": "video_render module starts as a stub",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "Studio 5 agent cannot approve",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "Studio 5 owner approval does not execute and does not write a queue row",
+      "ok": true,
+      "extra": {
+        "executed": false,
+        "status": "approved",
+        "si": {
+          "status": "approved",
+          "auto_execute": 0
+        }
+      }
+    },
+    {
+      "name": "Studio 5 refuses an auto-executing approval",
+      "ok": true,
+      "extra": "VALIDATION"
+    },
+    {
+      "name": "probe server boots as test",
+      "ok": true,
+      "extra": "n experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nMOONKATTY AI STUDIO TEST: http://127.0.0.1:8921 (pid 68696, db node:sqlite)\n"
+    },
+    {
+      "name": "health is test 1.3.0-test schema 6",
+      "ok": true,
+      "extra": {
+        "ok": true,
+        "app": "moonkatty-ai-studio",
+        "flavor": "test",
+        "product": "MOONKATTY AI STUDIO TEST",
+        "schemaVersion": 6,
+        "mode": "server",
+        "version": "1.3.0-test",
+        "pid": 68696,
+        "uptimeSec": 0,
+        "db": "ok",
+        "dbDriver": "node:sqlite",
+        "keySource": "file",
+        "startedAt": "2026-10-21T18:25:30.257Z",
+        "lastTick": "2026-10-21T18:25:30.338Z"
+      }
+    },
+    {
+      "name": "booted command center uses studio-intelligence and studio2-read-api",
+      "ok": true,
+      "extra": {
+        "memory": "studio-intelligence",
+        "read": {
+          "source": "studio2-read-api",
+          "version": "1.0.0",
+          "demo": true,
+          "publish": false,
+          "viewsAreRevenue": false
+        }
+      }
+    },
+    {
+      "name": "Million Audience mission loads",
+      "ok": true,
+      "extra": "world-class"
+    },
+    {
+      "name": "POST published queue is stored as pending_approval",
+      "ok": true,
+      "extra": {
+        "post": 201,
+        "status": "pending_approval"
+      }
+    },
+    {
+      "name": "PUT published is refused",
+      "ok": true,
+      "extra": {
+        "error": "Статус «опубликовано» и externalId ставит только модуль публикации после ответа платформы",
+        "code": "published_internal_only"
+      }
+    },
+    {
+      "name": "publish route is disabled",
+      "ok": true,
+      "extra": {
+        "error": "Тестовая сборка: публикация отключена",
+        "code": "publishing_disabled"
+      }
+    },
+    {
+      "name": "comment approved is stored as new",
+      "ok": true,
+      "extra": {
+        "post": 201,
+        "status": "new"
+      }
+    },
+    {
+      "name": "comment reply is disabled",
+      "ok": true,
+      "extra": {
+        "error": "Тестовая сборка: публикация отключена",
+        "code": "publishing_disabled"
+      }
+    },
+    {
+      "name": "video_render job cannot carry a published field",
+      "ok": true,
+      "extra": {
+        "error": "video_render: input: неизвестное поле \"status\""
+      }
+    }
+  ]
+}
