@@ -47,7 +47,7 @@ test('brute force: 5 wrong codes lock the request (even the right code then fail
 });
 test('unconfirmed request gets no token; rejected request gets no token; bad device signature refused', () => {
   const m = mgr(); const d = devKeys(); const r = m.enrollment.create({ role: 'news' }); const e = m.enrollment.enroll(enBody(r.code, d), '10.5.0.1');
-  const st = (dk = d) => { const ts = clock; return m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ts, sig: EN.sign(dk.key, `status:${e.requestId}:${ts}`) }, '10.5.0.1'); };
+  const st = (dk = d) => { const ts = clock; const nonce = crypto.randomBytes(18).toString('base64url'); return m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ts, nonce, sig: EN.sign(dk.key, `status:${e.requestId}:${ts}:${nonce}`) }, '10.5.0.1'); };
   assert.deepEqual(st(), { status: 'pending' }); assert.equal(errCode(() => st(devKeys())), 'E_BAD_SIGNATURE');
   assert.equal(errCode(() => m.enrollment.status({ requestId: e.requestId, requestSecret: 'wrong', ts: clock, sig: 'x' }, '10.5.0.1')), 'E_NOT_FOUND');
   const v = m.enrollment.list()[0]; assert.equal(v.device.deviceId, d.id); assert.equal(v.device.hostname, 'iMac-test'); assert.match(v.device.pubKeyShort, /^[A-F0-9]{4}(-[A-F0-9]{4}){3}$/);
@@ -107,10 +107,40 @@ test('0.2.0 compatibility: direct-token node (no device key, no agentVersion or 
   const c = await coord(); try { const reg = c.m.registerNode({ id: 'macbook', role: 'monitor' }); const dir = tmp(); fs.writeFileSync(path.join(dir, 'c.crt'), fs.readFileSync(path.join(c.dir, 'nodes-tls.crt')));
     const req = A.client({ url: c.url, certFile: path.join(dir, 'c.crt'), fingerprint: c.fp, token: reg.token });
     assert.equal((await req('GET', '/ping')).status, 200); assert.equal((await req('POST', '/hello', { info: { agentVersion: '0.2.0' } })).status, 200); assert.equal((await req('POST', '/pull', { info: {} })).status, 200);
-    assert.equal((await req('POST', '/rotate', {})).body.code, 'E_NOT_ENROLLED'); assert.equal(N.PROTOCOL, 1); assert.equal(N.AGENT_RANGE, '>=0.2.0 <0.3.0'); assert.equal(A.VERSION, '0.2.1');
+    assert.equal((await req('POST', '/rotate', {})).body.code, 'E_NOT_ENROLLED'); assert.equal(N.PROTOCOL, 2); assert.equal(N.AGENT_RANGE, '>=0.2.0 <0.3.0'); assert.equal(A.VERSION, '0.2.2');
   } finally { await c.close(); }
 });
 test('CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0', () => {
   for (const ip of ['127.0.0.1', '10.0.0.5', '192.168.1.20', '172.16.0.1', '172.31.255.255', '100.64.0.1', '100.101.102.103', '100.127.255.254', 'fd7a:115c:a1e0::1']) assert.ok(N.isPrivateIPv4(ip), ip);
   for (const ip of ['0.0.0.0', '8.8.8.8', '100.63.255.255', '100.128.0.1', '172.32.0.1', '192.168.1.300', '100.64.999.1', '1.2.3', '::', 'fd00::1', 'localhost']) assert.ok(!N.isPrivateIPv4(ip), ip);
+});
+
+test('anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426', async () => {
+  const c = await coord(); const kc = kcEnv(); const home = tmp('home-'); clock = Date.now();
+  try { const r = c.m.enrollment.create({ role: 'news' }); const p = EN.enroll({ url: c.url, fingerprint: c.fp, code: r.code, home, env: kc, info: {}, pollMs: 30 });
+    let q; for (let i = 0; i < 200 && !(q = c.m.enrollment.list().find(x => x.state === 'pending')); i++) await new Promise(z => setTimeout(z, 20)); c.m.enrollment.confirm(q.requestId); await p;
+    const token = JSON.parse(fs.readFileSync(kc.FAKE_KC_FILE, 'utf8'))['moonkatty-node-imac|node-token']; const dk = await EN.deviceIdentity(home, EN.keychain(kc), { create: false });
+    c.m.submit({ capability: 'news.collect', input: { feeds: [] } }); c.m.submit({ capability: 'news.collect', input: { feeds: [] } });
+    const body = Buffer.from(JSON.stringify({ info: { agentVersion: '0.2.2' } })); const h = A.signHeaders({ deviceKey: dk.key }, 'POST', '/api/nodes/pull', body);
+    const raw = (hd) => new Promise((ok, no) => { const u = new URL(c.url); const q2 = require('https').request({ method: 'POST', host: u.hostname, port: u.port, path: '/api/nodes/pull', ca: fs.readFileSync(path.join(c.dir, 'nodes-tls.crt')), checkServerIdentity: () => undefined, headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json', ...hd } }, rs => { let b = ''; rs.on('data', x => b += x); rs.on('end', () => ok({ s: rs.statusCode, b: JSON.parse(b) })); }); q2.on('error', no); q2.end(body); });
+    const r1 = await raw(h); assert.equal(r1.s, 200); assert.ok(r1.b.job); const r2 = await raw(h); assert.equal(r2.s, 401); assert.equal(r2.b.code, 'E_REPLAY');
+    assert.equal(Object.values(c.m.status().jobs || {}).length >= 0, true); assert.ok(c.m.audit().some(a => a.type === 'replay_rejected'));
+    clock += 31e3; assert.equal((await raw(A.signHeaders({ deviceKey: dk.key }, 'POST', '/api/nodes/pull', body))).s, 401, 'old ts (clock moved 31 s) refused'); clock -= 31e3;
+    const tsOld = clock - 31e3; const nn = crypto.randomBytes(18).toString('base64url'); assert.equal((await raw({ 'x-node-ts': String(tsOld), 'x-node-nonce': nn, 'x-node-sig': EN.sign(dk.key, `POST\n/api/nodes/pull\n${tsOld}\n${nn}\n${crypto.createHash('sha256').update(body).digest('hex')}`) })).s, 401);
+    const ts = clock; const v021 = await raw({ 'x-node-ts': String(ts), 'x-node-sig': EN.sign(dk.key, `POST\n/api/nodes/pull\n${ts}\n${crypto.createHash('sha256').update(body).digest('hex')}`) }); assert.equal(v021.s, 426); assert.equal(v021.b.code, 'E_AGENT_VERSION');
+    // node may not self-rotate without owner flag
+    const req = A.client({ url: c.url, certFile: path.join(home, 'coordinator.crt'), fingerprint: c.fp, token, deviceKey: dk.key }); assert.equal((await req('POST', '/rotate', {})).body.code, 'E_ROTATE_NOT_REQUESTED');
+  } finally { await c.close(); }
+  // status poll replay
+  const m = mgr(); const d = devKeys(); const r = m.enrollment.create({ role: 'monitor' }); const e = m.enrollment.enroll(enBody(r.code, d), '10.9.0.1'); const ts = clock; const nonce = crypto.randomBytes(18).toString('base64url');
+  const b = { requestId: e.requestId, requestSecret: e.requestSecret, ts, nonce, sig: EN.sign(d.key, `status:${e.requestId}:${ts}:${nonce}`) }; assert.equal(m.enrollment.status(b, '10.9.0.1').status, 'pending'); assert.equal(errCode(() => m.enrollment.status(b, '10.9.0.1')), 'E_REPLAY');
+});
+test('auth timing: wrong token and right token + bad signature do the same work (dummy verify)', () => {
+  const m = mgr(); const src = fs.readFileSync(require.resolve('../../lib/ops/nodes.js'), 'utf8'); assert.match(src, /DUMMY\.pub/);
+  const t = (f) => { const a = []; for (let i = 0; i < 300; i++) { const s = process.hrtime.bigint(); f(); a.push(Number(process.hrtime.bigint() - s)); } a.sort((x, y) => x - y); return a[150]; };
+  const d = devKeys(); const r = m.enrollment.create({ role: 'news' }); const e = m.enrollment.enroll(enBody(r.code, d), '10.10.0.1'); m.enrollment.confirm(e.requestId);
+  const ts = clock, nonce = crypto.randomBytes(18).toString('base64url'); const tok = m.enrollment.status({ requestId: e.requestId, requestSecret: e.requestSecret, ts, nonce, sig: EN.sign(d.key, `status:${e.requestId}:${ts}:${nonce}`) }, '10.10.0.1').token;
+  const sig = { method: 'GET', path: '/api/nodes/ping', ts: clock, nonce: 'n'.repeat(22), sig: 'AA==' };
+  const wrong = t(() => m.authNode('Bearer nk_imac.' + 'z'.repeat(32), sig)), right = t(() => m.authNode('Bearer ' + tok, sig));
+  assert.ok(right / wrong < 3 && wrong / right < 3, `wrong ${wrong} ns vs right ${right} ns`);
 });

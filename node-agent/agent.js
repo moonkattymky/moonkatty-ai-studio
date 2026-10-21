@@ -9,7 +9,7 @@
 'use strict';
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto'), https = require('https'), http = require('http');
 const { execFile } = require('child_process');
-const VERSION = '0.2.1';
+const VERSION = '0.2.2';
 const EN = require('./enroll.js');
 // Device-profile policy, enforced HERE on the node (not only in docs / on the coordinator): even if a coordinator
 // were compromised and leased a forbidden capability, the agent refuses it. NEWS NODE: no heavy AI, no Blender, no render.
@@ -56,7 +56,7 @@ let lastCpu = null; function cpuPct() { const c = os.cpus().reduce((a, x) => { c
 let modelCache; async function hwModel() { if (modelCache !== undefined) return modelCache; try { modelCache = process.platform === 'darwin' ? (await run('/usr/sbin/sysctl', ['-n', 'hw.model'])).trim() : null; } catch { modelCache = null; } return modelCache; }
 // ---------- coordinator client (pinned TLS) ----------
 // 0.2.1: an enrolled node signs every request with its device Ed25519 key (token is bound to that key on the coordinator)
-function signHeaders(cfg, method, p, data) { if (!cfg.deviceKey) return {}; const ts = Date.now(); return { 'x-node-ts': String(ts), 'x-node-sig': EN.sign(cfg.deviceKey, `${method}\n${p}\n${ts}\n${sha256(data || Buffer.alloc(0))}`) }; }
+function signHeaders(cfg, method, p, data) { if (!cfg.deviceKey) return {}; const ts = Date.now(); const nonce = crypto.randomBytes(18).toString('base64url'); return { 'x-node-ts': String(ts), 'x-node-nonce': nonce, 'x-node-sig': EN.sign(cfg.deviceKey, `${method}\n${p}\n${ts}\n${nonce}\n${sha256(data || Buffer.alloc(0))}`) }; }
 function client(cfg) {
   const u = new URL(cfg.url); const isHttps = u.protocol === 'https:';
   if (!isHttps && !cfg.allowHttpForTests) throw new Error('COORDINATOR_URL должен быть https:// (TLS с закреплённым сертификатом)');
