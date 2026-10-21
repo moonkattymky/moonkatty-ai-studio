@@ -76,6 +76,9 @@
       "media-automation/src/experimental.js",
       "media-automation/config/**",
       "!media-automation/config/experimental.json",
+      "studio-intelligence/contracts/**",
+      "media-automation/assets/**",
+      "media-automation/tools/**",
       "build/icon.png",
       "!build/node/**",
       "!node_modules/better-sqlite3/**",
@@ -132,7 +135,10 @@
       "media-automation/src/experimental.js",
       "media-automation/config/**",
       "media-automation/package.json",
-      "desktop/build-info.json"
+      "desktop/build-info.json",
+      "studio-intelligence/contracts/**",
+      "media-automation/assets/**",
+      "media-automation/tools/**"
     ],
     "extraResources": [
       {
