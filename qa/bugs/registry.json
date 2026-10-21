@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T12:20:00.000Z",
+  "updatedAt": "2026-10-21T12:45:00.000Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -483,6 +483,93 @@
           "at": "2026-10-21T12:20:00.000Z",
           "status": "open",
           "note": "A manifest schema older than the database stays blocked. Their unit tests stub schemaCheck to ok true. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-001",
+      "title": "Node nonce cache is cleared when the process restarts",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "Protocol 2 rejects a repeated signed request with 401 E_REPLAY inside one process. The used-nonce map is memory only. A new manager on the same nodes.json accepts that captured request while the timestamp is still inside 30 seconds.",
+      "expected": "A signed request is accepted once until its timestamp leaves the window, including across a coordinator restart.",
+      "actual": "The second authNode in the same process returns E_REPLAY. A second createNodeManager on the same directory accepts the same signature.",
+      "repro": [
+        "Enroll a node and sign POST /api/nodes/pull with x-node-nonce",
+        "Call authNode twice in the first process",
+        "Open a second createNodeManager on the same directory and call authNode with the captured signature"
+      ],
+      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/attack.json"],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "The in-process replay fix holds. The cache does not survive a restart. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-002",
+      "title": "Unknown loopback peers share one enrollment lock bucket",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "When the socket is loopback and the request has no tailnet X-Forwarded-For and no Tailscale-User-Login, the bucket is loopback. Ten failures lock every other unidentified loopback client. A loopback client can also set X-Forwarded-For to another peer's tailnet address and lock that peer when whois names it. Headers from a non-loopback socket are ignored.",
+      "expected": "An unidentified client cannot lock an identified tailnet peer, and identified peers do not share the fallback bucket.",
+      "actual": "Identified peers stay unlocked when the fallback bucket locks. A loopback spoofed X-Forwarded-For locked tsnode:nIMAC while tsnode:nEVIL still enrolled. A non-loopback X-Forwarded-For was ignored.",
+      "repro": [
+        "Create a node manager with a fake whois",
+        "Send ten bad enrollments from 127.0.0.1 with no Tailscale headers",
+        "Repeat from ::1 and expect E_IP_LOCKED",
+        "Enroll from 127.0.0.1 with X-Forwarded-For of a known tailnet address and expect pending",
+        "From loopback, set X-Forwarded-For to a victim tailnet address and send ten failures"
+      ],
+      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/attack.json"],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "whois was injected. The real tailscale binary was not run. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-003",
+      "title": "Rejecting a node enrollment does not ask for the password",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "Confirm, revoke, and rotate return 428 until the owner password is entered again. Reject is not in that set. A studio session can reject a pending device with the CSRF header and no second password.",
+      "expected": "Reject asks for the owner password the same way confirm does.",
+      "actual": "POST /api/ops/nodes/enroll/:id/reject is not classified. Their integration test expects a status other than 428. Confirm without the confirm token was 428.",
+      "repro": [
+        "Start the server with STUDIO_OPS_NODES=1 and without STUDIO_NODES_LEGACY_TOKENS",
+        "Create an enrollment",
+        "POST confirm and expect 428",
+        "POST reject with the session and X-Studio-Request and expect a status other than 428"
+      ],
+      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/their-tests.log"],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, lib/ops/security-center.js classify",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "Their integration test asserts reject is not 428. Owner approval is not set."
         }
       ]
     }
