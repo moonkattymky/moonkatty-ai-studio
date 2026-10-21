@@ -1,5 +1,5 @@
 'use strict';
-const fs = require('fs'); const path = require('path'); const crypto = require('crypto'); const { JsonStore } = require('../store');
+const fs = require('fs'); const path = require('path'); const crypto = require('crypto'); const { JsonStore } = require('../store'); const { experimentalEnabled, requireExperimental } = require('../experimental');
 const PROFILE = path.join(__dirname, '..', '..', 'config', 'anchor-profile.json');
 /** Anchor speech profile: opening/closing lines honoring catchphrase rules. */
 function anchorLines({ daypart = 'evening', breaking = false, file = PROFILE } = {}) {
@@ -14,7 +14,8 @@ function anchorLines({ daypart = 'evening', breaking = false, file = PROFILE } =
 function detectMajorEvent(stories, { minOrigins = 3 } = {}) {
   return stories.filter(s => s.breaking && s.corroboration === 'confirmed' && (s.verification?.independentOrigins || 0) >= minOrigins);
 }
-function applyMajorEventPolicy({ stories, scheduler, log = () => {} }) {
+function applyMajorEventPolicy({ stories, scheduler, log = () => {}, experimental, env }) {
+  if (!experimentalEnabled({ experimental, env })) return null; /* inert unless MA_EXPERIMENTAL */
   const ev = detectMajorEvent(stories); if (!ev.length) return null;
   const st = scheduler.settings(); if (!st.paused) { scheduler.store.update('settings', s => ({ ...s, paused: true, pausedReason: `major event: ${ev[0].headline}`, pausedAt: new Date().toISOString() })); log('schedule_paused_major_event', { storyId: ev[0].id }); }
   return ev;
@@ -26,7 +27,7 @@ function applyMajorEventPolicy({ stories, scheduler, log = () => {} }) {
  * Flow: reported -> verifying -> (confirmed_error -> correction_drafted -> owner_approved -> published_correction) | dismissed
  */
 class CorrectionsDesk {
-  constructor({ statePath, verifier = null, logPort = null, approval = null }) { this.store = new JsonStore(statePath); Object.assign(this, { verifier, logPort, approval }); }
+  constructor({ statePath, verifier = null, logPort = null, approval = null, experimental, env }) { requireExperimental('corrections_desk', { experimental, env }); this.store = new JsonStore(statePath); Object.assign(this, { verifier, logPort, approval }); }
   async _log(e) { this.store.update('log', l => [...(l || []), e], []); if (this.logPort) await this.logPort.append(e); }
   async report({ episodeId, storyId, claim, reportedBy, evidenceUrl }) {
     if (!episodeId || !claim || !reportedBy) throw new Error('episodeId, claim, reportedBy required');

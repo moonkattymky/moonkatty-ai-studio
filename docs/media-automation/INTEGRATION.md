@@ -81,3 +81,24 @@ Request `host3d.render_segment/v2`: `{script, audioPath (48k mono wav), duration
 - **Voice profile export:** `schemaVersion` is 1.0.0 (provisional). **Animation cues:** v1, PROVISIONAL until Studio reviews them at stage D.
 - **Executor (@322023f fixes):** the input must be exactly {runId, preset, episodeRef, jobId, outDir, signal}. A cancel throws an error with `e.cancelled=true`. Artifacts are written directly into `outDir` and their paths are returned as-is, with no realpath. Studio wires `setExecutor` in server.js itself with `dataDir=DATA_DIR`; the snippet is only a reference.
 - **Studio 5 voice import (0d66218):** the modelSha256 and voicesSha256 match `config/master-voice.json`. The export now uses `engine.name='kokoro'`.
+
+## 12. Shared EXPERIMENTAL flag (v1.3.0-test), DEFAULT OFF
+- **How to turn it on:** set `MA_EXPERIMENTAL=1` (or `true`), or put `{"experimental": true}` in `media-automation/config/experimental.json` (or pass `config`). An explicit `experimental: true|false` option on a factory or constructor overrides both; this is used by tests.
+- **Code:** `media-automation/src/experimental.js`. `moduleStatus()` lists every gated module with `enabled` and `reason` (`'experimental'` or `'not implemented'`).
+
+| Module | When OFF |
+|---|---|
+| Major-event detection + schedule auto-pause | `applyMajorEventPolicy` returns `null` and never pauses the scheduler (`detectMajorEvent` is still a pure helper) |
+| CorrectionsDesk | the constructor throws `EXPERIMENTAL_DISABLED` (`reason: 'experimental'`) |
+| Brand Memory | no code on this branch; listed as `not implemented` |
+| Cost Control | no code on this branch; listed as `not implemented` |
+| X adapters (publish + analytics) | not registered in `defaultAdapters()` / `defaultAnalyticsAdapters()`; the platform registry marks `x` with `enabled:false, disabledReason:'experimental'`; `liveMode` returns the reason `experimental`; the orchestrator skips X targets with `skipped:'experimental'` |
+| Telegram adapters | same as X (`telegram`) |
+
+- **Unaffected when OFF:**
+  - the `video_render` executor and jobs
+  - the news pipeline and orchestrator
+  - the Approval Center
+  - YouTube, TikTok, Facebook and Instagram dry-run publishing and analytics
+  - the Platform Read API, which only adds the `enabled` and `disabledReason` fields
+- **Tests:** `test/experimental.test.js` covers both states. Older tests that exercise these modules opt in with `experimental: true`.

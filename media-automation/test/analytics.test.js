@@ -16,7 +16,7 @@ function fetchMock(calls) { return async (url, o = {}) => { calls.push({ url, o 
   throw new Error('unmocked ' + url); }; }
 
 test('official API adapters normalize metrics (mocked)', async () => {
-  const calls = []; const a = new Analytics({ statePath: path.join(tmp(), 'a.json'), adapters: defaultAnalyticsAdapters({ fetchFn: fetchMock(calls) }), secrets });
+  const calls = []; const a = new Analytics({ statePath: path.join(tmp(), 'a.json'), adapters: defaultAnalyticsAdapters({ experimental: true, fetchFn: fetchMock(calls) }), secrets });
   const r = await a.collect([
     { id: 'yt1', platform: 'youtube', remoteId: 'v1', secret: 'yt' }, { id: 'x1', platform: 'x', remoteId: 't1', secret: 'xt' },
     { id: 'tg1', platform: 'telegram', remoteId: '@c:1', secret: 'tg', ctx: { chatId: '@c' } }, { id: 'ig1', platform: 'instagram', remoteId: 'm1', secret: 'meta' },
