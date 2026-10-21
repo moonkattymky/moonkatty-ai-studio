@@ -38,3 +38,26 @@ cancel(nodeJobId)    → обновление со status 'cancelled'
 
 ## E. Admin API (сессия владельца, основное приложение)
 `GET /api/ops/nodes` · `POST /api/ops/nodes {id, role: news|monitor, name, caps?}` → токен (один раз) · `POST /api/ops/nodes/:id/command {command}` · `POST /api/ops/nodes/:id/revoke` · `POST /api/ops/nodes/jobs {capability, input, idempotencyKey, safeToRetry, maxAttempts, timeoutSec, requires, preferNode, files}` · `POST /api/ops/nodes/jobs/:id/cancel|retry` · `GET /api/ops/nodes/route?capability=`.
+
+## F. 0.2.1 — подключение по одноразовому коду (enrollment), `protocol: 1`
+Версионирование: `protocol: 1`; поддерживаемые агенты `agentVersion` **>=0.2.0 <0.3.0**. `hello` возвращает `protocol` и `agentVersionRange`; версия вне диапазона в `hello`/`pull` → **426 `E_AGENT_VERSION`**; отсутствие версии (старые агенты) допускается.
+
+**Владелец (сессия панели, `cache-control: no-store`):**
+| Метод | Путь | Ответ |
+|---|---|---|
+| POST | `/api/ops/nodes/enroll` `{role: news\|monitor, name, nodeId?}` | `{requestId, code: "RID5-XXXXX-XXXXX", expiresAt, ttlSec:300, nodeId, role, reenroll, fingerprint, fingerprintShort}` — код показывается один раз |
+| GET | `/api/ops/nodes/enroll` | список запросов: state `awaiting_code\|pending\|confirmed\|enrolled\|rejected\|expired\|locked\|superseded`, `device{deviceId, pubKeyFingerprint, pubKeyShort, hostname, model, os, arch, agentVersion, ip}` |
+| POST | `/api/ops/nodes/enroll/:rid/confirm` · `/reject` | только из `pending` |
+| POST | `/api/ops/nodes/:id/rotate` | помечает ротацию; узел получит `rotate:true` |
+| POST | `/api/ops/nodes/:id/revoke` | токен и ключ устройства аннулируются |
+| GET | `/api/ops/nodes/audit` | журнал (без секретов) |
+
+**Узел (порт 8790, только TLS — по HTTP → 426 `E_TLS_REQUIRED`; лимит 30 запросов/мин с IP):**
+- `POST /api/nodes/enroll` `{code, deviceId: "dev_<32hex>", devicePubKey: PEM Ed25519, proof: sig("enroll:<rid>:<deviceId>"), info}` → `{requestId, status:"pending", requestSecret, pollMs, nodeId, role}`.
+- `POST /api/nodes/enroll/status` `{requestId, requestSecret, ts, sig: sig("status:<rid>:<ts>")}` (±120 с) → `{status:"pending"|"rejected"}` или один раз `{status:"enrolled", nodeId, role, token:"nk_<id>.<secret>", protocol:1}`.
+- Подключённый узел подписывает **каждый** запрос: `x-node-ts`, `x-node-sig` = Ed25519 над `METHOD\nPATH\nts\nsha256hex(body)` (±120 с). Без подписи/чужим ключом → 401. Узлы 0.2.0 (прямой токен, без ключа устройства) работают как раньше.
+- `POST /api/nodes/rotate` (только enrolled; иначе 409 `E_NOT_ENROLLED`) → `{token}`; старый токен сразу недействителен. `pull` возвращает `rotate: true`, когда владелец запросил ротацию.
+
+**Коды ошибок:** `E_BAD_REQUEST` 400 · `E_BAD_SIGNATURE` 401 · `E_UNAUTHORIZED` 401 · `E_CODE_INVALID` 403 · `E_NOT_FOUND` 404 · `E_METHOD` 405 · `E_CODE_USED` 409 · `E_NOT_ENROLLED` 409 · `E_CODE_EXPIRED` 410 · `E_REQUEST_LOCKED` 423 (5 неверных попыток) · `E_TLS_REQUIRED` 426 · `E_AGENT_VERSION` 426 · `E_RATE_LIMIT` 429 · `E_IP_LOCKED` 429 (10 ошибок за 15 мин → блок 15 мин).
+
+**Хранение:** код — HMAC(серверный ключ, rid:код), TTL 5 мин, одноразовый; `requestSecret` и токен — только SHA-256 на сервере; на узле токен, секрет запроса и закрытый ключ устройства — только в Keychain.
