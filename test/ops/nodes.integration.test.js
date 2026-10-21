@@ -46,3 +46,10 @@ test('nodes defaults: legacy bearer-only tokens off; device confirm / revoke / r
     assert.notEqual((await s.j('POST', `/api/ops/nodes/enroll/${en.body.requestId}/reject`, s.A, {})).status, 428);
   } finally { await s.cleanup(); }
 });
+
+test('node step-up actions also work with Security Center ON (STUDIO_OPS_SECURITY=1)', { timeout: 60000 }, async () => {
+  const NP = 19390 + (process.pid % 200); const s = await startServer({ port: 19250 + (process.pid % 300), env: { STUDIO_OPS_NODES: '1', STUDIO_OPS_SECURITY: '1', OPS_NODES_PORT: String(NP) } });
+  try { for (const action of ['node-confirm', 'node-revoke', 'node-rotate', 'node-legacy-token']) { const r = await s.j('POST', '/api/ops/confirm', s.A, { action, password: 'fake-password-123' }); assert.equal(r.status, 200, action); assert.ok(r.body.confirmToken); }
+    assert.equal((await s.j('POST', '/api/ops/nodes/x/revoke', s.A, {})).status, 428);
+  } finally { await s.cleanup(); }
+});
