@@ -17,6 +17,11 @@ if (process.env.STUDIO_USER_DATA && !app.isPackaged) app.setPath('userData', pro
 else if (process.platform === 'darwin') app.setPath('userData', CFG.macDataDir()); // explicit: ~/Library/Application Support/<product>/
 // Startup guard (TEST build): refuse to run if userData would resolve into the production data folder.
 try { CFG.assertTestPath(app.getPath('userData'), 'userData'); } catch (e) { dialog.showErrorBox(PRODUCT, e.message); app.exit(78); }
+// v1.2.3-test: packaged app — unpacked flavor markers must match the lock sealed inside app.asar, and the config module
+// must agree; otherwise refuse (exit 78) before any server is started or installed.
+if (app.isPackaged) { const g = require('./flavor-guard.js').check(path.join(process.resourcesPath, 'app.asar.unpacked'));
+  if (!g.ok || g.flavor !== CFG.FLAVOR) { dialog.showErrorBox(PRODUCT, 'ОТКАЗ: целостность сборки нарушена (' + (g.reason || 'flavor ' + CFG.FLAVOR) + ')'); app.exit(78); process.exit(78); } }
+else if (!CFG.FLAVOR) { dialog.showErrorBox(PRODUCT, 'ОТКАЗ: сборка не определена'); app.exit(78); process.exit(78); }
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 const ROOT = path.join(__dirname, '..');

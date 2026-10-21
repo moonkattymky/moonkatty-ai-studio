@@ -1,10 +1,10 @@
-# Изолированная тестовая сборка v1.2.2-test на Mac mini
+# Изолированная тестовая сборка v1.2.3-test на Mac mini
 
 > **ТЕСТОВАЯ СБОРКА, НЕ ДЛЯ РАБОТЫ.** Она ставится **рядом** с рабочей v1.1.2 и ничего в ней не меняет. Установленную v1.1.2 не заменяем и не обновляем.
 
 ## 0. Чем тестовая сборка отличается от v1.1.2
 
-| | v1.1.2 (рабочая) | v1.2.2-test |
+| | v1.1.2 (рабочая) | v1.2.3-test |
 |---|---|---|
 | Приложение | `/Applications/MOONKATTY AI STUDIO.app` | `~/Applications/MOONKATTY AI STUDIO TEST.app` |
 | Bundle ID | `com.moonkatty.aistudio` | `com.moonkatty.aistudio.test` |
@@ -17,7 +17,11 @@
 | Автозапуск сервера | вкл. | **выкл.** (сервер запускается кнопкой) |
 | Проверка обновлений | вкл. | выкл. |
 | Публикация в соцсети | есть | **полностью отключена** (модуль публикации не загружается, соцсети исключены из списка исходящих соединений) |
-| Режим сборки | prod | **TEST вшит при сборке** (`lib/flavor.baked.js`): переменные окружения, настройки и аргументы его не меняют |
+| Режим сборки | prod | **TEST вшит при сборке** (`lib/flavor.baked.js` + `lib/flavor.lock.json` с SHA-256 + `studioFlavor`/`studioFlavorSha256` в `package.json` + замок внутри `app.asar`). Переменные окружения, настройки и аргументы его не меняют. Если маркеры не совпадают, приложение не запускается (код 78) |
+| Модуль публикации (`meta.js`) | есть | **отсутствует в сборке** |
+| Ключ печати публикаций | Keychain `MOONKATTY AI STUDIO` / `publish-seal-key` (не в studio.db) | не создаётся: публикация отключена |
+
+Если тестовая сборка отказывается запускаться с сообщением «целостность сборки нарушена» или «сборка не определена», значит, файлы внутри `.app` изменены или повреждены. Удалите приложение и заново распакуйте проверенный zip.
 
 Защита в коде: если тестовой сборке передать путь внутри `~/Library/Application Support/MOONKATTY AI STUDIO/`, она откажется запускаться (код выхода 78, сообщение «ОТКАЗ …»). Это работает и для символических ссылок.
 
@@ -65,9 +69,9 @@ D="$HOME/Library/Application Support/MOONKATTY AI STUDIO"
 
 ## 2. Скачивание и проверка тестовой сборки
 
-Скачайте ассеты релиза **v1.2.2-test**: zip, `.sha256` и `release-manifest.json` в папку «Загрузки».
+Скачайте ассеты релиза **v1.2.3-test**: zip, `.sha256` и `release-manifest.json` в папку «Загрузки».
 ```bash
-cd ~/Downloads && shasum -a 256 -c "MOONKATTY-AI-STUDIO-TEST-1.2.2-test-arm64-mac.zip.sha256"   # → OK
+cd ~/Downloads && shasum -a 256 -c "MOONKATTY-AI-STUDIO-TEST-1.2.3-test-arm64-mac.zip.sha256"   # → OK
 ```
 Значение должно совпасть с SHA-256 в описании релиза.
 
@@ -123,7 +127,7 @@ MK_FLAVOR=test ~/Applications/"MOONKATTY AI STUDIO TEST.app"/Contents/Resources/
 - Если Ollama занята или в это время рендерит Blender, чат Director отвечает «Студия занята … запрос поставлен в очередь». Это ожидаемое поведение.
 
 **Пришлите скриншоты:**
-1. стартовое окно тестового приложения (версия 1.2.2-test, порт 8687);
+1. стартовое окно тестового приложения (версия 1.2.3-test, порт 8687);
 2. вывод команд из п. 5.3;
 3. «Настройки → OpenCode server» после «Проверить»;
 4. 3D Studio с завершённым заданием и превью;
@@ -143,6 +147,7 @@ rm -rf "$HOME/Library/Application Support/MOONKATTY AI STUDIO TEST" "$HOME/Libra
 rm -rf "$HOME/Library/Caches/com.moonkatty.aistudio.test" "$HOME/Library/Preferences/com.moonkatty.aistudio.test.plist" "$HOME/Library/Saved Application State/com.moonkatty.aistudio.test.savedState" "$HOME/Library/HTTPStorages/com.moonkatty.aistudio.test"
 security delete-generic-password -s "MOONKATTY AI STUDIO.test" -a studio-master-key 2>/dev/null || true
 security delete-generic-password -s "MOONKATTY AI STUDIO.test" -a opencode-server-password 2>/dev/null || true
+security delete-generic-password -s "MOONKATTY AI STUDIO.test" -a publish-seal-key 2>/dev/null || true   # обычно отсутствует
 security delete-generic-password -s "MOONKATTY AI STUDIO TEST Safe Storage" 2>/dev/null || true
 ```
 Проверка, что рабочая версия на месте: `curl -s http://127.0.0.1:8787/api/health` и `ls "$HOME/Library/Application Support/MOONKATTY AI STUDIO"`.

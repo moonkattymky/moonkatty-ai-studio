@@ -24,9 +24,11 @@ delete ENV.STUDIO_SECRET_KEY;
   ok('TEST flavor: Keychain service .test, port ≠ 8787, autostart off, no update checks', c.keychainService === 'MOONKATTY AI STUDIO.test' && c.defaultPort !== 8787 && c.defaultPort === 8687 && c.autoStartServer === false && c.checkUpdates === false);
   const p = JSON.parse(spawnSync(process.execPath, ['-e', 'console.log(JSON.stringify(require("./lib/studio-config.js")))'], { env: { ...ENV, STUDIO_FLAVOR: 'prod' } }).stdout);
   ok('prod flavor unchanged (v1.1.2 identifiers)', p.product === 'MOONKATTY AI STUDIO' && p.appId === 'com.moonkatty.aistudio' && p.launchdLabel === 'com.moonkatty.aistudio.server' && p.keychainService === 'MOONKATTY AI STUDIO' && p.defaultPort === 8787);
-  const pr = spawnSync(process.execPath, ['-e', 'console.log(require("./lib/studio-config.js").FLAVOR)'], { env: { ...ENV, NODE_ENV: 'production' } });
-  ok('STUDIO_FLAVOR ignored outside NODE_ENV=test; no baked flavor → FLAVOR null (no default)', String(pr.stdout).trim() === 'null');
-  const sv = spawnSync(process.execPath, ['server.js'], { env: { ...ENV, NODE_ENV: 'production', PORT: '8829' }, timeout: 8000 });
+  const pr = spawnSync(process.execPath, ['-e', 'console.log(require("./lib/studio-config.js").FLAVOR)'], { env: { ...ENV, NODE_ENV: 'production', STUDIO_FLAVOR: '' } });
+  ok('source checkout without markers and without STUDIO_FLAVOR → FLAVOR null (no default, NODE_ENV irrelevant)', String(pr.stdout).trim() === 'null');
+  const pn = spawnSync(process.execPath, ['-e', 'console.log(require("./lib/studio-config.js").FLAVOR)'], { env: { ...ENV, NODE_ENV: 'production', STUDIO_FLAVOR: 'test' } });
+  ok('source checkout: NODE_ENV irrelevant (STUDIO_FLAVOR=test honoured with NODE_ENV=production)', String(pn.stdout).trim() === 'test');
+  const sv = spawnSync(process.execPath, ['server.js'], { env: { ...ENV, NODE_ENV: 'production', STUDIO_FLAVOR: '', PORT: '8829' }, timeout: 8000 });
   ok('server.js without baked flavor and without STUDIO_FLAVOR refuses to start (exit 78, clear error)', sv.status === 78 && /сборка не определена/.test(String(sv.stderr))); }
 // grep: no hardcoded identifiers outside lib/studio-config.js (code that runs in the app)
 { const files = ['server.js', 'runner.js', 'meta.js', ...fs.readdirSync('lib').filter(f => f.endsWith('.js')).map(f => 'lib/' + f), 'lib/executors/design3d.js', ...fs.readdirSync('desktop').filter(f => f.endsWith('.js')).map(f => 'desktop/' + f)];

@@ -12,10 +12,12 @@ npm ci --ignore-scripts --no-audit --no-fund
 scripts/fetch-node.sh
 node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'macos'}))"
 # Native Mac build is the PRODUCTION flavor only (TEST build: FLAVOR=test scripts/package-mac-on-linux.sh). Flavor is baked.
-printf "'use strict';\nmodule.exports = 'prod';\n" > lib/flavor.baked.js; trap 'rm -f lib/flavor.baked.js' EXIT
+trap 'rm -f lib/flavor.baked.js lib/flavor.lock.json desktop/flavor.lock.json' EXIT
+printf "'use strict';\nmodule.exports = 'prod';\n" > lib/flavor.baked.js; BAKED_SHA=$(shasum -a 256 lib/flavor.baked.js | cut -d' ' -f1)
+printf '{"flavor":"prod","bakedSha256":"%s"}\n' "$BAKED_SHA" | tee lib/flavor.lock.json > desktop/flavor.lock.json
 rm -rf dist
 export CSC_IDENTITY_AUTO_DISCOVERY="${CSC_IDENTITY_AUTO_DISCOVERY:-false}"
-npx electron-builder --mac dir --arm64 --publish never -c.extraMetadata.studioFlavor=prod
+npx electron-builder --mac dir --arm64 --publish never -c.extraMetadata.studioFlavor=prod -c.extraMetadata.studioFlavorSha256="$BAKED_SHA"
 if [[ "$CSC_IDENTITY_AUTO_DISCOVERY" == "false" ]]; then
   codesign --force --deep --sign - "$APP"     # ad-hoc
 fi

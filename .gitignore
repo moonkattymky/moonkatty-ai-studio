@@ -7,3 +7,6 @@ dist/
 build/node/
 desktop/build-info.json
 lib/flavor.baked.js
+lib/flavor.lock.json
+desktop/flavor.lock.json
+.eb-config.json

@@ -6,6 +6,8 @@ const path = require('path');
 const S = require('./public/social.js');
 const core = require('./public/core.js');
 
+// v1.2.3-test: the publisher refuses to load in anything but a verified prod flavor (and is not shipped in TEST bundles).
+{ const C = require('./lib/studio-config.js'); if (C.FLAVOR !== 'prod') throw new Error('meta.js: publisher disabled (flavor ' + C.FLAVOR + ')'); }
 module.exports = function mountMeta(app, ctx) {
   const { q, get, put, list, log, DB_PATH, express } = ctx;
   // ---- encryption key ----

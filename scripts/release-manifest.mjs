@@ -2,7 +2,7 @@
 import fs from 'fs'; import path from 'path'; import crypto from 'crypto'; import { execFileSync } from 'child_process'; import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const [zip, flavor = 'prod'] = process.argv.slice(2);
-process.env.NODE_ENV = 'test'; process.env.STUDIO_FLAVOR = flavor; const C = require(process.cwd() + '/lib/studio-config.js');
+const C0 = require(process.cwd() + '/lib/studio-config.js'); const C = { ...(flavor === 'test' ? C0.TEST : C0.PROD), PROD: C0.PROD };
 const src = fs.readFileSync('server.js', 'utf8'); const dbSchemaVersion = +(/const DB_SCHEMA_VERSION = (\d+)/.exec(src) || [])[1];
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const git = (...a) => execFileSync('git', a).toString().trim();
