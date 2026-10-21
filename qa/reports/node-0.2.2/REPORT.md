@@ -122,3 +122,11 @@ Legacy and step-up. `POST /api/ops/nodes` was 428, then 403 `E_LEGACY_DISABLED` 
 7. A coordinator restart clears the nonce map. A captured signed request can be accepted once more while its timestamp is still inside 30 seconds. The request lock and the IP lock stay on disk.
 
 This GO is for a private tailnet test. It is not a production launch and it is not a Funnel launch. macOS Keychain, `launchd`, Gatekeeper, and a live tailnet `whois` were **NOT VERIFIED**.
+
+## Result
+
+**PASS** for a private tailnet test when the conditions above are followed. **FAIL** for Funnel, a public bind, and a production launch.
+
+Blocking bugs for that private test: none. The twelve 0.2.1 findings are fixed inside one process. Open lows, and not blockers for that test: `QA-NODE-001` (nonce cache is memory-only), `QA-NODE-002` (unidentified loopback clients share one bucket, and a loopback process can name a peer), `QA-NODE-003` (reject does not ask for the password). Owner approval is not set.
+
+**Allowed on the Mac mini:** one coordinator, Funnel off, legacy tokens left off, the code entered on stdin or at the prompt, and the device-key fingerprint compared on both screens. A local process on `127.0.0.1` or `::1` is trusted for `X-Forwarded-For`. Real publishing and real social accounts stay forbidden. macOS Keychain, `launchd`, and a live `tailscale whois` were **NOT VERIFIED**.

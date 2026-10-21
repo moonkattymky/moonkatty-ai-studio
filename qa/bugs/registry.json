@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T12:45:00.000Z",
+  "updatedAt": "2026-10-21T12:50:00.000Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -570,6 +570,34 @@
           "at": "2026-10-21T12:45:00.000Z",
           "status": "open",
           "note": "Their integration test asserts reject is not 428. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-3D-001",
+      "title": "OpenCode chat reply does not write scene_params.json",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "3d",
+      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with 'Агент OpenCode не записал scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
+      "expected": "A model that does not call write still leaves a schema-valid scene_params.json from the studio params, or the job says the model must call write before the Mac test is treated as done.",
+      "actual": "On 6cf7c08 a chat-only mock finished with tools none. The job status was failed at stage agent. scene.blend and preview.png were absent. The same server, with the product mock that does call write, produced a 913264-byte BLENDER file and a 640x480 PNG.",
+      "repro": [
+        "Start opencode 1.19.3 against a chat-only model and Blender 4.2+",
+        "POST /api/studio3d/run with a 3D scene request",
+        "Read the job error and the version directory"
+      ],
+      "evidence": ["qa/reports/opencode-scene-params/REPORT.md", "qa/reports/opencode-scene-params/logs/result.json"],
+      "foundAt": "2026-10-21T12:50:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 6cf7c08, lib/executors/design3d.js agent()",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:50:00.000Z",
+          "status": "open",
+          "note": "Introduced in 00b63fc. The only later edit to design3d.js is the OpenCode URL default in f2440e1. A real Ollama model was not run. Owner approval is not set."
         }
       ]
     }

@@ -165,3 +165,39 @@ This tree does not depend on `electron-updater` and does not call `autoUpdater`.
 A verified backup is required before a same-identity replace, together with owner approval and a schema that is not older. Isolated side-by-side skips the password. Download still requires the button, and auto-install refuses a side-by-side plan (`mode !== 'replace'`). Ollama, OpenCode, Keychain, and the data directory are listed under `servicesPlan().untouched` and were not modified by the harness. The Linux backup left `secret.key` out of the archive unless a passphrase encrypted it.
 
 Real social accounts stay out of this review. This commit is the Studio 3 / 1.1.2 line. It does not change that rule.
+
+## Backup, rollback, and test/prod isolation
+
+### Backup before an update, and rollback after it
+
+A same-identity replace is allowed only when `preBackup` has a verified backup, the owner has approved the tag, and `compatCheck` does not see an older schema. `preBackup` calls `backup.js` `create`, `verify`, and `testRestore`.
+
+On Linux, with `node:sqlite`, a database at `meta.schemaVersion = 1` was backed up with passphrase `fake-pass-1234`. `verify` was ok. `testRestore` reported `integrity: ok` and `countsMatch: true`. The archive contained `secret.key.enc`. It did not contain `secret.key` or `app-token`. After the live database moved to schema 3 and gained a `migrated` table, `restoreInto` an empty directory brought back schema `1`, tables `items, meta`, and one item. Restore into a non-empty directory threw `Целевая папка не пуста`.
+
+The written plan renames the old data directory. That restore does not delete it. Rolling the `.app` back is `mv` of `…-previous.app`. The HTTP route `POST /api/ops/update-center/rollback` returned `dryRun: true` even when the body said `dryRun: false` (`lib/ops/protected.js` line 71). A direct `rollback({ dryRun: false })` on Linux threw `NOT_MAC` and did not call `exec`. The `.app` swap, `launchctl`, and a restore into a Mac data directory were **NOT VERIFIED**.
+
+`compatCheck` blocks a manifest schema older than the detected database. It allows a newer schema, including `99` against a detected `4`, and it ignores `schemaCheck.ok`. `SUPPORTED_SCHEMA` is `1`. A jobs table that the detector calls schema `3` still produced `gate` mode `replace`. The center does not run the migration SQL. The new app would. If that app migrates the live database, the way back is the backup restored into an empty folder and a data-directory swap. That swap was not executed.
+
+`servicesPlan().untouched` lists Ollama, OpenCode, Keychain, and the data directory. The harness did not modify them. Keychain items live outside the file backup. The Linux archive kept the encrypted `secret.key` and left the plaintext key out.
+
+`lib/ops/update.js` lines 52–53 still put `rm -rf "/Applications/MOONKATTY AI STUDIO.app"` in `plan().rollback`. The panel steps do not show that command. The API returns it as `legacy`.
+
+### Test and production do not update independently
+
+`CURRENT_IDENTITY` in `lib/ops/update-center.js` line 17 is fixed: bundle id `com.moonkatty.aistudio`, data directory `MOONKATTY AI STUDIO`, launchd `com.moonkatty.aistudio.server`, Keychain prefix `MOONKATTY AI STUDIO`, app path `/Applications/MOONKATTY AI STUDIO.app`. `createUpdateCenter` has no identity argument. `lib/ops/index.js` passes `current: ctx.version` only. A test build of this commit still reports the production identity.
+
+`gate` compares `bundleId`, `dataDirName`, `launchdLabel`, and `keychainServicePrefix`. `channel` is not one of those fields. A manifest with `channel: "test"` and the four production ids, version `1.3.3`, a verified signature, a backup, and owner approval returned `mode: "replace"` and a step that moves `/Applications/MOONKATTY AI STUDIO.app`.
+
+A partial overlap (test bundle id, test launchd, test Keychain prefix, production data directory) stayed blocked: `идентичность сборки частично совпадает`. A fully isolated manifest (`isolated: true`, all four ids different, `isolatedFrom` containing the installed bundle id) was `side-by-side` with `approved: false`. Auto-install refuses a plan whose mode is not `replace`. Calling `gate` with an installed test identity and a production manifest stayed blocked, and this tree never supplies that installed identity.
+
+One public key file is loaded: `lib/ops/update-keys/release-ed25519.pub.pem`. `verifySig` succeeds when any loaded key verifies. There is no test key and no production key. `keyId` is computed after verification and is not inside the signature. There is no revocation list. The committed pem is a placeholder whose private half the README says was discarded, so a real GitHub release stays unverified until that file is replaced. After it is replaced with one key, the test-channel replace above becomes a real replace of the production app and the production data directory.
+
+## Result
+
+**FAIL.** Do not include this Update Center in a working version.
+
+Blocking bugs: `QA-UC-001` (one production identity and one key, so a test channel can replace production), `QA-UC-002` (symlink entries pass zip validation), `QA-UC-003` (no re-hash at install time, approval sticks to the tag), `QA-UC-004` (Electron checks GitHub five seconds after launch), `QA-UC-005` (the schema support cap does not block the gate). Owner approval is not set.
+
+Open, and not the blockers above: the `rm -rf` string in `legacy`, the health URL taken from the environment, and codesign reported ok on Linux.
+
+**Allowed on the Mac mini:** leave `STUDIO_OPS_UPDATE` unset. Leave the four `OPS_UPDATE_*` flags unset. Do not press Check or Update against this build. Do not auto-install. Real publishing and real social accounts stay forbidden. Gatekeeper, quarantine, `ditto`, `launchd`, Keychain, and notarization were **NOT VERIFIED** on this Linux host.
