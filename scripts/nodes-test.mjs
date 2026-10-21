@@ -61,10 +61,10 @@ async function until(fn, ms = 15000) { const t = Date.now(); while (Date.now() -
 const bad = agent('macbook-test', rm.token, 'monitor', 'f'.repeat(64)); await sleep(2500);
 ok('agent with a wrong pinned fingerprint never connects', !(await nodeOf('macbook-test')).lastSeen); bad.kill('SIGKILL');
 const news = agent('imac-test', ri.token, 'news'), mon = agent('macbook-test', rm.token, 'monitor');
-const nOn = await until(async () => { const n = await nodeOf('imac-test'); return n && n.status === 'online' && n.info?.agentVersion === '0.2.0' && n.info.hostname !== 'fake' ? n : null; });
-ok('NEWS NODE agent 0.2.0 (imac-test) online over pinned TLS', !!nOn, nOn ? nOn.info.agentVersion : news.out.join('').slice(-300));
-const mOn = await until(async () => { const n = await nodeOf('macbook-test'); return n && n.status === 'online' && n.info?.agentVersion === '0.2.0' && n.info.hostname !== 'fake' ? n : null; });
-ok('MONITOR NODE agent 0.2.0 (macbook-test) online over pinned TLS', !!mOn, mOn ? mOn.info.agentVersion : mon.out.join('').slice(-300));
+const nOn = await until(async () => { const n = await nodeOf('imac-test'); return n && n.status === 'online' && n.info?.agentVersion === '0.2.2' && n.info.hostname !== 'fake' ? n : null; });
+ok('NEWS NODE agent 0.2.2 (imac-test) online over pinned TLS', !!nOn, nOn ? nOn.info.agentVersion : news.out.join('').slice(-300));
+const mOn = await until(async () => { const n = await nodeOf('macbook-test'); return n && n.status === 'online' && n.info?.agentVersion === '0.2.2' && n.info.hostname !== 'fake' ? n : null; });
+ok('MONITOR NODE agent 0.2.2 (macbook-test) online over pinned TLS', !!mOn, mOn ? mOn.info.agentVersion : mon.out.join('').slice(-300));
 if (nOn) ok('info fields present (cpuPct 0-100, bytes as integers, tools[])', ['hostname', 'os', 'arch', 'cpus', 'memTotal', 'memAvailable', 'diskFree', 'diskTotal', 'load1', 'node', 'agentVersion'].every(k => nOn.info[k] !== undefined) && Number.isInteger(nOn.info.memTotal) && nOn.info.cpuPct >= 0 && nOn.info.cpuPct <= 100 && Array.isArray(nOn.info.tools));
 { const j = (await call('POST', '/api/ops/nodes/jobs', { capability: 'news.dedup', input: { items: [{ title: 'Мир: новость', link: 'a' }, { title: 'мир — новость', link: 'b' }, { title: 'Другое', link: 'c' }] } })).body;
   const d = await until(async () => { const x = (await call('GET', '/api/ops/nodes/jobs')).body[j.jobId]; return x && x.status === 'succeeded' ? x : null; });
