@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T13:33:55.190Z",
+  "updatedAt": "2026-10-21T13:45:18.444Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -842,6 +842,193 @@
       "history": [
         {
           "at": "2026-10-21T13:33:55.190Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-001",
+      "title": "Azure usage file resets the dollar cap when it is removed or incomplete",
+      "severity": "high",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The $1 S0 guard is news-launch/azure-tts state usage.json with no signature. Deleting the file, omitting spentMicro, or writing a different YYYY-MM starts the current month at the new charge and the next reserve succeeds. Moving the clock to another month and back does the same, because a month mismatch replaces the file. Truncated JSON, a negative spentMicro, and a fractional spentMicro are refused.",
+      "expected": "A missing, deleted, or incomplete usage file fails closed and sends nothing.",
+      "actual": "Deletion, a missing spentMicro, a swapped month, and a clock return each reserved a new charge. Eight processes sharing the lock stayed at or under $1 (800010 micro-dollars).",
+      "repro": [
+        "Point UsdBudget at a temp usage.json with monthlyBudgetUsd 1 and price 15",
+        "Reserve January, move now() to February, then move now() back to January",
+        "Delete the file, write a file with no spentMicro, and write month 2026-12 while now() is January"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.236Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-002",
+      "title": "Azure paid approval is a voice-config field with no owner session",
+      "severity": "high",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "S0 calls require paidEnabled true and paidApproval.at plus paidApproval.by. Those fields are read from the voice JSON or the provider constructor. There is no password, signature, or studio login. MasterVoice.setCandidate followed by lock('agent') wrote paidEnabled true and paidApproval.by agent, then synthesize called the mock. The shipped master-voice.json stays on Kokoro and does not set these fields.",
+      "expected": "An owner approval record is bound to an owner authentication step that the episode agent cannot write.",
+      "actual": "Any writer of the voice file can set paidEnabled and { at, by }. The shape check accepts any ISO-like timestamp and any non-empty by.",
+      "repro": [
+        "Copy a candidate master-voice file to a temp path",
+        "Call setCandidate with engine azure, paidEnabled true, and paidApproval by agent, then lock('agent')",
+        "Call synthesize with a mock fetch and observe one HTTP call"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.277Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-003",
+      "title": "Azure tier and price in the config are not the Azure bill",
+      "severity": "high",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The REST call sends the key and SSML. It does not send a tier or SKU. tier F0 with paidEnabled false still called the mock. A Standard resource behind that key would be billed while the dollar cap does not run. pricePerMillionChars 0.0000004 rounds to zero micro-dollars, so two half-million character reserves left spentMicro at 0 and a later synthesize still called the mock.",
+      "expected": "F0 is used only against a Free resource, and a price that rounds to zero is refused. The $1 cap applies to every call the key can bill.",
+      "actual": "F0 sends the same request shape as S0. A dust price is a positive number, costs 0, and does not trip the cap.",
+      "repro": [
+        "Build AzureSpeechProvider with tier F0 and paidEnabled false and count mock fetches",
+        "Inspect the request headers for a tier field",
+        "Call UsdBudget.begin twice with pricePerMillionChars 0.0000004 and read spentMicro"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.321Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-004",
+      "title": "A prewritten Azure speech cache is returned as the Azure voice",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The cache file is the sha256 of voice, rate, SSML, and text, with no signature. Writing those bytes before synthesize returned cached true, made no mock call, and left the episode record on the Azure voice with final true and review null.",
+      "expected": "A cache hit is audio this process received from Azure, or a substituted file is marked fallback.",
+      "actual": "Any bytes at the cache path are converted and stored as a successful Azure render.",
+      "repro": [
+        "Compute requestHash for a line and write bytes at cacheDir/hash",
+        "Call synthesize and VoiceSession.render with final true",
+        "Observe cached true, zero fetches, and voice set to the Azure voice id"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.363Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-005",
+      "title": "A long YouTube dry-run description drops the synthetic voice line",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "dryRunAzureEpisode appends Voice: AI-generated (Microsoft Azure) and then slices the description to 5000 characters. A 5000 character summary produced a dry-run payload of 5000 characters with the disclosure sentence absent. A short summary kept the sentence in the description. showCaption false leaves caption unset, which is fine when the description still has the line.",
+      "expected": "The dry-run publish payload contains the synthetic voice disclosure after truncation.",
+      "actual": "The slice keeps the front of the summary and can remove the sentence that was appended.",
+      "repro": [
+        "Call dryRunAzureEpisode with a 5000 character summary and showCaption false",
+        "Read posts[0].payload.description",
+        "Repeat with summary Markets moved"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.408Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-006",
+      "title": "Azure fallback preview is stored final, and reconcile keeps a pasted key",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "VoiceSession with no local engine stores the episode as voice fallback, review owner-review, and final true even when the caller passed final false. UsdBudget.reconcile writes the note into usage.json with no redaction, so a pasted key stays in that file. A budget lock older than 30 seconds can be taken while the holder is still inside the critical section. Reserve itself is short, and eight live processes still stayed inside $1. Han characters are one UTF-16 unit in ssml.length. The Speech pricing note counts each Han character as two billable characters.",
+      "expected": "A failed preview is not marked final. A reconciliation note cannot contain the key. The lock stays exclusive while its holder is inside it. Han characters are counted the way the pricing note counts them.",
+      "actual": "The no-local preview file had final true. The reconcile note contained the fake key. A holder sleeping 32 seconds lost the lock to a second process at 31 seconds. The sample 你好 is two UTF-16 units inside an SSML document of 175 units.",
+      "repro": [
+        "Render with a disabled provider, no local engine, and final false",
+        "Reconcile with the key in note and read usage.json",
+        "Hold withFileLock for 32 seconds and enter from a second process after 31 seconds"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts/logs/lengths.json"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.443Z",
           "status": "open",
           "note": "added"
         }

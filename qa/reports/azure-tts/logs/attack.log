@@ -1,0 +1,40 @@
+PASS one character at $15 per million is 15 micro-dollars
+PASS January holds the reserved spend
+PASS a forward month starts a new counter
+PASS clock back to January spends again and drops the February total
+PASS deleting usage.json starts the month at the new charge
+PASS a truncated usage file is refused
+PASS a negative spentMicro is refused
+PASS a fractional spentMicro is refused
+PASS a missing spentMicro is treated as zero and the call is reserved
+PASS a different month string in the file resets the current month
+PASS NaN, infinite, negative, zero, and string prices are refused
+PASS a dust price rounds to zero micro-dollars
+PASS dust price lets a second half-million characters through with spend still zero
+PASS a dust-price provider still calls the mock
+PASS parallel chunk is about $0.40
+PASS eight processes cannot reserve more than one dollar
+PASS two overlapping synthesizes stop at the dollar cap
+PASS a lock older than 30 seconds can be taken while the holder is still inside it
+PASS paidEnabled false does not read the key or call the mock
+PASS setCandidate plus lock accepts an agent-written approval with no owner session
+PASS the forged approval is enough for the provider to call the mock
+PASS tier F0 calls the mock while paidEnabled is false
+PASS the request headers do not name a pricing tier or SKU
+PASS the SSML body does not name F0 or S0
+PASS HD on F0, tier S1, and a missing tier are refused
+PASS emoji UTF-16 length is above its Unicode code points
+PASS a Han character is one UTF-16 unit
+PASS three attempts are all reserved, including two HTTP 500s
+PASS the ledger has no key and no script after a body that contained the key
+PASS a prewritten cache file is returned as Azure with no mock call
+PASS readKey returns the secret and its argv has no secret
+PASS storeKey argv is only security -i and the secret is on stdin
+PASS the thrown error and the state files do not contain the key
+PASS ffmpeg argv was not built for the failed request
+PASS reconcile stores a pasted key in the usage file
+PASS a 5000 character summary drops the disclosure from the dry-run payload
+PASS a short summary keeps the disclosure in the description
+PASS a preview with no local engine is stored final with voice fallback
+{"commit":"baf8cff403c96c17923bb6735cf6f832ad81d700","controls":38,"failed":[],"findings":["clock back to January spends again and drops the February total","deleting usage.json starts the month at the new charge","a missing spentMicro is treated as zero and the call is reserved","a different month string in the file resets the current month","a dust price rounds to zero micro-dollars","dust price lets a second half-million characters through with spend still zero","a dust-price provider still calls the mock","a lock older than 30 seconds can be taken while the holder is still inside it","setCandidate plus lock accepts an agent-written approval with no owner session","the forged approval is enough for the provider to call the mock","tier F0 calls the mock while paidEnabled is false","the request headers do not name a pricing tier or SKU","the SSML body does not name F0 or S0","a prewritten cache file is returned as Azure with no mock call","reconcile stores a pasted key in the usage file","a 5000 character summary drops the disclosure from the dry-run payload","a preview with no local engine is stored final with voice fallback"]}
+EXIT:0

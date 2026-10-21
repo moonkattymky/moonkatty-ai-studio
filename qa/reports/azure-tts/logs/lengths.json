@@ -1,0 +1,27 @@
+{
+  "emoji": {
+    "text": 8,
+    "ssml": 181,
+    "utf8": 183,
+    "points": 180
+  },
+  "ru": {
+    "text": 16,
+    "ssml": 220,
+    "utf8": 226,
+    "points": 220
+  },
+  "han": {
+    "text": 2,
+    "ssml": 175,
+    "utf8": 179,
+    "points": 175,
+    "hanUnits": 2
+  },
+  "plain": {
+    "text": 5,
+    "ssml": 178,
+    "utf8": 178,
+    "points": 178
+  }
+}
