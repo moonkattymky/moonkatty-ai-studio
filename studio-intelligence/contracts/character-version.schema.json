@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/character-version.schema.json",
+  "title": "CharacterVersionDraft",
+  "description": "Запись реестра версии. Файл .blend сюда не кладётся: только путь, SHA-256, права на референсы и ссылка на голос. Поля file, sha256, sourceRefs совпадают с manifest.json из docs/ROADMAP_3D_CHARACTER.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["characterId", "file", "sha256", "voiceProfileId", "sourceRefs", "status", "locked"],
+  "properties": {
+    "characterId": { "const": "MOONKATTY_MASTER_CHARACTER" },
+    "file": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "voiceProfileId": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "sourceRefs": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "basis", "license", "holder"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "basis": { "enum": ["own", "licensed", "generated", "cc0", "unknown"] },
+          "license": { "type": ["string", "null"], "maxLength": 200 },
+          "holder": { "type": ["string", "null"], "maxLength": 200 }
+        }
+      }
+    },
+    "status": { "const": "draft" },
+    "locked": { "const": false }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/brand-check.schema.json",
+  "title": "BrandCheck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["assetId", "action", "candidate"],
+  "properties": {
+    "assetId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "action": { "enum": ["compare", "register", "substitute"] },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filePath"],
+      "properties": {
+        "filePath": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

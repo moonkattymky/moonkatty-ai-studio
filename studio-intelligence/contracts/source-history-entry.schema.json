@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/source-history-entry.schema.json",
+  "title": "SourceHistoryEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "sourceUrl", "sourceName", "action", "note", "idempotencyKey"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "sourceUrl": { "type": ["string", "null"], "maxLength": 500 },
+    "sourceName": { "type": ["string", "null"], "maxLength": 200 },
+    "action": { "enum": ["added", "updated", "retired"] },
+    "note": { "type": ["string", "null"], "maxLength": 2000 },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9:._/-]{1,400}$" }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/editorial-decision.schema.json",
+  "title": "EditorialDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "subjectType", "subjectId", "action", "summary", "status"],
+  "properties": {
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "subjectType": { "enum": ["source", "story", "script", "publication"] },
+    "subjectId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "action": { "enum": ["noted", "recommended", "approved", "rejected"] },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "status": { "enum": ["draft", "approved"] }
+  }
+}

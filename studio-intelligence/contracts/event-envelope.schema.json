@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/schemas/event-envelope.schema.json",
+  "title": "EventEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "at", "namespace", "actor", "payload"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "type": {
+      "enum": [
+        "studio.task.handoff",
+        "studio.task.progress",
+        "studio.file.handoff",
+        "studio.memory.written",
+        "studio.approval.requested",
+        "studio.task.cancelled"
+      ]
+    },
+    "at": { "type": "string", "format": "date-time" },
+    "namespace": { "enum": ["moonkatty_news", "moonkatty_project", "moonkatty_shared"] },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "role"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "role": { "enum": ["owner", "agent"] }
+      }
+    },
+    "payload": { "type": "object" }
+  }
+}
