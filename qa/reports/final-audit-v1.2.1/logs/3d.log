@@ -1,0 +1,6 @@
+
+> moonkatty-ai-studio@1.2.1 test:3d
+> node scripts/design3d-test.mjs
+
+SKIP: opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+EXIT:2

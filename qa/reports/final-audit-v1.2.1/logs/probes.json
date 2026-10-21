@@ -1,0 +1,84 @@
+[
+  {
+    "name": "POST queue status=approved skips guardrails",
+    "http": 201,
+    "id": "mvhskrozbpgliu",
+    "status": "approved",
+    "error": null
+  },
+  {
+    "name": "PUT queue status=approved runs guardrails",
+    "http": 400,
+    "error": "Новость не проверена: этап «Проверка фактов» не пройден; Нет ссылки на источник (атрибуция обязательна)"
+  },
+  {
+    "name": "PUT queue status=published",
+    "http": 200,
+    "status": "published",
+    "publishedAt": null,
+    "externalId": null
+  },
+  {
+    "name": "POST queue status=retry stored",
+    "http": 201,
+    "status": "retry",
+    "nextRetryAt": "2000-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "publish endpoint on non-approved",
+    "http": 400,
+    "error": "Нужно утверждение"
+  },
+  {
+    "name": "publish endpoint on illicit approved (no Meta token)",
+    "http": 400,
+    "error": "Не подключено"
+  },
+  {
+    "name": "POST 3d task cannot set status done",
+    "http": 201,
+    "status": "queued",
+    "id": "mvhskrphezpalz"
+  },
+  {
+    "name": "PUT 3d task status rejected",
+    "http": 403,
+    "error": "Статус 3D-задачи меняется только через 3D Studio (утверждение/отмена/повтор)"
+  },
+  {
+    "name": "createJob video_render",
+    "http": 400,
+    "error": "Неизвестный тип задания: video_render",
+    "jobId": null,
+    "existing": false,
+    "jobStatus": null,
+    "jobError": null
+  },
+  {
+    "name": "createJob render_segment",
+    "http": 201,
+    "error": null,
+    "jobId": "job_b965f9eafcfb9316",
+    "existing": false,
+    "jobStatus": "failed",
+    "jobError": "render_segment: зарезервировано для feat/media-automation (Host3D.renderSegment), не реализовано в 1.2.0"
+  },
+  {
+    "name": "createJob opencode_task",
+    "http": 201,
+    "error": null,
+    "jobId": "job_e4c3e666764f94ab",
+    "existing": false,
+    "jobStatus": "failed",
+    "jobError": "opencode_task: зарезервировано (отдельные задачи OpenCode вне 3D-конвейера), не реализовано в 1.2.0"
+  },
+  {
+    "name": "createJob not_a_type",
+    "http": 400,
+    "error": "Неизвестный тип задания: not_a_type",
+    "jobId": null,
+    "existing": false,
+    "jobStatus": null,
+    "jobError": null
+  }
+]
