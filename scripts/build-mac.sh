@@ -10,7 +10,7 @@ COMMIT=$(git rev-parse HEAD); export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct
 VER=$(node -p "require('./package.json').version"); APP="dist/mac-arm64/MOONKATTY AI STUDIO.app"
 npm ci --ignore-scripts --no-audit --no-fund
 scripts/fetch-node.sh
-node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'macos'}))"
+COMMIT="$COMMIT" node scripts/write-build-info.mjs --builder macos
 # Native Mac build is the PRODUCTION flavor only (TEST build: FLAVOR=test scripts/package-mac-on-linux.sh). Flavor is baked.
 trap 'rm -f lib/flavor.baked.js lib/flavor.lock.json desktop/flavor.lock.json' EXIT
 printf "'use strict';\nmodule.exports = 'prod';\n" > lib/flavor.baked.js; BAKED_SHA=$(shasum -a 256 lib/flavor.baked.js | cut -d' ' -f1)

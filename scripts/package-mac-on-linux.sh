@@ -30,7 +30,7 @@ require("fs").writeFileSync(".eb-config.json", JSON.stringify(b, null, 1));'
 BUILDER_FLAVOR_ARGS=(--config .eb-config.json)
 npm ci --ignore-scripts --no-audit --no-fund      # exact versions from package-lock.json; no install scripts
 scripts/fetch-node.sh                             # official Node binary, SHA-256 verified
-node -e "require('fs').writeFileSync('desktop/build-info.json', JSON.stringify({commit:'$COMMIT', builtAt:new Date($SOURCE_DATE_EPOCH*1000).toISOString(), electron:require('./package.json').build.electronVersion, node:'${NODE_VERSION:-v24.22.0}', builder:'linux', flavor:'$FLAVOR', appId:'$APPID'}))"
+COMMIT="$COMMIT" node scripts/write-build-info.mjs --builder linux --flavor "$FLAVOR" --app-id "$APPID"
 rm -rf dist
 CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac dir --arm64 --publish never "${BUILDER_FLAVOR_ARGS[@]}"
 if [[ "$FLAVOR" == "test" ]]; then ! find "$APP" -name meta.js -path '*Resources/app*' | grep -q . || { echo "ОШИБКА: meta.js попал в TEST-сборку" >&2; exit 1; }; fi
