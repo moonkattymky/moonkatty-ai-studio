@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+ok 1 - code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+  ---
+  duration_ms: 12.752682
+  type: 'test'
+  ...
+# Subtest: expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+ok 2 - expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+  ---
+  duration_ms: 6.902218
+  type: 'test'
+  ...
+# Subtest: code of another request does not work (code bound to its requestId)
+ok 3 - code of another request does not work (code bound to its requestId)
+  ---
+  duration_ms: 1.796467
+  type: 'test'
+  ...
+# Subtest: brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+ok 4 - brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+  ---
+  duration_ms: 6.364965
+  type: 'test'
+  ...
+# Subtest: unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+ok 5 - unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+  ---
+  duration_ms: 3.788101
+  type: 'test'
+  ...
+# Subtest: end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+ok 6 - end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+  ---
+  duration_ms: 529.138119
+  type: 'test'
+  ...
+# Subtest: plaintext refused (client and server), wrong fingerprint refused before any data is sent
+ok 7 - plaintext refused (client and server), wrong fingerprint refused before any data is sent
+  ---
+  duration_ms: 18.079766
+  type: 'test'
+  ...
+# Subtest: 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+ok 8 - 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+  ---
+  duration_ms: 13.196544
+  type: 'test'
+  ...
+# Subtest: CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+ok 9 - CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+  ---
+  duration_ms: 0.524345
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 649.964557

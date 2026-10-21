@@ -1,0 +1,33 @@
+ok   request-lock-survives-restart
+ok   ip-lock-resets-on-new-process
+ok   request-binding-and-bad-proof
+ok   ttl-boundary
+ok   single-use-in-process
+ok   two-managers-same-file
+ok   xff-does-not-select-bucket
+ok   parallel-enroll-single-winner
+ok   parallel-status-one-token
+ok   secrets-absent-from-state-and-audit
+ok   signed-pull-replay-window
+ok   signature-canonicalisation
+ok   self-rotate-and-revoke
+ok   api-view-has-full-fingerprint
+ok   plaintext-enroll-426
+ok   wrong-pin-sends-no-enrollment
+ok   tailscale-mode-on-self-signed-ip
+ok   client-tailscale-requires-ts-net
+ok   http-url-never-connects
+ok   pin-skip-with-locally-trusted-cert
+ok   address-matrix
+ok   approval-ui-escapes-and-fingerprint
+Узел не подключён. Откройте http://127.0.0.1:0 и введите код из панели Mac mini (или: agent.js --enroll --url … --fingerprint … --code …)
+enroll: только https:// — подключение по открытому HTTP запрещено
+ok   enroll-ui-host-and-local-token
+ok   admin-auth-csrf
+ok   no-password-stepup-and-funnel-stub-and-legacy-token
+ok   admin-create-does-not-log-code
+ok   keychain-set-argv-is-dash-i
+ok   cli-code-in-argv
+ok   timing-comparisons
+ok   rate-limit-31st
+{"commit":"596cb576c9203a2b26fde62980a52426e25275be","src":"/tmp/mk-node-021","controls":19,"controlsFailed":[],"probes":11,"node":"v22.23.3"}
