@@ -42,7 +42,7 @@ test('brute force: 5 wrong codes lock the request (even the right code then fail
   const ok = m2.enrollment.create({ role: 'news' }); assert.equal(errCode(() => m2.enrollment.enroll(enBody(ok.code, d), '10.2.0.1')), 'E_IP_LOCKED');
   assert.equal(m2.enrollment.enroll(enBody(ok.code, d), '10.2.0.2').status, 'pending'); clock += 16 * 60e3;
   const m3 = mgr(); let last; for (let i = 0; i < 31; i++) last = errCode(() => m3.enrollment.status({ requestId: 'x', requestSecret: 'y' }, '10.3.0.1')); assert.ok(['E_RATE_LIMIT', 'E_IP_LOCKED'].includes(last));
-  const m4 = mgr(); m4.enrollment.create({ role: 'news' }); const ip = '10.4.0.1'; m4.enrollment._ip[ip] = { calls: Array(30).fill(clock), fails: [], lockedUntil: 0 }; assert.equal(errCode(() => m4.enrollment.enroll(enBody('A', d), ip)), 'E_RATE_LIMIT');
+  const m4 = mgr(); m4.enrollment.create({ role: 'news' }); const ip = '10.4.0.1'; m4.enrollment._ip['ip:' + ip] = { calls: Array(30).fill(clock), fails: [], lockedUntil: 0 }; assert.equal(errCode(() => m4.enrollment.enroll(enBody('A', d), ip)), 'E_RATE_LIMIT');
   assert.match(fs.readFileSync(require.resolve('../../lib/ops/node-enroll.js'), 'utf8'), /timingSafeEqual/);
 });
 test('unconfirmed request gets no token; rejected request gets no token; bad device signature refused', () => {
@@ -143,4 +143,28 @@ test('auth timing: wrong token and right token + bad signature do the same work 
   const sig = { method: 'GET', path: '/api/nodes/ping', ts: clock, nonce: 'n'.repeat(22), sig: 'AA==' };
   const wrong = t(() => m.authNode('Bearer nk_imac.' + 'z'.repeat(32), sig)), right = t(() => m.authNode('Bearer ' + tok, sig));
   assert.ok(right / wrong < 3 && wrong / right < 3, `wrong ${wrong} ns vs right ${right} ns`);
+});
+test('peer buckets behind tailscale serve: per tailnet device (whois, mocked) / per Tailscale user; headers trusted only from loopback; persisted locks; single coordinator per dir', async () => {
+  const whoisCalls = []; const m = N.createNodeManager({ dir: tmp(), now, whois: async ip => { whoisCalls.push(ip); return { '100.101.1.1': { id: 'nIMAC', name: 'imac', login: 'igor@x' }, '100.101.1.2': { id: 'nEVIL', name: 'other', login: 'guest@x' } }[ip] || null; } });
+  const R = (ra, h = {}) => ({ socket: { remoteAddress: ra }, headers: h });
+  assert.equal((await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.1' }))).key, 'tsnode:nIMAC');
+  assert.equal((await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.2' }))).key, 'tsnode:nEVIL');
+  assert.equal((await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '8.8.8.8', 'tailscale-user-login': 'Igor@X' }))).key, 'tsuser:igor@x');
+  assert.equal((await m.peerOf(R('127.0.0.1', {}))).key, 'loopback');
+  assert.equal((await m.peerOf(R('100.101.1.2', { 'x-forwarded-for': '100.101.1.1', 'tailscale-user-login': 'igor@x' }))).key, 'tsnode:nEVIL', 'headers from a non-loopback peer are ignored');
+  assert.equal((await m.peerOf(R('100.99.9.9'))).key, 'ip:100.99.9.9', 'whois unknown → IP bucket'); assert.equal((await m.peerOf(R('10.0.0.7', { 'x-forwarded-for': '100.101.1.1' }))).key, 'ip:10.0.0.7');
+  // 10 bad codes from the "evil" tailnet device lock only that device; the iMac (same 127.0.0.1 socket via serve) still enrolls
+  const d = devKeys(); const evil = await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.2' })); const imac = await m.peerOf(R('127.0.0.1', { 'x-forwarded-for': '100.101.1.1' }));
+  for (let i = 0; i < 10; i++) errCode(() => m.enrollment.enroll(enBody('ZZZZZ-22222-2222' + (i % 8 + 2), d), evil)); const r = m.enrollment.create({ role: 'news' });
+  assert.equal(errCode(() => m.enrollment.enroll(enBody(r.code, d), evil)), 'E_IP_LOCKED'); const ok = m.enrollment.enroll(enBody(r.code, d), imac); assert.equal(ok.status, 'pending');
+  const v = m.enrollment.list()[0].device; assert.equal(v.peerVerified, true); assert.match(v.peer, /imac · igor@x/);
+  // persisted across restart (same process → lock re-entrant)
+  const dir = tmp(); const m1 = N.createNodeManager({ dir, now }); for (let i = 0; i < 10; i++) errCode(() => m1.enrollment.enroll(enBody('ZZZZZ-22222-2222' + (i % 8 + 2), d), '10.8.8.8'));
+  const m2 = N.createNodeManager({ dir, now }); const r2 = m2.enrollment.create({ role: 'news' }); assert.equal(errCode(() => m2.enrollment.enroll(enBody(r2.code, d), '10.8.8.8')), 'E_IP_LOCKED');
+  assert.equal(fs.statSync(path.join(dir, 'nodes.json')).mode & 0o777, 0o600);
+  // a second live coordinator process on the same dir is refused; a stale lock (dead pid) is taken over
+  const dir2 = tmp(); const { spawn } = require('child_process'); const ch = spawn(process.execPath, ['-e', 'setTimeout(()=>{},20000)']); fs.writeFileSync(path.join(dir2, 'nodes.lock'), String(ch.pid));
+  try { assert.throws(() => N.createNodeManager({ dir: dir2, now }), /уже используется/); } finally { ch.kill(); await new Promise(z => ch.on('exit', z)); }
+  assert.ok(N.createNodeManager({ dir: dir2, now }));
+  assert.equal(await N.defaultWhois('8.8.8.8'), null);
 });
