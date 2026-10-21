@@ -1,0 +1,18 @@
+{
+  "contract": "moonkatty.qa.video.news-launch/1",
+  "resolutions": [
+    { "width": 1080, "height": 1920, "label": "9:16" },
+    { "width": 1920, "height": 1080, "label": "16:9" }
+  ],
+  "minDurationSec": 1,
+  "maxDurationSec": 180,
+  "requireAudio": true,
+  "loudness": {
+    "standard": "EBU R128",
+    "integratedLUFS": { "target": -23, "tolerance": 1 }
+  },
+  "maxBlackPct": 0.02,
+  "maxFreezeSec": 1,
+  "subtitleToleranceSec": 0.4,
+  "note": "Pass/fail against this delivery window. Integrated LUFS is the EBU R128 programme target of -23 ± 1. The numbers are measurements, not a quality score."
+}

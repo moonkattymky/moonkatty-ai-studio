@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/qa/bugs/schema.json",
+  "title": "MOONKATTY QA bug registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "updatedAt", "bugs"],
+  "properties": {
+    "contract": { "const": "moonkatty.qa.bugs/1" },
+    "updatedAt": { "type": "string" },
+    "bugs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/bug" }
+    }
+  },
+  "$defs": {
+    "bug": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "severity", "status", "summary", "repro", "foundAt", "history"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^QA-[A-Z0-9]+-\\d{3}$" },
+        "title": { "type": "string", "minLength": 8 },
+        "severity": { "enum": ["blocker", "high", "medium", "low", "info"] },
+        "status": { "enum": ["open", "proposed", "isolated_test", "qa_verified", "owner_approved", "wontfix", "duplicate", "blocked"] },
+        "ownerApproval": { "type": "boolean" },
+        "area": { "type": "string" },
+        "summary": { "type": "string", "minLength": 8 },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "repro": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "foundAt": { "type": "string" },
+        "foundIn": { "type": "string" },
+        "verifiedIn": { "type": ["string", "null"] },
+        "blockedOn": { "type": ["string", "null"] },
+        "history": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["at", "status", "note"],
+            "properties": {
+              "at": { "type": "string" },
+              "status": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

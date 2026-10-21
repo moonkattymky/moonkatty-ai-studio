@@ -1,0 +1,11 @@
+{
+  "contract": "moonkatty.qa.video.news-launch-run/1",
+  "mode": "no-artifacts",
+  "dir": "/workspace/news-launch",
+  "note": "No news-launch folder. Run with --self-test to exercise the checks, or pass --dir.",
+  "newsLaunchFiles": 0,
+  "pass": 0,
+  "fail": 0,
+  "not_tested": 1,
+  "cases": []
+}

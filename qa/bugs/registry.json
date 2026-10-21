@@ -1,0 +1,347 @@
+{
+  "contract": "moonkatty.qa.bugs/1",
+  "updatedAt": "2026-10-21T11:12:00.000Z",
+  "bugs": [
+    {
+      "id": "QA-HZ-001",
+      "title": "window.MoonBuild does not match the asset build id",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "horizons",
+      "summary": "The play build label window.MoonBuild is v44 while MoonReliability.BUILD is 20261017-98a.",
+      "expected": "The label in window.MoonBuild matches MoonReliability.BUILD.",
+      "actual": "MoonBuild=v44 reliability=20261017-98a",
+      "repro": [
+        "Open the horizons play build",
+        "Read window.MoonBuild",
+        "Read window.MoonReliability.BUILD",
+        "Compare with the ?v= query on game.js"
+      ],
+      "evidence": ["qa/reports/2026-10-20/report.md"],
+      "foundAt": "2026-10-20T22:35:46.218Z",
+      "foundIn": "moonkatty-horizons-play 2df1c76, qa/reports/2026-10-20/report.md",
+      "verifiedIn": null,
+      "blockedOn": "horizons source repo access (owner)",
+      "history": [
+        {
+          "at": "2026-10-20T22:51:18.995Z",
+          "status": "open",
+          "note": "Recorded on the play build. moonkattymky/moonkatty-horizons was not cloneable."
+        }
+      ]
+    },
+    {
+      "id": "QA-APR-001",
+      "title": "Social queue can skip approval guardrails",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "On v1.2.1, POST /api/queue stored status approved or retry without guardrails. On v1.2.3-test that POST is stored as pending_approval.",
+      "expected": "A client cannot store an approved or retry queue row that the publisher will send.",
+      "actual": "v1.2.3-test POST with status approved or retry is stored as pending_approval.",
+      "repro": [
+        "Authenticate to the studio",
+        "POST /api/queue with status approved",
+        "Read the stored status"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 audit: POST stored approved or retry and skipped guardrails."
+        },
+        {
+          "at": "2026-10-21T09:23:02.000Z",
+          "status": "qa_verified",
+          "note": "f2440e1 test flavor stores POST approved or retry as pending_approval."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test recheck: POST still forces pending_approval. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-APR-002",
+      "title": "Queue row can be marked published with no external post",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 accepted PUT status published with a null externalId. The prod flavor of f2440e1 still stored a client externalId. 7327a1e and v1.2.3-test return HTTP 403.",
+      "expected": "HTTP cannot mark a row published, and a client externalId is not stored as a platform post.",
+      "actual": "v1.2.3-test PUT of status published plus externalId is HTTP 403. The prod flavor of f2440e1 stored the client id.",
+      "repro": [
+        "Authenticate to the studio",
+        "PUT /api/queue/:id with status published and an externalId",
+        "Read the HTTP status and the stored row"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 PUT status published returned 200 with externalId still null."
+        },
+        {
+          "at": "2026-10-21T09:23:02.000Z",
+          "status": "open",
+          "note": "f2440e1 prod flavor stored a client externalId as published. Test flavor returned 403."
+        },
+        {
+          "at": "2026-10-21T10:03:20.000Z",
+          "status": "qa_verified",
+          "note": "7327a1e HTTP publish path is 403."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test HTTP 403 stands. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-DB-001",
+      "title": "Upgrade does not snapshot the database",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 altered the database on startup with no copy. Later builds write a pre-migration VACUUM INTO backup and a sha256 sidecar.",
+      "expected": "Opening a v1-shaped database writes a restorable snapshot before migration.",
+      "actual": "v1.2.3-test wrote pre-migration-v1-to-v4-*.db and a matching .sha256. The seeded task survived.",
+      "repro": [
+        "Place a v1-shaped studio.db with tables items and meta",
+        "Start the server",
+        "Compare the pre-migration backup to its sha256 sidecar"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 startup ALTER had no snapshot. Rollback was a copy made beforehand."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test pre-migration backup plus sha256 sidecar matched. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-OC-001",
+      "title": "OpenCode seatbelt allows writes under /private/tmp",
+      "severity": "medium",
+      "status": "blocked",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 allowed file-write under /private/tmp. Later source removes that allow. Runtime sandbox-exec was not run.",
+      "expected": "A task write outside the sandbox directory is denied by sandbox-exec.",
+      "actual": "Source no longer allows /private/tmp. sandbox-exec was not executed on this host.",
+      "repro": [
+        "Enable OpenCode on macOS",
+        "Confirm sandbox-exec is the parent",
+        "Attempt a write under /private/tmp"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, runner.js file-write* under /private/tmp",
+      "verifiedIn": null,
+      "blockedOn": "Mac sandbox-exec (owner machine)",
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "Seatbelt profile allows /private/tmp and /private/var/folders. Not executed."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "blocked",
+          "note": "Source change is present. Runtime stays unverified until sandbox-exec runs on a Mac."
+        }
+      ]
+    },
+    {
+      "id": "QA-INFO-001",
+      "title": "BUILD-INFO names fuse index 8 undefined",
+      "severity": "low",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "The v1.2.1 packager printed fuse index 8 as undefined. The v1.2.3-test BUILD-INFO names that byte WasmTrapHandlers Enabled.",
+      "expected": "BUILD-INFO names fuse index 8 instead of printing undefined.",
+      "actual": "v1.2.3-test BUILD-INFO prints WasmTrapHandlers enabled via @electron/fuses 2.1.3.",
+      "repro": [
+        "Package the mac zip",
+        "Read BUILD-INFO fuse index 8"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 mac preview packager, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8 BUILD-INFO, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "Fuse byte was ENABLE. The packager enum had no name, so the text said undefined is Enabled."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test BUILD-INFO names WasmTrapHandlers. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-CMT-001",
+      "title": "Comment POST stores status approved",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.3-test generic POST /api/comments stores status approved. The test /reply route returns HTTP 403 and does not send.",
+      "expected": "A client POST cannot store a comment as approved when reply is disabled.",
+      "actual": "POST stores approved. POST /api/comments/:id/reply is HTTP 403 publishing_disabled.",
+      "repro": [
+        "Authenticate to the v1.2.3-test server",
+        "POST /api/comments with status approved",
+        "Read the stored status",
+        "POST /api/comments/:id/reply and expect HTTP 403"
+      ],
+      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Left for v1.2.4 by the product doc. Reply does not send. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-001",
+      "title": "Live SQL published row stays published until restart",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "A row inserted with SQL into the live studio.db stays published on GET until the next start. HTTP PUT of that row is 403.",
+      "expected": "A published row that fails the seal is not served as published.",
+      "actual": "GET stays published until restart. PUT is HTTP 403 published_internal_only. The next start demotes the row and keeps historical fields.",
+      "repro": [
+        "Start the v1.2.3-test server",
+        "Insert a queue row with SQL status published and an externalId",
+        "GET the row before and after a restart",
+        "PUT a title change and expect HTTP 403"
+      ],
+      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "demoteUnsealed runs at startup. HTTP cannot create the row. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-002",
+      "title": "Local flavor rewrite plus planted meta.js loads the publisher",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "Rewriting every flavor marker so they agree, planting meta.js, and starting node server.js loads the publisher. The Electron flavor guard still exits 78.",
+      "expected": "A local rewrite of the unpacked tree cannot load the publisher.",
+      "actual": "node server.js on the rewritten tree reports flavor prod. desktop/flavor-guard.js still fails closed for the Electron app.",
+      "repro": [
+        "Rewrite lib/flavor.baked.js, lib/flavor.lock.json, and package.json studioFlavor hashes so they agree on prod",
+        "Add meta.js",
+        "Run node server.js and read /api/health",
+        "Run desktop/flavor-guard.js against the original asar lock"
+      ],
+      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test built tree, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": "Developer ID and notarization (owner, Apple)",
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Requires a local write and skipping Electron. Full close is blocked on Developer ID and notarization."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-003",
+      "title": "PUT status Published is stored as that string",
+      "severity": "info",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "PUT {status: Published} is stored as that string. It is not status published and it has no externalId.",
+      "expected": "A status outside the known set is rejected.",
+      "actual": "The string Published is stored. It does not match the published state.",
+      "repro": [
+        "Authenticate to the v1.2.3-test server",
+        "PUT /api/queue/:id with status Published",
+        "Read the stored status"
+      ],
+      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Informational. The stored string is not the published state. Owner approval is not set."
+        }
+      ]
+    }
+  ]
+}

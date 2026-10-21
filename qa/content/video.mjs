@@ -1,7 +1,9 @@
 /**
  * Technical video QC via the system ffmpeg and ffprobe binaries.
  * No paid service. The caller passes the expected delivery spec.
+ * Counts and LUFS values are measurements. Nothing here is a quality score.
  */
+import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 function run(bin, args) {
@@ -36,14 +38,24 @@ export function aspectLabel(width, height) {
   return `${width / g}:${height / g}`;
 }
 
+function lufs(text) {
+  if (!text || /inf/i.test(text)) return null;
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function measureLoudness(file, ffmpeg = 'ffmpeg') {
   const result = run(ffmpeg, ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-']);
   const summary = result.stderr.split('Summary:').pop();
-  const match = summary.match(/I:\s*(-?(?:\d+(?:\.\d+)?|inf))\s+LUFS/i);
-  if (!match) return { integratedLUFS: null };
-  if (match[1].toLowerCase() === '-inf' || match[1].toLowerCase() === 'inf') return { integratedLUFS: null };
-  const value = Number(match[1]);
-  return { integratedLUFS: Number.isFinite(value) ? value : null };
+  const integrated = summary.match(/I:\s*(-?(?:\d+(?:\.\d+)?|inf))\s+LUFS/i);
+  const range = summary.match(/LRA:\s*(-?(?:\d+(?:\.\d+)?|inf))\s+LU/i);
+  const peak = summary.match(/Peak:\s*(-?(?:\d+(?:\.\d+)?|inf))\s+dBFS/i);
+  return {
+    standard: 'EBU R128',
+    integratedLUFS: integrated ? lufs(integrated[1]) : null,
+    loudnessRangeLU: range ? lufs(range[1]) : null,
+    truePeakDBFS: peak ? lufs(peak[1]) : null
+  };
 }
 
 export function detectBlack(file, ffmpeg = 'ffmpeg') {
@@ -59,6 +71,100 @@ export function detectBlack(file, ffmpeg = 'ffmpeg') {
     spans.push({ start: Number(match[1]), end: Number(match[2]), duration: Number(match[3]) });
   }
   return spans;
+}
+
+export function detectFreeze(file, ffmpeg = 'ffmpeg') {
+  const result = run(ffmpeg, [
+    '-hide_banner', '-nostats', '-i', file,
+    '-vf', 'freezedetect=n=0.003:d=0.5',
+    '-an', '-f', 'null', '-'
+  ]);
+  const grab = name => [...result.stderr.matchAll(new RegExp(name + ':\\s*(\\S+)', 'g'))].map(item => Number(item[1]));
+  const starts = grab('freeze_start');
+  const ends = grab('freeze_end');
+  const durations = grab('freeze_duration');
+  const n = Math.max(starts.length, ends.length, durations.length);
+  const spans = [];
+  for (let i = 0; i < n; i++) {
+    spans.push({
+      start: Number.isFinite(starts[i]) ? starts[i] : null,
+      end: Number.isFinite(ends[i]) ? ends[i] : null,
+      duration: Number.isFinite(durations[i]) ? durations[i] : null
+    });
+  }
+  return spans;
+}
+
+function srtClock(h, m, s, ms) {
+  return Number(h) * 3600 + Number(m) * 60 + Number(s) + Number(String(ms).padEnd(3, '0')) / 1000;
+}
+
+export function parseSrt(text) {
+  const src = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').trim();
+  if (!src) return [];
+  const cues = [];
+  for (const block of src.split(/\n{2,}/)) {
+    const lines = block.split('\n');
+    let i = 0;
+    if (/^\d+$/.test((lines[0] || '').trim())) i = 1;
+    const timing = (lines[i] || '').trim();
+    const match = timing.match(/(\d{2}):(\d{2}):(\d{2})[,.](\d{1,3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{1,3})/);
+    if (!match) continue;
+    cues.push({
+      start: srtClock(match[1], match[2], match[3], match[4]),
+      end: srtClock(match[5], match[6], match[7], match[8]),
+      text: lines.slice(i + 1).join('\n').trim()
+    });
+  }
+  return cues;
+}
+
+export const NEWS_RESOLUTIONS = Object.freeze([
+  Object.freeze({ width: 1080, height: 1920 }),
+  Object.freeze({ width: 1920, height: 1080 })
+]);
+
+export function resolutionAllowed(width, height, allowed = NEWS_RESOLUTIONS) {
+  return allowed.some(item => item.width === width && item.height === height);
+}
+
+export function subtitleFindings(cues, durationSec, toleranceSec) {
+  const findings = [];
+  const tol = Number(toleranceSec) || 0;
+  if (!cues.length) {
+    findings.push({ kind: 'subtitle_missing', severity: 'major', summary: 'SRT has no cues', evidence: {} });
+    return findings;
+  }
+  for (let i = 0; i < cues.length; i++) {
+    const cue = cues[i];
+    if (!(cue.end > cue.start)) {
+      findings.push({ kind: 'subtitle_sync', severity: 'major', summary: `Cue ${i + 1} ends at or before it starts`, evidence: cue });
+    }
+    if (cue.start < -tol || (Number.isFinite(durationSec) && cue.end > durationSec + tol)) {
+      findings.push({
+        kind: 'subtitle_sync',
+        severity: 'major',
+        summary: `Cue ${i + 1} (${cue.start.toFixed(3)}–${cue.end.toFixed(3)}s) falls outside the media duration ${durationSec}s`,
+        evidence: { cue, durationSec, toleranceSec: tol }
+      });
+    }
+    if (!cue.text) {
+      findings.push({ kind: 'subtitle_empty', severity: 'minor', summary: `Cue ${i + 1} has no text`, evidence: cue });
+    }
+    const next = cues[i + 1];
+    if (next && cue.end - next.start > tol) {
+      findings.push({ kind: 'subtitle_sync', severity: 'major', summary: `Cue ${i + 1} overlaps the next cue`, evidence: { cue, next } });
+    }
+  }
+  return findings;
+}
+
+function freezeSpanSec(span, durationSec) {
+  if (Number.isFinite(span.duration)) return span.duration;
+  if (Number.isFinite(span.start) && Number.isFinite(span.end)) return Math.max(0, span.end - span.start);
+  // ffmpeg 6 prints freeze_start and omits freeze_end when the freeze runs to EOF.
+  if (Number.isFinite(span.start) && Number.isFinite(durationSec)) return Math.max(0, durationSec - span.start);
+  return 0;
 }
 
 function add(findings, kind, severity, summary, evidence) {
@@ -82,6 +188,7 @@ export function inspectVideo(file, expected = {}, bins = {}) {
   const aspect = width && height ? aspectLabel(width, height) : null;
   const loud = measureLoudness(file, ffmpeg);
   const blacks = detectBlack(file, ffmpeg);
+  const freezes = expected.maxFreezeSec != null ? detectFreeze(file, ffmpeg) : [];
   const blackSec = blacks.reduce((sum, span) => sum + (Number.isFinite(span.duration) ? span.duration : 0), 0);
   const blackPct = duration > 0 ? blackSec / duration : (blacks.length ? 1 : 0);
   const metrics = {
@@ -96,12 +203,21 @@ export function inspectVideo(file, expected = {}, bins = {}) {
       sampleRate: Number(audio.sample_rate)
     } : null,
     integratedLUFS: loud.integratedLUFS,
+    loudnessRangeLU: loud.loudnessRangeLU,
+    truePeakDBFS: loud.truePeakDBFS,
+    loudnessStandard: loud.standard,
     blackSec: +blackSec.toFixed(3),
     blackPct: +blackPct.toFixed(4),
-    blackSpans: blacks
+    blackSpans: blacks,
+    freezeSec: +freezes.reduce((sum, span) => sum + freezeSpanSec(span, duration), 0).toFixed(3),
+    freezeSpans: freezes
   };
   const findings = [];
   if (!video) add(findings, 'video_missing', 'blocker', 'ffprobe found no video stream', { file });
+  if (Array.isArray(expected.allowedResolutions) && expected.allowedResolutions.length && !resolutionAllowed(width, height, expected.allowedResolutions)) {
+    const list = expected.allowedResolutions.map(item => `${item.width}x${item.height}`).join(' or ');
+    add(findings, 'video_resolution', 'major', `Raster is ${width}x${height}; allowed ${list}`, { width, height, allowed: expected.allowedResolutions });
+  }
   if (expected.width != null && width !== expected.width) {
     add(findings, 'video_resolution', 'major', `Width is ${width}, expected ${expected.width}`, { width, expected: expected.width });
   }
@@ -133,6 +249,18 @@ export function inspectVideo(file, expected = {}, bins = {}) {
     add(findings, 'black_frames', 'major', `Black picture is ${(blackPct * 100).toFixed(1)}% of the duration; limit is ${(expected.maxBlackFramePct * 100).toFixed(1)}%`, {
       blackPct, blackSec, limit: expected.maxBlackFramePct
     });
+  }
+  if (expected.maxFreezeSec != null) {
+    const freezeSec = metrics.freezeSec;
+    if (freezeSec > expected.maxFreezeSec) {
+      add(findings, 'frozen_frames', 'major', `Frozen picture lasts ${freezeSec}s; limit is ${expected.maxFreezeSec}s`, { freezeSec, limit: expected.maxFreezeSec, spans: freezes });
+    }
+  }
+  if (expected.srt || expected.srtText) {
+    const srtText = expected.srtText != null ? expected.srtText : fs.readFileSync(expected.srt, 'utf8');
+    const cues = parseSrt(srtText);
+    metrics.subtitleCues = cues.length;
+    for (const item of subtitleFindings(cues, metrics.durationSec, expected.subtitleToleranceSec ?? 0.4)) findings.push(item);
   }
   return { file, metrics, findings };
 }

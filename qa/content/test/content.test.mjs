@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { verifyCorrection, PROCEDURE } from '../corrections.mjs';
 import { extractDates, extractNumbers, extractQuotes } from '../extract.mjs';
 import { reviewScript, reviewScriptLive } from '../review.mjs';
-import { inspectVideo } from '../video.mjs';
+import { inspectVideo, parseSrt, subtitleFindings } from '../video.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const good = JSON.parse(fs.readFileSync(path.join(root, 'qa/content/fixtures/good-script.json'), 'utf8'));
@@ -155,6 +155,16 @@ test('procedure text matches the corrections document', () => {
 test('invalid packages are rejected', () => {
   assert.throws(() => reviewScript({}), /invalid script/);
   assert.throws(() => verifyCorrection({}), /invalid correction/);
+});
+
+test('SRT cues outside the picture, empty text, and overlaps are sync findings', () => {
+  const cues = parseSrt('1\n00:00:00,100 --> 00:00:01,000\nHello\n\n2\n00:00:00,500 --> 00:00:02,000\n\n\n3\n00:00:09,000 --> 00:00:10,000\nLate\n');
+  assert.equal(cues.length, 3);
+  assert.equal(cues[0].text, 'Hello');
+  const kinds = subtitleFindings(cues, 2, 0.4).map(item => item.kind);
+  assert.ok(kinds.includes('subtitle_empty'));
+  assert.ok(kinds.includes('subtitle_sync'));
+  assert.equal(subtitleFindings([], 2, 0.4)[0].kind, 'subtitle_missing');
 });
 
 test('ffmpeg measures a picture with audio, and flags black frames and the wrong raster', () => {
