@@ -9,7 +9,7 @@ const procs = []; process.on('exit', () => procs.forEach(p => { try { p.kill('SI
 const PW = 'fake-owner-pw-' + crypto.randomBytes(4).toString('hex'); const UD = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-nodes-'));
 const PORT = await free(), NPORT = await free();
 function startServer(extra = {}) { const p = spawn(process.execPath, ['server.js'], { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: 'test', STUDIO_DATA_DIR: UD, PORT: String(PORT),
-  STUDIO_ADMIN_USER: 'owner', STUDIO_ADMIN_PASSWORD: PW, STUDIO_NODES: '1', STUDIO_NODES_BIND: '', STUDIO_NODES_PORT: String(NPORT), STUDIO_NODES_LEASE_MS: '3000', STUDIO_NODES_DOWN_MS: '6000', STUDIO_NODES_SWEEP_MS: '300', ...extra } });
+  STUDIO_ADMIN_USER: 'owner', STUDIO_ADMIN_PASSWORD: PW, STUDIO_NODES: '1', STUDIO_NODES_LEGACY_TOKENS: '1', STUDIO_NODES_BIND: '', STUDIO_NODES_PORT: String(NPORT), STUDIO_NODES_LEASE_MS: '3000', STUDIO_NODES_DOWN_MS: '6000', STUDIO_NODES_SWEEP_MS: '300', ...extra } });
   p.err = ''; p.stderr.on('data', d => p.err += d); procs.push(p); return p; }
 let cookie = ''; const H = () => ({ 'content-type': 'application/json', 'x-studio-request': '1', origin: `http://127.0.0.1:${PORT}`, cookie });
 const call = (method, p, body, hdr = {}) => new Promise((resolve, rej) => { const r = http.request({ host: '127.0.0.1', port: PORT, method, path: p, headers: { ...H(), ...hdr } }, x => { let d = ''; x.on('data', z => d += z);
@@ -43,10 +43,10 @@ const nreq = (method, p, token, body, hdr = {}) => new Promise((resolve, rej) =>
 const info = v => ({ hostname: 'fake', os: 'darwin 22.6.0', arch: 'x64', model: 'iMac18,3', cpuModel: 'Intel', cpus: 4, cpuPct: 5, memTotal: 8 * 2 ** 30, memAvailable: 4 * 2 ** 30, diskFree: 1e11, diskTotal: 5e11, load1: 0.5, node: 'v22', agentVersion: v, tools: [] });
 ok('GET /api/nodes/ping (read-only) with token → 200', (await nreq('GET', '/api/nodes/ping', ri.token)).status === 200);
 ok('no token → 401', (await nreq('POST', '/api/nodes/hello', null, { info: info('0.2.0') })).status === 401);
-{ const h = await nreq('POST', '/api/nodes/hello', ri.token, { info: info('0.2.0') }); ok('hello (Authorization only, no X-Node-Protocol) → protocol:1 + leaseMs', h.status === 200 && h.body.protocol === 1 && h.body.leaseMs > 0, JSON.stringify(h.body).slice(0, 120)); }
+{ const h = await nreq('POST', '/api/nodes/hello', ri.token, { info: info('0.2.0') }); ok('hello (Authorization only, no X-Node-Protocol) → protocol:2 + leaseMs', h.status === 200 && h.body.protocol === 2 && h.body.leaseMs > 0, JSON.stringify(h.body).slice(0, 120)); }
 ok('agentVersion 0.3.0 → 426', (await nreq('POST', '/api/nodes/hello', ri.token, { info: info('0.3.0') })).status === 426);
 ok('agentVersion 0.1.9 → 426', (await nreq('POST', '/api/nodes/hello', ri.token, { info: info('0.1.9') })).status === 426);
-{ const p = await nreq('POST', '/api/nodes/pull', ri.token, { info: info('0.2.5'), state: 'idle' }); ok('pull (0.2.x accepted) carries protocol:1 (leaseMs travels with each leased job)', p.status === 200 && p.body.protocol === 1, JSON.stringify(p.body).slice(0, 120)); }
+{ const p = await nreq('POST', '/api/nodes/pull', ri.token, { info: info('0.2.5'), state: 'idle' }); ok('pull (0.2.x accepted) carries protocol:2 (leaseMs travels with each leased job)', p.status === 200 && p.body.protocol === 2, JSON.stringify(p.body).slice(0, 120)); }
 ok('PUT /api/nodes/files with wrong SHA-256 → 422', (await nreq('PUT', '/api/nodes/files/' + 'a'.repeat(64), ri.token, Buffer.from('hello'), { 'content-type': 'application/octet-stream' })).status === 422);
 ok('GET /api/nodes/files for a job not leased by the node → refused', (await nreq('GET', '/api/nodes/files/' + 'b'.repeat(64), ri.token)).status >= 400);
 ok('forbidden capability (blender.render) rejected at submit', (await call('POST', '/api/ops/nodes/jobs', { capability: 'blender.render', input: {} })).status === 400);
@@ -88,7 +88,8 @@ ok('rotate issues a new token once', /^nk_imac-test\./.test(rr.token || '') && r
 ok('old token after rotate → 401', (await nreq('GET', '/api/nodes/ping', ri.token)).status === 401);
 ok('new token after rotate works', (await nreq('GET', '/api/nodes/ping', rr.token)).status === 200);
 ok('revoke without confirmation → 400', (await call('POST', '/api/ops/nodes/macbook-test/revoke', {})).status === 400);
-ok('revoke with confirmation', (await call('POST', '/api/ops/nodes/macbook-test/revoke', { confirm: 'ОТОЗВАТЬ' })).status === 200);
+ok('revoke without owner password → 403 (0.2.2 step-up)', (await call('POST', '/api/ops/nodes/macbook-test/revoke', { confirm: 'ОТОЗВАТЬ' })).status === 403);
+ok('revoke with confirmation', (await call('POST', '/api/ops/nodes/macbook-test/revoke', { confirm: 'ОТОЗВАТЬ', password: PW })).status === 200);
 ok('revoked token refused', (await nreq('GET', '/api/nodes/ping', rm.token)).status >= 401);
 // binding policy
 for (const b of ['0.0.0.0', '::', '192.168.1.5', '10.0.0.2', '8.8.8.8', '127.0.0.1'])

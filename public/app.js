@@ -460,7 +460,7 @@ async function s3upload(files) {
   await s3refresh(true);
 }
 // v1.2.4: distributed nodes (Studio 3 Node Manager). Owner-only; tokens are shown ONCE right after register/rotate and never stored in the UI.
-const NODES = { st: null, issued: null };
+const NODES = { st: null, issued: null, enroll: [], audit: [], code: null }; // v1.2.4: + NODE 0.2.2 «Подключить компьютер» (Studio 3 42fed26/6027876)
 VIEWS.nodes = () => {
   if (MODE !== 'server') return '<div class="devbox">Узлы работают только в приложении (серверный режим).</div>';
   const st = NODES.st; if (!st) return '<div class="card">Загрузка…</div>'; const I = NODES.issued;
@@ -480,22 +480,37 @@ VIEWS.nodes = () => {
     <label>Название</label><input id="nname" placeholder="iMac NEWS NODE">
     <p class="small mut">Для выдачи/смены токена и сохранения настроек нужен пароль владельца и ввод слова-подтверждения.</p></div></div>
     <div class="card" style="margin-top:14px"><label>Пароль владельца</label><input type="password" id="npw" autocomplete="current-password">
-    <label>Подтверждение (ВЫДАТЬ — регистрация, СМЕНИТЬ — новый токен, ОТОЗВАТЬ — отзыв, СОХРАНИТЬ — настройки)</label><input id="nconf">
+    <label>Подтверждение (ПОДКЛЮЧИТЬ — код, ПОДТВЕРДИТЬ — устройство, ВЫДАТЬ — прямой токен 0.2.0, СМЕНИТЬ — смена токена, ОТОЗВАТЬ — отзыв, СОХРАНИТЬ — настройки)</label><input id="nconf">
     <div class="row" style="margin-top:8px"><button class="btn" id="nreg">Зарегистрировать</button><button class="btn sm" id="nsave">Сохранить настройки</button></div></div>
     ${I ? `<div class="card" style="margin-top:14px;border-color:#f59e0b"><h3>Токен узла ${esc(I.id)} — показан ОДИН раз</h3><code style="word-break:break-all">${esc(I.token)}</code>
       <p class="small">Keychain на узле: service <code>${esc(I.keychainService)}</code>, account <code>${esc(I.keychainAccount)}</code> (install.sh записывает через stdin). Отпечаток: <code style="word-break:break-all">${esc(I.fingerprint)}</code>${I.coordinatorUrl ? `<br>COORDINATOR_URL: <code>${esc(I.coordinatorUrl)}</code>` : ''}</p>
       <button class="btn sm" id="nhide">Я сохранил — скрыть</button></div>` : ''}
+    <div class="card" style="margin-top:14px" id="enrollCard"><h3>Подключить компьютер (NODE 0.2.2, одноразовый код)</h3>
+    <p class="small mut">Код действует 5 минут и один раз. Сам код доступа не даёт: после ввода кода на узле сверьте <b>ключ устройства</b> с экраном узла (127.0.0.1:8791) и подтвердите паролем владельца (слово ПОДКЛЮЧИТЬ — код, ПОДТВЕРДИТЬ — устройство).</p>
+    <div class="row"><select id="enRole"><option value="news">news — NEWS NODE (iMac)</option><option value="monitor">monitor — MONITOR NODE (MacBook)</option></select> <input id="enName" placeholder="ожидаемое имя" maxlength="64"> <button class="btn sm" id="enNew">Подключить компьютер</button></div>
+    ${NODES.code ? `<div class="card" style="margin-top:8px;border-color:#f59e0b">Код (одноразовый, до ${esc(NODES.code.expiresAt)}): <b style="font-size:18px;letter-spacing:2px">${esc(NODES.code.code)}</b> → узел <b>${esc(NODES.code.nodeId)}</b><br><span class="small">Адрес: ${esc(NODES.code.coordinatorUrl || 'https://<адрес Tailscale этого Mac>:' + NODES.code.port)}<br>Отпечаток сертификата: <code style="word-break:break-all">${esc(NODES.code.fingerprint || '—')}</code> · коротко <b>${esc(NODES.code.fingerprintShort || '—')}</b></span><br><button class="btn sm" id="enHide">Скрыть код</button></div>` : ''}
+    ${(NODES.enroll || []).filter(q => ['pending', 'awaiting_code', 'locked'].includes(q.state)).map(q => `<div class="small" style="margin-top:8px;border-top:1px solid #333;padding-top:6px"><b>${esc(q.name)}</b> <span class="mut">${esc(q.nodeId)} · ${esc(q.role)} · ${esc(q.state)}${q.reenroll ? ' · повторное подключение' : ''}</span>
+      ${q.device ? `<div><b>Ключ устройства: ${esc(q.device.pubKeyShort)}</b> — должен совпасть с экраном узла<br><span class="mut" style="word-break:break-all">SHA-256 ключа: ${esc(q.device.pubKeyFingerprint)} · deviceId ${esc(q.device.deviceId)}</span><br>
+        <span class="mut">Сеть: ${esc(q.device.peer)} ${q.device.peerVerified ? '(подтверждено Tailscale)' : '(не подтверждено)'}</span><br><span class="mut">Сообщено устройством (не проверено): ${esc(q.device.hostname)} · ${esc(q.device.model)} · ${esc(q.device.os)} · ${esc(q.device.arch)} · агент ${esc(q.device.agentVersion)}</span></div>` : ''}
+      ${q.state === 'pending' ? `<button class="btn sm" data-enc="${esc(q.requestId)}">Подтвердить устройство</button> <button class="btn sm" data-enr="${esc(q.requestId)}">Отклонить</button>` : ''}</div>`).join('')}
+    <details class="small" style="margin-top:8px"><summary>Журнал событий узлов</summary>${(NODES.audit || []).slice(0, 50).map(e => `<div class="mut">${esc(e.at)} · ${esc(e.type)} · ${esc(e.nodeId || e.requestId || e.peer || e.ip || '')}</div>`).join('')}</details></div>
     <div class="card" style="margin-top:14px"><h3>Узлы</h3><table class="tbl"><tr><th>Узел</th><th>Статус</th><th>Агент</th><th>Последний контакт</th><th></th></tr>${(st.nodes || []).map(row).join('') || '<tr><td colspan="5" class="mut">нет узлов</td></tr>'}</table></div>`;
 };
 BIND.nodes = v => {
-  const load = async () => { try { NODES.st = await api('GET', '/api/ops/nodes'); } catch (e) { toast('Ошибка: ' + e.message, true); } if (ROUTE === 'nodes') { v.innerHTML = VIEWS.nodes(); BIND.nodes(v); } };
+  const load = async () => { try { NODES.st = await api('GET', '/api/ops/nodes'); if (NODES.st.enabled) { const [e, a] = await Promise.all([api('GET', '/api/ops/nodes/enroll').catch(() => null), api('GET', '/api/ops/nodes/audit').catch(() => null)]); NODES.enroll = e ? e.requests : []; NODES.audit = a ? a.events : []; } } catch (e) { toast('Ошибка: ' + e.message, true); } if (ROUTE === 'nodes') { v.innerHTML = VIEWS.nodes(); BIND.nodes(v); } };
   if (!NODES.st) return load(); const pw = () => v.querySelector('#npw').value, cf = () => v.querySelector('#nconf').value.trim();
   const run = async (fn, msg) => { try { const r = await fn(); if (msg) toast(msg); NODES.st = null; return r; } catch (e) { toast('Ошибка: ' + e.message, true); } finally { if (!NODES.st) load(); } };
   v.querySelector('#nreg').onclick = () => run(async () => { NODES.issued = await api('POST', '/api/ops/nodes', { id: v.querySelector('#nid').value.trim(), role: v.querySelector('#nrole').value, name: v.querySelector('#nname').value.trim(), password: pw(), confirm: cf() }); }, 'Узел зарегистрирован');
   v.querySelector('#nsave').onclick = () => run(() => api('POST', '/api/ops/nodes/settings', { enabled: v.querySelector('#nen').checked, bind: v.querySelector('#nbind').value.trim(), password: pw(), confirm: cf() }), 'Сохранено — перезапустите сервер');
-  v.querySelectorAll('[data-nrot]').forEach(b => b.onclick = () => run(async () => { NODES.issued = await api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrot)}/rotate`, { password: pw(), confirm: cf() }); }, 'Токен сменён'));
-  v.querySelectorAll('[data-nrev]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrev)}/revoke`, { confirm: cf() }), 'Токен отозван'));
+  v.querySelectorAll('[data-nrot]').forEach(b => b.onclick = () => run(async () => { const r = await api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrot)}/rotate`, { password: pw(), confirm: cf() }); if (r && r.token) NODES.issued = r; }, 'Смена токена: узел 0.2.2 получит rotate:true; узлу 0.2.0 новый токен показан один раз'));
+  v.querySelectorAll('[data-nrev]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.nrev)}/revoke`, { password: pw(), confirm: cf() }), 'Токен отозван'));
   v.querySelectorAll('[data-ncmd]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/${encodeURIComponent(b.dataset.ncmd)}/command`, { command: b.dataset.c }), 'Команда отправлена'));
+  const en = v.querySelector('#enNew'); if (en) en.onclick = () => run(async () => { NODES.code = await api('POST', '/api/ops/nodes/enroll', { role: v.querySelector('#enRole').value, name: v.querySelector('#enName').value.trim(), password: pw(), confirm: cf() }); }, 'Код создан — введите его на узле');
+  const eh = v.querySelector('#enHide'); if (eh) eh.onclick = () => { NODES.code = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
+  v.querySelectorAll('[data-enc]').forEach(b => b.onclick = () => { const q = (NODES.enroll || []).find(x => x.requestId === b.dataset.enc) || {}; const dv = q.device || {};
+    if (!confirm(`Подтвердить устройство для узла ${q.nodeId} (${q.role})?\n\nКлюч устройства: ${dv.pubKeyShort}\nSHA-256: ${dv.pubKeyFingerprint}\ndeviceId: ${dv.deviceId}\nСеть: ${dv.peer}${dv.peerVerified ? ' (Tailscale)' : ' (не подтверждено)'}\n\nКлюч должен совпадать с экраном узла. Имя/модель сообщены устройством и не проверены.`)) return;
+    run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, { password: pw(), confirm: cf() }), 'Устройство подтверждено — узел получит токен'); });
+  v.querySelectorAll('[data-enr]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enr)}/reject`, {}), 'Отклонено'));
   const h = v.querySelector('#nhide'); if (h) h.onclick = () => { NODES.issued = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
 };
 VIEWS.studio3d = () => {
