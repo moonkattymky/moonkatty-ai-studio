@@ -1,0 +1,28 @@
+1:===== test:security =====
+54:{"passed":52,"failed":[]}
+55:EXIT test:security:0
+56:===== test:runner =====
+62:EXIT test:runner:0
+63:===== test:opencode =====
+104:FAIL Keychain item uses service "MOONKATTY AI STUDIO" / account opencode-server-password
+115:{"passed":50,"failed":["Keychain item uses service \"MOONKATTY AI STUDIO\" / account opencode-server-password"]}
+116:EXIT test:opencode:1
+117:===== test:policy =====
+165:46/46 passed
+166:EXIT test:policy:0
+167:===== test:video =====
+216:45/45 passed
+217:EXIT test:video:0
+218:===== test:publish-guard =====
+298:{"passed":73,"failed":[]}
+299:EXIT test:publish-guard:0
+300:===== test:isolation =====
+375:{"passed":65,"failed":[]}
+376:EXIT test:isolation:0
+377:===== test:nodes =====
+430:{"passed":52,"failed":[]}
+431:EXIT test:nodes:0
+432:===== test:ops =====
+682:EXIT test:ops:0
+683:===== test:ops:studio =====
+729:EXIT test:ops:studio:1

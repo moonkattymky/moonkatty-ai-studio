@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T12:50:00.000Z",
+  "updatedAt": "2026-10-21T12:54:00.747Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -18,7 +18,9 @@
         "Read window.MoonReliability.BUILD",
         "Compare with the ?v= query on game.js"
       ],
-      "evidence": ["qa/reports/2026-10-20/report.md"],
+      "evidence": [
+        "qa/reports/2026-10-20/report.md"
+      ],
       "foundAt": "2026-10-20T22:35:46.218Z",
       "foundIn": "moonkatty-horizons-play 2df1c76, qa/reports/2026-10-20/report.md",
       "verifiedIn": null,
@@ -232,28 +234,36 @@
       "id": "QA-CMT-001",
       "title": "Comment POST stores status approved",
       "severity": "low",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "studio",
       "summary": "v1.2.3-test generic POST /api/comments stores status approved. The test /reply route returns HTTP 403 and does not send.",
       "expected": "A client POST cannot store a comment as approved when reply is disabled.",
-      "actual": "POST stores approved. POST /api/comments/:id/reply is HTTP 403 publishing_disabled.",
+      "actual": "On b7101c4 a POST with status approved is stored as new. The reply route returns 403 publishing_disabled.",
       "repro": [
         "Authenticate to the v1.2.3-test server",
         "POST /api/comments with status approved",
         "Read the stored status",
         "POST /api/comments/:id/reply and expect HTTP 403"
       ],
-      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
       "foundAt": "2026-10-21T10:55:33.000Z",
       "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
-      "verifiedIn": null,
+      "verifiedIn": "feat/v1.2.4-test-nodes b7101c4, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T10:55:33.000Z",
           "status": "open",
           "note": "Left for v1.2.4 by the product doc. Reply does not send. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T12:54:00.746Z",
+          "status": "qa_verified",
+          "note": "b7101c4: POST /api/comments with status approved is stored as new. POST /reply is 403 publishing_disabled and does not set replyId. Owner approval is not set."
         }
       ]
     },
@@ -273,7 +283,9 @@
         "GET the row before and after a restart",
         "PUT a title change and expect HTTP 403"
       ],
-      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
       "foundAt": "2026-10-21T10:55:33.000Z",
       "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
       "verifiedIn": null,
@@ -302,7 +314,9 @@
         "Run node server.js and read /api/health",
         "Run desktop/flavor-guard.js against the original asar lock"
       ],
-      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
       "foundAt": "2026-10-21T10:55:33.000Z",
       "foundIn": "v1.2.3-test built tree, qa/reports/security-recheck-v1.2.3/REPORT.md",
       "verifiedIn": null,
@@ -330,7 +344,9 @@
         "PUT /api/queue/:id with status Published",
         "Read the stored status"
       ],
-      "evidence": ["qa/reports/security-recheck-v1.2.3/REPORT.md"],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
       "foundAt": "2026-10-21T10:55:33.000Z",
       "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
       "verifiedIn": null,
@@ -359,7 +375,10 @@
         "Call check, download, preBackup, approve, and installPlan",
         "Read mode and the planned path /Applications/MOONKATTY AI STUDIO.app"
       ],
-      "evidence": ["qa/reports/update-center/REPORT.md", "qa/reports/update-center/logs/attack.json"],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
       "verifiedIn": null,
@@ -388,7 +407,10 @@
         "Read zip.symlinks and installPlan",
         "Call autoInstall with the four readiness flags, platform darwin, and dryRun true"
       ],
-      "evidence": ["qa/reports/update-center/REPORT.md", "qa/reports/update-center/logs/attack.json"],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
       "verifiedIn": null,
@@ -417,7 +439,10 @@
         "Call installPlan and autoInstall dryRun",
         "Publish a second signed manifest under the same tag and call check again"
       ],
-      "evidence": ["qa/reports/update-center/REPORT.md", "qa/reports/update-center/logs/attack.json"],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
       "verifiedIn": null,
@@ -439,13 +464,15 @@
       "area": "update-center",
       "summary": "desktop/main.js defaults checkUpdates to true and calls checkUpdates(false) five seconds after the app is ready. That path fetches the pinned GitHub releases API and can open the release page. It does not download the zip or replace the app.",
       "expected": "An update check runs only after the owner presses Check for updates. There is no automatic check.",
-      "actual": "The timer runs unless desktop.json sets checkUpdates to false. The menu item Проверить обновления is a separate explicit action. package.json has no electron-updater dependency.",
+      "actual": "The timer runs unless desktop.json sets checkUpdates to false. The menu item \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f is a separate explicit action. package.json has no electron-updater dependency.",
       "repro": [
         "Read desktop/main.js DEF.checkUpdates and the ready handler",
         "Confirm setTimeout calls checkUpdates(false) at 5000 ms",
         "Confirm the function returns before any install when the zip or checksum is missing"
       ],
-      "evidence": ["qa/reports/update-center/REPORT.md"],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md"
+      ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, desktop/main.js",
       "verifiedIn": null,
@@ -473,7 +500,10 @@
         "Call schemaCheck and read ok false, schemaVersion 3, supported 1",
         "Call compatCheck with dbSchemaVersion 3 and gate with backup and owner approval"
       ],
-      "evidence": ["qa/reports/update-center/REPORT.md", "qa/reports/update-center/logs/attack.json"],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:20:00.000Z",
       "foundIn": "feat/update-center 9ffad98, lib/ops/update.js and lib/ops/update-center.js",
       "verifiedIn": null,
@@ -501,7 +531,10 @@
         "Call authNode twice in the first process",
         "Open a second createNodeManager on the same directory and call authNode with the captured signature"
       ],
-      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/attack.json"],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
       "verifiedIn": null,
@@ -531,7 +564,10 @@
         "Enroll from 127.0.0.1 with X-Forwarded-For of a known tailnet address and expect pending",
         "From loopback, set X-Forwarded-For to a victim tailnet address and send ten failures"
       ],
-      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/attack.json"],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/attack.json"
+      ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
       "verifiedIn": null,
@@ -560,7 +596,10 @@
         "POST confirm and expect 428",
         "POST reject with the session and X-Studio-Request and expect a status other than 428"
       ],
-      "evidence": ["qa/reports/node-0.2.2/REPORT.md", "qa/reports/node-0.2.2/logs/their-tests.log"],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/their-tests.log"
+      ],
       "foundAt": "2026-10-21T12:45:00.000Z",
       "foundIn": "feat/studio-operations db4720b, lib/ops/security-center.js classify",
       "verifiedIn": null,
@@ -577,10 +616,10 @@
       "id": "QA-3D-001",
       "title": "OpenCode chat reply does not write scene_params.json",
       "severity": "medium",
-      "status": "open",
+      "status": "qa_verified",
       "ownerApproval": false,
       "area": "3d",
-      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with 'Агент OpenCode не записал scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
+      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with '\u0410\u0433\u0435\u043d\u0442 OpenCode \u043d\u0435 \u0437\u0430\u043f\u0438\u0441\u0430\u043b scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
       "expected": "A model that does not call write still leaves a schema-valid scene_params.json from the studio params, or the job says the model must call write before the Mac test is treated as done.",
       "actual": "On 6cf7c08 a chat-only mock finished with tools none. The job status was failed at stage agent. scene.blend and preview.png were absent. The same server, with the product mock that does call write, produced a 913264-byte BLENDER file and a 640x480 PNG.",
       "repro": [
@@ -588,16 +627,25 @@
         "POST /api/studio3d/run with a 3D scene request",
         "Read the job error and the version directory"
       ],
-      "evidence": ["qa/reports/opencode-scene-params/REPORT.md", "qa/reports/opencode-scene-params/logs/result.json"],
+      "evidence": [
+        "qa/reports/opencode-scene-params/REPORT.md",
+        "qa/reports/opencode-scene-params/logs/result.json",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
       "foundAt": "2026-10-21T12:50:00.000Z",
       "foundIn": "feat/v1.2.4-test-nodes 6cf7c08, lib/executors/design3d.js agent()",
-      "verifiedIn": null,
+      "verifiedIn": "feat/v1.2.4-test-nodes b7101c4, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
       "blockedOn": null,
       "history": [
         {
           "at": "2026-10-21T12:50:00.000Z",
           "status": "open",
           "note": "Introduced in 00b63fc. The only later edit to design3d.js is the OpenCode URL default in f2440e1. A real Ollama model was not run. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T12:54:00.709Z",
+          "status": "qa_verified",
+          "note": "b7101c4 (36fc193 merged in 5b7e000): a chat-only OpenCode reply is JSON text with no tools. The studio writes scene_params.json. Blender 4.2.9 LTS wrote scene.blend (913192 bytes, magic BLENDER) and a 320x240 PNG. Malformed JSON stops after one retry. Symlink and traversal writes are refused. Owner approval is not set."
         }
       ]
     }
