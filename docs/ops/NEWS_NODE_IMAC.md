@@ -24,7 +24,7 @@
 |---|---|---|---|
 | Node.js 24.22.0 darwin-x64 | да (входит в пакет) | ✓ | BUILDING.md v24.x: macOS x64 `>= 13.5`, Tier 1; в Mach-O заголовке бинарника `x86_64 minos 13.5.0 sdk 15.0.0` (проверяется `scripts/node/macho-minos.py` при сборке); SHA-256 совпадает с SHASUMS256.txt nodejs.org |
 | Node.js 20 LTS | нет | ✗ не берём | End-of-life с 30.04.2026, обновлений безопасности нет |
-| Node.js 22 LTS | нет (для MacBook 2015) | ✓ запасной вариант | minos 11.0, пакет `darwin-x64-macos11`, поддержка до 30.04.2027 |
+| Node.js 22 LTS | нет (для MacBook 2015) | ✓ запасной вариант | minos 11.0, пакет `darwin-x64-monterey`, поддержка до 30.04.2027 |
 | npm-зависимости агента | **нет ни одной** | ✓ | `agent.js` использует только встроенные модули: fs, os, path, crypto, https, http, zlib, child_process |
 | Нативные модули (better-sqlite3 и т.п.) | **нет** | ✓ нечего пересобирать | better-sqlite3 11.10.0 есть только на Mac mini (optional). Готовых сборок для darwin-x64 под Node 24 (ABI v137) у него нет, есть только для node v108/115/127/131, поэтому в узел он сознательно не включён. Дедупликация идёт в памяти (Set по SHA-256), offline-очередь хранится в JSON-файлах |
 | `/usr/bin/vm_stat`, `/bin/df`, `/usr/bin/sw_vers`, `/usr/sbin/sysctl`, `/usr/bin/security` | только чтение | ✓ | Входят в состав macOS 13 |

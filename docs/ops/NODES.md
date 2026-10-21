@@ -37,7 +37,7 @@
 |---|---|---|
 | 13.5+ | 24 LTS / 22 LTS | встроенный Node 22 |
 | 13.5+ (iMac Retina 5K 27" 2017, **macOS Ventura 13.7.1**) | **24 LTS x64 (мин. macOS 13.5, Tier 1; Mach-O minos 13.5.0 проверен)**, поддержка до 04.2028 | пакет `moonkatty-node-<v>-darwin-x64.tar.gz` (Node 24) — см. [NEWS_NODE_IMAC.md](NEWS_NODE_IMAC.md) |
-| 11–12 (MacBook 2015, максимум Monterey 12) | **22 LTS x64 (мин. macOS 11, Tier 1)**, поддержка до 04.2027 | пакет `moonkatty-node-<v>-darwin-x64-macos11.tar.gz` (Node 22) |
+| 11–12 (MacBook Pro Retina 13" Early 2015, **macOS Monterey 12.7.6**; Node 24 не допускается) | **22 LTS x64 (мин. macOS 11, Tier 1)**, поддержка до 04.2027 | пакет `moonkatty-node-<v>-darwin-x64-monterey.tar.gz` (Node 22) |
 | 10.15 | 22 не поддерживается | запасной: обновить macOS до 12 (MacBook 2015 поддерживает), либо `js-only` пакет + Node 18 (EOL, только временно) |
 | ≤10.14 | — | обновить macOS |
 Node 24 требует macOS 13.5 — **не подходит** для этих Mac. SEA/pkg не используем: SEA требует переподписи бинарника, а официальный подписанный Node + наши JS-файлы с MANIFEST проще проверить. Код агента совместим с Node ≥ 16, без зависимостей.
