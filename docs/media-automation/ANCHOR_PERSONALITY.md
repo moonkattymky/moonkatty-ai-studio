@@ -1,6 +1,6 @@
 # News 2.0 — Anchor personality, humor, formats, pipeline
 
-Config: `media-automation/config/anchor-personality.json` (supersedes tone notes in `anchor-profile.json`; voice pinned to MOONKATTY_NEWS_MASTER_VOICE = casting B, approved by Igor 2026-10-21).
+Config: `media-automation/config/anchor-personality.json` (supersedes tone notes in `anchor-profile.json`; voice pinned to MOONKATTY_NEWS_MASTER_VOICE = stock am_fenrir (final, approved by Igor 2026-10-21; supersedes casting B)).
 Code: `media-automation/src/anchor/` (`humor.js`, `emotion.js`, `formats.js`, `pipeline.js`). Tests: `media-automation/test/anchor.test.js`.
 
 ## Character

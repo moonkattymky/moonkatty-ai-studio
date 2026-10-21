@@ -91,9 +91,9 @@ class KokoroTTS {
 /** Kokoro-82M style BLEND (tools/kokoro_cast.py). Emotion-aware: synthesize(text, out, {emotion}) applies Emotion Engine prosody
  * (speed, sentence pauses, small pitch post-shift). Returns measured sentence times for word timestamps. Base pitch/speed from master voice. */
 class KokoroBlendTTS {
-  constructor({ python = process.env.MA_KOKORO_PYTHON || 'python3', model, voices, blend, speed = 1, pitchSemitones = 0, lang = 'en-us', runFn = run, spawnFn = spawn, name } = {}) {
+  constructor({ python = process.env.MA_KOKORO_PYTHON || 'python3', model, voices, blend, speed = 1, pitchSemitones = 0, emotionPitch = true, lang = 'en-us', runFn = run, spawnFn = spawn, name } = {}) {
     if (!model || !voices || !blend) throw new Error('kokoro-blend: model, voices and blend required');
-    Object.assign(this, { python, model, voices, blend, speed, pitchSemitones, lang, runFn, spawnFn }); this.name = name || `kokoro-blend:${Object.entries(blend).map(([v, w]) => `${v}@${w}`).join('+')}`;
+    Object.assign(this, { python, model, voices, blend, speed, pitchSemitones, emotionPitch, lang, runFn, spawnFn }); this.name = name || `kokoro-blend:${Object.entries(blend).map(([v, w]) => `${v}@${w}`).join('+')}`;
   }
   /** opts.lines: [{text, emotion, role}] -> per-line speed + pause (line-level emotional accents); opts.pitch=false disables emotion pitch shift (pure-voice comparison renders). */
   async synthesize(text, outWav, { emotion = 'NEUTRAL', lines = null, pitch = true } = {}) {
@@ -108,7 +108,7 @@ class KokoroBlendTTS {
     const res = await new Promise((ok, rej) => { const pr = this.spawnFn(this.python, [script]); let out = '', err = ''; pr.stdout?.on('data', d => { out += d; }); pr.stderr?.on('data', d => { err += d; }); pr.on('error', rej);
       pr.on('close', c => c ? rej(new Error(`kokoro-blend exit ${c}: ${err.slice(-400)}`)) : ok(JSON.parse(out.trim().split('\n').pop())));
       pr.stdin.end(JSON.stringify({ segments, blend: this.blend, speed: +(this.speed * p.speed).toFixed(3), lang: this.lang, out: raw, model: this.model, voices: this.voices })); });
-    const pf = pitchFilter(+(this.pitchSemitones + (pitch ? p.pitchSemitones : 0)).toFixed(2), res.sr || 24000);
+    const pf = pitchFilter(+(this.pitchSemitones + (pitch && this.emotionPitch !== false ? p.pitchSemitones : 0)).toFixed(2), res.sr || 24000);
     const af = [pf, p.gainDb ? `volume=${p.gainDb}dB` : null].filter(Boolean);
     await this.runFn('ffmpeg', ['-y', '-v', 'error', '-i', raw, ...(af.length ? ['-af', af.join(',')] : []), '-ar', '44100', '-ac', '1', '-c:a', 'pcm_s16le', outWav]); fs.rmSync(raw, { force: true });
     return { file: outWav, durationSec: await probeDuration(outWav, this.runFn), sentences: res.segments, emotion };

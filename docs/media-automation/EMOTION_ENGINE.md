@@ -24,7 +24,7 @@ Blend = weighted mean of Kokoro style vectors (no cloning).
 - **A Smart & Charming** — am_michael 0.7 + am_puck 0.3, speed ×1.00, pitch +0.
 - **B Energetic & Playful** — am_puck 0.6 + am_michael 0.4, speed ×1.06, pitch +0.4 st.
 - **C Professional & Witty** — am_michael 0.75 + am_fenrir 0.25, speed ×0.98, pitch −0.2 st.
-Each renders serious (SERIOUS), light (PLAYFUL), joke (WITTY). Output + sha256 in `casting.json`. **Owner approved B on 2026-10-21** → pinned as MOONKATTY_NEWS_MASTER_VOICE (see MASTER_VOICE_EXPORT.md).
+Each renders serious (SERIOUS), light (PLAYFUL), joke (WITTY). Output + sha256 in `casting.json`. Owner approved B on 2026-10-21, then replaced it the same day with the **final master voice: stock `am_fenrir`, speed 1.0, no pitch** (emotion = speed/pauses/gain only; see MASTER_VOICE_EXPORT.md).
 
 ## Engine licenses (commercial use)
 | Engine | License | Commercial | Status |

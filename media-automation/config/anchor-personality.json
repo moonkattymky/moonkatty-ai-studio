@@ -5,10 +5,16 @@
   "voice": {
     "pinned": true,
     "masterVoiceId": "MOONKATTY_NEWS_MASTER_VOICE",
-    "variant": "B-energetic-playful",
+    "variant": "stock-am_fenrir",
     "approvedBy": "Igor",
     "approvedAt": "2026-10-21",
-    "note": "One voice across all emotion modes; config/master-voice.json is authoritative."
+    "note": "One voice across all emotion modes; config/master-voice.json is authoritative.",
+    "supersedes": "B-energetic-playful",
+    "emotionControls": [
+      "speed",
+      "pauses",
+      "gain"
+    ]
   },
   "traits": [
     "curious",

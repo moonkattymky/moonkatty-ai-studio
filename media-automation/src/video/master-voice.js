@@ -28,7 +28,7 @@ class MasterVoice {
     if (c.engine === 'kokoro-blend') { const voices = expand(c.voicesFile, this.env); if (!voices || !fs.existsSync(voices)) throw new Error('MASTER VOICE unavailable: kokoro voices file missing. Refusing to substitute another voice.');
       if (c.voicesSha256 && sha256File(voices) !== c.voicesSha256) throw new Error('MASTER VOICE voices file hash mismatch. Refusing to substitute.');
       if (!c.blend || !Object.keys(c.blend).length) throw new Error('MASTER VOICE blend missing');
-      return new KokoroBlendTTS({ python: this.env.MA_KOKORO_PYTHON || 'python3', model, voices, blend: c.blend, speed: c.speed || 1, pitchSemitones: c.pitchSemitones || 0, lang: c.lang || 'en-us', name: `${c.id || 'master'}:${c.voice}` }); }
+      return new KokoroBlendTTS({ python: this.env.MA_KOKORO_PYTHON || 'python3', model, voices, blend: c.blend, speed: c.speed || 1, pitchSemitones: c.pitchSemitones || 0, emotionPitch: c.emotionPitch !== false, lang: c.lang || 'en-us', name: `${c.id || 'master'}:${c.voice}` }); }
     if (c.engine === 'kokoro') { const voices = expand(c.voicesFile, this.env); if (!voices || !fs.existsSync(voices)) throw new Error('MASTER VOICE unavailable: kokoro voices file missing');
       return new KokoroTTS({ python: this.env.MA_KOKORO_PYTHON || 'python3', model, voices, voice: c.voice, speed: c.rate || 1 }); }
     if (c.engine === 'piper') return new PiperTTS({ model, bin: this.env.MA_PIPER_BIN || 'piper', lengthScale: c.rate ? 1 / c.rate : 1 });
@@ -43,9 +43,9 @@ class MasterVoice {
   /** Export record for the Studio 5 shared voice library (see docs/media-automation/MASTER_VOICE_EXPORT.md). */
   exportForStudio5() { const c = this.cfg; return { schema: 'moonkatty.studio5.voice-profile/v1 (proposal)', id: c.id, displayName: 'MOONKATTY NEWS anchor', status: c.status, owner: 'moonkatty-news (media-automation)',
     engine: { name: 'kokoro-82m', runtime: 'kokoro-onnx', runtimeVersion: '0.6.1', model: { sha256: c.model.sha256, license: c.model.license || 'Apache-2.0' }, voicesPack: { file: 'voices-v1.0.bin', sha256: c.voicesSha256 } },
-    voice: { type: 'style-blend', blend: c.blend, speed: c.speed, pitchSemitones: c.pitchSemitones, lang: c.lang || 'en-us', sampleRateHz: 24000, deliveryFormat: 'wav 48kHz mono s16, -16 LUFS' },
-    character: { gender: c.gender, accent: c.accent, perceivedAge: '25-35', description: 'warm, confident, friendly, energetic; original synthetic blend, imitates no real person' },
+    voice: { type: Object.keys(c.blend).length === 1 ? 'stock-voice' : 'style-blend', blend: c.blend, speed: c.speed, pitchSemitones: c.pitchSemitones, emotionPitch: c.emotionPitch !== false, emotionControls: c.emotionPitch === false ? ['speed', 'pauses', 'gain'] : ['speed', 'pauses', 'gain', 'pitch'], lang: c.lang || 'en-us', sampleRateHz: 24000, deliveryFormat: 'wav 48kHz mono s16, -16 LUFS' },
+    character: { gender: c.gender, accent: c.accent, perceivedAge: '25-35', description: 'Kokoro stock US male voice ' + c.voice + '; synthetic, imitates no real person' },
     emotionModes: Object.keys(require('../anchor/emotion').MODES), policy: { autoReplace: c.autoReplace, failIfUnavailable: true, changeRequires: 'owner unlock(by, reason)' },
-    approval: { approvedBy: c.approvedBy, approvedAt: c.approvedAt, audit: c.audit || [] }, voiceProfileId: c.voiceProfileId || null }; }
+    approval: { approvedBy: c.approvedBy, approvedAt: c.approvedAt, supersedes: c.supersedes || null, audit: c.audit || [] }, voiceProfileId: c.voiceProfileId || null }; }
 }
 module.exports = { MasterVoice, sha256File };

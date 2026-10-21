@@ -26,12 +26,12 @@ test('emotion-aware captions from words pass SRT rules', () => {
     const r = validateSrt(srt, { maxChars: v, totalSec: 10 }); assert.ok(r.ok, r.errors.join(';')); }
   assert.equal(wordCaptions(words, 42, 'SERIOUS')[0].style, 'Serious');
 });
-test('master voice B: locked, autoReplace=false, fails (no fallback) when model/voices missing or voices hash differs', () => {
+test('master voice am_fenrir: locked, autoReplace=false, fails (no fallback) when model/voices missing or voices hash differs', () => {
   const d = tmp(); const model = path.join(d, 'm.onnx'), voices = path.join(d, 'v.bin'); fs.writeFileSync(model, 'm'); fs.writeFileSync(voices, 'v');
   const { sha256File } = require('../src/video/master-voice');
   const cfg = { ...JSON.parse(fs.readFileSync(path.join(__dirname, '../config/master-voice.json'))), model: { file: model, sha256: sha256File(model) }, voicesFile: voices, voicesSha256: sha256File(voices) };
   const f = path.join(d, 'mv.json'); fs.writeFileSync(f, JSON.stringify(cfg));
-  const t = new MasterVoice({ file: f, env: {} }).createTTS(); assert.equal(t.constructor.name, 'KokoroBlendTTS'); assert.deepEqual(t.blend, { am_puck: 0.6, am_michael: 0.4 }); assert.equal(t.speed, 1.06); assert.equal(t.pitchSemitones, 0.4);
+  const t = new MasterVoice({ file: f, env: {} }).createTTS(); assert.equal(t.constructor.name, 'KokoroBlendTTS'); assert.deepEqual(t.blend, { am_fenrir: 1 }); assert.equal(t.speed, 1); assert.equal(t.pitchSemitones, 0); assert.equal(t.emotionPitch, false);
   fs.writeFileSync(f, JSON.stringify({ ...cfg, voicesSha256: 'f'.repeat(64) })); assert.throws(() => new MasterVoice({ file: f, env: {} }).createTTS(), /hash mismatch/);
   fs.writeFileSync(f, JSON.stringify({ ...cfg, autoReplace: true })); assert.throws(() => new MasterVoice({ file: f, env: {} }).createTTS(), /autoReplace/);
   fs.writeFileSync(f, JSON.stringify(cfg)); fs.unlinkSync(voices); assert.throws(() => new MasterVoice({ file: f, env: {} }).createTTS(), /Refusing to substitute/);

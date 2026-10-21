@@ -21,7 +21,7 @@ const SOURCES = [
 async function build(stateDir) {
   fs.mkdirSync(stateDir, { recursive: true });
   const llm = new OllamaProvider(); const llmOk = await llm.health();
-  const mv = new MasterVoice(); const tts = new SpeechComposer({ tts: mv.createTTS() }); // throws if master voice unavailable
+  const mv = new MasterVoice(); const tts = mv.createTTS(); // MOONKATTY_NEWS_MASTER_VOICE (am_fenrir); throws, never substitutes. Factory applies lexicon + emotion prosody (speed/pauses/gain).
   const bed = path.join(stateDir, 'ambient-bed.wav'); const music = fs.existsSync(bed + '.license.json') ? JSON.parse(fs.readFileSync(bed + '.license.json')) : await generateAmbientBed(bed, { durationSec: 90 });
   const jobQueue = new LocalJobQueue({ statePath: path.join(stateDir, 'jobs.json'), beforeHeavy: async t => { if (t === 'video_render' && llmOk) await llm.unload().catch(() => {}); } });
   const mediaLib = new MediaLibrary({ dir: path.join(stateDir, 'media'), providers: { nasa: new NasaImagesProvider(), commons: new CommonsProvider() } });

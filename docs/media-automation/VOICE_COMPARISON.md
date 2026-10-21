@@ -1,6 +1,6 @@
 # Voice comparison renders (2026-10-21) — LLM scripts × 3 stock Kokoro voices
 
-**Comparison only.** `MOONKATTY_NEWS_MASTER_VOICE` (casting B) config is unchanged; these renders use an explicit `voiceOverride` (`comparisonRender: true`, pure stock voice `{voice: 1.0}`, speed 1.0, no pitch shift — emotion modes change only speed/pauses/gain).
+**Outcome: Igor chose `am_fenrir` → now the final MOONKATTY_NEWS_MASTER_VOICE (see MASTER_VOICE_EXPORT.md).** The renders below stay comparison-only. `MOONKATTY_NEWS_MASTER_VOICE` (casting B) config is unchanged; these renders use an explicit `voiceOverride` (`comparisonRender: true`, pure stock voice `{voice: 1.0}`, speed 1.0, no pitch shift — emotion modes change only speed/pauses/gain).
 
 - Runner: `bin/news2-voices.js` (reuses the verified stories + licensed images of the master-voice demos; same script for every voice). Reel: `bin/voice-reel.js`.
 - Scripts: `docs/media-automation/scripts/demo-{A,B,C}.script.json` (also `/workspace/ma-out/news2-voices/scripts/`). Written by local **Ollama qwen2.5:7b** (Qwen2.5-7B-Instruct Q4_K_M GGUF from Hugging Face, Apache-2.0) via `AnchorScriptWriter`.
