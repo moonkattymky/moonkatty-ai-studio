@@ -325,8 +325,14 @@ app.get('/api/system', (req, res) => {
 // ---- OpenCode server Basic Auth (password only in macOS Keychain; see lib/opencode-auth.js) ----
 const oca = require('./lib/opencode-auth.js');
 const ocItem = () => get('integrations', 'opencode') || { id: 'opencode', name: 'OpenCode', url: CFG.opencodeUrl, testPath: '/global/health' };
+const ocServe = require('./lib/opencode-serve.js').createOpencodeServe({ log: msg => log('info', 'integration:opencode', msg) });
+process.on('exit', () => { try { ocServe.stop(); } catch {} });
 async function ocView() { const it = ocItem(); const ks = oca.keychainStatus();
-  return { url: it.url, username: it.username || oca.DEFAULT_USER, hasPassword: ks.available ? await oca.hasPassword() : false, keychain: ks, lastTest: it.lastTest || null, status: !ks.available ? 'Не подключено' : (it.lastTest?.ok ? 'Подключено' : 'Не подключено') }; }
+  return { url: it.url, username: it.username || oca.DEFAULT_USER, hasPassword: ks.available ? await oca.hasPassword() : false,
+    keychain: { ...ks, service: oca.SERVICE, account: oca.ACCOUNT, label: oca.LABEL }, lastTest: it.lastTest || null,
+    model: it.model || '', modelEffective: it.model || CFG.opencodeModel,
+    serve: { allowed: !!CFG.IS_TEST, ...ocServe.status() },
+    status: !ks.available ? 'Не подключено' : (it.lastTest?.ok ? 'Подключено' : 'Не подключено') }; }
 app.get('/api/opencode/auth', async (req, res) => res.json(await ocView()));
 app.put('/api/opencode/auth', async (req, res) => {
   const b = req.body && typeof req.body === 'object' ? req.body : {}; const allowed = ['url', 'username', 'password', 'clearPassword'];
@@ -350,6 +356,17 @@ async function ocTest(req, res) {
   it.lastTest = r; put('integrations', it); log(r.ok ? 'info' : 'error', 'integration:opencode', `Проверка OpenCode (${r.url}): ${r.ok ? 'OK' : 'ошибка — ' + r.detail}`, req.user); res.json(r);
 }
 app.post('/api/opencode/test', ocTest);
+app.get('/api/opencode/serve', (req, res) => {
+  if (!CFG.IS_TEST) return res.status(403).json({ error: 'Запуск OpenCode из приложения есть только в тестовой сборке', allowed: false });
+  res.json({ allowed: true, ...ocServe.status() });
+});
+app.post('/api/opencode/serve', async (req, res) => {
+  if (!CFG.IS_TEST) return res.status(403).json({ error: 'Запуск OpenCode из приложения есть только в тестовой сборке. Рабочий порт не используется.', allowed: false });
+  const it = ocItem();
+  const r = await ocServe.start({ url: it.url, username: it.username || oca.DEFAULT_USER });
+  log(r.ok ? 'info' : 'warn', 'integration:opencode', r.ok ? ('OpenCode запущен на ' + r.url + (r.already ? ' (уже работал)' : '')) : ('Запуск OpenCode отклонён: ' + r.detail), req.user);
+  res.status(r.ok ? 200 : (r.status || 500)).json(r.ok ? r : { ...r, error: r.detail });
+});
 // Integration test — real HTTP request from the server.
 // Risk fix (b): SSRF-safe integration test — per-integration host allowlist, DNS resolved + every address checked,
 // connect pinned to the vetted address, private/link-local/metadata IPs blocked, redirects never followed (lib/egress.js).
@@ -387,7 +404,16 @@ app.post('/api/reset', (req, res) => {
 });
 
 // ---- Jobs (action log, cancel, retry, confirm) and 3D Studio ----
-const jobView = j => j && { ...j, pid: undefined, publicStatus: services.PUBLIC[j.status], task: get('tasks', j.taskId), stages: design3d.STAGES.map(s => ({ id: s, label: design3d.STAGE_LABEL[s] })) };
+const jobView = j => {
+  if (!j) return j;
+  const cp = j.checkpoint || {}; let outputs = null;
+  if (cp.projectId && cp.version) {
+    const rel = `projects3d/${cp.projectId}/${cp.version}`;
+    const ready = name => { try { return !!(cp.vdir && fs.existsSync(path.join(cp.vdir, name))); } catch { return false; } };
+    outputs = { sceneParams: rel + '/scene_params.json', sceneParamsReady: ready('scene_params.json'), blend: rel + '/scene.blend', blendReady: ready('scene.blend'), preview: rel + '/renders/preview.png', previewReady: ready('renders/preview.png') };
+  }
+  return { ...j, pid: undefined, outputs, publicStatus: services.PUBLIC[j.status], task: get('tasks', j.taskId), stages: design3d.STAGES.map(s => ({ id: s, label: design3d.STAGE_LABEL[s] })) };
+};
 app.get('/api/jobs', (req, res) => { const s = req.query.status; res.json(jobs.list(Math.min(+req.query.limit || 30, 200)).filter(j => !s || j.status === s || services.PUBLIC[j.status] === s).map(jobView)); });
 app.post('/api/jobs', (req, res) => { const b = req.body || {}; try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.get('/api/jobs/:id', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); res.json({ ...jobView(j), events: jobs.events(j.id, +req.query.after || 0) }); });
@@ -417,7 +443,7 @@ app.get('/api/studio3d/status', async (req, res) => { const bi = get('integratio
   res.json({ blender: await blender.detect(bi.path, { force: req.query.refresh === '1' }), blenderPath: bi.path || '', opencode: await ocView(), opencodeModel: oc.model || '', agent: get('agents', 'design3d') }); });
 app.put('/api/studio3d/settings', (req, res) => { const b = req.body || {};
   if ('blenderPath' in b) { if (b.blenderPath && !SAFE_PATH.test(b.blenderPath)) return res.status(400).json({ error: 'Путь к Blender: абсолютный путь' }); const it = get('integrations', 'blender') || { id: 'blender', name: 'Blender' }; it.path = b.blenderPath || ''; put('integrations', it); }
-  if ('opencodeModel' in b) { if (b.opencodeModel && !SAFE_MODEL.test(b.opencodeModel)) return res.status(400).json({ error: 'Модель: provider/model, например ollama/qwen2.5-coder:7b' }); const it = ocItem(); it.model = b.opencodeModel || ''; put('integrations', it); }
+  if ('opencodeModel' in b) { if (b.opencodeModel && !SAFE_MODEL.test(b.opencodeModel)) return res.status(400).json({ error: 'Модель: provider/model, например ollama/qwen3:8b или ollama/qwen2.5-coder:7b' }); const it = ocItem(); it.model = b.opencodeModel || ''; put('integrations', it); }
   log('info', 'studio3d', 'Настройки 3D Studio изменены: ' + Object.keys(b).join(', '), req.user); res.json({ ok: true }); });
 app.get('/api/projects3d/:pid/:ver/file', (req, res) => { if (!/^(scene\.blend|renders\/preview\.png|renders\/anim\/frame_\d{4}\.png|exports\/scene\.(glb|fbx))$/.test(String(req.query.name || ''))) return res.status(404).json({ error: 'not found' }); let f; try { f = ws3d.file(req.params.pid, req.params.ver, String(req.query.name || '')); } catch { f = null; }
   if (!f) return res.status(404).json({ error: 'not found' }); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Cache-Control', 'no-store');

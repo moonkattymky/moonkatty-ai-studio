@@ -10,7 +10,7 @@
       "models": { "qwen2.5-coder:7b": { "name": "qwen2.5-coder 7b", "tool_call": true }, "qwen3:8b": { "name": "qwen3 8b", "tool_call": true } }
     }
   },
-  "model": "ollama/qwen2.5-coder:7b",
+  "model": "ollama/qwen3:8b",
   "small_model": "ollama/qwen3:8b",
   "permission": {
     "*": "deny",

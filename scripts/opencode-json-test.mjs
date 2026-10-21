@@ -97,11 +97,13 @@ const j5 = await run('Кот FAKE_DROPFILE'); ok('file created by agent → job 
 const j6 = await run('Кот FAKE_FIXRETRY'); ok('invalid JSON → 1 retry → success', j6?.status === 'waiting_approval' && /попытка 1\/2/.test(evText(j6)) && /Повторный запрос/.test(evText(j6)), j6?.error);
 // 7. malformed twice → clear Russian error, no more than 2 prompts
 const j7 = await run('Кот FAKE_BADJSON'); const n7 = prompts.filter(p => p.sid === j7?.checkpoint?.sessionID).length;
-ok('malformed JSON twice → failed with Russian message (OLLAMA_CONTEXT_LENGTH hint), exactly 2 prompts', j7?.status === 'failed' && /не вернул корректный JSON.*OLLAMA_CONTEXT_LENGTH/.test(j7.error) && n7 === 2, j7?.error + ' prompts=' + n7);
-// 8. model error
-const j8 = await run('Кот FAKE_ERROR'); ok('model error → failed «Ошибка модели в OpenCode»', j8?.status === 'failed' && /Ошибка модели в OpenCode.*not found/.test(j8.error), j8?.error);
-// 9. no answer → timeout
-const j9 = await run('Кот FAKE_SILENT'); ok('no answer → timeout error in Russian', j9?.status === 'failed' && /не ответил за \d+ с/.test(j9.error), j9?.error);
+const sp7 = j7?.checkpoint?.vdir && JSON.parse(fs.readFileSync(j7.checkpoint.vdir + '/scene_params.json', 'utf8'));
+ok('malformed JSON twice → fallback (not a hard stop), exactly 2 prompts, valid scene_params', j7?.status === 'waiting_approval' && /не записал scene_params\.json/.test(evText(j7)) && /запасн/.test(evText(j7)) && /OLLAMA_CONTEXT_LENGTH/.test(evText(j7)) && n7 === 2 && SP.validate(sp7).ok && !/import os/.test(JSON.stringify(sp7)), (j7?.error || '') + ' prompts=' + n7 + '\n' + evText(j7).slice(-400));
+ok('fallback still shows .blend and PNG paths', j7?.outputs?.blend?.endsWith('/scene.blend') && j7?.outputs?.preview?.endsWith('/renders/preview.png') && j7.outputs.blendReady && j7.outputs.previewReady);
+// 8. model error → fallback, pipeline continues
+const j8 = await run('Кот FAKE_ERROR'); ok('model error → fallback, warning «Ошибка модели в OpenCode»', j8?.status === 'waiting_approval' && /Ошибка модели в OpenCode.*not found/.test(evText(j8)) && /не записал scene_params\.json/.test(evText(j8)), j8?.error + '\n' + evText(j8).slice(-300));
+// 9. no answer → timeout, then fallback
+const j9 = await run('Кот FAKE_SILENT'); ok('no answer → timeout text, then fallback', j9?.status === 'waiting_approval' && /нет ответа за \d+ с/.test(evText(j9)) && /не записал scene_params\.json/.test(evText(j9)), j9?.error + '\n' + evText(j9).slice(-300));
 ok('no password in studio output', !outLog.join('').includes(PW));
 console.log(`\n${res.filter(r => r[1]).length}/${res.length} passed`);
 studio.kill('SIGTERM'); fake.close(); await sleep(300); process.exit(res.every(r => r[1]) ? 0 : 1);

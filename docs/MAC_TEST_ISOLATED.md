@@ -94,14 +94,16 @@ cd ~/Downloads && shasum -a 256 -c "MOONKATTY-AI-STUDIO-TEST-1.2.4-test-arm64-ma
 
 Тестовая сборка читает пароль **только** из элемента `MOONKATTY AI STUDIO.test` / `opencode-server-password`. Добавьте его интерактивно: `-w` стоит **последним и без значения**, поэтому `security` спросит пароль сам, и пароль не попадёт ни в историю команд, ни в список процессов:
 ```bash
-security add-generic-password -U -s "MOONKATTY AI STUDIO.test" -a opencode-server-password -l "MOONKATTY AI STUDIO TEST — OpenCode" -w
+security add-generic-password -U -s "MOONKATTY AI STUDIO.test" -a opencode-server-password -l "MOONKATTY AI STUDIO.test — OpenCode" -w
 # password data for new item: (вводится скрыто)   retype password: (ещё раз)
 ```
 Придумайте **новый** тестовый пароль, не такой, как у рабочей версии. Можно не выполнять эту команду, а ввести пароль в тестовом приложении («Настройки → OpenCode server»): оно сохранит его в тот же тестовый элемент.
 
-Запуск отдельного OpenCode server для теста (порт 4097; рабочий на 4096 не трогаем). Это отдельное окно Терминала, его не закрывать:
+В «Связке ключей» запись называется **`MOONKATTY AI STUDIO.test — OpenCode`**. Служба (service) — `MOONKATTY AI STUDIO.test` (с точкой, не «STUDIO TEST»). Учётная запись (account) — `opencode-server-password`, не `opencode`. Поиск по словам «MOONKATTY AI STUDIO TEST» или «opencode» эту запись не находит.
+
+Запуск отдельного OpenCode на `127.0.0.1:4097` (рабочий порт 4096 не трогаем): в тестовом приложении «Настройки → OpenCode» или «3D Studio → Окружение» нажмите **«Запустить OpenCode»**. Пароль берётся из Keychain и попадает только в окружение процесса. Либо отдельное окно Терминала, его не закрывать:
 ```bash
-MK_FLAVOR=test ~/Applications/"MOONKATTY AI STUDIO TEST.app"/Contents/Resources/app.asar.unpacked/opencode/serve.sh
+~/Applications/"MOONKATTY AI STUDIO TEST.app"/Contents/Resources/app.asar.unpacked/opencode/serve-test.sh
 ```
 
 ## 5. Запуск теста
