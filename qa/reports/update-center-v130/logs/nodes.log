@@ -1,0 +1,57 @@
+
+> moonkatty-ai-studio@1.3.0-test test:nodes
+> node scripts/nodes-test.mjs
+
+PASS server (TEST flavor, nodes on) starts
+PASS admin API requires the owner session (401 without login)
+PASS node listener: TLS on 127.0.0.1 only (no Tailscale configured) — ["127.0.0.1:45919"]
+PASS public coordinator cert downloadable by owner (no private key)
+PASS cert fingerprint (SHA-256) shown to the owner
+PASS TEST flavor: node id suffix -test, default node port 8690
+PASS studio-config TEST: nodesPort 8690, nodeIdSuffix -test — 8690,-test
+PASS register without typed confirmation → 400
+PASS register with wrong owner password → 403
+PASS TEST flavor refuses node ids without -test (no collision with prod nodes)
+PASS token issued once: nk_<id>.<secret> + fingerprint + Keychain service — moonkatty-node-imac-test
+PASS server stores only the token hash (secret absent on disk)
+PASS GET /api/ops/nodes never returns tokens
+PASS GET /api/nodes/ping (read-only) with token → 200
+PASS no token → 401
+PASS hello (Authorization only, no X-Node-Protocol) → protocol:2 + leaseMs — {"ok":true,"protocol":2,"agentVersionRange":">=0.2.0 <0.3.0","enrolled":false,"rotate":false,"node":"imac-test","role":"
+PASS agentVersion 0.3.0 → 426
+PASS agentVersion 0.1.9 → 426
+PASS pull (0.2.x accepted) carries protocol:2 (leaseMs travels with each leased job) — {"job":null,"command":"run","protocol":2,"rotate":false}
+PASS PUT /api/nodes/files with wrong SHA-256 → 422
+PASS GET /api/nodes/files for a job not leased by the node → refused
+PASS forbidden capability (blender.render) rejected at submit
+PASS secrets in job input rejected (scanSecrets)
+PASS agent with a wrong pinned fingerprint never connects
+PASS NEWS NODE agent 0.2.2 (imac-test) online over pinned TLS — 0.2.2
+PASS MONITOR NODE agent 0.2.2 (macbook-test) online over pinned TLS — 0.2.2
+PASS info fields present (cpuPct 0-100, bytes as integers, tools[])
+PASS news.dedup routed to NEWS NODE and completed — imac-test
+PASS X GROWTH caps on MONITOR NODE stay off by default (job not taken)
+PASS commands: drain accepted, unknown command rejected
+PASS studio-connection-test.mjs against our server: TLS pin + token + /ping pass — all pass
+PASS rotate without confirmation → 400
+PASS rotate issues a new token once
+PASS old token after rotate → 401
+PASS new token after rotate works
+PASS revoke without confirmation → 400
+PASS revoke without owner password → 403 (0.2.2 step-up)
+PASS revoke with confirmation
+PASS revoked token refused
+PASS settings refuse bind 0.0.0.0
+PASS settings refuse bind ::
+PASS settings refuse bind 192.168.1.5
+PASS settings refuse bind 10.0.0.2
+PASS settings refuse bind 8.8.8.8
+PASS settings refuse bind 127.0.0.1
+PASS settings accept a Tailscale address (100.101.102.103), restart required
+PASS POST /api/comments with status approved is stored as new — new
+PASS STUDIO_NODES_BIND=0.0.0.0 refused; only 127.0.0.1 listens — ["адрес привязки не Tailscale: 0.0.0.0"]
+PASS main panel refuses HOST=0.0.0.0 (exit 78) — exit 78
+PASS heavy lock busy → file jobs held back; released → leased
+PASS isTailscaleOrLoopback policy
+PASS isPrivateIPv4 (Studio 3, informational): RFC1918 + loopback + 100.64/10 are "private"
+{"passed":52,"failed":[]}

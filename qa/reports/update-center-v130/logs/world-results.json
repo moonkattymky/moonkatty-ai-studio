@@ -1,0 +1,326 @@
+{
+  "at": "2026-10-21T18:56:46.658Z",
+  "fail": 0,
+  "out": [
+    {
+      "name": "QC: присланные 100 баллов не принимаются",
+      "status": "PASS",
+      "extra": "blocked_factcheck 100"
+    },
+    {
+      "name": "QC: новость с фактчеком может пройти",
+      "status": "PASS",
+      "extra": "pass 100"
+    },
+    {
+      "name": "QC: пустые доказательства дают низкий балл",
+      "status": "PASS",
+      "extra": "0"
+    },
+    {
+      "name": "QC: лимит повторов останавливает доработку",
+      "status": "PASS",
+      "extra": "blocked_regen_cap"
+    },
+    {
+      "name": "A growth math uses real points only",
+      "status": "PASS",
+      "extra": "{\"daily\":{\"subscribers\":10,\"from\":120,\"to\":130,\"real\":true},\"weekly\":{\"subscribers\":20,\"from\":110,\"to\":130,\"real\":true},\"monthly\":{\"subscribers\":30,\"from\":100,\"to\":130,\"real\":true}}"
+    },
+    {
+      "name": "A unconnected audience is НЕТ ДАННЫХ and YouTube stays separate",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "1 macOS Apple Silicon launch",
+      "status": "BLOCKED",
+      "extra": "этот прогон на linux/x64, .app не запускался"
+    },
+    {
+      "name": "3 Ollama",
+      "status": "MOCK",
+      "extra": "Ollama недоступна, генерация не вызывалась"
+    },
+    {
+      "name": "server boots",
+      "status": "PASS",
+      "extra": "(node:72213) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nMOONKATTY AI STUDIO TEST: http://127.0.0.1:8913 (pid 72213, db node:sqlite)\n"
+    },
+    {
+      "name": "health flavor test schema 6 version",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"app\":\"moonkatty-ai-studio\",\"flavor\":\"test\",\"product\":\"MOONKATTY AI STUDIO TEST\",\"schemaVersion\":6,\"mode\":\"server\",\"version\":\"1.3.0-test\",\"pid\":72213,\"uptimeSec\":0,\"db\":"
+    },
+    {
+      "name": "auth setup for loopback app token",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"user\":\"igor\"}"
+    },
+    {
+      "name": "2 dashboard ships Revenue Command Center",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "2 command center empty money is НЕТ ДАННЫХ",
+      "status": "PASS",
+      "extra": "\"НЕТ ДАННЫХ\""
+    },
+    {
+      "name": "platforms are existing channels or НЕТ ДАННЫХ",
+      "status": "PASS",
+      "extra": "9"
+    },
+    {
+      "name": "3 runtime reports ollama without inventing a model",
+      "status": "PASS",
+      "extra": "Ollama недоступна: ECONNREFUSED"
+    },
+    {
+      "name": "4 agents include CEO, creative, revenue, growth and the old set",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "5 mission loaded and matches files",
+      "status": "PASS",
+      "extra": "1bfb455135837c1a24d30173d037e361cf065c7d7fdc952fdd1cb341db34d409"
+    },
+    {
+      "name": "6 CEO plan creates tasks",
+      "status": "PASS",
+      "extra": "План 2026-10-21. Задачи у существующих агентов. NEWS не смешивается с основным каналом. Публикация и соцсети этим планом не вызываются."
+    },
+    {
+      "name": "6 CEO plan is idempotent for the day",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "7 QC API blocks news without fact-check",
+      "status": "PASS",
+      "extra": "blocked_factcheck"
+    },
+    {
+      "name": "views are not revenue",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 unconfirmed payout is stored but not counted",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 unconfirmed does not become month revenue",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R2 reach is not revenue",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 CSV import accepted",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"imported\":3,\"duplicates\":0}"
+    },
+    {
+      "name": "R5 accrued import accepted",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R3 duplicate payout is idempotent",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"imported\":0,\"duplicates\":1}"
+    },
+    {
+      "name": "R3 conflicting payout is rejected",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 confirmed payout is the only revenue",
+      "status": "PASS",
+      "extra": "{\"month\":{\"usd\":80.5,\"label\":\"$80.50\"},\"yt\":{\"usd\":80.5,\"label\":\"$80.50\"},\"fb\":\"НЕТ ДАННЫХ\",\"demo\":{\"label\":\"DEMO $5.00\",\"excludedFromActual\":true}}"
+    },
+    {
+      "name": "R1 three states stay apart",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R6 demo is outside the real total",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R7 unconnected or empty sources are НЕТ ДАННЫХ",
+      "status": "PASS",
+      "extra": "{\"ig\":\"НЕТ ДАННЫХ\",\"web\":\"НЕТ ДАННЫХ\"}"
+    },
+    {
+      "name": "fixture revenue stays DEMO",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 forecast is not the month figure",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 opex and pretax from real rows",
+      "status": "PASS",
+      "extra": "{\"day\":{\"usd\":60.5,\"label\":\"$60.50\"},\"month\":{\"usd\":60.5,\"label\":\"$60.50\"},\"year\":{\"usd\":60.5,\"label\":\"$60.50\"}}"
+    },
+    {
+      "name": "growth import",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "8 CAC from ad spend and new players",
+      "status": "PASS",
+      "extra": "{\"usd\":5,\"label\":\"$5.00\"}"
+    },
+    {
+      "name": "9 tasks persisted",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "proposal is a draft",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "10 server restarts",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "10 mission, tasks and revenue survive restart",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R4 payout record stores the required fields",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "R8 backup restore keeps the confirmed payout",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"backup\":{\"file\":\"pre-restore-2026-10-21T18-56-46-579Z.db\",\"sha256\":\"8bb9421373815c247cb02e8477832b2e53b781bab4efa916d624139548db59c5\",\"size\":413696}}"
+    },
+    {
+      "name": "A two YouTube channels stay separate and DEMO",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A real progress, retention, CTR and formats are НЕТ ДАННЫХ",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A revenue link uses confirmed payouts only",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A organic recommendation forbids bought followers",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A directors read audience and do not publish",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A experiment waits for real data",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "A bought-follower experiment is rejected",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "5 mission still on every agent after restart",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "11 auto allowed",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"executed\":true,\"tier\":\"auto\"}"
+    },
+    {
+      "name": "11 owner gate does not execute",
+      "status": "PASS",
+      "extra": "{\"ok\":true,\"status\":\"approved\",\"executed\":false,\"note\":\"Публикация, оплата и рассылка не выполнялись.\"}"
+    },
+    {
+      "name": "11 forbidden denied",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "forbid botting",
+      "status": "PASS",
+      "extra": "{\"error\":\"Запрещено\",\"code\":\"forbidden\",\"tier\":\"forbidden\"}"
+    },
+    {
+      "name": "forbid bought_followers",
+      "status": "PASS",
+      "extra": "{\"error\":\"Запрещено\",\"code\":\"forbidden\",\"tier\":\"forbidden\"}"
+    },
+    {
+      "name": "forbid platform_evasion",
+      "status": "PASS",
+      "extra": "{\"error\":\"Запрещено\",\"code\":\"forbidden\",\"tier\":\"forbidden\"}"
+    },
+    {
+      "name": "forbid fake_followers",
+      "status": "PASS",
+      "extra": "{\"error\":\"Запрещено\",\"code\":\"forbidden\",\"tier\":\"forbidden\"}"
+    },
+    {
+      "name": "11 journal has the three decisions",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "12 bad import and unknown action are rejected",
+      "status": "PASS",
+      "extra": "CSV: нужны колонки date,stream,kind,amount_usd"
+    },
+    {
+      "name": "12 published still rejected",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "13 config and world code contain no secret material",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "15 install guide has rollback, test port and bundle id",
+      "status": "PASS",
+      "extra": ""
+    },
+    {
+      "name": "social modules not modified by this test process",
+      "status": "PASS",
+      "extra": ""
+    }
+  ]
+}

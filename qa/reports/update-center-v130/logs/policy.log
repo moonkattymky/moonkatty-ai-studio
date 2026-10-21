@@ -1,0 +1,52 @@
+
+> moonkatty-ai-studio@1.3.0-test test:policy
+> node scripts/policy-test.mjs
+
+PASS write inside workspace → allow
+PASS write with ../ escape → deny fs.outside
+PASS write through symlink to outside → deny
+PASS absolute outside path → deny
+PASS NUL byte path → deny
+PASS overwrite existing .blend → deny fs.versioned
+PASS agent writing new .png → deny fs.blender-only
+PASS delete inside workspace → confirm
+PASS delete outside → deny
+PASS shell → always deny
+PASS publish → confirm
+PASS generated Blender script → confirm
+PASS vetted template → allow
+PASS OpenCode permission «bash» → deny
+PASS OpenCode permission «webfetch» → deny
+PASS OpenCode permission «websearch» → deny
+PASS OpenCode permission «task» → deny
+PASS OpenCode permission «skill» → deny
+PASS OpenCode permission «question» → deny
+PASS OpenCode permission «external_directory» → deny
+PASS OpenCode permission «doom_loop» → deny
+PASS OpenCode permission «lsp» → deny
+PASS OpenCode edit inside → allow
+PASS OpenCode edit without path → deny
+PASS OpenCode edit outside → deny
+PASS unknown action → deny
+PASS shipped opencode-studio.json passes the config check
+PASS default (empty) OpenCode config is refused
+PASS bash allow is refused
+PASS bash pattern object with one allow is refused
+PASS edit allow (no per-file check) is refused
+PASS "permission":"allow" string is refused
+PASS defaults valid
+PASS schema rejects code in subject
+PASS schema rejects huge samples
+PASS schema rejects unknown key
+PASS schema rejects NaN color
+PASS schema rejects newline title
+PASS schema rejects unknown engine
+PASS schema rejects extra camera key
+PASS schema rejects fractional frames
+PASS schema rejects array instead of object
+PASS fromText: "фиолетовый кот" → cat + purple
+PASS versions v001 → v002, previous .blend backed up
+PASS workspace.file blocks traversal
+PASS invalid project id refused
+
+46/46 passed

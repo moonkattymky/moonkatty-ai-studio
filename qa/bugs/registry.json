@@ -1,6 +1,6 @@
 {
   "contract": "moonkatty.qa.bugs/1",
-  "updatedAt": "2026-10-21T18:28:05.233Z",
+  "updatedAt": "2026-10-21T19:00:11.630Z",
   "bugs": [
     {
       "id": "QA-HZ-001",
@@ -1368,7 +1368,8 @@
       ],
       "evidence": [
         "qa/reports/update-center-v5/REPORT.md",
-        "qa/reports/update-center-v5/logs/attack.json"
+        "qa/reports/update-center-v5/logs/attack.json",
+        "qa/reports/update-center-v130/REPORT.md"
       ],
       "foundAt": "2026-10-21T18:10:02.000Z",
       "foundIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
@@ -1379,6 +1380,42 @@
           "at": "2026-10-21T18:10:02.000Z",
           "status": "open",
           "note": "Same-user only. The parent-symlink race in QA-UC-009 loaded 0 attacker keys in 341623 loads. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T19:00:11.629Z",
+          "status": "open",
+          "note": "On 035571f Linux reads keyring.json and the pem through /proc/self/fd/<dirfd>. The rename stress test loaded 97600 fd-relative rings with mixed=0 (path mode in the same run mixed 23 of 97400). HARD_GATE.closed stays true, and a READY key plus OPS_UPDATE_DOWNLOAD_ENABLED=1 still leaves downloadEnabled false. macOS /dev/fd was not run; the code falls back to path mode there. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-011",
+      "title": "Update Center port puts macOS 12.5.1 back into the ops tree",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "news-node.test.js on b813ac4 passed: the iMac profile is macOS Ventura 13.7.1 and the string 12.5.1 is absent from lib, node-agent, docs/ops, scripts/node, deploy, and test/ops, except lines that mark it wrong. On 035571f the same test fails. git ls-files now finds 12.5.1 in docs/ops/UPDATE_CENTER.md, docs/ops/UPDATE_CENTER_MAC_TEST.md, and test/ops/update-center.test.js. lib/ops/nodes.js still says the iMac is Ventura 13.7.1. The scanner drops a line that contains ошибочн, WRONG, wrong, or неверн.",
+      "expected": "The ops tree names the iMac as macOS Ventura 13.7.1. The string 12.5.1 does not appear in the scanned paths unless the line says that version was wrong.",
+      "actual": "test:ops on 035571f is 118 pass and 1 fail. The failure is news-node.test.js, and the actual list is those three new files. The device profile in lib/ops/nodes.js is unchanged.",
+      "repro": [
+        "git checkout 035571ffb4984187d70ca2c440536e5cdac2a5af",
+        "node --test test/ops/news-node.test.js",
+        "The first test fails deepStrictEqual: actual is docs/ops/UPDATE_CENTER.md, docs/ops/UPDATE_CENTER_MAC_TEST.md, test/ops/update-center.test.js"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v130/REPORT.md",
+        "qa/reports/update-center-v130/logs/test-ops.log"
+      ],
+      "foundAt": "2026-10-21T18:57:30.000Z",
+      "foundIn": "feat/update-center-v130 035571ffb4984187d70ca2c440536e5cdac2a5af",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T18:57:30.000Z",
+          "status": "open",
+          "note": "Regression against b813ac4, where the same test passed. Owner approval is not set."
         }
       ]
     }
