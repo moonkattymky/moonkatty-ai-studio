@@ -60,7 +60,15 @@
       "!node_modules/bindings/**",
       "!node_modules/prebuild-install/**",
       "!node_modules/file-uri-to-path/**",
-      "!**/*.map"
+      "!**/*.map",
+      "!**/*.key",
+      "!**/*.p8",
+      "!**/*.p12",
+      "!**/*.pfx",
+      "!**/*.priv",
+      "!**/*.priv.pem",
+      "!**/*private*.pem",
+      "!**/*secret*.pem"
     ],
     "mac": {
       "target": [

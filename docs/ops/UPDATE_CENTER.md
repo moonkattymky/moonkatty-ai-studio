@@ -54,6 +54,13 @@ Manifest обязан совпадать с профилем своего кан
 набора канала manifest. Подпись без keyId не принимается. Ключ-заглушка помечен `stub: true`, лежит только в наборе test и для prod отклоняется кодом.
 **Набор prod пуст**: реальный ключ создаёт владелец офлайн (`scripts/release-keygen.mjs`, см. §8).
 
+### 1c. Статус подписи и ключ владельца (v1.3.0-test)
+* `GET /api/ops/update-center` → `signature: {state, message}`. Пустой prod-набор → `state: "BLOCKED"`,
+  `message: "BLOCKED: нет публичного ключа владельца"`; подпись не принимается (fail-closed), остальное приложение работает.
+* Публичный ключ владельца без коммита: `OPS_UPDATE_KEYRING_DIR=<папка с keyring.json + .pub.pem>` (только добавляет ключи/отзывы;
+  приватный ключ отклоняется). Пошагово: `docs/ops/RELEASE_KEY_SETUP_MAC_MINI.md`.
+* Подписанное поле manifest `builtAt` (ISO), если есть, участвует в проверке возраста релиза (QA-UC-006).
+
 ## 2. Механизм проверки
 * Только репозитории из allowlist (`DEFAULT_REPOS = ['moonkattymky/moonkatty-ai-studio']`), владелец/имя проверяются регэкспом.
 * Только `https:`, без логина/пароля и нестандартных портов в URL. Первый запрос — только `api.github.com/repos/<repo>/…`

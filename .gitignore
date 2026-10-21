@@ -7,3 +7,15 @@ dist/
 build/node/
 desktop/build-info.json
 dist-node/
+
+# Release signing: private keys never enter git (only *.pub.pem public keys are allowed)
+*.key
+*.p8
+*.p12
+*.pfx
+*.priv
+*.priv.pem
+*private*.pem
+*secret*.pem
+release-*-*.key
+!lib/ops/update-keys/*.pub.pem
