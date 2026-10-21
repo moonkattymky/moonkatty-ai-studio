@@ -162,3 +162,33 @@ test('orchestrator render queue: studio queue without video_render -> local fall
   assert.equal(o._renderQueue(), local); assert.throws(() => new Orchestrator({ stateDir: tmp(), jobQueue: new StudioJobQueueAdapter() })._renderQueue(), /fallbackQueue/);
   assert.equal(require('../src/video/presets').getPreset('youtube').targetLufs, -16);
 });
+test('video_render executor matches Studio a991e93 contract (shape, kinds, sha256, paths in <dataDir>/media, Ollama unload, strict input)', async () => {
+  const { createVideoRenderExecutor, writeEpisode } = require('../src/jobs/video-render-executor'); const dataDir = tmp(); const calls = [];
+  writeEpisode(dataDir, 'ep-1', { title: 'T', stories: [] });
+  const factory = { render: async (ep, { preset, outDir, basename }) => { calls.push('render'); const f = e => path.join(outDir, `${basename}.${e}`); for (const e of ['mp4', 'srt', 'jpg']) fs.writeFileSync(f(e), e + preset);
+    return { files: { video: f('mp4'), subtitles: f('srt'), thumbnail: f('jpg') } }; } };
+  const exec = createVideoRenderExecutor({ dataDir, factory, llm: { unload: async () => calls.push('unload') } });
+  const { artifacts, ...rest } = await exec({ runId: 'ep-1', preset: 'shorts', episodeRef: 'ep-1', jobId: 'job_x', outDir: path.join(dataDir, 'media') });
+  assert.deepEqual(Object.keys(rest), []); assert.deepEqual(calls, ['unload', 'render']);
+  assert.deepEqual(artifacts.map(a => a.kind).sort(), ['jpg', 'mp4', 'srt']);
+  const root = fs.realpathSync(path.join(dataDir, 'media'));
+  for (const a of artifacts) { assert.deepEqual(Object.keys(a).sort(), ['kind', 'name', 'path', 'sha256', 'size']); assert.ok(path.isAbsolute(a.path) && a.path.startsWith(root + path.sep));
+    assert.ok(a.path.endsWith('.' + a.kind)); assert.equal(a.size, fs.statSync(a.path).size); assert.equal(a.sha256, crypto.createHash('sha256').update(fs.readFileSync(a.path)).digest('hex')); }
+  await assert.rejects(exec({ runId: 'ep-1', preset: 'shorts', episodeRef: 'ep-1', extra: 1 }), /unknown input/);
+  await assert.rejects(exec({ runId: '../x', preset: 'shorts', episodeRef: 'ep-1' }), /runId/);
+  await assert.rejects(exec({ runId: 'ep-1', preset: 'tv', episodeRef: 'ep-1' }), /preset/);
+  await assert.rejects(exec({ runId: 'ep-1', preset: 'youtube', episodeRef: 'a/../b' }), /episodeRef/);
+  await assert.rejects(exec({ runId: 'ep-1', preset: 'youtube', episodeRef: 'ep-1', outDir: tmp() }), /inside/);
+});
+test('studio adapter lists video_render only when executor registered; orchestrator uses strict input', async () => {
+  const { StudioJobQueueAdapter } = require('../src/jobs/studio-adapter'); const { Orchestrator } = require('../src/orchestrator/orchestrator');
+  const vr = { executor: null, hasExecutor() { return !!this.executor; } };
+  let created; const client = { createJob: async b => { created = b; return { jobId: 'j' }; }, getJob: async () => ({ id: 'j', status: 'done', artifacts: [{ kind: 'mp4', path: mp4 }] }), cancelJob: async () => ({}), listJobs: async () => [] };
+  const a = new StudioJobQueueAdapter({ client, videoRender: vr, pollMs: 1 }); assert.ok(!a.supportedTypes.includes('video_render'));
+  const local = { runExclusive: async () => ({ local: true }) }; const o = new Orchestrator({ stateDir: tmp(), jobQueue: a, fallbackQueue: local, studioDataDir: tmp() });
+  assert.equal(o._renderQueue(), local);
+  vr.executor = () => {}; assert.ok(a.supportedTypes.includes('video_render')); assert.equal(o._renderQueue(), a);
+  const d = tmp(); var mp4 = path.join(d, 'r-youtube.mp4'); fs.writeFileSync(mp4, 'x'); fs.writeFileSync(mp4.replace('.mp4', '.json'), JSON.stringify({ qa: { ok: true } }));
+  const r = await a.runExclusive({ type: 'video_render', input: { runId: 'r', preset: 'youtube', episodeRef: 'r' }, resourceClass: 'gpu_heavy', requiresNode: 'mac-mini', safeToRetry: true });
+  assert.deepEqual(Object.keys(created.input), ['runId', 'preset', 'episodeRef']); assert.equal(created.idempotencyKey, undefined); assert.equal(r.videoPath, mp4);
+});

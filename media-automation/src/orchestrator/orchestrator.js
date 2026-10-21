@@ -1,6 +1,6 @@
 'use strict';
 const fs = require('fs'); const path = require('path');
-const { JsonStore } = require('../store'); const { pickFact, mediaQueries } = require('./facts'); const { tokens, jaccard } = require('../news/dedup'); const { visemeTimeline, cuesFor } = require('../host3d'); const { stripMarkup } = require('../video/speech');
+const { JsonStore } = require('../store'); const { pickFact, mediaQueries } = require('./facts'); const { writeEpisode } = require('../jobs/video-render-executor'); const { tokens, jaccard } = require('../news/dedup'); const { visemeTimeline, cuesFor } = require('../host3d'); const { stripMarkup } = require('../video/speech');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 /**
  * Pipeline: Scheduler slot -> NewsEngine.run -> select (confirmed + cleared) -> AI Editor (fact-checked) -> Media (licensed) -> Video (JobQueue heavy) -> QA
@@ -10,7 +10,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 class Orchestrator {
   constructor({ stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets = ['youtube', 'shorts'], storyCount = 3, minStories = 2, stepAttempts = 2, retryMs = 1000, publishTargets, clock = () => new Date() }) {
     fs.mkdirSync(path.join(stateDir, 'runs'), { recursive: true });
-    this.panelFallback = arguments[0].panelFallback || null; this.fallbackQueue = arguments[0].fallbackQueue || null;
+    this.panelFallback = arguments[0].panelFallback || null; this.fallbackQueue = arguments[0].fallbackQueue || null; this.studioDataDir = arguments[0].studioDataDir || null;
     Object.assign(this, { stateDir, news, editor, media, factory, jobQueue, approval, publisher, music, voice, presets, storyCount, minStories, stepAttempts, retryMs, clock });
     this.store = new JsonStore(path.join(stateDir, 'orchestrator.json'));
     this.publishTargets = publishTargets || { youtube: ['youtube-news'], shorts: ['youtube-news', 'tiktok-news', 'instagram-news', 'facebook-news'] };
@@ -70,7 +70,15 @@ class Orchestrator {
       fs.writeFileSync(path.join(r.dir, 'rights.json'), JSON.stringify(rights, null, 2)); return { episode, rightsFile: path.join(r.dir, 'rights.json') };
     });
     const renders = await this._step(r, 'render', async () => {
-      const out = {}; for (const preset of this.presets) out[preset] = await this._renderQueue().runExclusive({ type: 'video_render', agent: 'orchestrator', input: { runId, preset }, timeoutSec: 1800, maxAttempts: 1, idempotencyKey: `${runId}:${preset}`, resourceClass: 'gpu_heavy', safeToRetry: true }); return out;
+      const q = this._renderQueue(); const studio = q !== this.fallbackQueue && Array.isArray(q.supportedTypes) && q.supportedTypes.includes('video_render'); const out = {};
+      if (studio) { // Studio contract a991e93: strict input, server-computed idempotencyKey, artifacts mp4/srt/jpg in <dataDir>/media
+        if (!this.studioDataDir) throw new Error('studioDataDir required for Studio video_render');
+        writeEpisode(this.studioDataDir, runId, r.steps.media.output.episode);
+        for (const preset of this.presets) { const res = await q.runExclusive({ type: 'video_render', agent: 'orchestrator', input: { runId, preset, episodeRef: runId }, timeoutSec: 1800, maxAttempts: 1, resourceClass: 'gpu_heavy', requiresNode: 'mac-mini', safeToRetry: true });
+          const mp4 = (res.artifacts || []).find(a => a.kind === 'mp4'); if (!mp4) throw new Error('video_render: no mp4 artifact');
+          out[preset] = JSON.parse(fs.readFileSync(mp4.path.replace(/\.mp4$/, '.json'), 'utf8')); out[preset].artifacts = res.artifacts; }
+        return out; }
+      for (const preset of this.presets) out[preset] = await q.runExclusive({ type: 'video_render', agent: 'orchestrator', input: { runId, preset }, timeoutSec: 1800, maxAttempts: 1, idempotencyKey: `${runId}:${preset}`, resourceClass: 'gpu_heavy', requiresNode: 'mac-mini', safeToRetry: true }); return out;
     });
     await this._step(r, 'qa', async () => { const bad = Object.entries(renders).filter(([, m]) => !m.qa?.ok); if (bad.length) throw Object.assign(new Error('QA failed: ' + bad.map(b => b[0]).join(',')), { permanent: true }); return Object.fromEntries(Object.entries(renders).map(([k, m]) => [k, m.qa.checks.map(c => `${c.name}:${c.ok}`)])); });
     const handoff = await this._step(r, 'handoff', async () => {

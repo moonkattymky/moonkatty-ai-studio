@@ -7,12 +7,14 @@ const { waitForJob } = require('./port');
  * Inline functions can NOT be shipped across; runExclusive(spec) only enqueues `spec` and waits for its result.
  */
 /** Job types in Studio docs/JOBS_API.md (feat/v1.2.0 @00b63fc). 'video_render' is only PROPOSED. */
-const STUDIO_TYPES = ['design3d', 'blender_template', 'opencode_task', 'render_segment'];
+const STUDIO_TYPES = ['design3d', 'blender_template', 'opencode_task', 'render_segment']; // + 'video_render' when executor registered (a991e93)
 const PUBLIC = new Set(['queued', 'running', 'needs_approval', 'succeeded', 'failed', 'cancelled']);
 const INTERNAL_MAP = { waiting_confirmation: 'needs_approval', waiting_approval: 'needs_approval', blocked: 'queued', done: 'succeeded', rejected: 'cancelled' };
 class NotConnectedError extends Error { constructor() { super('Studio job queue not connected (adapter stub; contract draft)'); this.code = 'NOT_CONNECTED'; } }
 class StudioJobQueueAdapter {
-  constructor({ client = null, pollMs = 1000, supportedTypes = STUDIO_TYPES } = {}) { this.client = client; this.pollMs = pollMs; this.supportedTypes = supportedTypes; }
+  constructor({ client = null, pollMs = 1000, supportedTypes = STUDIO_TYPES, videoRender = null } = {}) { this.client = client; this.pollMs = pollMs; this._types = supportedTypes; this.videoRender = videoRender; }
+  /** video_render is listed only when the Studio videoRender service has an executor registered (feature-detect). */
+  get supportedTypes() { const v = this.videoRender; const has = !!v && (typeof v.hasExecutor === 'function' ? v.hasExecutor() : !!v.executor); return has ? [...this._types, 'video_render'] : [...this._types]; }
   _c() { if (!this.client) throw new NotConnectedError(); return this.client; }
   /** Aligned with feat/v1.2.0 docs/JOBS_API.md (00b63fc): jobsApi.createJob({type, agent, input, timeoutSec, maxAttempts, resourceClass, requiresNode, idempotencyKey, safeToRetry}) -> {jobId, existing?} */
   async createJob(spec) {
@@ -26,7 +28,7 @@ class StudioJobQueueAdapter {
   async getJob(id) {
     const j = await this._c().getJob(id); if (!j) return null;
     const status = PUBLIC.has(j.publicStatus) ? j.publicStatus : PUBLIC.has(j.status) ? j.status : INTERNAL_MAP[j.status] || j.status;
-    const result = j.result ?? (j.artifacts ? { artifacts: j.artifacts, videoPath: (j.artifacts.find(a => /\.(mp4|mov|webm)$/i.test(a.path || '')) || {}).path } : undefined);
+    const result = j.result ?? (j.artifacts ? { artifacts: j.artifacts, videoPath: (j.artifacts.find(a => a.kind === 'mp4' || /\.(mp4|mov|webm)$/i.test(a.path || '')) || {}).path } : undefined);
     return { ...j, jobId: j.jobId || j.id, status, result };
   }
   async cancelJob(id) { return this._c().cancelJob(id); }
