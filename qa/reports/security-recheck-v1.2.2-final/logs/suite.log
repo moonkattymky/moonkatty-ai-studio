@@ -1,0 +1,18 @@
+# Their suite at 7327a1e, Linux, Node from this host. Dist symlink pointed at the unpacked v1.2.2-test app so publish-guard ran the bundle checks.
+# Opencod and Blender binaries from the suite defaults were absent, so 3d / 3c / e2e exited 2 before counting assertions.
+
+policy        EXIT 0   46/46
+video         EXIT 0   45/45
+runner        EXIT 0   5/5
+security      EXIT 0   52/52 {"passed":52,"failed":[]}
+opencode      EXIT 0   51/51 {"passed":51,"failed":[]}
+publish-guard EXIT 0   41/41 {"passed":41,"failed":[]}
+isolation     EXIT 0   64/64 {"passed":64,"failed":[]}
+3d            EXIT 2   SKIP opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+3c            EXIT 2   SKIP opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+e2e           EXIT 2   SKIP opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+
+Executed assertions: 46+45+5+52+51+41+64 = 304, failed 0.
+docs/SECURITY_RECHECK_v1.2.2-test.md in this commit says 426/426 and publish-guard 38/38 with bundle checks skipped.
+41 = 38 plus the three bundle checks that ran here because the release asar was present.
+53+61+11 (3d, 3c, e2e in that doc) were not executed. 304+53+61+11 = 429.
