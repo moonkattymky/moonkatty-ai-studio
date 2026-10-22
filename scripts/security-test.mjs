@@ -4,6 +4,7 @@ import os from 'os'; globalThis.__os = os;
 import { spawn } from 'child_process'; import fs from 'fs'; import http from 'http';
 const PORT = 8795, UD = '/tmp/mk-sec-test', B = `http://127.0.0.1:${PORT}`; fs.rmSync(UD, { recursive: true, force: true });
 const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: UD, PORT: String(PORT) }, stdio: 'ignore' });
+process.on('exit', () => { try { srv.kill('SIGKILL'); } catch {} }); // cleanup: never leave the server on 8795 (also on crash)
 const sleep = ms => new Promise(r => setTimeout(r, ms)); await sleep(2500);
 const res = []; const ok = (n, c, x = '') => { res.push([n, !!c]); console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' — ' + x : '')); };
 const R = { 'x-studio-request': '1', 'content-type': 'application/json' };
@@ -76,5 +77,5 @@ ok('login rate limited after repeated failures (429)', last.status === 429);
 ok('server bound to 127.0.0.1 only', await new Promise(r => { const ifs = Object.values((await_import_os()).networkInterfaces()).flat().filter(i => i.family === 'IPv4' && !i.internal); if (!ifs.length) return r(true);
   const q = http.get({ host: ifs[0].address, port: PORT, path: '/api/health', timeout: 2000 }, () => r(false)); q.on('error', () => r(true)); q.on('timeout', () => { q.destroy(); r(true); }); }));
 function await_import_os() { return globalThis.__os; }
-srv.kill('SIGTERM'); console.log(JSON.stringify({ passed: res.filter(x => x[1]).length, failed: res.filter(x => !x[1]).map(x => x[0]) }));
+srv.kill('SIGTERM'); await Promise.race([new Promise(r => srv.once('exit', r)), sleep(5000)]); console.log(JSON.stringify({ passed: res.filter(x => x[1]).length, failed: res.filter(x => !x[1]).map(x => x[0]) }));
 process.exit(res.every(x => x[1]) ? 0 : 1);
