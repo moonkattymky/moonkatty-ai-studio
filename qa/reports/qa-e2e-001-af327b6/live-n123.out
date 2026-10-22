@@ -1,0 +1,22 @@
+M1 savings no confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsviznoustj1"}
+M2 savings confirm:true => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvizs3698lt"}
+M3 paid_ads confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvizwc1u05g","tier":"owner"}
+M4 critical_settings confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvizz3kf02b","tier":"owner"}
+M5 fake_views confirm => 403 {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+N1 app creates => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvj06oa5d1t"}
+N1a pure app approve => 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+N1b app + fake cookie => 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+N1c app + REAL cookie => 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+N1d empty token header => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":300}},"approval":{"
+N1e case variant X-Studio-App-Token => 409 {"error":"уже решено"}
+N1f Bearer session alone => 409 {"error":"уже решено"}
+N1g Bearer + junk app token => 409 {"error":"уже решено"}
+N1h session approve app request (happy path) => 409 {"error":"уже решено"}
+N2 6 wrong: [403,403,403,403,403,429]
+N2 7th correct while locked => 429 {"error":"Слишком много неверных паролей, подождите 15 минут","code":"locked"}
+N2 after restart creates => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvk3z7u1cma"}
+N2 20 wrong via app channel: {"403":20}
+N2 session approve after 20 app fails => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":302}},"approval":{"
+N2 5 wrong to lock: [403,403,403,403,403]
+N2 correct after lock (DoS) => 429 {"error":"Слишком много неверных паролей, подождите 15 минут","code":"locked"}
+N1 empty tok + session (create then) => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsvkc3xk71zv"}

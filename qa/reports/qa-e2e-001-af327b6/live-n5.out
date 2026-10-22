@@ -1,0 +1,43 @@
+opencode --help exit: cancelled
+ARGV: [run] [--help]
+ENV has ADMIN=true SECRET=true OPENCODE_SERVER_PASSWORD=false
+ADMINPW_LEN=17 SECRET_LEN=15
+jobId pattern from jobs.create: job_+16hex — services uses path.join(mediaRoot,"opencode-tasks",id)
+validateSegment outside media: ok=true errors=undefined
+oracle /etc/passwd: ok=true err=undefined
+oracle missing: ok=false err=["audioPath: файл не найден"]
+render outside audio fail: ffmpeg завершился с кодом 8
+script inject err: ffmpeg завершился с кодом 8 pwned=false
+cancel: cancelled cancelled=true
+timeout: timeout после 0 с
+unauth create job: 401
+create opencode_task: 201 {"jobId":"job_60b8e42269860cfd"}
+job status: running err=null kind=opencode_task
+CHILD fake-opencode-473792.txt: ARGV=[run] [slow] | ADMINPW_LEN=17 SECRET_LEN=15 ENVNAMES has STUDIO_SECRET_KEY=true STUDIO_ADMIN_PASSWORD=true
+CHILD fake-opencode-473799.txt: ARGV=[run] [t] | ADMINPW_LEN=17 SECRET_LEN=15 ENVNAMES has STUDIO_SECRET_KEY=true STUDIO_ADMIN_PASSWORD=true
+CHILD fake-opencode-473815.txt: ARGV=[run] [--version] | ADMINPW_LEN=0 SECRET_LEN=18 ENVNAMES has STUDIO_SECRET_KEY=true STUDIO_ADMIN_PASSWORD=true
+cancel opencode_task: 200 {"id":"job_87b548a75af04e26","taskId":"mvjsw6xy4f6sc6","kind":"opencode_task","status":"cancelled","stage":"opencode_task","attempt":1,"maxAttempts":2,"retries":0,"maxRetries":3,"checkpoint":{},"artif
+after cancel: cancelled
+create render outside audio: 201 {"jobId":"job_e67f2d8036dc5f29"}
+render job: failed err=ffmpeg завершился с кодом 8 arts=[]
+node:internal/modules/cjs/loader:1430
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module '/workspace/mk/lib/config.js'
+Require stack:
+- /workspace/live-n5.mjs
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+    at Function._load (node:internal/modules/cjs/loader:1216:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at file:///workspace/live-n5.mjs:83:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/workspace/live-n5.mjs' ]
+}
+
+Node.js v22.23.4

@@ -1,0 +1,8 @@
+Bearer alone: 200 {"error":"уже решено"}
+Bearer alone fresh: 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd"
+Bearer+junk: 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+case+cookie: 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+whitespace tok+cookie: 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd"
+tok=0 +cookie: 403 {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+self-approve session: 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+Bearer-create then cookie-approve: 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
