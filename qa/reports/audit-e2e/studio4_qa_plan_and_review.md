@@ -26,7 +26,7 @@
 | OpenCode 4097 (test) / 4096 (prod) | `lib/opencode-serve.js`, `lib/opencode-client.js`, `opencode/*.sh` | test:opencode-serve, test:opencode-json |
 | Политика агентов | `lib/policy.js` | test:policy |
 | 3D: scene_params → .blend → PNG | `lib/executors/design3d.js`, `lib/scene-params.js`, `lib/blender.js`, `lib/workspace.js`, `blender/templates` | test:3d |
-| Видео-рендер | `lib/video-render.js` (в студии: «Не подключено», `lib/video-render.js:11`), `media-automation/src/video` | test:video |
+| Видео-рендер | `lib/video-render.js` (стаб), реальный исполнитель подключён в `server.js:152-157`; `media-automation/src/video`, `src/jobs/video-render-executor.js` | scripts/video-render-test.mjs, video-render-wiring-test.mjs |
 | Задачи/очередь | `lib/jobs.js`, `lib/services.js`, `runner.js` | test:runner |
 | Публикация/Approval/печать публикации | `server.js:45-90,200,509+`, `meta.js` (prod-only), `media-automation/src/publish`, `src/approval` | test:publish-guard, media-automation/test |
 | World: AI CEO, QC/Creative Director, Revenue, Growth/Marketing, Audience, Mission, Memory | `lib/world/*.js` | test:world |
@@ -62,7 +62,7 @@
 - Запрет: никаких записей в server/blender*.
 
 ### 2.4 NEWS / видео
-- В студии `video_render` = «Не подключено» (`lib/video-render.js:11`) → максимум IMPLEMENTED/TESTED в media-automation, не INTEGRATED.
+- `video_render`: стаб `lib/video-render.js` заменяется реальным исполнителем (`server.js:152-157`), но UI-кнопки отключены (`public/app.js:369`), а эпизод JSON пишет только неподключённый orchestrator → частично INTEGRATED (только API). Тесты: проверить реальный рендер с ffmpeg+TTS (на Linux — espeak-ng, на Mac — say).
 - Критерий VERIFIED: реальный mp4 (ffprobe: длительность, кодек, разрешение), источник новостей, субтитры/озвучка, файл на диске Mac.
 
 ### 2.5 Агенты (AI CEO, Marketing, Revenue, Creative Director)
@@ -140,3 +140,20 @@
 | app.asar: 919 записей, нет meta.js, publish/auth/analytics/bin | `asar list` zip 9af58270…: 919 записей, 0 совпадений | CONFIRMED |
 | Число тестов media-automation | не перезапускалось Studio 4 | UNVERIFIABLE (в рамках срока) |
 Завышения статусов нет: отчёт использует «ТОЛЬКО ТЕСТЫ»/«НЕ РЕАЛИЗОВАНО», ничего не заявлено как VERIFIED ON DEVICE. Реальные публикации — BLOCKED.
+
+### 5.2 `/workspace/out/audit-e2e/studio3_news_video_3d.md` (найден 19:33 IDT) — вердикт: **PASS** (точный, статусы не завышены)
+| Утверждение | Проверка по 3b72817 | Итог |
+|---|---|---|
+| Реальный исполнитель video_render подключён, LLM-хука нет, jobsapi выкл | `server.js:152-157` (`const llm = null`) | CONFIRMED |
+| Кнопки «Рендер»/«Экспорт» disabled; субтитры «в разработке» | `public/app.js:369`, `:373` | CONFIRMED |
+| В UI нет вызовов `video_render` | grep public/*.js → 0 | CONFIRMED |
+| Эпизод читается из `<dataDir>/media/episodes/<ref>.json`, пишет только orchestrator | `video-render-executor.js:20-22`, `orchestrator.js:76`; grep orchestrator/src/news в server.js, lib/ → пусто | CONFIRMED |
+| Без TTS — «No TTS engine available» | `media-automation/src/video/tts.js:132` (отчёт: 122-133) | CONFIRMED |
+| «Автопоиск новостей» disabled | `public/app.js:317` | CONFIRMED |
+| Агент news: черновик с «Требуется фактчек», waiting_approval | `runner.js:85,89-91` | CONFIRMED |
+| «Автопубликация» disabled | `public/app.js:596` | CONFIRMED |
+| render_segment / host3d — заглушки | `lib/services.js:17,103` | CONFIRMED |
+| Blender ≥4.2 | `lib/blender.js:5` MIN=[4,2] | CONFIRMED |
+| Тесты 45/45 и 8/8 на стабах; design3d-test SKIP | не перезапускалось Studio 4 | UNVERIFIABLE (согласуется с r1: 3D-тесты требуют Blender/OpenCode) |
+| asar совпадает побайтно по 9 файлам | Studio 4 независимо: asar 919 записей из того же zip | CONFIRMED частично (побайтное сравнение 9 файлов не повторялось) |
+Расхождений нет. VERIFIED ON DEVICE явно указан как «нет» для всех функций — корректно. Поправка в плане Studio 4 (раздел 2.4) внесена по этому отчёту.
