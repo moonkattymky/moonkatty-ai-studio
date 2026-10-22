@@ -69,3 +69,26 @@ test('missing or corrupt floor file → fall back to process start time (no repl
     clock += 1000; const m2 = restart(dir); assert.equal(auth(m2, s, r), 'E_REPLAY', String(bad)); assert.equal(auth(m2, s, req(d, clock)), 'OK');
   }
 });
+
+test('r4: injected write / file fsync / rename / directory fsync failures → request refused (429 code), previous floor intact, no .tmp left; later success persists', () => {
+  for (const fail of ['writeSync', 'fsyncFile', 'renameSync', 'fsyncDir', 'openTmp']) {
+    const dir = tmp(); clock = Date.now(); let armed = false; const err = () => Object.assign(new Error('injected ' + fail), { code: 'EIO' });
+    const ffs = { ...fs,
+      openSync: (p, ...a) => { if (armed && fail === 'openTmp' && String(p).endsWith('.tmp')) throw err(); return fs.openSync(p, ...a); },
+      writeSync: (...a) => { if (armed && fail === 'writeSync') { fs.writeSync(a[0], '{"v":1,"nowHwm":1,"sc'); throw err(); } return fs.writeSync(...a); }, // partial write then error
+      fsyncSync: fd => { const isDir = fs.fstatSync(fd).isDirectory(); if (armed && ((fail === 'fsyncDir' && isDir) || (fail === 'fsyncFile' && !isDir))) throw err(); return fs.fsyncSync(fd); },
+      renameSync: (a, b) => { if (armed && fail === 'renameSync') throw err(); return fs.renameSync(a, b); } };
+    const m = N.createNodeManager({ dir, now, floorFs: ffs }); const { d, s } = enrollFully(m); const f = path.join(dir, 'replay-floor.json');
+    assert.equal(auth(m, s, req(d, clock)), 'OK'); const before = fs.readFileSync(f, 'utf8'); const prevHwm = JSON.parse(before).nowHwm;
+    armed = true; clock += 10e3; const r = req(d, clock + 20e3); assert.equal(auth(m, s, r), 'E_RATE_LIMIT', fail + ': refused');
+    assert.deepEqual(fs.readdirSync(dir).filter(x => x.endsWith('.tmp')), [], fail + ': no .tmp left');
+    const now1 = JSON.parse(fs.readFileSync(f, 'utf8')); // always valid JSON (atomic rename)
+    if (fail === 'fsyncDir') assert.ok(now1.nowHwm >= prevHwm, 'renamed new floor (higher), but durability unconfirmed → refused');
+    else assert.equal(fs.readFileSync(f, 'utf8'), before, fail + ': previous replay-floor.json intact');
+    clock += 10; assert.equal(auth(m, s, req(d, clock)), 'E_RATE_LIMIT', fail + ': still refused while the floor is unconfirmed (no unpersisted accept)');
+    armed = false; assert.equal(auth(m, s, r), 'OK', fail + ': same request accepted once persistence works (it was never accepted before)');
+    const after = JSON.parse(fs.readFileSync(f, 'utf8')); assert.ok(after.nowHwm >= clock && after.scopes['n:' + s.nodeId] === r.ts, fail + ': floor covers the accepted request');
+    assert.equal(fs.statSync(f).mode & 0o777, 0o600);
+    fs.rmSync(path.join(dir, 'nodes.lock')); const m2 = N.createNodeManager({ dir, now }); assert.equal(auth(m2, s, r), 'E_REPLAY', fail + ': no replay after restart');
+  }
+});
