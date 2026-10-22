@@ -34,3 +34,8 @@
 - `schedule.tick` лишь возвращает время.
 - Процессы того же пользователя macOS могут прочитать токен через `/usr/bin/security` (модель угроз: один пользователь = доверие).
 - Связка ключей, launchd, Gatekeeper, Tailscale проверены только заглушками на Linux.
+
+## r2 (после аудита Studio 4, FAIL на f66e798)
+- БЛОКЕР исправлен: `build-node-pkg.sh` больше не пишет `git remote get-url origin` в `BUILDINFO` (при remote с userinfo туда попадал токен). Источник — фиксированный публичный URL. Тест `test/ops/node-pkg-repro.test.js` собирает из клона с поддельным remote `x-access-token:ghs_…` и проверяет все файлы архивов.
+- Воспроизводимость: `SOURCE_DATE_EPOCH` = время коммита, сортировка имён, mtime/владелец 0:0/права фиксированы, `gzip -n`, версии Node закреплены (v24.22.1 / v22.23.4). Исходный zip — `scripts/node/source-zip.sh`. Две сборки и два клона дают одинаковые SHA-256.
+- Архивы f66e798 (`/workspace/dist-node-final/`) заменены сборкой r2 (`/workspace/dist-node-final2/`); актуальные SHA-256 — в `.sha256` рядом с архивами и в пакете передачи.

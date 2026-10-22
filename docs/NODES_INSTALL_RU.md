@@ -1,6 +1,6 @@
 # MOONKATTY NODE 0.2.2 — установка и откат (iMac NEWS NODE / MacBook MONITOR NODE)
 
-Сборки берутся ТОЛЬКО из `/workspace/dist-node-final/` (ветка `feat/nodes-022-final`, коммит указан в `BUILDINFO` каждого архива).
+Сборки берутся ТОЛЬКО из `/workspace/dist-node-final2/` (ветка `feat/nodes-022-final`, коммит указан в `BUILDINFO` каждого архива).
 Архивы 0.2.2 со старого коммита `db4720b` использовать НЕЛЬЗЯ: в них нет `enroll.js` (агент не стартует) и есть ошибка подписи загрузки файлов.
 
 | Машина | Профиль | macOS | Архив | Node |
