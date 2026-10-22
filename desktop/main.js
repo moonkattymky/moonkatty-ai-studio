@@ -156,7 +156,7 @@ function menu() {
 
 app.on('second-instance', () => { if (!win) createWindow(); else { if (win.isMinimized()) win.restore(); win.focus(); } });
 app.whenReady().then(async () => {
-  if (await require('./location-check.js').checkLocation({ app, dialog, product: PRODUCT })) return; // v1.3.1-test: App Translocation → offer moveToApplicationsFolder (relaunches)
+  if (await require('./location-check.js').checkLocation({ app, dialog, product: PRODUCT, flavor: CFG.FLAVOR })) return; // v1.3.1-test: App Translocation → offer moveToApplicationsFolder (relaunches)
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(false)); // camera, mic, notifications, geolocation… all denied
   session.defaultSession.setPermissionCheckHandler(() => false);
   session.defaultSession.on('will-download', (e, item) => { if (!isPanel(item.getURL())) e.preventDefault(); }); // only panel backups/exports
