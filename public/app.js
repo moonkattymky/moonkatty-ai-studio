@@ -805,8 +805,11 @@ VIEWS.dashboard = () => {
   if (calMode === 'week') { const s = new Date(today); s.setDate(today.getDate() - ((today.getDay() + 6) % 7)); for (let i = 0; i < 7; i++) { const d = new Date(s); d.setDate(s.getDate() + i); days.push(d); } }
   else { const s = new Date(today.getFullYear(), today.getMonth(), 1); s.setDate(1 - ((s.getDay() + 6) % 7)); for (let i = 0; i < 35; i++) { const d = new Date(s); d.setDate(s.getDate() + i); days.push(d); } }
   const evDates = [...DB.posts.map(p => p.scheduledAt), ...T.map(t => t.dueAt || t.nextRunAt)].filter(Boolean).map(d => new Date(d).toDateString());
-  const S = SYS || {}; const memUsed = S.memTotal ? S.memTotal - S.memFree : null;
-  const metric = (n, v, label) => `<div class="metric"><span class="mut">${n}</span>${v == null ? '<span class="small mut">Не подключено</span><span></span>' : `<div class="bar"><i style="width:${v}%"></i></div><b class="small">${label || v + '%'}</b>`}</div>`;
+  const S = SYS || {};
+  const memAvail = S.memAvailable != null ? Number(S.memAvailable) : (S.memFree != null ? Number(S.memFree) : null);
+  const memUsed = S.memTotal && memAvail != null ? Math.max(0, S.memTotal - memAvail) : null;
+  const ramNote = [S.memLabel, S.memPressureFreePct != null ? `memory_pressure свободно ${S.memPressureFreePct}%` : ''].filter(Boolean).join(' · ');
+  const metric = (n, v, label, note) => `<div><div class="metric"><span class="mut">${n}</span>${v == null ? '<span class="small mut">Не подключено</span><span></span>' : `<div class="bar"><i style="width:${v}%"></i></div><b class="small">${label || v + '%'}</b>`}</div>${note ? `<div class="small mut">${esc(note)}</div>` : ''}</div>`;
   const acts = [...DB.logs].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 7);
   return `<div class="agent-row">${['director', 'news', 'video', 'social', 'games'].map(id => DB.agents.find(a => a.id === id)).filter(Boolean).map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId);
     return `<div class="agent-mini" data-go="agents">${avatar(a)}<div style="min-width:0"><b>${esc(a.name)} Agent</b><div class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ct ? esc(ct.title) : esc(a.role.split(':')[0])}</div>${agentStatus(a)}</div></div>`; }).join('')}</div>
@@ -835,7 +838,7 @@ VIEWS.dashboard = () => {
       ${DB.integrations.map(i => `<div class="list-item small"><span class="sp">${esc(i.name)}${i.id === 'ollama' ? ` <span class="mut">(${esc(i.model || 'qwen3:8b')})</span>` : ''}</span>${svcBadge(i)}</div>`).join('')}
       <div class="list-item small"><span class="sp">Storage</span><span class="mut">${MODE === 'server' && S.disk ? fmtSize(S.disk.total - S.disk.free) + ' / ' + fmtSize(S.disk.total) : MODE === 'server' ? '—' : 'localStorage ' + fmtSize(S.storageBytes || 0)}</span></div></div>
     <div class="card"><h3>Performance <small>${MODE === 'server' ? 'сервер, live' : 'браузерный режим'}</small></h3>
-      ${MODE === 'server' ? metric('CPU', S.cpuPct ?? null) + metric('RAM', memUsed != null ? pct(memUsed, S.memTotal) : null) + metric('GPU', null) + metric('Disk', S.disk ? pct(S.disk.total - S.disk.free, S.disk.total) : null) + metric('Network', null)
+      ${MODE === 'server' ? metric('CPU', S.cpuPct ?? null) + metric('RAM', memUsed != null ? pct(memUsed, S.memTotal) : null, null, ramNote) + metric('GPU', null) + metric('Disk', S.disk ? pct(S.disk.total - S.disk.free, S.disk.total) : null) + metric('Network', null)
         : ['CPU', 'RAM', 'GPU', 'Disk', 'Network'].map(n => metric(n, null)).join('')}</div>
     <div class="card"><h3>Recent Activity <button class="btn sm ghost" data-go="logs">View all</button></h3>
       ${acts.length ? acts.map(l => `<div class="list-item small" style="padding:5px 0"><span class="mut">${new Date(l.at).toLocaleTimeString(i18n.locale(), { hour: '2-digit', minute: '2-digit' })}</span><span class="badge b-none ${l.level === 'error' ? 'b-err' : l.level === 'warn' ? 'b-warn' : 'b-ok'}">●</span><span class="sp" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.message)}</span></div>`).join('') : '<div class="empty">Активности нет</div>'}</div>

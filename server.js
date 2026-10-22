@@ -12,6 +12,7 @@ const sec = require('./lib/security.js');
 const CFG = require('./lib/studio-config.js'); // build flavor: prod | isolated TEST (names, ports, Keychain, data dir)
 if (!CFG.FLAVOR) { console.error(`ОТКАЗ: сборка не определена (flavor отсутствует, источник: ${CFG.FLAVOR_SOURCE}). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod.`); process.exit(78); }
 const egress = require('./lib/egress.js'), heavy = require('./lib/heavy-lock.js');
+const hostMem = require('./lib/host-memory.js');
 
 const PORT = +process.env.PORT || CFG.defaultPort;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -310,12 +311,14 @@ app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', r
 
 let cpuPrev = os.cpus(), cpuPct = null;
 setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i]?.times || x.times; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round(100 * (1 - idle / tot)) : null; cpuPrev = c; }, 5000).unref();
-app.get('/api/system', (req, res) => {
+app.get('/api/system', async (req, res) => {
   const m = process.memoryUsage(); let disk = null;
   try { const st = fs.statfsSync(path.dirname(DB_PATH)); disk = { total: st.blocks * st.bsize, free: st.bavail * st.bsize }; } catch {}
+  let host = null; try { host = await hostMem.liveSnapshot(); } catch { host = null; }
   res.json({
     uptimeSec: Math.round((Date.now() - STARTED) / 1000), node: process.version, platform: `${os.platform()} ${os.arch()}`,
     cpuPct, cpus: os.cpus().length, disk, hostname: os.hostname(), loadavg: os.loadavg(), memTotal: os.totalmem(), memFree: os.freemem(), rss: m.rss,
+    ...(host ? { memAvailable: host.memAvailable, memOsFree: host.memOsFree, memSource: host.memSource, memLabel: host.memLabel, memPressureFreePct: host.memPressureFreePct } : {}),
     dbPath: DB_PATH, dbSize: fs.existsSync(DB_PATH) ? fs.statSync(DB_PATH).size : 0,
     counts: Object.fromEntries(core.COLLECTIONS.map(c => [c, list(c).length])),
     lastSchedulerTick: q.meta.get('lastTick')?.v || null, lastBackup: q.meta.get('lastBackup')?.v || null
