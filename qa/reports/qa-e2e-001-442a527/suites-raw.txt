@@ -1,0 +1,42 @@
+== world-approval-test
+exit 0
+18
+ALL PASS
+== world-approval-e2e-test
+exit 0
+18
+ALL PASS
+== security-test
+exit 1
+50
+FAIL app token accepted from loopback without Origin
+FAIL password login re-enables app auto-login
+{"passed":50,"failed":["app token accepted from loopback without Origin","password login re-enables app auto-login"]}
+== world-class-test
+exit 1
+62
+FAIL 3 runtime reports ollama without inventing a model — Модель qwen3:8b не установлена (ollama pull qwen3:8b)
+FAILED 1
+== isolation-test
+exit 0
+65
+{"passed":65,"failed":[]}
+== policy-test
+exit 0
+46
+46/46 passed
+== publish-guard-test
+exit 0
+59
+{"passed":59,"failed":[]}
+== unwired
+exit 1
+7
+FAIL unwired: approve -> 503 not_wired, nothing executed — {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":5000}},"approval":{"id":"mvjsl8n4hjepua","action":"critical_settings","status":"approved","requestedBy":"igor@app","decidedBy":"igor","decidedAt":"2026-10-22T17:05:40.230Z","expiresAt":"2026-10-23T17:05:40.096Z","consumed":true,"consumedAt":"2026-10-22T17:05:40.232Z","execStatus":"executed","execResult":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":5000}},"execAt":"2026-10-22T17:05:40.233Z"}}
+FAIL unwired: approval stays pending — {"id":"mvjsl8n4hjepua","action":"critical_settings","status":"approved","requestedBy":"igor@app","decidedBy":"igor","decidedAt":"2026-10-22T17:05:40.230Z","expiresAt":"2026-10-23T17:05:40.096Z","consumed":true,"consumedAt":"2026-10-22T17:05:40.232Z","execStatus":"executed","execResult":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":5000}},"execAt":"2026-10-22T17:05:40.233Z"}
+FAILED 2
+== ops
+exit 0
+# tests 121
+# pass 119
+# fail 0

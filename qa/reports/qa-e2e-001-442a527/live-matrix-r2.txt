@@ -1,0 +1,34 @@
+M1 savings no confirm (session) => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla4lrlsndk"}
+M2 savings confirm:true => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla4r35u0mn"}
+M3 paid_ads confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla4v8fcpsg","tier":"owner"}
+M4 critical_settings confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla4zddizr5","tier":"owner"}
+M5 fake_views confirm => 403 {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+M6 pending id => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla55mmehnd","tier":"owner","reason":"not_approved"}
+M7 type ["mvjsla4zddizr5"] => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla59jafdvz","tier":"owner","reason":"missing"}
+M7 type {"id":"mvjsla4zddizr5"} => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla5diku4ll","tier":"owner","reason":"missing"}
+M7 type 123 => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla5gta7jz7","tier":"owner","reason":"missing"}
+M7 type true => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla5kpk8sf8","tier":"owner","reason":"missing"}
+M7 type "' OR 1=1 --" => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla5ngrl2d8","tier":"owner","reason":"unknown"}
+R2 app creates savings 300 => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsla5r8s24ai"}
+R2 app approves (correct pw) => 403 {"error":"Подтверждение только из сессии владельца (не app token)","code":"owner_session_required"}
+R2 session wrong pw => 403 {"error":"Неверный пароль владельца","code":"owner_reauth"}
+R2 session no pw => 403 {"error":"Неверный пароль владельца","code":"owner_reauth"}
+R2 session self-approve own session request => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+BF 30 wrong pw statuses: {"403":30}
+BF correct pw after 30 failures (session approves app request) => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":300}},"approval":{"id":"mvjsla5r8s24ai"
+savings now: {"error":"unknown collection"}
+R1 reuse id via /savings 999999 => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjslb0lifz7yn","reason":"consumed"}
+R1 reuse id via /savings 300 same params => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjslb0pkr3ool","reason":"consumed"}
+R1 re-approve => 409 {"error":"уже решено"}
+R3 approve id for 10 => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":10}},"approval":{"id":"mvjslb0uktlb3w",
+R3 savings after: {"error":"unknown collection"}
+N1 app token + fake mk_session cookie approves session request => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1b app+fakecookie creates request (principal?) => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjslb2vqrynjx"}
+N1c app+fakecookie approves its own fakecookie request => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N2 session(Bearer)+junk app header creates => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjslb3s9cagvs"}
+N2 same owner cookie-session approves own request => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":500}},"approval":{"id":"mvjslb3s9cagvs"
+N3 body requested_by spoof then session approve => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+approval rows: [["a96m","pending","owner@session",null,0,null],["agvs","approved","owner@app","owner",1,"executed"],["ynjx","pending","owner@session",null,0,null],["qb77","pending","owner@session",null,0,null],["4lfs","pending","owner@app",null,0,null],["lb3w","approved","owner@app","owner",1,"executed"],["3ool","pending","owner@app",null,0,null],["z7yn","pending","owner@app",null,0,null],["lbea","pending","owner@session",null,0,null],["24ai","approved","owner@app","owner",1,"executed"],["l2d8","pending","owner@session",null,0,null],["8sf8","pending","owner@session",null,0,null]]
+journal has password? false / logs? false
+password in data files: false / in db tables approvals+meta: false
+expired legacy test via db: rows=20
