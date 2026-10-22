@@ -227,3 +227,53 @@
 - «AI-агенты / jobs — INTEGRATED (частично)»: **не подтверждается → TESTED (частично)**. HTTP-маршруты и SQLite-очередь реальны, но реальные исполнители (Ollama, Blender, ffmpeg+TTS) ни разу не прогнаны e2e: test:runner мокает Ollama, video — фейковая фабрика (сам Studio 2 это пишет), design3d e2e SKIP.
 - «Revenue Director — INTEGRATED (локально)»: **не подтверждается → TESTED**. Ledger и импорт CSV покрыты test:world (62/0 на Node 22), но внешних источников выплат нет, owner-гейт обходится (QA-E2E-001); пока дефект не исправлен, уровень выше TESTED не допускается.
 - «AI CEO — IMPLEMENTED», «Marketing — IMPLEMENTED, данные MOCK»: занижены, фактически **TESTED** (test:world 62/0 покрывает world-модули), но с оговоркой: Marketing работает только на mock-данных.
+
+### 5.6 `/workspace/out/audit-e2e/studio5_games_memory_centers.md` (найден 19:45 IDT) — вердикт: **PASS** (2 неточности, статусы в целом корректны)
+| Утверждение | Проверка по 3b72817 | Итог |
+|---|---|---|
+| Игры: только карточка + задача агенту games через generic CRUD; нет /api/games | `public/app.js:161,354-355`, `server.js:536` | CONFIRMED |
+| OpenCode: approve-code → runner блокирует без codeApproved | `server.js:309-310`, `runner.js:97`, `runner.js:28,47` | CONFIRMED |
+| Память SI подключена через memory-adapter, иначе fallback | `lib/world/memory-adapter.js:71-79` | CONFIRMED |
+| SI-экспорт в backup; `SIX` объявлен после `dump` | `server.js:211-215` | CONFIRMED (работает, т.к. dump вызывается позже) |
+| SI тесты 51/53, 2 fail (backup-survival устарел, check-compat ждёт integ/v1.3.0-test) | Studio 4, Node 22: tests 53 / pass 51 / fail 2, те же два теста | CONFIRMED |
+| Update Center выключен в .app: desktop не ставит STUDIO_OPS_UPDATE | `lib/ops/update-center-mount.js:8`; grep desktop/ → пусто | CONFIRMED |
+| STUDIO_OPS_MONEY в коде отсутствует | grep *.js/*.mjs → пусто | CONFIRMED |
+| «Все 69 вызовов /api совпадают с маршрутами» | `ui-route-crosscheck.txt`: 7 MISSING (`/api/meta/ws/*`, `/api/queue/:id/publish`, `/api/comments/:id/reply` в `public/social-ui.js`); в TEST meta не смонтирован (`server.js:136-140`), publish/reply → 403 (`server.js:200`) | DISCREPANCY (в TEST-сборке 5 кнопок social-ui ведут в несуществующие маршруты) |
+| «SOCIAL_AUDIT не упоминает отсутствие meta.js в asar» | SOCIAL_AUDIT_RU.md:10 это прямо утверждает | DISCREPANCY (ошибка Studio 5) |
+| asar 919 записей, нет meta.js | Studio 4: 919, meta.js нет | CONFIRMED |
+| Тесты Node 24 (opencode, update-center, ops, nodes, security, isolation…) | совпадают с прогонами Studio 4 на Node 22 | CONFIRMED |
+| merge-tree feat/studio-intelligence / PR #5 | не проверялось | UNVERIFIABLE |
+Статусы: «Память SI — INTEGRATED», «Dashboard…/Backup — INTEGRATED» по определениям раздела 0 допустимы только как INTEGRATED на Linux (smoke-прогон собранного кода, без устройства); SI-экспорт при 2 падающих SI-тестах — **TESTED (частично)**, не INTEGRATED. Остальные ярлыки (IMPLEMENTED/TESTED) корректны.
+
+## 7. Отчёты: итог
+| Отчёт | Вердикт | Расхождения |
+|---|---|---|
+| SOCIAL_AUDIT_RU.md | PASS | не упомянут альтернативный путь `liveFlags` (мелко) |
+| studio3_news_video_3d.md | PASS | 3D «INTEGRATED» завышено → TESTED (§6) |
+| AUDIT_GOTOVNOSTI_RU.md | PASS | NEWS «UI-ONLY» занижено → IMPLEMENTED (§6) |
+| ui-route-crosscheck.txt | PASS | publish/reply не MISSING, а 403-гард TEST |
+| studio2_agents.md | PASS по сути / статусы завышены | ссылки permissions.js:39-46 и services.js неверны; test:world/publish-guard FAIL — ошибка окружения (Node 20); INTEGRATED для jobs и Revenue → TESTED |
+| studio5_games_memory_centers.md | PASS | «69 вызовов совпадают» — неверно (7 MISSING в TEST); неверная претензия к SOCIAL_AUDIT; SI-экспорт → TESTED |
+Отсутствующих отчётов нет (NOT TESTED — нет).
+
+## 8. Итоговые статусы модулей (Studio 4, 3b72817, 19:50 IDT)
+| Модуль | Статус |
+|---|---|
+| Вход/безопасность/изоляция TEST↔prod | TESTED (smoke на Linux) |
+| AI-агенты / jobs | TESTED (частично) |
+| AI CEO | TESTED (шаблон, без LLM) |
+| Marketing Director | TESTED, только mock-данные |
+| Revenue Director / финансы | TESTED; блокер QA-E2E-001 (HIGH) |
+| Creative Director (QC) | TESTED |
+| NEWS | IMPLEMENTED (частично) |
+| VIDEO (MP4) | IMPLEMENTED; бэкенд на стабах, UI нет |
+| 3D (OpenCode+Blender) | TESTED (частично) |
+| Игры | IMPLEMENTED (только UI-ссылка + задачи) |
+| Память SI | TESTED (51/53) |
+| Update Center | TESTED, в .app выключен |
+| Approval Center | IMPLEMENTED (разрозненно, обходится confirm:true) |
+| Узлы | TESTED |
+| Соцканалы (Telegram, YouTube×2, TikTok, IG, FB, X) | TESTED на моках; реальные публикации BLOCKED |
+| Сайт | NOT IMPLEMENTED |
+| Всё on-device (Mac mini, iPhone) | BLOCKED |
+VERIFIED ON DEVICE — 0, PRODUCTION READY — 0.
