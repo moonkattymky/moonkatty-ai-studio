@@ -1,14 +1,14 @@
 # MOONKATTY NODE 0.2.2 — установка, проверка и откат (iMac NEWS NODE / MacBook MONITOR NODE)
 
-Версия инструкции: r4. Архивы собраны воспроизводимо из коммита `e36420e7e7db5b9bfece42933dec1e8e936d6b99` (ветка `feat/nodes-022-final`);
-коммит с этой инструкцией отличается от него только документацией. Брать ТОЛЬКО эти архивы (`/workspace/dist-node-final4/`
-или пакет `nodes-022-final-r4`). Все более ранние архивы 0.2.2 (db4720b, f66e798, 907610a, 5bd0d84) — не использовать.
+Версия инструкции: r5. Архивы собраны воспроизводимо из коммита `11f6618eed6ce93392ed2e472267d530fc2ce6f8` (ветка `feat/nodes-022-final`);
+коммит с этой инструкцией отличается от него только документацией. Брать ТОЛЬКО эти архивы (`/workspace/dist-node-final5/`
+или пакет `nodes-022-final-r5`). Все более ранние архивы 0.2.2 (db4720b, f66e798, 907610a, 5bd0d84, e36420e) — не использовать.
 
 | Машина | Профиль | Архив | SHA-256 | Node | macOS |
 |---|---|---|---|---|---|
-| iMac 2017 (Intel), Ventura 13.7.1 | NEWS NODE | `moonkatty-node-0.2.2-darwin-x64.tar.gz` | `71ec7da72690828415410c1be1cc660e34ea9d4ee90a62b4888aa2143b9292c8` | v24.22.1 | ≥ 13.5 |
-| MacBook Pro 13" 2015 (Intel), Monterey 12.7.6 | MONITOR NODE | `moonkatty-node-0.2.2-darwin-x64-monterey.tar.gz` | `1ab595d4fce902052d00ad63e92d77a7764969bf12a465040b4ed05665a5ac44` | v22.23.4 | ≥ 11.0 |
-| запасной вариант | — | `moonkatty-node-0.2.2-js-only.tar.gz` | `2a171d3cab6ac9bb4016d163ba7fc5111526c6ffef16a28c3d62b936c79aa05f` | свой ≥ 22 | — |
+| iMac 2017 (Intel), Ventura 13.7.1 | NEWS NODE | `moonkatty-node-0.2.2-darwin-x64.tar.gz` | `f084c92651058dcf599d81234ef25ffb15167db8f6900cf571c73decf0f24227` | v24.22.1 | ≥ 13.5 |
+| MacBook Pro 13" 2015 (Intel), Monterey 12.7.6 | MONITOR NODE | `moonkatty-node-0.2.2-darwin-x64-monterey.tar.gz` | `db42b61b9bd160f2d4333d9d46f0307a2aba468442d53104d3197cf6a6c82db4` | v22.23.4 | ≥ 11.0 |
+| запасной вариант | — | `moonkatty-node-0.2.2-js-only.tar.gz` | `048606f4ae3041ab4d69981fcbad9216cfb41783854bfba2bac7b69b9ea99473` | свой ≥ 22 | — |
 
 ## Требования
 - **Координатор (Mac mini):** установленная студия v1.3.0-test с включёнными узлами (раздел «Компьютеры»), Tailscale подключён. Ничего в Tailscale не меняем: **без Funnel, без публичных портов, Serve для узлов не настраивается**. Node API координатора слушает только Tailscale-адрес 100.x (порт показан в панели; test — 8690, prod — 8790) со своим сертификатом, который узел закрепляет по SHA-256. Если на Mac mini уже есть `tailscale serve` для веб-панели/iPhone (порт 8787, `docs/CONNECT_MAC.md`) — это отдельная настройка студии, её не трогать; узлы через неё не ходят.
@@ -30,7 +30,7 @@
 tar -xzf moonkatty-node-0.2.2-<...>.tar.gz && cd moonkatty-node-0.2.2-<...>
 bash install.sh --verify-only
 ```
-Проверка: «OK» после проверки MANIFEST; `codesign bin/node: подпись Node.js действительна`; BUILDINFO показывает Node и коммит `e36420e…`.
+Проверка: «OK» после проверки MANIFEST; `codesign bin/node: подпись Node.js действительна`; BUILDINFO показывает Node и коммит `11f6618…`.
 
 **Шаг 3. Установить (без автозапуска).** `bash install.sh`
 Проверка: `~/moonkatty-node/bin/node -v` → v24.22.1 (iMac) / v22.23.4 (MacBook); `ls -ld ~/.moonkatty-node` → `drwx------`; `ls -l ~/.moonkatty-node/node-agent.env` → `-rw-------`.
@@ -57,13 +57,13 @@ bash install.sh --verify-only
 **Шаг 9. Проверка отзыва (рекомендуется один раз).** Mac mini → «Отозвать» узел → через ≤ 1 мин узел «Отозван», агент пишет «токен отклонён». Затем удалить и подключить заново (Шаг 5) или выполнить откат.
 
 ## iMac — NEWS NODE
-- Архив `moonkatty-node-0.2.2-darwin-x64.tar.gz`, SHA-256 `71ec7da72690828415410c1be1cc660e34ea9d4ee90a62b4888aa2143b9292c8`, Node v24.22.1.
+- Архив `moonkatty-node-0.2.2-darwin-x64.tar.gz`, SHA-256 `f084c92651058dcf599d81234ef25ffb15167db8f6900cf571c73decf0f24227`, Node v24.22.1.
 - Шаг 7: с Mac mini запустить задачу `news.collect` с 1–2 RSS-лентами → результат с элементами, без ошибок; `news.dedup` → дубли удалены.
 - Память: в статусе узла RSS ≤ 384 МБ (лимит профиля); при превышении задачи отклоняются, агент не падает.
 - Уведомления (если нужны): `NODE_NTFY_URL` (https, ntfy) в `~/.moonkatty-node/node-agent.env`. Это не Telegram API. Функции X выключены по умолчанию — не включать.
 
 ## MacBook — MONITOR NODE
-- Архив `moonkatty-node-0.2.2-darwin-x64-monterey.tar.gz`, SHA-256 `1ab595d4fce902052d00ad63e92d77a7764969bf12a465040b4ed05665a5ac44`, Node v22.23.4.
+- Архив `moonkatty-node-0.2.2-darwin-x64-monterey.tar.gz`, SHA-256 `db42b61b9bd160f2d4333d9d46f0307a2aba468442d53104d3197cf6a6c82db4`, Node v22.23.4.
 - После Шага 3 (по желанию): `bash ~/moonkatty-node/fetch-ffprobe.sh` — ставит статический ffprobe с закреплёнными SHA-256 в `~/moonkatty-node/tools` (без Homebrew и sudo). Проверка: скрипт печатает OK и версию ffprobe.
 - Шаг 7: задача `ffprobe.check` на маленьком видео → succeeded на `macbook`.
 - Память: RSS ≤ 256 МБ, одновременно 1 задача (профиль monitor, куча V8 128 МБ при автозапуске).
