@@ -78,6 +78,8 @@ const validSeal = it => { const p = it && it.publication; if (!p || typeof p.sea
 // There is no "legacy" exception any more: unsealed rows are demoted at startup (see demoteUnsealed) and edits are refused.
 const looksPublished = o => o && (o.status === 'published' || o.externalId || o.publication || o.publishedAt);
 const put = (col, obj) => {
+  if (col === 'tasks' && gate3d.is3dTask(obj) && !gate3d.DESIGN3D_ENABLED) { const cur = get('tasks', obj.id); // v1.3.2-test: task-creation choke point — no new 3D task, legacy 3D rows can only end failed/cancelled
+    if (!cur) gate3d.assert3dAllowed('tasks.put:' + (obj.agentId || obj.kind)); if (!['failed', 'cancelled', 'done'].includes(obj.status)) obj = Object.assign({}, obj, { status: 'failed', error: gate3d.DESIGN3D_DISABLED_MSG, errorCode: 'feature_disabled' }); }
   if (col === 'queue' && looksPublished(obj) && !validSeal(obj)) { const e = new Error('Статус «опубликовано» ставит только модуль публикации после ответа платформы'); e.code = 'published_internal_only'; throw e; }
   q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
 // Unsealed published rows (v1.1.x–v1.2.2 data, direct DB writes, keys lost) → historical_* (read-only, audit) + pending_approval.
@@ -267,6 +269,7 @@ app.post('/api/files/upload', express.raw({ type: '*/*', limit: '500mb' }), (req
   const o = put('files', { id, name, size: req.body.length, mime: req.headers['content-type'] || '', url: `/files/${id}-${name}`, project: req.query.project || 'main', createdAt: core.now() });
   log('info', 'files', 'Загружен файл ' + name, req.user); res.status(201).json(o);
 });
+app.use(gate3d.httpGuard({ getJob: id => jobs.get(id) })); // v1.3.2-test: ONE router-level 3D gate (case-insensitive, trailing slash, encoded) — see lib/feature-gate.js
 app.use('/files', (req, res, next) => { const s = getSession(req) || appTokenUser(req); if (!s) return res.status(401).end(); next(); }, sec.filesHeaders, express.static(FILES_DIR, { dotfiles: 'deny', index: false, redirect: false }));
 
 // ---- Director chat ----
@@ -313,7 +316,7 @@ app.post('/api/director/chat', async (req, res) => {
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
   res.json({ ok: dbOk, app: 'moonkatty-ai-studio', flavor: CFG.flavor, product: CFG.product, schemaVersion: DB_SCHEMA_VERSION, mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
 app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, heavy: heavy.status(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
-app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { if (e.code === 'feature_disabled') return res.status(403).json(gate3d.body403(e)); res.status(400).json({ error: e.message }); } });
 app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
 app.post('/api/tasks/:id/approve-code', (req, res) => { const t = get('tasks', req.params.id); if (!t || t.kind !== 'code') return res.status(400).json({ error: 'Не задача OpenCode' });
   Object.assign(t, { codeApproved: true, codeApprovedBy: req.user, codeApprovedAt: core.now(), status: t.status === 'blocked' ? 'queued' : t.status }); put('tasks', t); log('info', 'opencode', 'Разрешён запуск OpenCode: ' + t.title, req.user); res.json(t); });
@@ -428,9 +431,7 @@ const jobView = j => {
 };
 app.get('/api/jobs', (req, res) => { const s = req.query.status; res.json(jobs.list(Math.min(+req.query.limit || 30, 200)).filter(j => !s || j.status === s || services.PUBLIC[j.status] === s).map(jobView)); });
 // 3D gate — route level (shared guard). GET status stays readable so the 3D Studio page can show «недоступно».
-app.use('/api/studio3d', (req, res, next) => req.method === 'GET' ? next() : gate3d.guard('/api/studio3d' + req.path)(req, res, next));
-app.use(/^\/api\/projects3d\/[^/]+\/[^/]+\/(rerender|run)$/, (req, res, next) => req.method === 'GET' ? next() : gate3d.guard('/api/projects3d/*/' + req.path.split('/').pop())(req, res, next));
-app.use(/^\/api\/jobs\/[^/]+\/(retry|confirm|review)$/, (req, res, next) => { if (req.method !== 'POST') return next(); const seg = String(req.originalUrl || '').split('?')[0].split('/'); const id = seg[3]; const act = seg[4]; const j = id ? jobs.get(id) : null; if ((act !== 'retry' || (j && (gate3d.is3dType(j.kind) || gate3d.is3dType(j.type)))) && gate3d.send403(res, 'POST /api/jobs/:id/' + act)) return; next(); });
+// (v1.3.2-test) 3D routes are refused by the router-level gate3d.httpGuard mounted on /api right after auth (normalized paths).
 // v1.3.2-test candidate: opencode_task has no sandboxed runner in this build (feat/e2e-task-runners NOT merged) → disabled, 403, UI shows «недоступно».
 const OPENCODE_TASK_ENABLED = false;
 app.post('/api/jobs', (req, res) => { const b = req.body || {}; if (!OPENCODE_TASK_ENABLED && (b.type === 'opencode_task' || b.kind === 'opencode_task')) return res.status(403).json({ error: 'opencode_task недоступен в этой тестовой сборке (нет изолированного раннера)', code: 'feature_disabled', feature: 'opencode_task' }); if ((gate3d.is3dType(b.type) || gate3d.is3dType(b.kind)) && gate3d.send403(res, 'POST /api/jobs ' + (b.type || b.kind))) return; try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { if (e.code === 'feature_disabled') return res.status(403).json(gate3d.body403(e)); res.status(400).json({ error: e.message }); } });
@@ -581,6 +582,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use((err, req, res, next) => { // body-parser messages can quote the request body (e.g. a password) — never log/return them
   if (err.type === 'entity.parse.failed' || err.type === 'entity.too.large') { log('warn', 'http', `${req.method} ${req.path}: неверное тело запроса (${err.type})`); return res.status(400).json({ error: 'Неверное тело запроса' }); }
+  if (err.code === 'feature_disabled') return res.status(403).json(gate3d.body403(err));
   if (err.code === 'published_internal_only') return res.status(403).json({ error: err.message, code: err.code });
   log('error', 'http', `${req.method} ${req.path}: ${err.message}`); res.status(500).json({ error: sec.redact(err.message) }); });
 

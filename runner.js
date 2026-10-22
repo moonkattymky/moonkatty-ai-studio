@@ -122,7 +122,7 @@ module.exports = function createRunner(ctx) {
       else if (a.currentTaskId) { a.currentTaskId = null; put('agents', a); }
     }
   }
-  function start(id, user) { const a = get('agents', id); if (!a) throw new Error('not found'); if (!a.enabled || a.inDevelopment) throw new Error('Агент выключен или в разработке');
+  function start(id, user) { if (ctx.gate3d && ctx.gate3d.is3dAgent(id)) ctx.gate3d.assert3dAllowed('runner.start:' + id); const a = get('agents', id); if (!a) throw new Error('not found'); if (!a.enabled || a.inDevelopment) throw new Error('Агент выключен или в разработке');
     if (ctx.onAgentStart) ctx.onAgentStart(a);
     Object.assign(a, { status: 'working', startedAt: core.now(), startedBy: user }); addLog(a, 'info', 'Агент запущен (фоновый исполнитель)'); put('agents', a); tick(); return get('agents', id); }
   function stop(id, user) { const a = get('agents', id); if (!a) throw new Error('not found'); const b = busy.get(id);

@@ -34,7 +34,7 @@ t('inventory: blender.runTemplate + detect gated', /runTemplate\([^\n]*\n\s*requ
 t('inventory: design3d executor run + confirm gated', /async function run\(a, t, signal\) \{\n\s*require\('\.\.\/feature-gate\.js'\)\.assert3dAllowed/.test(d3Src) && /function confirm\(jobId, ok\) \{ require\('\.\.\/feature-gate\.js'\)/.test(d3Src));
 t('inventory: services createJob + blender_template service gated', /G3D\.assert3dAllowed\('jobsApi\.createJob/.test(svSrc) && /G3D\.assert3dAllowed\('services\.blender\.runTemplate'\)/.test(svSrc));
 t('inventory: runner dispatch gated (shared gate passed to runner)', /ctx\.gate3d\.assert3dAllowed\('runner:'/.test(rnSrc) && /runner\.js'\)\(\{[^\n]*gate3d,/.test(srvSrc) && /runner\.register\('design3d', \(a, t, signal\) => \{ gate3d\.assert3dAllowed/.test(srvSrc));
-t('inventory: route-level guards for /api/studio3d/*, projects3d rerender|run, jobs retry|confirm|review', /app\.use\('\/api\/studio3d'/.test(srvSrc) && /projects3d\\\/\[\^\/\]\+\\\/\[\^\/\]\+\\\/\(rerender\|run\)/.test(srvSrc) && /\(retry\|confirm\|review\)/.test(srvSrc));
+t('inventory: router-level httpGuard (normalized) covers /api/studio3d|projects3d, agents/design3d/start, jobs confirm|review|retry, jobs + tasks bodies', /app\.use\(gate3d\.httpGuard\(/.test(srvSrc) && /\(studio3d\|projects3d\)/.test(gateSrc) && /\(start\|stop\|run\|tick\)/.test(gateSrc) && /'confirm' \|\| m\[2\] === 'review'/.test(gateSrc) && /api\\\/tasks/.test(gateSrc) && /toLowerCase\(\)/.test(gateSrc));
 t('inventory: director plan + new3dTask gated', /assert3dAllowed\('director\/chat'\)/.test(srvSrc) && /function new3dTask\(fields, user\) \{ gate3d\.assert3dAllowed/.test(srvSrc));
 t('inventory: no local DESIGN3D_ENABLED literal outside lib/feature-gate.js', files.filter(f => f !== path.join('lib', 'feature-gate.js')).every(f => !/DESIGN3D_ENABLED\s*=\s*(true|false)/.test(rd(f))) && /const DESIGN3D_ENABLED = false;/.test(gateSrc));
 // ---- 0b) unit: executor / Blender layer fails closed even if called directly (unknown path) ----
@@ -59,8 +59,8 @@ try {
   const oc = await api('POST', '/api/jobs', { type: 'opencode_task' }); t('opencode_task gate still 403', oc.r.status === 403);
   const bt = await api('POST', '/api/jobs', { type: 'no_such_type' }); t('other types not caught by gate (400 unknown type)', bt.r.status === 400);
   // 2) rerender
-  const pr = await api('POST', '/api/projects3d', { title: 'gate test' }); const pid = pr.j && (pr.j.id || pr.j.projectId) || 'p_none';
-  for (const p of [pid, 'p_none']) { const { r, j } = await api('POST', `/api/projects3d/${p}/v1/rerender`, { params: {} }); t('rerender ' + p + ' → 403 feature_disabled', gated(r, j), r.status + ' ' + JSON.stringify(j)); }
+  const pr = await api('POST', '/api/projects3d', { title: 'gate test' }); const pid = 'p_none';
+  for (const p of [pid, 'p_x']) { const { r, j } = await api('POST', `/api/projects3d/${p}/v1/rerender`, { params: {} }); t('rerender ' + p + ' → 403 feature_disabled', gated(r, j), r.status + ' ' + JSON.stringify(j)); }
   // 2b) studio3d/run (Director → 3D DESIGN)
   { const before = (await api('GET', '/api/tasks')).j.length;
     for (const body of [{ text: 'Создай фиолетового кота MOONKATTY' }, { text: 'x', projectId: pid }]) { const { r, j } = await api('POST', '/api/studio3d/run', body); t('studio3d/run → 403 feature_disabled', gated(r, j), r.status + ' ' + JSON.stringify(j)); }
@@ -81,16 +81,31 @@ try {
     const ui = fs.readFileSync(path.join(ROOT, 'public/app.js'), 'utf8'); t('3D Studio page renders the 403 banner and disables «Создать 3D-модель»', /id=\"s3disabled\"|id="s3disabled"/.test(ui) && /403 feature_disabled/.test(ui) && /id="s3run"\$\{off3d \?/.test(ui)); }
   // version
   { const h = await (await fetch(B + '/api/health')).json(); t('version 1.3.2-test in /api/health', h.version === '1.3.2-test', h.version); }
-  // 3) runner: task for the design3d agent is refused before execution
-  const tasks = [];
-  for (const body of [{ title: 'd3d gate task', agentId: 'design3d', status: 'queued' }, { title: 'd3d gate code task', agentId: 'design3d', status: 'queued', kind: 'code' }]) {
-    const { r, j } = await api('POST', '/api/tasks', body); t('task created for design3d (' + (body.kind || 'default') + ')', r.ok && j && j.id, r.status + ' ' + JSON.stringify(j)); if (j && j.id) tasks.push(j.id);
-  }
-  const st = await api('POST', '/api/agents/design3d/start'); t('agent start request handled', st.r.status < 500, st.r.status + ' ' + JSON.stringify(st.j));
-  for (const id of tasks) { let x; for (let i = 0; i < 40; i++) { x = (await api('GET', '/api/tasks')).j.find(z => z.id === id); if (x && x.status !== 'queued') break; await api('POST', '/api/agents/design3d/start'); await sleep(250); }
-    if (st.r.ok) { t('task ' + id + ' failed with feature_disabled', x && x.status === 'failed' && x.errorCode === 'feature_disabled' && x.error === MSG, JSON.stringify(x));
-      t('task ' + id + ' never started (no startedAt / not in_progress)', x && !x.startedAt); }
-    else t('task ' + id + ' not executed (agent cannot start)', x && x.status !== 'in_progress' && !x.startedAt, JSON.stringify(x)); }
+  // 3) Studio 4 (7f0129f FAIL): case / trailing-slash / encoded variants + every task/agent creation path → 403 feature_disabled, nothing created
+  t('POST /api/projects3d (create) → 403 feature_disabled', gated(pr.r, pr.j), pr.r.status);
+  const tasks0 = (await api('GET', '/api/tasks')).j; const before = tasks0.length; const non3d = tasks0.find(x => x.agentId && x.agentId !== 'design3d');
+  const V = [];
+  for (const u of ['/api/jobs', '/API/jobs', '/api/jobs/', '/Api/Jobs//']) for (const body of [{ type: 'design3d' }, { type: 'blender_template' }, { kind: '3d' }]) V.push(['POST', u, body]);
+  for (const u of ['/api/jobs/x/confirm', '/api/jobs/x/confirm/', '/API/jobs/x/confirm', '/api/JOBS/x/Confirm/', '/api/jobs/x/%63onfirm', '/api/jobs/x/review', '/api/jobs/x/review/', '/api/jobs/x/Review', '/API/JOBS/X/REVIEW/']) V.push(['POST', u, { approve: true, action: 'approve' }]);
+  for (const u of ['/api/projects3d/p/v1/rerender', '/api/projects3d/p/v1/rerender/', '/API/projects3d/p/v1/rerender', '/api/Projects3D/p/v1/RUN/', '/api/projects3d/p/v1/run', '/api/projects3d', '/API/PROJECTS3D/']) V.push(['POST', u, { params: {} }]);
+  for (const [m, u] of [['POST', '/api/studio3d/run'], ['POST', '/api/studio3d/run/'], ['POST', '/API/STUDIO3D/run'], ['PUT', '/api/studio3d/settings'], ['PUT', '/api/Studio3d/Settings/'], ['POST', '/api/studio3d/anything-new'], ['PATCH', '/api/studio3d/settings'], ['DELETE', '/api/studio3d/x']]) V.push([m, u, { text: 'кот', blenderPath: '/usr/bin/blender' }]);
+  for (const [u, body] of [['/api/tasks', { title: 'x', agentId: 'design3d' }], ['/api/tasks/', { title: 'x', agentId: 'design3d', status: 'queued' }], ['/API/Tasks', { title: 'x', agentId: 'design3d' }], ['/api/tasks', { title: 'x', kind: '3d', agentId: 'video' }], ['/api/tasks', { title: 'x', kind: 'blender_template' }]]) V.push(['POST', u, body]);
+  if (non3d) { V.push(['PUT', '/api/tasks/' + non3d.id, { agentId: 'design3d' }]); V.push(['PUT', '/API/TASKS/' + non3d.id + '/', { kind: '3d' }]); }
+  for (const u of ['/api/agents/design3d/start', '/api/agents/design3d/start/', '/API/AGENTS/design3d/START', '/api/agents/%64esign3d/start']) V.push(['POST', u, {}]);
+  for (const goal of ['Сделай 3D модель кота', 'Blender сцена для превью', 'make a 3d logo', '3Д-ролик в блендере']) V.push(['POST', '/api/world/plan', { goal }]);
+  V.push(['POST', '/API/World/Plan/', { goal: 'blender render' }]);
+  for (const [m, u, body] of V) { const { r, j } = await api(m, u, body); t(`variant ${m} ${u} ${JSON.stringify(body).slice(0, 60)} → 403 feature_disabled`, gated(r, j), r.status + ' ' + JSON.stringify(j).slice(0, 160)); }
+  t(`variant count ≥ 41 (${V.length})`, V.length >= 41);
+  for (const body of [{ type: 'design3d' }, { kind: '3d', title: 'x', agentId: 'design3d' }]) { const r = await fetch(B + (body.type ? '/API/jobs/' : '/api/tasks/'), { method: 'POST', headers: { ...H, 'x-studio-app-token': app }, body: JSON.stringify(body) }); t('app-token variant → 403', r.status === 403); }
+  const tasks1 = (await api('GET', '/api/tasks')).j; t('no task created by any variant', tasks1.length === before && !tasks1.some(x => x.agentId === 'design3d' || x.kind === '3d'), tasks1.length + ' vs ' + before);
+  if (non3d) t('PUT variants did not retarget existing task', tasks1.find(x => x.id === non3d.id).agentId === non3d.agentId);
+  const ag = (await api('GET', '/api/agents')).j; const d3a = Array.isArray(ag) && ag.find(a => a.id === 'design3d'); t('design3d agent not working', !d3a || d3a.status !== 'working', d3a && d3a.status);
+  const nw = await api('POST', '/api/tasks', { title: 'обычная задача', agentId: 'video' }); t('non-3D task creation not caught (201)', nw.r.status === 201, nw.r.status);
+  const wp = await api('POST', '/api/world/plan', { goal: 'новости дня про кошек' }); t('non-3D world plan not caught by gate', !(wp.r.status === 403 && wp.j?.code === 'feature_disabled'), wp.r.status);
+  // unit: runner refuses a legacy 3D task / start, put() cannot create a 3D task
+  { const rsrc = fs.readFileSync(path.join(ROOT, 'runner.js'), 'utf8'); t('runner.start gated for design3d', /function start\(id, user\) \{ if \(ctx\.gate3d && ctx\.gate3d\.is3dAgent\(id\)\) ctx\.gate3d\.assert3dAllowed/.test(rsrc));
+    const ssrc = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8'); t('put(tasks) choke point present (new 3D row → throw, legacy → failed)', /col === 'tasks' && gate3d\.is3dTask\(obj\)/.test(ssrc) && /app\.use\(gate3d\.httpGuard\(/.test(ssrc));
+    const g = require(path.join(ROOT, 'lib/feature-gate.js')); t('normPath lowercases, strips trailing slashes, decodes', g.normPath('/API/Jobs/x/%43onfirm//?a=1') === '/api/jobs/x/confirm'); }
   const jl = (await api('GET', '/api/jobs?limit=200')).j; t('no 3D job created', Array.isArray(jl) && !jl.some(j => ['design3d', '3d', 'blender_template', 'opencode_task'].includes(j.kind)), JSON.stringify(jl).slice(0, 300));
 } finally { srv.kill(); fs.rmSync(dir, { recursive: true, force: true }); }
 console.log(fails ? `FAILED ${fails}` : 'ALL PASS'); process.exit(fails ? 1 : 0);
