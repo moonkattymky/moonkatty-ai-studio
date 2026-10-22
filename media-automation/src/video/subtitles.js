@@ -27,6 +27,16 @@ function buildSrt(segments, { maxChars = 42, minDur = 0.8, maxDur = 6.5 } = {}) 
     for (let i = 0; i < local.length; i++) { const c = local[i]; const ls = c.text.split('\n');
       if (c.end - c.start > maxDur && ls.length === 2) { const tot = ls[0].length + ls[1].length; const mid = c.start + (c.end - c.start) * ls[0].length / tot;
         local.splice(i, 1, { start: c.start, end: mid, text: ls[0] }, { start: mid, end: c.end, text: ls[1] }); } }
+    // QA-NV-006: any cue still longer than maxDur (slow speech, few words, merged short cue) is split into equal-time
+    // parts at word boundaries; a single word is capped at maxDur (a gap is valid SRT). Never fail the render on length.
+    for (let i = 0; i < local.length; i++) { const c = local[i], d = c.end - c.start; if (d <= maxDur) continue;
+      const words = c.text.replace(/\n/g, ' ').split(/\s+/).filter(Boolean); const n = Math.ceil(d / maxDur);
+      if (words.length < 2) { c.end = c.start + maxDur; continue; }
+      const k = Math.min(n, words.length), per = d / k, parts = [];
+      for (let j = 0; j < k; j++) { const ws = words.slice(Math.round(j * words.length / k), Math.round((j + 1) * words.length / k));
+        parts.push({ start: c.start + j * per, end: c.start + (j + 1) * per, text: chunk(ws.join(' '), maxChars).slice(0, 2).join('\n') }); }
+      if (k < n) parts.forEach(p => { p.end = Math.min(p.end, p.start + maxDur); });
+      local.splice(i, 1, ...parts); i += parts.length - 1; }
     cues.push(...local);
   }
   return cues.map((c, i) => `${i + 1}\n${ts(c.start)} --> ${ts(c.end)}\n${c.text}\n`).join('\n');
