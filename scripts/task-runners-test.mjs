@@ -1,7 +1,7 @@
 // Real-command tests for opencode_task / render_segment runners (lib/task-runners.js via lib/services.js).
 // Uses the real job engine (node:sqlite) and real ffmpeg. Usage: node scripts/task-runners-test.mjs (Node >= 22.5)
 import { createRequire } from 'module'; import fs from 'fs'; import os from 'os'; import path from 'path'; import { spawnSync } from 'child_process'; import http from 'http';
-const require = createRequire(import.meta.url); process.env.STUDIO_SQLITE = 'node';
+const require = createRequire(import.meta.url); process.env.STUDIO_SQLITE = 'node'; process.env.STUDIO_FLAVOR = 'test'; process.env.NODE_ENV = 'test'; process.env.MK_TEST_LLM_STUB = '1';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-tr-')); const db = require('../lib/db.js').open(path.join(TMP, 'db.sqlite'));
 const jobs = require('../lib/jobs.js')(db); const blender = require('../lib/blender.js')();
 const store = {}; let n = 0; const core = { uid: () => 'u' + (++n), now: () => new Date().toISOString() };
@@ -89,6 +89,42 @@ delete process.resourcesPath; delete process.env.MK_TEST_REAL_RUNNERS;
   ok('race: file replaced by another inode after check -> rejected (fstat dev/ino)', t2 === TR.AUDIO_ERR, t2); }
 if (ff) { const rq = await S.host3d.renderSegment({ script: 'x', durationSec: 1, outPath: path.join(TMP, 'media', 'segments', 'sb.mp4'), mediaRoot: path.join(TMP, 'media') });
   ok('render_segment: ffmpeg runs inside the sandbox', rq.sandbox === 'bwrap' && fs.statSync(rq.videoPath).size > 0, JSON.stringify(rq)); }
+// M-1: app.asar.unpacked (desktop/main.js:41) and baked flavor are packaged; unknown source fails closed
+ok('M-1 isPackaged: Resources/app.asar.unpacked/lib -> true', TR.isPackaged('/Applications/MOONKATTY AI STUDIO TEST.app/Contents/Resources/app.asar.unpacked/lib') === true);
+ok('M-1 isPackaged: Linux-style .../resources/app.asar.unpacked -> true', TR.isPackaged('/opt/mk/resources/app.asar.unpacked/lib') === true);
+ok('M-1 isPackaged: FLAVOR_SOURCE baked -> true even in a plain path', TR.isPackaged(process.cwd(), 'baked') === true);
+ok('M-1 isPackaged: FLAVOR_SOURCE none/unknown -> true (fail closed)', TR.isPackaged(process.cwd(), 'none') === true && TR.isPackaged(process.cwd(), null) === true);
+ok('M-1 isPackaged: env(source-checkout) + plain path -> false (dev only)', TR.isPackaged(process.cwd(), 'env(source-checkout)') === false);
+// L-1: binary file only; dedicated install dir; refuse $HOME root
+{ const sb = TR.sandboxed(path.join(shim, 'opencode'), ['x'], { workDir: OUT });
+  const binds = []; for (let i = 0; i < sb.args.length; i++) if (sb.args[i] === '--ro-bind') binds.push(sb.args[i + 1]);
+  ok('L-1 bwrap binds the shim FILE, not its directory', binds.includes(path.join(shim, 'opencode')) && !binds.includes(shim), JSON.stringify(binds.filter(b => b.startsWith(OUT))));
+  const ded = path.join(OUT, '.opencode', 'bin'); fs.mkdirSync(ded, { recursive: true }); fs.copyFileSync(path.join(shim, 'opencode'), path.join(ded, 'opencode')); fs.chmodSync(path.join(ded, 'opencode'), 0o755);
+  const bb = TR.binBinds(path.join(ded, 'opencode')); ok('L-1 dedicated install dir (~/.opencode-style) is bound as a dir', bb && bb.dir === path.join(OUT, '.opencode'), JSON.stringify(bb));
+  const hb = path.join(os.homedir(), '.mk-sbx-bin-' + process.pid); fs.writeFileSync(hb, '#!/bin/sh\n', { mode: 0o755 });
+  ok('L-1 binary directly in $HOME root -> refused (no sandbox, no run)', TR.sandboxed(hb, [], { workDir: OUT }) === null); fs.rmSync(hb, { force: true });
+  const hb2 = TR.binBinds(path.join(os.homedir(), '.local', 'bin', 'opencode')); ok('L-1 never binds $HOME or an ancestor of it', !hb2 || !hb2.dir || !(os.homedir() + '/').startsWith(hb2.dir + '/'), JSON.stringify(hb2)); }
+// M-2 macOS profile text (compiled only on a Mac: scripts/mac-sandbox-check.sh)
+{ const pr = TR.macProfile({ execs: ['/opt/homebrew/bin/ffmpeg'], readDirs: ['/usr/lib'], readFiles: ['/opt/homebrew/bin/ffmpeg'], workDir: '/tmp/w' });
+  ok('M-2 profile: deny default, no same-sandbox, exec by literal, minimal mach-lookup, no network, no global file-read-metadata',
+    pr.includes('(deny default)') && !pr.includes('same-sandbox') && pr.includes('(allow process-exec (literal "/opt/homebrew/bin/ffmpeg"))') && pr.includes('com.apple.system.logger') && !/network/.test(pr) && !/\(allow file-read-metadata\)/.test(pr), pr); }
+// M-2 kill-tree: a setsid'ed grandchild escapes the process group; the ps walk must still kill it
+{ const d = fs.mkdtempSync(path.join(TMP, 'kt-')), f = path.join(d, 'g.txt'), sc = path.join(d, 'k.sh');
+  fs.writeFileSync(sc, `#!/bin/bash\nsetsid bash -c 'while true; do echo x >> ${f}; sleep 0.2; done' &\nsleep 60\n`, { mode: 0o755 });
+  const ac = new AbortController(); const pr = TR.run(sc, [], { cwd: d, signal: ac.signal }).catch(e => e); await new Promise(r => setTimeout(r, 800)); ac.abort(); await pr;
+  await new Promise(r => setTimeout(r, 600)); const a1 = fs.readFileSync(f, 'utf8').length; await new Promise(r => setTimeout(r, 1200)); const a2 = fs.readFileSync(f, 'utf8').length;
+  ok('M-2 cancel kills setsid-escaped grandchild (descendant walk)', a1 > 0 && a1 === a2, JSON.stringify({ a1, a2 })); }
+// L-2: parent directory swapped to a symlink between check and open
+{ const mr = path.join(TMP, 'media'); fs.mkdirSync(path.join(mr, 'sub'), { recursive: true }); fs.writeFileSync(path.join(mr, 'sub', 'b.wav'), 'GOOD');
+  const ev = path.join(OUT, 'evil'); fs.mkdirSync(ev, { recursive: true }); fs.writeFileSync(path.join(ev, 'b.wav'), 'EVIL');
+  const t = (() => { try { TR.copyConfined('sub/b.wav', mr, fs.mkdtempSync(path.join(TMP, 'cp-')), { _afterCheck: () => { fs.renameSync(path.join(mr, 'sub'), path.join(mr, 'sub.old')); fs.symlinkSync(ev, path.join(mr, 'sub')); } }); return 'no error'; } catch (e) { return e.message; } })();
+  ok('L-2 race: parent dir swapped to symlink after check -> rejected', t === TR.AUDIO_ERR, t);
+  fs.rmSync(path.join(mr, 'sub')); fs.renameSync(path.join(mr, 'sub.old'), path.join(mr, 'sub'));
+  ok('L-2 nested file without race -> copied', fs.readFileSync(TR.copyConfined('sub/b.wav', mr, fs.mkdtempSync(path.join(TMP, 'cp-'))), 'utf8') === 'GOOD'); }
+// llm_unavailable fast-fail: no LLM channel in the no-network sandbox -> fails at once, heavy lock released
+{ delete process.env.MK_TEST_LLM_STUB; const P0 = process.env.PATH; process.env.PATH = shim + ':' + P0; const t0 = Date.now(); const id = S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'needs llm' }, approvalId: OA }).jobId; const j = await wait(id);
+  ok('opencode without LLM channel -> failed llm_unavailable fast, heavy lock released', j.internalStatus === 'failed' && /llm_unavailable/.test(j.error || '') && Date.now() - t0 < 5000 && !JSON.stringify(S.heavyStatus()).includes(id), JSON.stringify({ s: j.internalStatus, e: j.error, ms: Date.now() - t0, h: S.heavyStatus() }));
+  process.env.MK_TEST_LLM_STUB = '1'; process.env.PATH = P0; }
 // 6 resume after restart: queued render_segment re-runs (safeToRetry), opencode_task (safeToRetry=false) fails
 const rs = jobs.create('t-r', 'render_segment', 'render_segment'); jobs.update(rs.id, { status: 'queued', safeToRetry: true, input: { script: '', durationSec: 1, aspect: '1:1', engine: 'ffmpeg' } });
 const ro = jobs.create('t-o', 'opencode_task', 'opencode_task'); jobs.update(ro.id, { status: 'queued', safeToRetry: false, input: { prompt: 'x' } });
