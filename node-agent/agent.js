@@ -86,8 +86,21 @@ const norm = s => String(s || '').toLowerCase().replace(/<[^>]+>/g, ' ').replace
 function getUrl(url, max = 2e6) { return new Promise((res, rej) => { const u = new URL(url); if (!/^https?:$/.test(u.protocol)) return rej(new Error('only http(s)'));
   (u.protocol === 'https:' ? https : http).get(u, { timeout: 20000, headers: { 'user-agent': 'MOONKATTY-node/' + VERSION } }, r => { if (r.statusCode >= 300) { r.resume(); return rej(new Error('HTTP ' + r.statusCode)); } const c = []; let n = 0;
     r.on('data', d => { n += d.length; if (n > max) r.destroy(new Error('too large')); else c.push(d); }); r.on('end', () => res(Buffer.concat(c).toString('utf8'))); r.on('error', rej); }).on('error', rej).on('timeout', function () { this.destroy(new Error('timeout')); }); }); }
-function parseRss(xml) { const items = []; const re = /<(item|entry)\b[\s\S]*?<\/\1>/g; let m; while ((m = re.exec(xml)) && items.length < 200) { const b = m[0]; const t = (/<title[^>]*>([\s\S]*?)<\/title>/.exec(b) || [])[1] || '';
-  const l = (/<link[^>]*>([\s\S]*?)<\/link>/.exec(b) || [])[1] || (/<link[^>]*href="([^"]+)"/.exec(b) || [])[1] || ''; const d = (/<(pubDate|updated|published)>([\s\S]*?)<\/\1>/.exec(b) || [])[2] || '';
+// nodes-022-final: linear block scan (indexOf) instead of /<(item|entry)\b[\s\S]*?<\/\1>/g — that regex was O(n²) on unclosed tags
+// (100 KB of "<item>" ≈ 0.2 s, a 2 MB hostile feed ≈ minutes of blocked event loop → missed heartbeats). Same blocks, same 200-item cap.
+function rssBlocks(xml) { const out = []; let pos = 0; const s = String(xml || ''); const next = { item: -2, entry: -2 }; // cached next '<tag' at/after pos; -1 = none left
+  const find = tag => { if (next[tag] === -1) return -1; if (next[tag] < pos) next[tag] = s.indexOf('<' + tag, pos); return next[tag]; };
+  while (out.length < 200) { const a = find('item'), b = find('entry'); if (a < 0 && b < 0) break; const tag = b < 0 || (a >= 0 && a < b) ? 'item' : 'entry'; const i = tag === 'item' ? a : b;
+    if (/\w/.test(s.charAt(i + 1 + tag.length))) { pos = i + 1; continue; } // \b: <items>, <entryX> are not blocks
+    const end = s.indexOf('</' + tag + '>', i); if (end < 0) { next[tag] = -1; continue; } // no closing after i → none of the later opens can close either
+    out.push(s.slice(i, end + tag.length + 3)); pos = end + tag.length + 3; } return out; }
+// linear field extraction (indexOf) — the former per-field lazy regexes were O(n²) on unclosed <title>/<link>/<pubDate> inside one block
+function rssField(b, name) { let p = 0; for (;;) { const i = b.indexOf('<' + name, p); if (i < 0) return null; const c = b.charAt(i + 1 + name.length); if (c !== '>' && !/\s/.test(c)) { p = i + 1; continue; }
+  const gt = b.indexOf('>', i); if (gt < 0) return null; const end = b.indexOf('</' + name + '>', gt); if (end < 0) return null; return { at: i, tag: b.slice(i, Math.min(gt + 1, i + 2048)), text: b.slice(gt + 1, end) }; } }
+function parseRss(xml) { const items = []; for (const b0 of rssBlocks(xml)) { if (items.length >= 200) break; const b = b0.length > 65536 ? b0.slice(0, 65536) : b0; // an RSS item is small; cap hostile blocks
+  const t = (rssField(b, 'title') || {}).text || ''; const lf = rssField(b, 'link'); let l = lf ? lf.text : '';
+  if (!l) { const li = b.indexOf('<link'); if (li >= 0) { const gt = b.indexOf('>', li); const tag = b.slice(li, gt < 0 ? Math.min(b.length, li + 2048) : Math.min(gt + 1, li + 2048)); l = (/href="([^"]+)"/.exec(tag) || [])[1] || ''; } }
+  const ds = ['pubDate', 'updated', 'published'].map(n => rssField(b, n)).filter(Boolean).sort((x, y) => x.at - y.at); const d = ds.length ? ds[0].text : '';
   items.push({ title: t.replace(/<!\[CDATA\[|\]\]>/g, '').trim().slice(0, 300), link: l.trim().slice(0, 500), date: d.trim(), untrusted: true }); } return items; }
 const itemKey = it => sha256(norm(it.title) + '|' + norm(it.link).replace(/\s/g, ''));
 function dedup(items) { const seen = new Set(), out = []; for (const it of items || []) { const k = itemKey(it); if (!seen.has(k)) { seen.add(k); out.push({ ...it, key: k.slice(0, 16) }); } } return out; }
