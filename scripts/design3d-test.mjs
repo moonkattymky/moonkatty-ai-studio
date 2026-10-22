@@ -82,8 +82,8 @@ const cj = await api('POST', '/api/jobs', { type: 'design3d', input: { text: 'С
 const jj = cj.j.jobId && await (async () => { for (let i = 0; i < 200; i++) { const x = (await api('GET', '/api/jobs/' + cj.j.jobId)).j; if (['needs_approval', 'failed', 'cancelled', 'succeeded'].includes(x.publicStatus)) return x; await sleep(700); } })();
 ok('createJob(design3d) → {jobId}; public status needs_approval', cj.status === 201 && jj?.publicStatus === 'needs_approval', jj?.error);
 ok('listJobs({status:needs_approval}) filters', (await api('GET', '/api/jobs?status=needs_approval')).j.every(x => x.publicStatus === 'needs_approval'));
-const rs = await api('POST', '/api/jobs', { type: 'render_segment', input: {} }); const rsj = (await api('GET', '/api/jobs/' + rs.j.jobId)).j;
-ok('render_segment reserved: job created as failed «не реализовано»', rsj.publicStatus === 'failed' && /не реализовано/.test(rsj.error));
+const rs = await api('POST', '/api/jobs', { type: 'render_segment', input: {} });
+ok('render_segment: invalid input rejected (real runner, no fake job)', rs.s === 400 && /durationSec/.test(rs.j.error || ''), JSON.stringify(rs.j));
 const bt = await api('POST', '/api/jobs', { type: 'blender_template', input: { params: { subject: 'sphere', render: { engine: 'CYCLES', samples: 8, width: 320, height: 240 } }, projectId: 'p_tpl' }, idempotencyKey: 'tpl-key-1' });
 const bt2 = await api('POST', '/api/jobs', { type: 'blender_template', input: {}, idempotencyKey: 'tpl-key-1' });
 ok('idempotencyKey: second createJob returns the same jobId', bt.j.jobId && bt2.j.jobId === bt.j.jobId && bt2.j.existing === true);
@@ -91,7 +91,7 @@ let btj; for (let i = 0; i < 200; i++) { btj = (await api('GET', '/api/jobs/' + 
 const png2 = (btj.artifacts || []).find(a => a.kind === 'png');
 ok('blender_template job: needs_approval, artifacts {path,sha256,kind}, ops fields', btj.publicStatus === 'needs_approval' && png2 && /^[0-9a-f]{64}$/.test(png2.sha256) && fs.existsSync(png2.path) && btj.resourceClass === 'gpu_heavy' && btj.requiresNode === 'mac-mini' && btj.safeToRetry === true, btj.error);
 ok('invalid resourceClass refused', (await api('POST', '/api/jobs', { type: 'blender_template', resourceClass: 'quantum' })).status === 400);
-ok('opencode_task reserved stub (failed «не реализовано», resourceClass llm)', await (async () => { const r = await api('POST', '/api/jobs', { type: 'opencode_task', input: { text: 'x' } }); const x = (await api('GET', '/api/jobs/' + r.j.jobId)).j; return x.publicStatus === 'failed' && x.resourceClass === 'llm'; })());
+ok('opencode_task real runner (resourceClass llm; without opencode -> honest «opencode not installed»)', await (async () => { const r = await api('POST', '/api/jobs', { type: 'opencode_task', input: { text: 'x' } }); await new Promise(z => setTimeout(z, 800)); const x = (await api('GET', '/api/jobs/' + r.j.jobId)).j; return x.resourceClass === 'llm' && (x.publicStatus !== 'failed' || /opencode not installed|код|timeout/.test(x.error || '')); })());
 ok('unknown job type refused', (await api('POST', '/api/jobs', { type: 'shell' })).status === 400);
 // ---- 2. permission policy denial cases with the REAL OpenCode server
 const tp = await run('Кот MOCK_PROTECTED'); const jp = await waitJob(tp.id, terminal);
