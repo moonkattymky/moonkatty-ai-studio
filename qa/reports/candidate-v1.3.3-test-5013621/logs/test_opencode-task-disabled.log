@@ -1,0 +1,5 @@
+PASS opencode_task type → 403 feature_disabled
+PASS opencode_task kind → 403 feature_disabled
+PASS opencode_task via app token → 403
+PASS no opencode_task job created
+ALL PASS

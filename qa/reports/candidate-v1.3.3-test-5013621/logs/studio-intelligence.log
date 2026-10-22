@@ -1,0 +1,377 @@
+TAP version 13
+# (node:1128799) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: voice в cues совпадает с утверждённым профилем, иначе отказ
+ok 1 - voice в cues совпадает с утверждённым профилем, иначе отказ
+  ---
+  duration_ms: 19.634407
+  type: 'test'
+  ...
+# (node:1128800) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: JSON панели не сохраняет si_*, снимок VACUUM INTO и копия закрытого файла сохраняют
+ok 2 - JSON панели не сохраняет si_*, снимок VACUUM INTO и копия закрытого файла сохраняют
+  ---
+  duration_ms: 35.912677
+  type: 'test'
+  ...
+# Subtest: check-compat по умолчанию ждёт integ/v1.3.0-test и помечает отсутствие как BLOCKED
+not ok 3 - check-compat по умолчанию ждёт integ/v1.3.0-test и помечает отсутствие как BLOCKED
+  ---
+  duration_ms: 10.152934
+  type: 'test'
+  location: '/workspace/qa133/repo/studio-intelligence/test/check-compat.test.js:10:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/studio-intelligence/test/check-compat.test.js:11:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# (node:1128808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: сценарии описаны, шаги владельца не автозапускаются, run не исполняет
+ok 4 - сценарии описаны, шаги владельца не автозапускаются, run не исполняет
+  ---
+  duration_ms: 11.51149
+  type: 'test'
+  ...
+# Subtest: бренд сохраняет оригинал, проверка и решение ничего не исполняют
+ok 5 - бренд сохраняет оригинал, проверка и решение ничего не исполняют
+  ---
+  duration_ms: 8.649928
+  type: 'test'
+  ...
+# Subtest: сессия отображается без проверки пароля и без приёма секрета
+ok 6 - сессия отображается без проверки пароля и без приёма секрета
+  ---
+  duration_ms: 5.810572
+  type: 'test'
+  ...
+# Subtest: все контрактные схемы загружаются
+ok 7 - все контрактные схемы загружаются
+  ---
+  duration_ms: 0.945451
+  type: 'test'
+  ...
+# Subtest: передача задачи отклоняет лишнее поле и чужое пространство
+ok 8 - передача задачи отклоняет лишнее поле и чужое пространство
+  ---
+  duration_ms: 1.450335
+  type: 'test'
+  ...
+# Subtest: ошибка модуля совпадает со схемой
+ok 9 - ошибка модуля совпадает со схемой
+  ---
+  duration_ms: 0.429551
+  type: 'test'
+  ...
+# Subtest: событие прогресса и отмена валидны только в своих полях
+ok 10 - событие прогресса и отмена валидны только в своих полях
+  ---
+  duration_ms: 0.592057
+  type: 'test'
+  ...
+# (node:1128819) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: дневной отчёт считает только записанное и режется для телефона
+ok 11 - дневной отчёт считает только записанное и режется для телефона
+  ---
+  duration_ms: 18.693445
+  type: 'test'
+  ...
+# (node:1128823) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: мимика читает утверждённую модель и пишет использование, не считая кадры
+ok 12 - мимика читает утверждённую модель и пишет использование, не считая кадры
+  ---
+  duration_ms: 23.275212
+  type: 'test'
+  ...
+# Subtest: без утверждённой мастер-модели мимика не начинается
+ok 13 - без утверждённой мастер-модели мимика не начинается
+  ---
+  duration_ms: 7.97496
+  type: 'test'
+  ...
+# Subtest: мимика не подставляет версию и не берёт неутверждённую
+ok 14 - мимика не подставляет версию и не берёт неутверждённую
+  ---
+  duration_ms: 10.752292
+  type: 'test'
+  ...
+# Subtest: черновик голоса не открывает мимику
+ok 15 - черновик голоса не открывает мимику
+  ---
+  duration_ms: 9.041288
+  type: 'test'
+  ...
+# Subtest: второй оригинал кота и смена пути утверждённого файла отвергаются
+ok 16 - второй оригинал кота и смена пути утверждённого файла отвергаются
+  ---
+  duration_ms: 9.933571
+  type: 'test'
+  ...
+# (node:1128854) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: подключение не меняет items и meta и пишет в существующий журнал
+ok 17 - подключение не меняет items и meta и пишет в существующий журнал
+  ---
+  duration_ms: 25.149785
+  type: 'test'
+  ...
+# (node:1128855) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resolveProject знает согласованные id и не теряет неизвестные
+ok 18 - resolveProject знает согласованные id и не теряет неизвестные
+  ---
+  duration_ms: 15.909012
+  type: 'test'
+  ...
+# Subtest: адаптер читает listEntries и не смешивает факт с прогнозом
+ok 19 - адаптер читает listEntries и не смешивает факт с прогнозом
+  ---
+  duration_ms: 21.373653
+  type: 'test'
+  ...
+# (node:1128866) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: повторная регистрация того же ролика не создаёт вторую карточку
+ok 20 - повторная регистрация того же ролика не создаёт вторую карточку
+  ---
+  duration_ms: 13.930109
+  type: 'test'
+  ...
+# (node:1128868) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: новости и проект не смешиваются, общее читают оба, редактор выключен
+ok 21 - новости и проект не смешиваются, общее читают оба, редактор выключен
+  ---
+  duration_ms: 12.946219
+  type: 'test'
+  ...
+# Subtest: агент рекомендует и возвращает, итог ставит только владелец
+ok 22 - агент рекомендует и возвращает, итог ставит только владелец
+  ---
+  duration_ms: 6.936643
+  type: 'test'
+  ...
+# Subtest: библиотека ищет, связывает задачи и не стирает актив со ссылками
+ok 23 - библиотека ищет, связывает задачи и не стирает актив со ссылками
+  ---
+  duration_ms: 7.410382
+  type: 'test'
+  ...
+# Subtest: реестр версии не создаёт файл кота и хранит хеш, права и голос
+ok 24 - реестр версии не создаёт файл кота и хранит хеш, права и голос
+  ---
+  duration_ms: 6.186893
+  type: 'test'
+  ...
+# Subtest: источники, версии сценария и поправки пишутся и ничего не публикуют
+ok 25 - источники, версии сценария и поправки пишутся и ничего не публикуют
+  ---
+  duration_ms: 7.048961
+  type: 'test'
+  ...
+# Subtest: раскладка каталогов печатает найденные пути и не двигает файлы
+ok 26 - раскладка каталогов печатает найденные пути и не двигает файлы
+  ---
+  duration_ms: 2.754322
+  type: 'test'
+  ...
+# (node:1128874) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: владелец пишет утверждённое решение, агент — нет
+ok 27 - владелец пишет утверждённое решение, агент — нет
+  ---
+  duration_ms: 12.422788
+  type: 'test'
+  ...
+# Subtest: повтор того же ключа возвращает ту же запись, другое тело — конфликт
+ok 28 - повтор того же ключа возвращает ту же запись, другое тело — конфликт
+  ---
+  duration_ms: 5.902537
+  type: 'test'
+  ...
+# Subtest: смена статуса тем же ключом создаёт новую версию и снимает старую с поиска
+ok 29 - смена статуса тем же ключом создаёт новую версию и снимает старую с поиска
+  ---
+  duration_ms: 6.73086
+  type: 'test'
+  ...
+# Subtest: пространства не смешиваются: news не видит проект, games не видит новости
+ok 30 - пространства не смешиваются: news не видит проект, games не видит новости
+  ---
+  duration_ms: 6.114042
+  type: 'test'
+  ...
+# Subtest: агент пишет только свой черновик и не утверждает его
+ok 31 - агент пишет только свой черновик и не утверждает его
+  ---
+  duration_ms: 6.438147
+  type: 'test'
+  ...
+# Subtest: секрет не записывается
+ok 32 - секрет не записывается
+  ---
+  duration_ms: 5.092778
+  type: 'test'
+  ...
+# Subtest: прогресс только добавляется
+ok 33 - прогресс только добавляется
+  ---
+  duration_ms: 6.53389
+  type: 'test'
+  ...
+# (node:1128876) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: переход сохраняет items, meta и старые строки si_
+ok 34 - переход сохраняет items, meta и старые строки si_
+  ---
+  duration_ms: 25.16368
+  type: 'test'
+  ...
+# (node:1128899) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: перед выпуском права читаются из памяти и не запускают ffmpeg
+ok 35 - перед выпуском права читаются из памяти и не запускают ffmpeg
+  ---
+  duration_ms: 14.721445
+  type: 'test'
+  ...
+# (node:1128901) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: адаптер читает настоящий createLedger @e9a46bf и не теряет строки
+ok 36 - адаптер читает настоящий createLedger @e9a46bf и не теряет строки
+  ---
+  duration_ms: 26.836953
+  type: 'test'
+  ...
+# (node:1128906) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: поиск возвращает цитату с id, путём и версией и не выдумывает ответ
+ok 37 - поиск возвращает цитату с id, путём и версией и не выдумывает ответ
+  ---
+  duration_ms: 17.056443
+  type: 'test'
+  ...
+# Subtest: индекс документов цитирует файл и не показывает чужое пространство
+ok 38 - индекс документов цитирует файл и не показывает чужое пространство
+  ---
+  duration_ms: 11.610115
+  type: 'test'
+  ...
+# Subtest: сократившийся документ снимает лишний фрагмент
+ok 39 - сократившийся документ снимает лишний фрагмент
+  ---
+  duration_ms: 8.730853
+  type: 'test'
+  ...
+# (node:1128919) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: адаптер ставит задачу в форму runtime и не одобряет OpenCode
+ok 40 - адаптер ставит задачу в форму runtime и не одобряет OpenCode
+  ---
+  duration_ms: 12.827311
+  type: 'test'
+  ...
+# Subtest: зависимости блокируют queued и отпускают после done, OpenCode не отпускается
+ok 41 - зависимости блокируют queued и отпускают после done, OpenCode не отпускается
+  ---
+  duration_ms: 7.3121
+  type: 'test'
+  ...
+# Subtest: отмена in_progress просит остановить runtime, done отменить нельзя
+ok 42 - отмена in_progress просит остановить runtime, done отменить нельзя
+  ---
+  duration_ms: 6.355881
+  type: 'test'
+  ...
+# Subtest: результат и файлы остаются черновиками
+ok 43 - результат и файлы остаются черновиками
+  ---
+  duration_ms: 8.74199
+  type: 'test'
+  ...
+# (node:1128926) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: таблицы si_ добавляются в уже существующий файл studio.db и не трогают items
+ok 44 - таблицы si_ добавляются в уже существующий файл studio.db и не трогают items
+  ---
+  duration_ms: 18.768418
+  type: 'test'
+  ...
+# (node:1128932) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: миграция сохраняет базу, созданную SQL main
+ok 45 - миграция сохраняет базу, созданную SQL main
+  ---
+  duration_ms: 17.934978
+  type: 'test'
+  ...
+# Subtest: миграция сохраняет базу lib/db.js и lib/jobs.js с a3fd83a, включая video_render
+ok 46 - миграция сохраняет базу lib/db.js и lib/jobs.js с a3fd83a, включая video_render
+  ---
+  duration_ms: 20.051772
+  type: 'test'
+  ...
+# (node:1128941) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: откат файла возвращает базу main до миграции и не трогает JSON-копию
+ok 47 - откат файла возвращает базу main до миграции и не трогает JSON-копию
+  ---
+  duration_ms: 21.796131
+  type: 'test'
+  ...
+# Subtest: откат файла возвращает базу a3fd83a вместе с jobs и video_render
+ok 48 - откат файла возвращает базу a3fd83a вместе с jobs и video_render
+  ---
+  duration_ms: 23.970442
+  type: 'test'
+  ...
+# (node:1128947) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: старая таблица голоса получает колонки студии 2 и не теряет строку
+ok 49 - старая таблица голоса получает колонки студии 2 и не теряет строку
+  ---
+  duration_ms: 11.00908
+  type: 'test'
+  ...
+# Subtest: профиль голоса читается обратно, плохой хеш отвергается, утверждает только владелец
+ok 50 - профиль голоса читается обратно, плохой хеш отвергается, утверждает только владелец
+  ---
+  duration_ms: 8.606117
+  type: 'test'
+  ...
+# Subtest: импорт MOONKATTY_NEWS_MASTER_VOICE из экспорта 551f361 создаёт только черновик
+ok 51 - импорт MOONKATTY_NEWS_MASTER_VOICE из экспорта 551f361 создаёт только черновик
+  ---
+  duration_ms: 10.021078
+  type: 'test'
+  ...
+# Subtest: mouthScale принимается только в диапазоне 0.5–2.0
+ok 52 - mouthScale принимается только в диапазоне 0.5–2.0
+  ---
+  duration_ms: 6.201353
+  type: 'test'
+  ...
+# Subtest: новое утверждение снимает предыдущее, снятый профиль снова не утверждается
+ok 53 - новое утверждение снимает предыдущее, снятый профиль снова не утверждается
+  ---
+  duration_ms: 6.727297
+  type: 'test'
+  ...
+1..53
+# tests 53
+# suites 0
+# pass 52
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 308.291138

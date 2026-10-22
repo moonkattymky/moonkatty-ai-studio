@@ -1,0 +1,8 @@
+PASS short text, slow speech — 4 cues
+PASS one word, long — 1 cues
+PASS long sentence without pauses (vertical) — 7 cues
+PASS two lines merged, 7.62 s (reported case) — 2 cues
+PASS normal — 2 cues
+PASS no words lost when splitting — alpha beta gamma delta
+
+6 passed, 0 failed

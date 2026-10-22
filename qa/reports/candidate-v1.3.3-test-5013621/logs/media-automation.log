@@ -1,0 +1,888 @@
+TAP version 13
+# Subtest: official API adapters normalize metrics (mocked)
+ok 1 - official API adapters normalize metrics (mocked)
+  ---
+  duration_ms: 11.694382
+  type: 'test'
+  ...
+# Subtest: API error recorded per post, bot token redacted
+ok 2 - API error recorded per post, bot token redacted
+  ---
+  duration_ms: 1.365973
+  type: 'test'
+  ...
+# Subtest: recommendations: insufficient data guard, best hour, retention, category, underperformer
+ok 3 - recommendations: insufficient data guard, best hour, retention, category, underperformer
+  ---
+  duration_ms: 32.120988
+  type: 'test'
+  ...
+# Subtest: classifier denies tragic topics
+ok 4 - classifier denies tragic topics
+  ---
+  duration_ms: 3.259183
+  type: 'test'
+  ...
+# Subtest: classifier allows light topics only via allow-list
+ok 5 - classifier allows light topics only via allow-list
+  ---
+  duration_ms: 0.24685
+  type: 'test'
+  ...
+# Subtest: humor safety: approves short safe joke
+ok 6 - humor safety: approves short safe joke
+  ---
+  duration_ms: 0.608984
+  type: 'test'
+  ...
+# Subtest: humor safety: rejects breaking, deny topics, long jokes, new facts, unsafe words
+ok 7 - humor safety: rejects breaking, deny topics, long jokes, new facts, unsafe words
+  ---
+  duration_ms: 0.512877
+  type: 'test'
+  ...
+# Subtest: humor budget and spacing; story text never altered
+ok 8 - humor budget and spacing; story text never altered
+  ---
+  duration_ms: 1.482049
+  type: 'test'
+  ...
+# Subtest: emotion selection
+ok 9 - emotion selection
+  ---
+  duration_ms: 0.931169
+  type: 'test'
+  ...
+# Subtest: prosody maps all 7 modes; pitch filter keeps duration
+ok 10 - prosody maps all 7 modes; pitch filter keeps duration
+  ---
+  duration_ms: 0.520826
+  type: 'test'
+  ...
+# Subtest: pipeline order, persistence, resume, breaking confirmed-only
+ok 11 - pipeline order, persistence, resume, breaking confirmed-only
+  ---
+  duration_ms: 2.780074
+  type: 'test'
+  ...
+# Subtest: anchor-personality config is valid and points to pinned master voice
+ok 12 - anchor-personality config is valid and points to pinned master voice
+  ---
+  duration_ms: 0.458129
+  type: 'test'
+  ...
+# Subtest: center: submit, edit resets approval, approve hook, send back, reject, history
+ok 13 - center: submit, edit resets approval, approve hook, send back, reject, history
+  ---
+  duration_ms: 8.114634
+  type: 'test'
+  ...
+# Subtest: router: auth required, list/edit/approve, media with Range, path containment
+ok 14 - router: auth required, list/edit/approve, media with Range, path containment
+  ---
+  duration_ms: 169.462391
+  type: 'test'
+  ...
+# Subtest: voice profile export carries schemaVersion and validates; committed export is in sync
+ok 15 - voice profile export carries schemaVersion and validates; committed export is in sync
+  ---
+  duration_ms: 15.123645
+  type: 'test'
+  ...
+# Subtest: animation cues keep version "1" (provisional) and schema id
+ok 16 - animation cues keep version "1" (provisional) and schema id
+  ---
+  duration_ms: 1.530487
+  type: 'test'
+  ...
+# Subtest: cues.json top-level voice object (provisional)
+ok 17 - cues.json top-level voice object (provisional)
+  ---
+  duration_ms: 1.95679
+  type: 'test'
+  ...
+# Subtest: flag: default OFF; MA_EXPERIMENTAL=1 or config experimental:true turns it on
+ok 18 - flag: default OFF; MA_EXPERIMENTAL=1 or config experimental:true turns it on
+  ---
+  duration_ms: 2.099413
+  type: 'test'
+  ...
+# Subtest: OFF: experimental modules inert / not registered
+ok 19 - OFF: experimental modules inert / not registered
+  ---
+  duration_ms: 4.357044
+  type: 'test'
+  ...
+# Subtest: OFF: dry-run for YouTube/FB/IG, Approval Center and video_render unaffected
+ok 20 - OFF: dry-run for YouTube/FB/IG, Approval Center and video_render unaffected
+  ---
+  duration_ms: 7.245455
+  type: 'test'
+  ...
+# Subtest: ON: modules registered and active
+ok 21 - ON: modules registered and active
+  ---
+  duration_ms: 2.298361
+  type: 'test'
+  ...
+# Subtest: video_render via services.videoRender.setExecutor: artifacts verified by contract mock
+ok 22 - video_render via services.videoRender.setExecutor: artifacts verified by contract mock
+  ---
+  duration_ms: 28.244692
+  type: 'test'
+  ...
+# Subtest: no executor -> stub failure; bad input -> 400; artifact outside media -> failed
+ok 23 - no executor -> stub failure; bad input -> 400; artifact outside media -> failed
+  ---
+  duration_ms: 3.895483
+  type: 'test'
+  ...
+# Subtest: tts + render share the heavy lock (never overlap); publish_dry_run is dry-run only
+ok 24 - tts + render share the heavy lock (never overlap); publish_dry_run is dry-run only
+  ---
+  duration_ms: 26.686498
+  type: 'test'
+  ...
+# Subtest: flag gate: default OFF keeps LocalJobQueue; only MA_JOBS_BACKEND=jobsapi + client switches
+ok 25 - flag gate: default OFF keeps LocalJobQueue; only MA_JOBS_BACKEND=jobsapi + client switches
+  ---
+  duration_ms: 1.958846
+  type: 'test'
+  ...
+# Subtest: executor: cancel -> e.cancelled; extra input fields forbidden; blocked maps to failed
+ok 26 - executor: cancel -> e.cancelled; extra input fields forbidden; blocked maps to failed
+  ---
+  duration_ms: 1.760061
+  type: 'test'
+  ...
+# Subtest: heavy jobs serialized; beforeHeavy hook runs; light jobs parallel
+ok 27 - heavy jobs serialized; beforeHeavy hook runs; light jobs parallel
+  ---
+  duration_ms: 81.131504
+  type: 'test'
+  ...
+# Subtest: timeout, retries, cancel, needs_approval, events, idempotency
+ok 28 - timeout, retries, cancel, needs_approval, events, idempotency
+  ---
+  duration_ms: 97.645396
+  type: 'test'
+  ...
+# Subtest: restart recovery: running job re-queued and completed
+ok 29 - restart recovery: running job re-queued and completed
+  ---
+  duration_ms: 28.778376
+  type: 'test'
+  ...
+# Subtest: QueuedHost3D enqueues render_segment with contract signature
+ok 30 - QueuedHost3D enqueues render_segment with contract signature
+  ---
+  duration_ms: 23.601145
+  type: 'test'
+  ...
+# Subtest: Studio adapter stub: NotConnected; with injected client follows contract
+ok 31 - Studio adapter stub: NotConnected; with injected client follows contract
+  ---
+  duration_ms: 1.525149
+  type: 'test'
+  ...
+# Subtest: Ollama heavy generations go through job queue when configured
+ok 32 - Ollama heavy generations go through job queue when configured
+  ---
+  duration_ms: 22.089747
+  type: 'test'
+  ...
+# Subtest: extractFacts finds numbers, names, dates
+ok 33 - extractFacts finds numbers, names, dates
+  ---
+  duration_ms: 7.548517
+  type: 'test'
+  ...
+# Subtest: fact-check rejects invented number/name/date
+ok 34 - fact-check rejects invented number/name/date
+  ---
+  duration_ms: 1.23569
+  type: 'test'
+  ...
+# Subtest: Ollama adapter: /api/generate request shape and model config
+ok 35 - Ollama adapter: /api/generate request shape and model config
+  ---
+  duration_ms: 1.675026
+  type: 'test'
+  ...
+# Subtest: Ollama adapter: retries 503 then succeeds; 404 model missing not retried
+ok 36 - Ollama adapter: retries 503 then succeeds; 404 model missing not retried
+  ---
+  duration_ms: 503.633108
+  type: 'test'
+  ...
+# Subtest: editor: accepts grounded LLM headline
+ok 37 - editor: accepts grounded LLM headline
+  ---
+  duration_ms: 2.92965
+  type: 'test'
+  ...
+# Subtest: editor: hallucinated output rejected -> deterministic fallback
+ok 38 - editor: hallucinated output rejected -> deterministic fallback
+  ---
+  duration_ms: 2.247379
+  type: 'test'
+  ...
+# Subtest: editor: API down -> fallback with error
+ok 39 - editor: API down -> fallback with error
+  ---
+  duration_ms: 502.918336
+  type: 'test'
+  ...
+# Subtest: editor: video script + translation number preservation
+ok 40 - editor: video script + translation number preservation
+  ---
+  duration_ms: 1.639043
+  type: 'test'
+  ...
+# Subtest: EditorSummaryProvider plugs into NewsEngine fallback chain
+ok 41 - EditorSummaryProvider plugs into NewsEngine fallback chain
+  ---
+  duration_ms: 0.798549
+  type: 'test'
+  ...
+# Subtest: categorize covers all categories
+ok 42 - categorize covers all categories
+  ---
+  duration_ms: 17.894827
+  type: 'test'
+  ...
+# Subtest: RSS and Atom parsing incl. license
+ok 43 - RSS and Atom parsing incl. license
+  ---
+  duration_ms: 9.276425
+  type: 'test'
+  ...
+# Subtest: dedup + corroboration + review statuses
+ok 44 - dedup + corroboration + review statuses
+  ---
+  duration_ms: 30.143196
+  type: 'test'
+  ...
+# Subtest: official single source -> primary_only, low-risk auto (needs no corroboration review); manual controversial flag forces approval
+ok 45 - official single source -> primary_only, low-risk auto (needs no corroboration review); manual controversial flag forces approval
+  ---
+  duration_ms: 3.706027
+  type: 'test'
+  ...
+# Subtest: API error: 4xx not retried, other sources still processed
+ok 46 - API error: 4xx not retried, other sources still processed
+  ---
+  duration_ms: 4.605612
+  type: 'test'
+  ...
+# Subtest: retry: network error and 503 then success
+ok 47 - retry: network error and 503 then success
+  ---
+  duration_ms: 19.111187
+  type: 'test'
+  ...
+# Subtest: summary provider failure falls back to deterministic local
+ok 48 - summary provider failure falls back to deterministic local
+  ---
+  duration_ms: 27.904581
+  type: 'test'
+  ...
+# Subtest: translation hook is applied
+ok 49 - translation hook is applied
+  ---
+  duration_ms: 8.082309
+  type: 'test'
+  ...
+# Subtest: restart recovery: state survives, approvals kept, no duplicates
+ok 50 - restart recovery: state survives, approvals kept, no duplicates
+  ---
+  duration_ms: 13.085174
+  type: 'test'
+  ...
+# Subtest: word timestamps: monotonic, inside measured sentences
+ok 51 - word timestamps: monotonic, inside measured sentences
+  ---
+  duration_ms: 2.64889
+  type: 'test'
+  ...
+# Subtest: cue generator output validates against schema for every mode; schema catches bad docs
+ok 52 - cue generator output validates against schema for every mode; schema catches bad docs
+  ---
+  duration_ms: 8.055567
+  type: 'test'
+  ...
+# Subtest: emotion-aware captions from words pass SRT rules
+ok 53 - emotion-aware captions from words pass SRT rules
+  ---
+  duration_ms: 4.905282
+  type: 'test'
+  ...
+# Subtest: master voice am_fenrir: locked, autoReplace=false, fails (no fallback) when model/voices missing or voices hash differs
+ok 54 - master voice am_fenrir: locked, autoReplace=false, fails (no fallback) when model/voices missing or voices hash differs
+  ---
+  duration_ms: 5.329413
+  type: 'test'
+  ...
+# Subtest: Studio 5 export JSON in docs matches config
+ok 55 - Studio 5 export JSON in docs matches config
+  ---
+  duration_ms: 0.663124
+  type: 'test'
+  ...
+# Subtest: stricter image relevance: mission names as phrase, story-specific place required
+ok 56 - stricter image relevance: mission names as phrase, story-specific place required
+  ---
+  duration_ms: 4.44211
+  type: 'test'
+  ...
+# Subtest: branded panel never repeats the headline
+ok 57 - branded panel never repeats the headline
+  ---
+  duration_ms: 3.986739
+  type: 'test'
+  ...
+# Subtest: licenses: allow PD/CC0/CC-BY/CC-BY-SA-IGO/NASA, reject NC/ND/unknown/fair use
+ok 58 - licenses: allow PD/CC0/CC-BY/CC-BY-SA-IGO/NASA, reject NC/ND/unknown/fair use
+  ---
+  duration_ms: 5.087995
+  type: 'test'
+  ...
+# Subtest: layoutFor never upscales: kenburns / blurfill / reject
+ok 59 - layoutFor never upscales: kenburns / blurfill / reject
+  ---
+  duration_ms: 0.78757
+  type: 'test'
+  ...
+# Subtest: relevance filter requires query terms in metadata
+ok 60 - relevance filter requires query terms in metadata
+  ---
+  duration_ms: 1.322761
+  type: 'test'
+  ...
+# Subtest: speech: lexicon + pause markup
+ok 61 - speech: lexicon + pause markup
+  ---
+  duration_ms: 3.39371
+  type: 'test'
+  ...
+# Subtest: master voice: pinned hash, male only, lock/unlock audit, no substitution, lip-sync export
+ok 62 - master voice: pinned hash, male only, lock/unlock audit, no substitution, lip-sync export
+  ---
+  duration_ms: 6.554696
+  type: 'test'
+  ...
+# Subtest: repo master voice config: male, locked by owner (final am_fenrir, supersedes B), autoReplace false, voiceProfileId field present
+ok 63 - repo master voice config: male, locked by owner (final am_fenrir, supersedes B), autoReplace false, voiceProfileId field present
+  ---
+  duration_ms: 0.977611
+  type: 'test'
+  ...
+# Subtest: pkce S256
+ok 64 - pkce S256
+  ---
+  duration_ms: 1.707955
+  type: 'test'
+  ...
+# Subtest: YouTube OAuth loopback: state check, PKCE exchange, refresh token stored per channel, refresh + invalid_grant
+ok 65 - YouTube OAuth loopback: state check, PKCE exchange, refresh token stored per channel, refresh + invalid_grant
+  ---
+  duration_ms: 56.997684
+  type: 'test'
+  ...
+# Subtest: Telegram setup: format, getMe, channel admin check, stored in secrets (mocked API)
+ok 66 - Telegram setup: format, getMe, channel admin check, stored in secrets (mocked API)
+  ---
+  duration_ms: 1.095997
+  type: 'test'
+  ...
+# Subtest: visemes: IPA mapping and timeline covers duration
+ok 67 - visemes: IPA mapping and timeline covers duration
+  ---
+  duration_ms: 1.184314
+  type: 'test'
+  ...
+# Subtest: host3d v2 request: pinned model, cues, costume; enqueued as render_segment
+ok 68 - host3d v2 request: pinned model, cues, costume; enqueued as render_segment
+  ---
+  duration_ms: 0.516134
+  type: 'test'
+  ...
+# Subtest: editorial: anchor lines, major-event pause, corrections via ports and approval
+ok 69 - editorial: anchor lines, major-event pause, corrections via ports and approval
+  ---
+  duration_ms: 1.945359
+  type: 'test'
+  ...
+# Subtest: approval center: edit title+description with validation; publish status
+ok 70 - approval center: edit title+description with validation; publish status
+  ---
+  duration_ms: 0.537038
+  type: 'test'
+  ...
+# Subtest: facts: numbers only from source text; media queries
+ok 71 - facts: numbers only from source text; media queries
+  ---
+  duration_ms: 0.653056
+  type: 'test'
+  ...
+# Subtest: news schedule plans: 09:00 & 19:00 video, daytime text, Asia/Jerusalem
+ok 72 - news schedule plans: 09:00 & 19:00 video, daytime text, Asia/Jerusalem
+  ---
+  duration_ms: 0.13103
+  type: 'test'
+  ...
+# Subtest: studio adapter aligned with v1.2.0 JOBS_API: extra fields, status/id normalization, render_segment failed stub -> null
+ok 73 - studio adapter aligned with v1.2.0 JOBS_API: extra fields, status/id normalization, render_segment failed stub -> null
+  ---
+  duration_ms: 1.153811
+  type: 'test'
+  ...
+# Subtest: relevance: proper noun must match (no opera image for BepiColombo)
+ok 74 - relevance: proper noun must match (no opera image for BepiColombo)
+  ---
+  duration_ms: 0.316915
+  type: 'test'
+  ...
+# Subtest: panel fallback: own-work branded panel registered with rights, no stock image
+ok 75 - panel fallback: own-work branded panel registered with rights, no stock image
+  ---
+  duration_ms: 4.45119
+  type: 'test'
+  ...
+# Subtest: media queries never consist of generic words only when the headline has proper nouns
+ok 76 - media queries never consist of generic words only when the headline has proper nouns
+  ---
+  duration_ms: 0.187312
+  type: 'test'
+  ...
+# Subtest: verify: confirmed needs primary + corroboration; media-only -> unconfirmed; primary alone -> primary_only
+ok 77 - verify: confirmed needs primary + corroboration; media-only -> unconfirmed; primary alone -> primary_only
+  ---
+  duration_ms: 1.793137
+  type: 'test'
+  ...
+# Subtest: license: UK OGL v3 accepted with attribution; other OGL versions rejected
+ok 78 - license: UK OGL v3 accepted with attribution; other OGL versions rejected
+  ---
+  duration_ms: 0.232395
+  type: 'test'
+  ...
+# Subtest: orchestrator render queue: studio queue without video_render -> local fallback
+ok 79 - orchestrator render queue: studio queue without video_render -> local fallback
+  ---
+  duration_ms: 1.473723
+  type: 'test'
+  ...
+# Subtest: video_render executor matches Studio a991e93 contract (shape, kinds, sha256, paths in <dataDir>/media, Ollama unload, strict input)
+ok 80 - video_render executor matches Studio a991e93 contract (shape, kinds, sha256, paths in <dataDir>/media, Ollama unload, strict input)
+  ---
+  duration_ms: 1.567211
+  type: 'test'
+  ...
+# Subtest: studio adapter lists video_render only when executor registered; orchestrator uses strict input
+ok 81 - studio adapter lists video_render only when executor registered; orchestrator uses strict input
+  ---
+  duration_ms: 0.594978
+  type: 'test'
+  ...
+# Subtest: registry covers all 8 platforms incl. FB/IG/moonkatty.com
+ok 82 - registry covers all 8 platforms incl. FB/IG/moonkatty.com
+  ---
+  duration_ms: 1.009302
+  type: 'test'
+  ...
+# Subtest: IG reel format: 9:16, duration, caption/hashtag limits
+ok 83 - IG reel format: 9:16, duration, caption/hashtag limits
+  ---
+  duration_ms: 1.863677
+  type: 'test'
+  ...
+# Subtest: IG image/carousel and FB reel/video/post formats
+ok 84 - IG image/carousel and FB reel/video/post formats
+  ---
+  duration_ms: 1.696019
+  type: 'test'
+  ...
+# Subtest: FB native scheduling window 10min..75d; IG own scheduler respects quota
+ok 85 - FB native scheduling window 10min..75d; IG own scheduler respects quota
+  ---
+  duration_ms: 0.487338
+  type: 'test'
+  ...
+# Subtest: promotion: draft only, never auto-spend, needs approval + budget
+ok 86 - promotion: draft only, never auto-spend, needs approval + budget
+  ---
+  duration_ms: 2.296245
+  type: 'test'
+  ...
+# Subtest: ledger: views never revenue, confirmed needs payoutId, totals separate
+ok 87 - ledger: views never revenue, confirmed needs payoutId, totals separate
+  ---
+  duration_ms: 0.993217
+  type: 'test'
+  ...
+# Subtest: live mode needs owner flag AND approved live_mode item
+ok 88 - live mode needs owner flag AND approved live_mode item
+  ---
+  duration_ms: 0.428992
+  type: 'test'
+  ...
+# Subtest: Meta account insights + earnings estimate (mock fetch)
+ok 89 - Meta account insights + earnings estimate (mock fetch)
+  ---
+  duration_ms: 0.64847
+  type: 'test'
+  ...
+# Subtest: meta.js bridge: reads connections, never decrypts, no OAuth
+ok 90 - meta.js bridge: reads connections, never decrypts, no OAuth
+  ---
+  duration_ms: 0.873374
+  type: 'test'
+  ...
+# Subtest: read API: all functions, schema-valid, frozen, revenue split
+ok 91 - read API: all functions, schema-valid, frozen, revenue split
+  ---
+  duration_ms: 3.36935
+  type: 'test'
+  ...
+# Subtest: read API live providers are read-only views
+ok 92 - read API live providers are read-only views
+  ---
+  duration_ms: 0.48197
+  type: 'test'
+  ...
+# Subtest: DRY-RUN is default: no network, account.live false or no owner flag
+ok 93 - DRY-RUN is default: no network, account.live false or no owner flag
+  ---
+  duration_ms: 2.616418
+  type: 'test'
+  ...
+# Subtest: live requires owner approval of content
+ok 94 - live requires owner approval of content
+  ---
+  duration_ms: 0.702778
+  type: 'test'
+  ...
+# Subtest: YouTube (mocked): resumable upload, separate NEWS vs PROJECT tokens, status check, history
+ok 95 - YouTube (mocked): resumable upload, separate NEWS vs PROJECT tokens, status check, history
+  ---
+  duration_ms: 2.967847
+  type: 'test'
+  ...
+# Subtest: idempotency: same account+content never published twice
+ok 96 - idempotency: same account+content never published twice
+  ---
+  duration_ms: 0.724716
+  type: 'test'
+  ...
+# Subtest: transient errors retried with backoff/Retry-After; permanent 4xx fails; secrets redacted
+ok 97 - transient errors retried with backoff/Retry-After; permanent 4xx fails; secrets redacted
+  ---
+  duration_ms: 2.407328
+  type: 'test'
+  ...
+# Subtest: restart mid-publish -> needs_check (no blind re-publish), resolve
+ok 98 - restart mid-publish -> needs_check (no blind re-publish), resolve
+  ---
+  duration_ms: 23.271624
+  type: 'test'
+  ...
+# Subtest: Telegram (mocked): sendVideo multipart and sendMessage; bot token redacted
+ok 99 - Telegram (mocked): sendVideo multipart and sendMessage; bot token redacted
+  ---
+  duration_ms: 20.094717
+  type: 'test'
+  ...
+# Subtest: X (mocked): media upload + tweet with media_ids; 280 limit
+ok 100 - X (mocked): media upload + tweet with media_ids; 280 limit
+  ---
+  duration_ms: 1.882329
+  type: 'test'
+  ...
+# Subtest: TikTok (mocked): init FILE_UPLOAD, PUT, status fetch, SELF_ONLY default, AIGC flag
+ok 101 - TikTok (mocked): init FILE_UPLOAD, PUT, status fetch, SELF_ONLY default, AIGC flag
+  ---
+  duration_ms: 1.902065
+  type: 'test'
+  ...
+# Subtest: Instagram Reels (mocked): container -> poll -> media_publish; Facebook Reels start/upload/finish
+ok 102 - Instagram Reels (mocked): container -> poll -> media_publish; Facebook Reels start/upload/finish
+  ---
+  duration_ms: 4.950707
+  type: 'test'
+  ...
+# Subtest: preview + missing secret
+ok 103 - preview + missing secret
+  ---
+  duration_ms: 1.039764
+  type: 'test'
+  ...
+# Subtest: Keychain adapter uses security CLI argv; non-mac returns null; redact()
+ok 104 - Keychain adapter uses security CLI argv; non-mac returns null; redact()
+  ---
+  duration_ms: 0.553496
+  type: 'test'
+  ...
+# Subtest: tz conversion Asia/Jerusalem incl. DST (IDT +3 in Oct, IST +2 in Dec)
+ok 105 - tz conversion Asia/Jerusalem incl. DST (IDT +3 in Oct, IST +2 in Dec)
+  ---
+  duration_ms: 12.044877
+  type: 'test'
+  ...
+# Subtest: 2 daily news issues fire at local 09:00/19:00, once each, autoPublish OFF by default
+ok 106 - 2 daily news issues fire at local 09:00/19:00, once each, autoPublish OFF by default
+  ---
+  duration_ms: 9.460372
+  type: 'test'
+  ...
+# Subtest: restart: no repeats, short downtime catches up once, long downtime marks missed
+ok 107 - restart: no repeats, short downtime catches up once, long downtime marks missed
+  ---
+  duration_ms: 1.506573
+  type: 'test'
+  ...
+# Subtest: pause/resume plan and global; project plan only on its weekdays; owner toggle for autoPublish
+ok 108 - pause/resume plan and global; project plan only on its weekdays; owner toggle for autoPublish
+  ---
+  duration_ms: 1.67923
+  type: 'test'
+  ...
+# Subtest: handler failure recorded, not retried endlessly
+ok 109 - handler failure recorded, not retried endlessly
+  ---
+  duration_ms: 0.727607
+  type: 'test'
+  ...
+# Subtest: strict fact check rejects invented numbers, number words, dates, relative dates and names
+not ok 110 - strict fact check rejects invented numbers, number words, dates, relative dates and names
+  ---
+  duration_ms: 4.252709
+  type: 'test'
+  location: '/workspace/qa133/repo/media-automation/test/scriptwriter.test.js:6:1'
+  failureType: 'testCodeFailure'
+  error: 'sentence-initial ordinary words are not names'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/media-automation/test/scriptwriter.test.js:11:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: script writer: invented fact rejected, retried with feedback + new seed, then accepted; signoff added; no humor on serious
+ok 111 - script writer: invented fact rejected, retried with feedback + new seed, then accepted; signoff added; no humor on serious
+  ---
+  duration_ms: 4.543103
+  type: 'test'
+  ...
+# Subtest: script writer: verifier-flagged added claim rejected; falls back to source text after max attempts
+ok 112 - script writer: verifier-flagged added claim rejected; falls back to source text after max attempts
+  ---
+  duration_ms: 1.421223
+  type: 'test'
+  ...
+# Subtest: script writer: anchor never names itself / credits research to "we"
+ok 113 - script writer: anchor never names itself / credits research to "we"
+  ---
+  duration_ms: 0.367018
+  type: 'test'
+  ...
+# Subtest: karaoke captions: \\kf per word, Serious style keeps no gold
+ok 114 - karaoke captions: \\kf per word, Serious style keeps no gold
+  ---
+  duration_ms: 1.023978
+  type: 'test'
+  ...
+# Subtest: MacSayTTS: voice, rate, safe argv, AIFF->WAV conversion
+ok 115 - MacSayTTS: voice, rate, safe argv, AIFF->WAV conversion
+  ---
+  duration_ms: 1.627157
+  type: 'test'
+  ...
+# Subtest: MacSayTTS: M4A export and voice list parsing
+ok 116 - MacSayTTS: M4A export and voice list parsing
+  ---
+  duration_ms: 0.413069
+  type: 'test'
+  ...
+# Subtest: empty text rejected
+ok 117 - empty text rejected
+  ---
+  duration_ms: 0.453826
+  type: 'test'
+  ...
+# Subtest: detectTTS fails loudly with no engine; honours MA_TTS
+ok 118 - detectTTS fails loudly with no engine; honours MA_TTS
+  ---
+  duration_ms: 0.428214
+  type: 'test'
+  ...
+# Subtest: VideoFactory refuses to run without TTS (no tone fallback)
+ok 119 - VideoFactory refuses to run without TTS (no tone fallback)
+  ---
+  duration_ms: 0.205495
+  type: 'test'
+  ...
+# Subtest: REAL espeak-ng speech on this box
+ok 120 - REAL espeak-ng speech on this box
+  ---
+  duration_ms: 221.070241
+  type: 'test'
+  ...
+# Subtest: REAL piper speech (if MA_PIPER_MODEL set)
+ok 121 - REAL piper speech (if MA_PIPER_MODEL set) # SKIP MA_PIPER_MODEL not set
+  ---
+  duration_ms: 0.32694
+  type: 'test'
+  ...
+# Subtest: quantities and wire detection
+ok 122 - quantities and wire detection
+  ---
+  duration_ms: 1.440325
+  type: 'test'
+  ...
+# Subtest: two independent outlets without primary -> unconfirmed
+ok 123 - two independent outlets without primary -> unconfirmed
+  ---
+  duration_ms: 0.994222
+  type: 'test'
+  ...
+# Subtest: same ownership group counts once -> unconfirmed
+ok 124 - same ownership group counts once -> unconfirmed
+  ---
+  duration_ms: 0.208122
+  type: 'test'
+  ...
+# Subtest: wire syndication (AP in both) counts once
+ok 125 - wire syndication (AP in both) counts once
+  ---
+  duration_ms: 0.272676
+  type: 'test'
+  ...
+# Subtest: near-identical text (copy-paste syndication) counts once
+ok 126 - near-identical text (copy-paste syndication) counts once
+  ---
+  duration_ms: 0.360137
+  type: 'test'
+  ...
+# Subtest: primary/official source alone -> primary_only; primaryDomains
+ok 127 - primary/official source alone -> primary_only; primaryDomains
+  ---
+  duration_ms: 0.338718
+  type: 'test'
+  ...
+# Subtest: number contradiction -> disputed (even with many sources)
+ok 128 - number contradiction -> disputed (even with many sources)
+  ---
+  duration_ms: 0.196914
+  type: 'test'
+  ...
+# Subtest: denial -> disputed
+ok 129 - denial -> disputed
+  ---
+  duration_ms: 0.125571
+  type: 'test'
+  ...
+# Subtest: date checks: future -> unconfirmed; stale warning; spread
+ok 130 - date checks: future -> unconfirmed; stale warning; spread
+  ---
+  duration_ms: 1.079498
+  type: 'test'
+  ...
+# Subtest: engine integration: disputed story requires approval, reasons recorded
+ok 131 - engine integration: disputed story requires approval, reasons recorded
+  ---
+  duration_ms: 9.783636
+  type: 'test'
+  ...
+# Subtest: validateSrt detects overlaps, long lines, short cues, bad index, beyond end
+ok 132 - validateSrt detects overlaps, long lines, short cues, bad index, beyond end
+  ---
+  duration_ms: 1.500809
+  type: 'test'
+  ...
+# Subtest: buildSrt: 2-line cues, no tiny trailing cue
+ok 133 - buildSrt: 2-line cues, no tiny trailing cue
+  ---
+  duration_ms: 0.243494
+  type: 'test'
+  ...
+# Subtest: qaVideo flags wrong resolution / missing audio (mocked ffprobe)
+ok 134 - qaVideo flags wrong resolution / missing audio (mocked ffprobe)
+  ---
+  duration_ms: 0.714364
+  type: 'test'
+  ...
+# Subtest: ambient bed: generated CC0 with license file (real ffmpeg)
+ok 135 - ambient bed: generated CC0 with license file (real ffmpeg)
+  ---
+  duration_ms: 117.867117
+  type: 'test'
+  ...
+# Subtest: v1 render: intro/credits/outro, xfade, loudnorm -16 LUFS, QA passes (real ffmpeg, stub tone voice)
+ok 136 - v1 render: intro/credits/outro, xfade, loudnorm -16 LUFS, QA passes (real ffmpeg, stub tone voice)
+  ---
+  duration_ms: 9162.764551
+  type: 'test'
+  ...
+# Subtest: presets: 16:9 youtube, 9:16 shorts/tiktok/reels/fb_reels
+ok 137 - presets: 16:9 youtube, 9:16 shorts/tiktok/reels/fb_reels
+  ---
+  duration_ms: 0.773787
+  type: 'test'
+  ...
+# Subtest: SRT generation and chunking
+ok 138 - SRT generation and chunking
+  ---
+  duration_ms: 0.813185
+  type: 'test'
+  ...
+# Subtest: validation: script and music license required
+ok 139 - validation: script and music license required
+  ---
+  duration_ms: 0.463252
+  type: 'test'
+  ...
+# Subtest: TTS failure propagates as render error (queue marks failed after retries)
+ok 140 - TTS failure propagates as render error (queue marks failed after retries)
+  ---
+  duration_ms: 2.008342
+  type: 'test'
+  ...
+# Subtest: render queue: concurrency limit, retry then success, idempotent add
+ok 141 - render queue: concurrency limit, retry then success, idempotent add
+  ---
+  duration_ms: 82.872486
+  type: 'test'
+  ...
+# Subtest: render queue: restart recovery re-queues interrupted jobs
+ok 142 - render queue: restart recovery re-queues interrupted jobs
+  ---
+  duration_ms: 12.300421
+  type: 'test'
+  ...
+# Subtest: real ffmpeg render: 16:9 and 9:16 MP4 + SRT + thumbnail + music + 3D stub
+ok 143 - real ffmpeg render: 16:9 and 9:16 MP4 + SRT + thumbnail + music + 3D stub
+  ---
+  duration_ms: 16089.226779
+  type: 'test'
+  ...
+# Subtest: preset duration limit enforced
+ok 144 - preset duration limit enforced
+  ---
+  duration_ms: 0.958147
+  type: 'test'
+  ...
+1..144
+# tests 144
+# suites 0
+# pass 142
+# fail 1
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 16698.939385

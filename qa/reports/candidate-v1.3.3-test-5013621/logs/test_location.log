@@ -1,0 +1,27 @@
+PASS translocated path
+PASS translocated wins over API true
+PASS /Applications ok
+PASS ~/Applications ok
+PASS Downloads outside
+PASS /ApplicationsX not matched
+PASS bundleOf
+PASS readBundleId xml
+PASS readBundleId unreadable → null
+PASS readBundleId binary plist → null
+PASS prod flavor → never runs, no dialog, no move
+PASS missing flavor → never runs
+PASS test: accepted → moveToApplicationsFolder with a conflictHandler, returns true
+PASS dialog text names destination, does not claim macOS will ask
+PASS declined → continue, no move
+PASS in /Applications → no dialog
+PASS dev run → no dialog
+PASS non-darwin → no dialog
+PASS conflict, test bundle, default answer → cancel (false)
+PASS conflict, test bundle, explicit «Заменить» → true
+PASS conflict, prod bundle id → refused even if user would confirm
+PASS conflict, unreadable Info.plist → refused
+PASS conflict, foreign bundle id → refused
+PASS no xattr/quarantine/spctl/child_process in code
+PASS conflictHandler never a constant true
+PASS main.js passes flavor: CFG.FLAVOR
+{"passed":26,"failed":[]}

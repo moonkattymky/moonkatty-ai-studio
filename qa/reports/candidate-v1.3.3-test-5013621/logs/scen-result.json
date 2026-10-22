@@ -1,0 +1,115 @@
+[
+ [
+  "old 1.3.0-test → stale",
+  "PASS",
+  {
+   "stale": true,
+   "version": "1.3.0-test",
+   "commit": null,
+   "pid": 4242
+  }
+ ],
+ [
+  "waitHealthy rejects stale",
+  "PASS",
+  null
+ ],
+ [
+  "no version → stale (?)",
+  "PASS",
+  {
+   "stale": true,
+   "version": "?",
+   "commit": null,
+   "pid": 4242
+  }
+ ],
+ [
+  "same version, no commit → reuse",
+  "PASS",
+  {
+   "app": "moonkatty-ai-studio",
+   "flavor": "test",
+   "pid": 4242,
+   "ok": true,
+   "version": "1.3.3-test"
+  }
+ ],
+ [
+  "waitHealthy accepts same",
+  "PASS",
+  null
+ ],
+ [
+  "same version+commit → reuse",
+  "PASS",
+  {
+   "app": "moonkatty-ai-studio",
+   "flavor": "test",
+   "pid": 4242,
+   "ok": true,
+   "version": "1.3.3-test",
+   "commit": "5013621501b9766c0cc710806d5716962e4b1835"
+  }
+ ],
+ [
+  "same version, other commit → stale",
+  "PASS",
+  {
+   "stale": true,
+   "version": "1.3.3-test",
+   "commit": "deadbeef",
+   "pid": 4242
+  }
+ ],
+ [
+  "prod flavor → foreign",
+  "PASS",
+  {
+   "foreign": true
+  }
+ ],
+ [
+  "other app → foreign",
+  "PASS",
+  {
+   "foreign": true
+  }
+ ],
+ [
+  "nothing listening → null",
+  "PASS",
+  null
+ ],
+ [
+  "packaged /api/health version+commit",
+  "PASS",
+  {
+   "v": "1.3.3-test",
+   "c": "5013621501b9766c0cc710806d5716962e4b1835",
+   "flavor": "test"
+  }
+ ],
+ [
+  "service.health real same build → reuse",
+  "PASS",
+  {
+   "v": "1.3.3-test"
+  }
+ ],
+ [
+  "2nd same-version server → exit 0 + message",
+  "PASS",
+  "(node:1121126) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nСервер уже запущен на порту 18741 — второй экземпляр не нужен"
+ ],
+ [
+  "server on port held by 1.3.0-test → exit 3 + message",
+  "PASS",
+  "(node:1121134) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nПорт 18742 занят другой версией сервера (v1.3.0-test, pid 4242); эта версия v1.3.3-test не запущена"
+ ],
+ [
+  "server on port held by no-version → exit 3",
+  "PASS",
+  "(node:1121142) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nПорт 18743 занят другой версией сервера (vundefined, pid 4242); эта версия v1.3.3-test не запущена"
+ ]
+]

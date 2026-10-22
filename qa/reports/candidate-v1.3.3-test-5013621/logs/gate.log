@@ -1,0 +1,155 @@
+app-token
+backups
+files
+media
+projects3d
+secret.key
+server.pid
+studio.db
+studio.db-shm
+studio.db-wal
+LOGIN 200
+INFO create projects3d => 403 feature_disabled
+FAIL [old] sess POST /api/jobs => 403 feature_disabled
+FAIL [old] sess POST /api/jobs => 403 feature_disabled
+FAIL [old] sess POST /api/jobs => 403 feature_disabled
+FAIL [old] sess POST /api/jobs => 403 feature_disabled
+FAIL [old] sess POST /api/jobs => 403 feature_disabled
+FAIL [old] sess POST /api/studio3d/run => 403 feature_disabled
+FAIL [old] sess POST /api/studio3d/run/ => 403 feature_disabled
+FAIL [old] sess POST /API/Studio3d/run => 403 feature_disabled
+FAIL [old] sess PUT /api/studio3d/settings => 403 feature_disabled
+FAIL [old] sess POST /api/projects3d/p_x/v1/rerender => 403 feature_disabled
+FAIL [old] sess POST /api/projects3d/p_x/v1/run => 403 feature_disabled
+FAIL [old] sess POST /api/projects3d/p_x/v1/rerender/ => 403 feature_disabled
+FAIL [old] sess POST /API/projects3d/p_x/v1/rerender => 403 feature_disabled
+FAIL [old] sess POST /api/jobs/x/confirm => 403 feature_disabled
+FAIL [old] sess POST /api/jobs/x/review => 403 feature_disabled
+FAIL [old] sess POST /api/jobs/x/confirm/ => 403 feature_disabled
+FAIL [old] sess POST /API/jobs/x/confirm => 403 feature_disabled
+FAIL [old] sess POST /api/jobs/x/Review => 403 feature_disabled
+FAIL [old] sess POST /api/director/chat => 403 feature_disabled
+FAIL [old] app POST /api/jobs => 403 feature_disabled
+FAIL [old] app POST /api/jobs => 403 feature_disabled
+FAIL [old] app POST /api/jobs => 403 feature_disabled
+FAIL [old] app POST /api/jobs => 403 feature_disabled
+FAIL [old] app POST /api/jobs => 403 feature_disabled
+FAIL [old] app POST /api/studio3d/run => 403 feature_disabled
+FAIL [old] app POST /api/studio3d/run/ => 403 feature_disabled
+FAIL [old] app POST /API/Studio3d/run => 403 feature_disabled
+FAIL [old] app PUT /api/studio3d/settings => 403 feature_disabled
+FAIL [old] app POST /api/projects3d/p_x/v1/rerender => 403 feature_disabled
+FAIL [old] app POST /api/projects3d/p_x/v1/run => 403 feature_disabled
+FAIL [old] app POST /api/projects3d/p_x/v1/rerender/ => 403 feature_disabled
+FAIL [old] app POST /API/projects3d/p_x/v1/rerender => 403 feature_disabled
+FAIL [old] app POST /api/jobs/x/confirm => 403 feature_disabled
+FAIL [old] app POST /api/jobs/x/review => 403 feature_disabled
+FAIL [old] app POST /api/jobs/x/confirm/ => 403 feature_disabled
+FAIL [old] app POST /API/jobs/x/confirm => 403 feature_disabled
+FAIL [old] app POST /api/jobs/x/Review => 403 feature_disabled
+FAIL [old] app POST /api/director/chat => 403 feature_disabled
+PASS [new] sess POST /api/studio3d%2Frun {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/%73tudio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/studio3d/%2e/run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/studio3d/./run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/x/%2e%2e/studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/x/../studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST //api/studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api//studio3d//run {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/studio3d/run;x=1 {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/studio3d/run?x=1 {"text":"x"} => 403 feature_disabled
+PASS [new] sess POST /api/studio3d/run%3Bx {"text":"x"} => 403 feature_disabled
+PASS [new] sess PATCH /api/studio3d/run {} => 403 feature_disabled
+PASS [new] sess DELETE /api/studio3d/run {} => 403 feature_disabled
+PASS [new] sess PUT /api/studio3d/run {} => 403 feature_disabled
+PASS [new] sess DELETE /api/projects3d/p_x/v1 {} => 403 feature_disabled
+PASS [new] sess POST /api/projects3d/p_x/references {} => 403 feature_disabled
+PASS [new] sess POST /api/projects3d {"title":"q"} => 403 feature_disabled
+PASS [new] sess POST /api/projects3d/p_x/v1/rerender%2F {} => 403 feature_disabled
+PASS [new] sess POST /api/projects3d/p_x//v1/rerender {} => 403 feature_disabled
+PASS [new] sess POST /api/projects3d/p_x/v1/RUN;a {} => 403 feature_disabled
+PASS [new] sess POST /api/jobs/x%2Fconfirm {"approve":true} => 403 feature_disabled
+PASS [new] sess POST /api/jobs//x/confirm {"approve":true} => 403 feature_disabled
+PASS [new] sess POST /api/jobs/x/confirm;a {"approve":true} => 404 
+PASS [new] sess POST /api/jobs/x/%63onfirm {"approve":true} => 403 feature_disabled
+PASS [new] sess PUT /api/jobs/x/confirm {} => 403 feature_disabled
+PASS [new] sess POST /api/agents/design3d/start {} => 403 feature_disabled
+PASS [new] sess POST /api/agents/Design3D/start/ {} => 403 feature_disabled
+PASS [new] sess POST /api/agents/design3d%2Fstart {} => 403 feature_disabled
+PASS [new] sess POST /api/agents/%64esign3d/start {} => 403 feature_disabled
+PASS [new] sess POST /api/agents//design3d/start {} => 403 feature_disabled
+PASS [new] sess POST /api/tasks {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] sess POST /api/tasks {"title":"t","kind":"3d","agentId":"video"} => 403 feature_disabled
+PASS [new] sess POST /api/tasks/ {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] sess POST /API/Tasks {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] sess POST /api/tasks {"title":"t","type":"blender_template"} => 403 feature_disabled
+PASS [new] sess POST /api/world/plan {"goal":"сделать 3d сцену в blender"} => 403 feature_disabled
+PASS [new] sess POST /api/world/plan {"goal":"Blender рендер"} => 403 feature_disabled
+PASS [new] sess POST /api/jobs {"type":"DESIGN3D"} => 400 
+PASS [new] sess POST /api/jobs {"type":["design3d"]} => 403 feature_disabled
+PASS [new] sess POST /api/jobs/ {"type":"design3d"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d%2Frun {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/%73tudio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d/%2e/run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d/./run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/x/%2e%2e/studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/x/../studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST //api/studio3d/run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api//studio3d//run {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d/run;x=1 {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d/run?x=1 {"text":"x"} => 403 feature_disabled
+PASS [new] app POST /api/studio3d/run%3Bx {"text":"x"} => 403 feature_disabled
+PASS [new] app PATCH /api/studio3d/run {} => 403 feature_disabled
+PASS [new] app DELETE /api/studio3d/run {} => 403 feature_disabled
+PASS [new] app PUT /api/studio3d/run {} => 403 feature_disabled
+PASS [new] app DELETE /api/projects3d/p_x/v1 {} => 403 feature_disabled
+PASS [new] app POST /api/projects3d/p_x/references {} => 403 feature_disabled
+PASS [new] app POST /api/projects3d {"title":"q"} => 403 feature_disabled
+PASS [new] app POST /api/projects3d/p_x/v1/rerender%2F {} => 403 feature_disabled
+PASS [new] app POST /api/projects3d/p_x//v1/rerender {} => 403 feature_disabled
+PASS [new] app POST /api/projects3d/p_x/v1/RUN;a {} => 403 feature_disabled
+PASS [new] app POST /api/jobs/x%2Fconfirm {"approve":true} => 403 feature_disabled
+PASS [new] app POST /api/jobs//x/confirm {"approve":true} => 403 feature_disabled
+PASS [new] app POST /api/jobs/x/confirm;a {"approve":true} => 404 
+PASS [new] app POST /api/jobs/x/%63onfirm {"approve":true} => 403 feature_disabled
+PASS [new] app PUT /api/jobs/x/confirm {} => 403 feature_disabled
+PASS [new] app POST /api/agents/design3d/start {} => 403 feature_disabled
+PASS [new] app POST /api/agents/Design3D/start/ {} => 403 feature_disabled
+PASS [new] app POST /api/agents/design3d%2Fstart {} => 403 feature_disabled
+PASS [new] app POST /api/agents/%64esign3d/start {} => 403 feature_disabled
+PASS [new] app POST /api/agents//design3d/start {} => 403 feature_disabled
+PASS [new] app POST /api/tasks {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] app POST /api/tasks {"title":"t","kind":"3d","agentId":"video"} => 403 feature_disabled
+PASS [new] app POST /api/tasks/ {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] app POST /API/Tasks {"title":"t","agentId":"design3d"} => 403 feature_disabled
+PASS [new] app POST /api/tasks {"title":"t","type":"blender_template"} => 403 feature_disabled
+PASS [new] app POST /api/world/plan {"goal":"сделать 3d сцену в blender"} => 403 feature_disabled
+PASS [new] app POST /api/world/plan {"goal":"Blender рендер"} => 403 feature_disabled
+PASS [new] app POST /api/jobs {"type":"DESIGN3D"} => 400 
+PASS [new] app POST /api/jobs {"type":["design3d"]} => 403 feature_disabled
+PASS [new] app POST /api/jobs/ {"type":"design3d"} => 403 feature_disabled
+PASS [method] HEAD /api/studio3d/run => 404 
+PASS [method] HEAD /api/projects3d/p_x/v1/rerender => 404 
+PASS [method] HEAD /api/jobs/x/confirm => 404 
+PASS [method] HEAD /api/agents/design3d/start => 404 
+PASS [method] OPTIONS /api/studio3d/run => 404 
+PASS [method] OPTIONS /api/projects3d/p_x/v1/rerender => 404 
+PASS [method] OPTIONS /api/jobs/x/confirm => 404 
+PASS [method] OPTIONS /api/agents/design3d/start => 404 
+INFO create task agent video 201 mvk2ojg5szncfn
+PASS [relabel] PUT agentId→design3d on video task => 403 feature_disabled
+PASS [relabel] PUT agentId→design3d on news task => 403 feature_disabled
+PASS [relabel] PUT kind→3d on video task => 403 feature_disabled
+PASS [relabel] PUT kind→3d on news task => 403 feature_disabled
+PASS [relabel] PUT kind→design3d on video task => 403 feature_disabled
+PASS [relabel] PUT kind→design3d on news task => 403 feature_disabled
+PASS [relabel] PUT type→blender_template on video task => 403 feature_disabled
+PASS [relabel] PUT type→blender_template on news task => 403 feature_disabled
+INFO 3D tasks in DB: []
+INFO 3D jobs: 0
+INFO 5xx count 0
+SUMMARY {"total":134,"pass":134,"fail":[]}
+GATE_EXIT=0
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO TEST: http://127.0.0.1:18991 (pid 1127020, db node:sqlite)
+Остановка по SIGTERM

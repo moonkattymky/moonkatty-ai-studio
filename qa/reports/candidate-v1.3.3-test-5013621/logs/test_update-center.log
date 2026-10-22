@@ -1,0 +1,710 @@
+TAP version 13
+# Subtest: auto-update flags are OFF by default (all four unset) and auto-install refuses
+ok 1 - auto-update flags are OFF by default (all four unset) and auto-install refuses
+  ---
+  duration_ms: 9.170897
+  type: 'test'
+  ...
+# Subtest: empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+ok 2 - empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+  ---
+  duration_ms: 70.836675
+  type: 'test'
+  ...
+# Subtest: owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+ok 3 - owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+  ---
+  duration_ms: 72.435555
+  type: 'test'
+  ...
+# Subtest: tampered package (modified bytes) is rejected and deleted
+ok 4 - tampered package (modified bytes) is rejected and deleted
+  ---
+  duration_ms: 62.079516
+  type: 'test'
+  ...
+# Subtest: tampered manifest (bytes changed after signing) is rejected
+ok 5 - tampered manifest (bytes changed after signing) is rejected
+  ---
+  duration_ms: 64.529699
+  type: 'test'
+  ...
+# Subtest: wrong keyId, unknown key and revoked key are rejected
+ok 6 - wrong keyId, unknown key and revoked key are rejected
+  ---
+  duration_ms: 121.877555
+  type: 'test'
+  ...
+# Subtest: keyring refuses private key material (only public keys can be configured)
+ok 7 - keyring refuses private key material (only public keys can be configured)
+  ---
+  duration_ms: 27.910779
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+ok 8 - QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+  ---
+  duration_ms: 0.247874
+  type: 'test'
+  ...
+# Subtest: no private key material in git or in the packaged file list; ignore/exclude patterns present
+ok 9 - no private key material in git or in the packaged file list; ignore/exclude patterns present
+  ---
+  duration_ms: 64.154211
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: correct 0700 dir owned by current uid -> READY
+ok 10 - QA-UC-007: correct 0700 dir owned by current uid -> READY
+  ---
+  duration_ms: 29.21146
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: 0777 / 0750 dir -> BLOCKED
+ok 11 - QA-UC-007: 0777 / 0750 dir -> BLOCKED
+  ---
+  duration_ms: 31.480611
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: wrong owner (injected uid) -> BLOCKED
+ok 12 - QA-UC-007: wrong owner (injected uid) -> BLOCKED
+  ---
+  duration_ms: 28.018582
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+ok 13 - QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+  ---
+  duration_ms: 27.500055
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+ok 14 - QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+  ---
+  duration_ms: 58.605165
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: manifest without signed builtAt is not verified and download is refused
+ok 15 - QA-UC-006: manifest without signed builtAt is not verified and download is refused
+  ---
+  duration_ms: 60.486735
+  type: 'test'
+  ...
+# Subtest: release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+ok 16 - release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+  ---
+  duration_ms: 55.435057
+  type: 'test'
+  ...
+# Subtest: signed version: tampered version (manifest bytes changed after signing) is rejected
+ok 17 - signed version: tampered version (manifest bytes changed after signing) is rejected
+  ---
+  duration_ms: 72.169907
+  type: 'test'
+  ...
+# Subtest: signed version must match tag and package name
+ok 18 - signed version must match tag and package name
+  ---
+  duration_ms: 92.307062
+  type: 'test'
+  ...
+# Subtest: anti-rollback: downgrade and equal version vs current are rejected
+ok 19 - anti-rollback: downgrade and equal version vs current are rejected
+  ---
+  duration_ms: 119.068026
+  type: 'test'
+  ...
+# Subtest: builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+ok 20 - builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+  ---
+  duration_ms: 144.345179
+  type: 'test'
+  ...
+# Subtest: auto-download / auto-install stay off: check() never downloads, no timers
+ok 21 - auto-download / auto-install stay off: check() never downloads, no timers
+  ---
+  duration_ms: 58.191746
+  type: 'test'
+  ...
+# Subtest: QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+ok 22 - QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+  ---
+  duration_ms: 31.504573
+  type: 'test'
+  ...
+# Subtest: scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+ok 23 - scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+  ---
+  duration_ms: 469.908856
+  type: 'test'
+  ...
+# Subtest: packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+ok 24 - packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+  ---
+  duration_ms: 237.659312
+  type: 'test'
+  ...
+# Subtest: dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+ok 25 - dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+  ---
+  duration_ms: 62.067943
+  type: 'test'
+  ...
+# Subtest: QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+ok 26 - QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+  ---
+  duration_ms: 95.104436
+  type: 'test'
+  ...
+# Subtest: QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+ok 27 - QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+  ---
+  duration_ms: 62.428432
+  type: 'test'
+  ...
+# Subtest: QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+ok 28 - QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+  ---
+  duration_ms: 150.019667
+  type: 'test'
+  ...
+# Subtest: QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+ok 29 - QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+  ---
+  duration_ms: 160.7501
+  type: 'test'
+  ...
+# Subtest: QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+ok 30 - QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+  ---
+  duration_ms: 32.973727
+  type: 'test'
+  ...
+# Subtest: QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+ok 31 - QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+  ---
+  duration_ms: 12135.111237
+  type: 'test'
+  ...
+# QA-UC-010 before(path) {"loads":95400,"attackerKey":1544,"ownerKey":1740,"blocked":92116,"mixed":1686}
+# QA-UC-010 after(fd-relative) {"loads":92200,"attackerKey":4331,"ownerKey":4635,"blocked":83234,"mixed":0}
+# Subtest: QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+ok 32 - QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+  ---
+  duration_ms: 39.149839
+  type: 'test'
+  ...
+# Subtest: READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+ok 33 - READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+  ---
+  duration_ms: 67.507976
+  type: 'test'
+  ...
+# Subtest: Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+ok 34 - Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+  ---
+  duration_ms: 693.972551
+  type: 'test'
+  ...
+# (node:1127176) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+ok 35 - repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+  ---
+  duration_ms: 2.806979
+  type: 'test'
+  ...
+# Subtest: versions: compare, downgrade detection
+ok 36 - versions: compare, downgrade detection
+  ---
+  duration_ms: 0.379733
+  type: 'test'
+  ...
+# Subtest: security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+ok 37 - security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+  ---
+  duration_ms: 1.021673
+  type: 'test'
+  ...
+# Subtest: security: redirect to a foreign host is refused
+ok 38 - security: redirect to a foreign host is refused
+  ---
+  duration_ms: 2.378886
+  type: 'test'
+  ...
+# Subtest: check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+not ok 39 - check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+  ---
+  duration_ms: 4.173618
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:80:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    подписанный builtAt 2026-10-20T09:00:00Z старше сборки текущего приложения (2026-10-22T21:36:05.000Z) — отклонено
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:83:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+ok 40 - security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+  ---
+  duration_ms: 5.625563
+  type: 'test'
+  ...
+# Subtest: security: tampered manifest (signature over other bytes) is rejected
+ok 41 - security: tampered manifest (signature over other bytes) is rejected
+  ---
+  duration_ms: 0.63567
+  type: 'test'
+  ...
+# Subtest: security: downgrade attack (validly signed older version) is blocked
+ok 42 - security: downgrade attack (validly signed older version) is blocked
+  ---
+  duration_ms: 2.437427
+  type: 'test'
+  ...
+# Subtest: download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+not ok 43 - download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+  ---
+  duration_ms: 1.535857
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:105:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /SHA-256/. Input:
+    
+    'Error: релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:108:27)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:108:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: download: oversized body (more than signed size) is aborted
+not ok 44 - download: oversized body (more than signed size) is aborted
+  ---
+  duration_ms: 1.738957
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:111:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /больше заявленного/. Input:
+    
+    'Error: релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:114:27)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:114:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+not ok 45 - download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+  ---
+  duration_ms: 1.818542
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:116:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'status')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:120:19)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: download: server ignores Range → restarts clean, still verified
+not ok 46 - download: server ignores Range → restarts clean, still verified
+  ---
+  duration_ms: 1.158009
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:124:1'
+  failureType: 'testCodeFailure'
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  code: 'UNVERIFIED'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:128:26)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: crash during download: restart marks it interrupted; cleanTemp removes partial files
+not ok 47 - crash during download: restart marks it interrupted; cleanTemp removes partial files
+  ---
+  duration_ms: 1.653717
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:130:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot set properties of undefined (setting 'status')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:132:169)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: network error on check is reported, not thrown as crash
+ok 48 - network error on check is reported, not thrown as crash
+  ---
+  duration_ms: 1.050139
+  type: 'test'
+  ...
+# Subtest: security: archive path traversal / absolute paths / truncated / garbage are rejected
+ok 49 - security: archive path traversal / absolute paths / truncated / garbage are rejected
+  ---
+  duration_ms: 1.627204
+  type: 'test'
+  ...
+# Subtest: download: signed+hashed but traversal archive is rejected after hash check
+not ok 50 - download: signed+hashed but traversal archive is rejected after hash check
+  ---
+  duration_ms: 2.286336
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:148:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /опасный путь/. Input:
+    
+    'Error: релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:150:135)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:150:111)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+ok 51 - rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+  ---
+  duration_ms: 0.249862
+  type: 'test'
+  ...
+# Subtest: rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+ok 52 - rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+  ---
+  duration_ms: 0.245907
+  type: 'test'
+  ...
+# Subtest: compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+ok 53 - compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+  ---
+  duration_ms: 0.107675
+  type: 'test'
+  ...
+# Subtest: manifest validation rejects path-like asset names and bad identity
+ok 54 - manifest validation rejects path-like asset names and bad identity
+  ---
+  duration_ms: 0.174112
+  type: 'test'
+  ...
+# Subtest: pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+not ok 55 - pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+  ---
+  duration_ms: 7.641836
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:178:1'
+  failureType: 'testCodeFailure'
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  code: 'UNVERIFIED'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:185:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+not ok 56 - auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+  ---
+  duration_ms: 2.314405
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:191:1'
+  failureType: 'testCodeFailure'
+  error: 'flags alone are not enough: gate still applies'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'неподписанный/непроверенный релиз никогда не устанавливается автоматически'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    Object.autoInstall (/workspace/qa133/repo/lib/ops/update-center.js:444:39)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:196:49)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:196:23)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+ok 57 - rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+  ---
+  duration_ms: 0.641889
+  type: 'test'
+  ...
+# Subtest: MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+not ok 58 - MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+  ---
+  duration_ms: 2.592897
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:205:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:217:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: code never bypasses macOS security
+ok 59 - code never bypasses macOS security
+  ---
+  duration_ms: 1.449044
+  type: 'test'
+  ...
+# Subtest: manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+ok 60 - manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+  ---
+  duration_ms: 0.409415
+  type: 'test'
+  ...
+# Subtest: rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+ok 61 - rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+  ---
+  duration_ms: 0.313701
+  type: 'test'
+  ...
+# Subtest: schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+ok 62 - schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+  ---
+  duration_ms: 4.962331
+  type: 'test'
+  ...
+# Subtest: test-build archive: app name taken from manifest.appName
+ok 63 - test-build archive: app name taken from manifest.appName
+  ---
+  duration_ms: 0.271833
+  type: 'test'
+  ...
+# Subtest: unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+ok 64 - unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+  ---
+  duration_ms: 1.834092
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+ok 65 - QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+  ---
+  duration_ms: 0.842318
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+not ok 66 - QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+  ---
+  duration_ms: 1.849931
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:283:1'
+  failureType: 'testCodeFailure'
+  error: 'согласие возможно только для проверенного подписанного manifest'
+  code: 'UNVERIFIED'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    Object.approve (/workspace/qa133/repo/lib/ops/update-center.js:436:135)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:288:122)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+ok 67 - QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+  ---
+  duration_ms: 0.421827
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+ok 68 - QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+  ---
+  duration_ms: 2.022993
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+ok 69 - QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+  ---
+  duration_ms: 94.891703
+  type: 'test'
+  ...
+# Subtest: QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+not ok 70 - QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+  ---
+  duration_ms: 1.789789
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:326:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /симлинк/. Input:
+    
+    'Error: релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:331:101)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:331:77)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+not ok 71 - QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+  ---
+  duration_ms: 1.282151
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:342:1'
+  failureType: 'testCodeFailure'
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  code: 'UNVERIFIED'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:343:103)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+ok 72 - QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+  ---
+  duration_ms: 0.967014
+  type: 'test'
+  ...
+# Subtest: QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+ok 73 - QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+  ---
+  duration_ms: 1.179082
+  type: 'test'
+  ...
+# Subtest: lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+ok 74 - lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+  ---
+  duration_ms: 0.845019
+  type: 'test'
+  ...
+# Subtest: auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+not ok 75 - auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+  ---
+  duration_ms: 1.232266
+  type: 'test'
+  location: '/workspace/qa133/repo/test/ops/update-center.test.js:379:1'
+  failureType: 'testCodeFailure'
+  error: 'релиз без проверенной подписи — загрузка через Update Center запрещена (только вручную)'
+  code: 'UNVERIFIED'
+  stack: |-
+    err (/workspace/qa133/repo/lib/ops/update-center.js:21:42)
+    prepareDownload (/workspace/qa133/repo/lib/ops/update-center.js:356:105)
+    Object.download (/workspace/qa133/repo/lib/ops/update-center.js:359:24)
+    prep (/workspace/qa133/repo/test/ops/update-center.test.js:381:135)
+    async TestContext.<anonymous> (/workspace/qa133/repo/test/ops/update-center.test.js:382:13)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: origin verification: remote, ref, on origin, clean tree
+ok 76 - origin verification: remote, ref, on origin, clean tree
+  ---
+  duration_ms: 1.950365
+  type: 'test'
+  ...
+# Subtest: artifact SHA-256 required and must match (direct or SHA256SUMS)
+# (node:1127204) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+ok 77 - artifact SHA-256 required and must match (direct or SHA256SUMS)
+  ---
+  duration_ms: 5.646063
+  type: 'test'
+  ...
+# Subtest: signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+ok 78 - signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+  ---
+  duration_ms: 0.644905
+  type: 'test'
+  ...
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 79 - schema compatibility + plan refuses on failed checks
+  ---
+  duration_ms: 4.671527
+  type: 'test'
+  ...
+1..79
+# tests 79
+# suites 0
+# pass 65
+# fail 14
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15870.304603

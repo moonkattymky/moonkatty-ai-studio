@@ -1,0 +1,24 @@
+== newsvideo-security
+PASS search ignores client-supplied URLs (fixed allowlist)
+PASS status leaks no secrets
+
+21 passed, 0 failed
+== owner-approval-real 1
+PASS no JS errors
+
+7 passed, 0 failed
+exit=0
+== owner-approval-real 2
+PASS no JS errors
+
+7 passed, 0 failed
+exit=0
+== owner-approval-real 3
+PASS no JS errors
+
+7 passed, 0 failed
+exit=0
+== longword
+SKIP real 9:16 render: set PW_FILE
+
+19 passed, 0 failed
