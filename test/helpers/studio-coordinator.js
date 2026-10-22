@@ -20,7 +20,16 @@ const free = () => new Promise(r => { const s = net.createServer(); s.listen(0, 
   const ok = r => { if (r.status >= 400) throw new Error(r.body.error || 'HTTP ' + r.status); return r.body; };
   const admin = http.createServer(async (req, res) => { const c = []; for await (const d of req) c.push(d); const b = c.length ? JSON.parse(Buffer.concat(c)) : {};
     try { let out; const u = req.url;
-      if (u === '/register') out = ok(await call('POST', '/api/ops/nodes', { ...b, confirm: 'ВЫДАТЬ', password: PW }));
+      if (u === '/register') { // QA-NODE-005: legacy direct tokens are OFF in v1.3.0-test → real enrollment by one-time code through the owner API
+        // (create → node enrolls with its device key over pinned TLS → owner confirms with password + unverified-peer ack). Keychain = test double.
+        const role = { imac: 'news', macbook: 'monitor', news: 'news', monitor: 'monitor' }[b.role] || b.role; const EN = require('../../node-agent/enroll.js');
+        const home = path.join(dir, 'home-' + b.id); const kc = path.join(dir, 'kc-' + b.id + '.json'); fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+        const kenv = { ...process.env, NODE_KEYCHAIN_BIN: path.join(ROOT, 'test/fixtures/fake-security.js'), FAKE_KC_FILE: kc };
+        const r = ok(await call('POST', '/api/ops/nodes/enroll', { role, nodeId: b.id, name: b.id, confirm: 'ПОДКЛЮЧИТЬ', password: PW }));
+        const pend = EN.enroll({ url: `https://127.0.0.1:${nport}`, fingerprint: st.fingerprint, code: r.code, home: path.join(home, '.moonkatty-node'), env: kenv, info: { hostname: b.id, agentVersion: require('../../node-agent/agent.js').VERSION }, pollMs: 100 });
+        for (let i = 0; i < 200; i++) { const l = ok(await call('GET', '/api/ops/nodes/enroll')).requests; if (l.some(q => q.requestId === r.requestId && q.state === 'pending')) break; await new Promise(z => setTimeout(z, 50)); }
+        ok(await call('POST', `/api/ops/nodes/enroll/${r.requestId}/confirm`, { confirm: 'ПОДТВЕРДИТЬ', password: PW, acknowledgeUnverifiedPeer: true }));
+        const e = await pend; out = { id: e.nodeId, enrolled: true, home, kcFile: kc, keychainBin: kenv.NODE_KEYCHAIN_BIN }; }
       else if (u === '/submit') out = ok(await call('POST', '/api/ops/nodes/jobs', b));
       else if (u === '/status') out = { ...ok(await call('GET', '/api/ops/nodes')), jobsFull: ok(await call('GET', '/api/ops/nodes/jobs')) };
       else if (u === '/put-file') { const buf = Buffer.from(b.data, 'base64'); const h = require('crypto').createHash('sha256').update(buf).digest('hex'); out = { sha256: ok(await call('PUT', '/api/ops/nodes/files/' + h, buf, { 'content-type': 'application/octet-stream' })).sha256 }; }
