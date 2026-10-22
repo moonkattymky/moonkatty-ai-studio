@@ -17,23 +17,25 @@
 ## Установка (от обычного пользователя)
 ```
 tar -xzf moonkatty-node-0.2.2-<...>.tar.gz && cd moonkatty-node-0.2.2-<...>
-bash install.sh
+bash install.sh --verify-only   # только проверка MANIFEST и macOS
+bash install.sh                 # установка без автозапуска
+bash install.sh --autostart     # + LaunchAgent (по подтверждению владельца)
 ```
 Скрипт проверяет `MANIFEST.sha256` и версию macOS, ставит в `~/moonkatty-node`, конфиг в `~/.moonkatty-node` (папка 0700, `node-agent.env` 0600),
-LaunchAgent пользователя `~/Library/LaunchAgents/com.moonkatty.node-agent.plist` (KeepAlive только при сбое, Umask 077, лимит кучи 192 МБ).
+при `--autostart` — LaunchAgent пользователя `~/Library/LaunchAgents/com.moonkatty.node-agent.plist` (KeepAlive только при сбое, Umask 077, лимит кучи 192 МБ).
 Если macOS блокирует `bin/node` («не удалось проверить разработчика») — откройте Системные настройки → Конфиденциальность и безопасность → «Всё равно открыть» для этого файла. Gatekeeper целиком не отключать.
 
 ## Подключение (одноразовый код)
 1. Mac mini → Студия → «Компьютеры» → «Подключить компьютер» → профиль NEWS (iMac) или MONITOR (MacBook). Код живёт 5 минут и хранится только в памяти: после перезапуска студии нужен новый код.
-2. На узле откройте `http://127.0.0.1:7788` (страница только на loopback), введите адрес координатора и код. Проверьте отпечаток TLS-сертификата с показанным на Mac mini.
+2. На узле откройте `http://127.0.0.1:8791` (`NODE_STATUS_PORT`) (страница только на loopback), введите адрес координатора и код. Проверьте отпечаток TLS-сертификата с показанным на Mac mini.
 3. На Mac mini нажмите «Подтвердить» (нужен пароль владельца). Токен и ключ устройства сохраняются в Связке ключей (`moonkatty-node-<id>` / `moonkatty-node-device`), не в файлах.
-4. Статус: `http://127.0.0.1:7789`, журнал `~/.moonkatty-node/agent.log`.
+4. Статус: тот же `http://127.0.0.1:8791`, журналы `~/.moonkatty-node/logs/agent.log` и `agent.err.log`.
 
 ## Обновление
-Повторный `bash install.sh` из нового архива: предыдущая версия сохраняется в `~/moonkatty-node.prev`.
+Повторный `bash install.sh` из нового архива: предыдущая версия переносится в `~/moonkatty-node.backup-<дата>`.
 
 ## Откат
-- К предыдущей версии: `bash ~/moonkatty-node/uninstall.sh --rollback` (возвращает `~/moonkatty-node.prev`, перезапускает LaunchAgent; Связка ключей не трогается).
+- К предыдущей версии: `bash ~/moonkatty-node/uninstall.sh --rollback` (возвращает последний `~/moonkatty-node.backup-*`; автозапуск при этом выключается — включите снова `bash install.sh --autostart` из восстановленной папки; Связка ключей не трогается).
 - Остановить и удалить программу, сохранив подключение: `bash ~/moonkatty-node/uninstall.sh`.
 - Полное удаление: `bash ~/moonkatty-node/uninstall.sh --purge` — удаляет `~/.moonkatty-node`, токен и ключ устройства из Связки ключей. Затем на Mac mini → «Компьютеры» → «Отозвать» этот узел (обязательно: отзыв делается на координаторе).
 - Если узел потерян/скомпрометирован: «Отозвать» на Mac mini сразу; для нового подключения — новый код.
