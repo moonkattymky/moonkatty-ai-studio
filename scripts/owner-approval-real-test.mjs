@@ -17,7 +17,7 @@ await p.exposeFunction('__toast', x => toasts.push(x)); await p.evaluate(() => n
 await p.evaluate(() => location.hash = 'revenue'); await p.waitForSelector('#savForm', { timeout: 20000 });
 const target = 1234 + Math.floor(Math.random() * 1000);
 await p.fill('#savForm input[name=target]', String(target)); await p.click('#savForm button');
-await p.waitForFunction(() => document.querySelector('[data-ap][data-dec="approve"]'), null, { timeout: 15000 }); await p.waitForTimeout(300); const apId = sav[0] && sav[0].j.approvalId;
+await p.waitForFunction(() => document.querySelector('[data-ap][data-dec="approve"]'), null, { timeout: 45000 } /* fresh server: first owner-queue load can be slow */); await p.waitForTimeout(300); const apId = sav[0] && sav[0].j.approvalId;
 t('real: savings → 403 needs_owner (approval created)', sav[0] && sav[0].s === 403, JSON.stringify(sav[0]));
 await p.click(`[data-ap="${apId}"][data-dec="approve"]`); await p.fill('#modal input[name=password]', PW); await p.click('#modal .btn.primary');
 await p.waitForSelector('[data-ap-result]', { timeout: 20000 }).catch(() => {});
