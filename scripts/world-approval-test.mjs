@@ -7,13 +7,13 @@ const db = new DatabaseSync(':memory:'); migrate(db); migrate(db); // idempotent
 let n = 0, T = Date.parse('2026-10-22T12:00:00Z'); const core = { uid: () => 'id' + (++n), now: () => new Date(T).toISOString() }; const sec = { redact: s => s };
 const P = createPermissions({ db, core, sec });
 const setS = db.prepare('UPDATE world_approvals SET status = ? WHERE id = ?');
-const mk = (action, params, status = 'approved', ttlMs) => { const id = P.request({ action, params, detail: 't', ttlMs }); if (status !== 'pending') setS.run(status, id); return id; };
+const mk = (action, params, status = 'approved', ttlMs) => { const id = P.request({ action, params, detail: 't', ttlMs, actor: 'alice' }); if (status !== 'pending') setS.run(status, id); return id; };
 const S = { kind: 'savings', target_usd: 100 };
 const A1 = mk('critical_settings', S), P1 = mk('critical_settings', S, 'pending'), R1 = mk('critical_settings', S, 'rejected'), X1 = mk('spending', S);
 const E1 = mk('critical_settings', S, 'approved', 1000);
 db.prepare("INSERT INTO world_approvals (id, at, action, tier, status, detail) VALUES ('L1', 'x', 'critical_settings', 'owner', 'approved', 'legacy')").run();
 let fail = 0; const ok = (name, c) => { console.log((c ? 'PASS ' : 'FAIL ') + name); if (!c) fail++; };
-const g = (o) => P.gate('critical_settings', { params: S, ...o });
+const g = (o) => P.gate('critical_settings', { params: S, actor: 'alice', ...o });
 ok('confirm:true alone -> needs_owner', g({ confirm: true }).decision === 'needs_owner');
 ok('no approval -> needs_owner', g({}).decision === 'needs_owner');
 ok('pending id -> needs_owner', g({ approvalId: P1 }).reason === 'not_approved');
@@ -23,6 +23,7 @@ ok('unknown id -> needs_owner', g({ approvalId: 'nope', confirm: true }).reason 
 ok('legacy row without hash/expiry -> rejected', g({ approvalId: 'L1' }).decision === 'needs_owner');
 ok('params mismatch (target_usd 999) -> needs_owner', g({ approvalId: A1, params: { kind: 'savings', target_usd: 999 } }).reason === 'params_mismatch');
 ok('key order does not matter', P.paramsHash({ a: 1, b: 2 }) === P.paramsHash({ b: 2, a: 1 }));
+ok('other user using alice\'s approval -> user_mismatch', g({ approvalId: A1, actor: 'mallory' }).reason === 'user_mismatch');
 ok('valid approved id -> allow', g({ approvalId: A1 }).decision === 'allow');
 ok('consume once -> true', P.consume(A1) === true);
 ok('reused id -> needs_owner', g({ approvalId: A1, confirm: true }).reason === 'consumed');
