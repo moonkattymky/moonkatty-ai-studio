@@ -12,6 +12,8 @@
 | 6 | [06-mac-mini-integration.md](06-mac-mini-integration.md) — изменения в desktop Studio (по реальному коду) |
 | 7 | [07-security-test-plan.md](07-security-test-plan.md) — план тестов безопасности |
 | 8 | [08-estimate.md](08-estimate.md) — оценка в AI-часах |
-| 9 | [09-repos-branches-draft.md](09-repos-branches-draft.md) — черновик репозиториев и веток на утверждение |
+| 9 | [09-repos-branches-draft.md](09-repos-branches-draft.md) — репозитории и ветки (решения владельца, проверка Horizons, спецификация защиты) |
+| 10 | [10-implementation-plan.md](10-implementation-plan.md) — итоговый план реализации |
+| — | [mockups/](mockups/) — статические макеты UI Алекса (DEMO) |
 
 Принцип: **права проверяются только на сервере** (каждый запрос + повторно перед исполнением каждой AI-задачи + в воркере на уровне инструментов). UI лишь скрывает недоступное; скрытие не является защитой.

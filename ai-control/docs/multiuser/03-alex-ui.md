@@ -19,4 +19,6 @@
 
 Для OWNER добавляется (в существующие экраны, отдельной вкладкой «Пользователи»): список пользователей, роль, сессии, «Отозвать сейчас», allowlist игр, очередь релизов на approve, audit. Это изменение владельческих экранов планируется отдельным этапом и требует согласования.
 
-Статический макет HTML в этом этапе не делаем (опционально, следующий шаг).
+## Статические макеты (DEMO/МАКЕТ)
+Папка `mockups/`: 12 HTML-экранов (dashboard, projects, agents + форма задачи, tasks с автором, studio3d, testing, files с замками на protected-ветках, results, release — поток «Отправить владельцу на утверждение», notifications, settings без редактирования ролей, more). Используют `ai-control/src/css/app.css` **без изменений** + `mockup.css` (только дополнения). Экраны владельца не тронуты.
+Сборка: `node docs/multiuser/mockups/build-mockups.mjs` (из папки mockups), скриншоты: `node docs/multiuser/mockups/shoot.mjs` → `/workspace/out/ai-control/alex-mockups/*.png` и `all.png` (WebKit, iPhone 16 Pro 402×874 @3x, `test/device.mjs`).

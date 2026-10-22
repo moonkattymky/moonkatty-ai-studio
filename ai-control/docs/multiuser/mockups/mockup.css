@@ -1,0 +1,15 @@
+/* Дополнения только для макетов Алекса; токены — из app.css. */
+.alexbar{font-size:11px;letter-spacing:.14em;font-weight:800;color:var(--blue2);margin:8px 2px 6px;display:flex;justify-content:space-between}
+.alexbar span{color:var(--gold)}
+.mic{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center}.mic svg{width:22px;height:22px}
+.gcard{padding:10px;margin-bottom:12px}.pad{padding:14px}.mt{margin-top:10px}
+.note{margin:12px 2px;color:var(--text2);font-size:13.5px}.small{font-size:12.5px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.who{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px}.who.own{background:var(--gold);color:#1a1200}.who.alx{background:var(--violet);color:#fff}
+.btn.sm{height:34px;font-size:13px;flex:none}
+.g2{color:var(--green);font-weight:800}.gold2{color:var(--gold)}.red2{color:var(--red)}
+.kv svg{width:14px;height:14px;display:inline-block;vertical-align:-2px}
+.t1b{font-weight:800;font-size:16px}
+.steps{display:flex;gap:6px;margin-bottom:12px}.steps span{flex:1;text-align:center;font-size:12px;padding:8px 4px;border-radius:10px;border:1px solid var(--line2);color:var(--text3)}.steps .on{color:#0a1b3e;background:linear-gradient(180deg,#bfe0ff,#8fc2ff)}
+.mock-foot{text-align:center;color:var(--gold);font-size:11px;margin-top:18px;letter-spacing:.06em}
+.banner .demo-tag{top:6px}
