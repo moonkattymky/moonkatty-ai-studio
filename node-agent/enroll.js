@@ -29,15 +29,14 @@ function fetchPinnedCert(url, fingerprint) { return new Promise((res, rej) => { 
   s.on('error', rej); s.on('timeout', () => { s.destroy(); rej(new Error('timeout')); }); }); }
 function post(url, p, body, { ca, fingerprint, tlsMode }) { return new Promise((res, rej) => { const u = new URL(url); const data = Buffer.from(JSON.stringify(body)); const pin = String(fingerprint || '').toLowerCase();
   const opt = { method: 'POST', hostname: u.hostname, port: +u.port || 443, path: '/api/nodes' + p, timeout: 20000, minVersion: 'TLSv1.2', headers: { 'content-type': 'application/json', 'content-length': data.length } };
-  if (tlsMode !== 'tailscale') Object.assign(opt, { ca, checkServerIdentity: (h, cert) => String(cert.fingerprint256 || '').replace(/:/g, '').toLowerCase() === pin ? undefined : new Error('TLS pin mismatch') });
+  Object.assign(opt, { ca, checkServerIdentity: (h, cert) => String(cert.fingerprint256 || '').replace(/:/g, '').toLowerCase() === pin ? undefined : new Error('TLS pin mismatch') });
   const r = https.request(opt, resp => { const c = []; resp.on('data', d => c.push(d)); resp.on('end', () => { let j = null; try { j = JSON.parse(Buffer.concat(c).toString()); } catch {} res({ status: resp.statusCode, body: j || {} }); }); });
   r.on('error', rej); r.on('timeout', () => r.destroy(new Error('timeout'))); r.end(data); }); }
 // ---------- enrollment flow ----------
 async function enroll({ url, fingerprint, code, tlsMode, home = path.join(os.homedir(), '.moonkatty-node'), env = process.env, info = {}, onState = () => {}, pollMs, maxWaitMs = 30 * 60e3 }) {
   const u = new URL(String(url || '')); if (u.protocol !== 'https:') throw Object.assign(new Error('только https:// — подключение по открытому HTTP запрещено'), { code: 'E_TLS_REQUIRED' });
-  tlsMode = tlsMode || (/\.ts\.net$/i.test(u.hostname) ? 'tailscale' : 'pinned');
-  if (tlsMode === 'tailscale' && !/\.ts\.net$/i.test(u.hostname)) throw Object.assign(new Error('режим tailscale только для https://<mac-mini>.<tailnet>.ts.net — для IP-адреса нужен отпечаток сертификата'), { code: 'E_TLS_MODE' });
-  if (!['tailscale', 'pinned'].includes(tlsMode)) throw Object.assign(new Error('tlsMode: tailscale|pinned'), { code: 'E_TLS_MODE' }); const kc = keychain(env); if (!kc.available) throw new Error('Keychain недоступен (только macOS)');
+  tlsMode = tlsMode || 'pinned'; /* r5: always pinned — the Node API is reached on the coordinator's Tailscale address 100.x, not via Tailscale Serve */
+  if (tlsMode !== 'pinned') throw Object.assign(new Error('режим tailscale не поддерживается: Node API координатора (v1.3.0-test) не стоит за Tailscale Serve — только закреплённый сертификат (NODE_TLS_MODE=pinned, https://100.x.y.z:<порт> + COORDINATOR_FINGERPRINT)'), { code: 'E_TLS_MODE' }); const kc = keychain(env); if (!kc.available) throw new Error('Keychain недоступен (только macOS)');
   let ca = null; if (tlsMode === 'pinned') { onState({ step: 'pin' }); ca = await fetchPinnedCert(url, fingerprint); }
   const dev = await deviceIdentity(home, kc); const pubKeyFp = sha256(crypto.createPublicKey(dev.pubKey).export({ type: 'spki', format: 'der' }));
   const base = { deviceId: dev.deviceId, pubKeyFp, pubKeyShort: shortFp(pubKeyFp) }; const emit = x => onState({ ...base, ...x }); emit({ step: 'device' });

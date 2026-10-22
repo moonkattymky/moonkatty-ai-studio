@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- MOONKATTY NODE (iMac NEWS NODE / MacBook MONITOR NODE). USER LaunchAgent (~/Library/LaunchAgents), never root / LaunchDaemons.
      install.sh --autostart substitutes YOURUSER and paths, then: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.moonkatty.node-agent.plist
-     The agent opens NO network ports: it only connects out to the Mac mini (HTTPS: tailscale serve or pinned cert).
+     The agent opens NO network ports: it only connects out to the Mac mini (HTTPS to the Tailscale address 100.x with a pinned certificate; no Serve/Funnel).
      Memory: V8 heap capped at 192 MB; agent exits 75 if RSS stays above the soft limit (260 MB) or crosses 384 MB → KeepAlive restarts it.
      Exit 0 (coordinator command "stop") is NOT restarted. ThrottleInterval 30 s prevents restart loops. -->
 <plist version="1.0"><dict>

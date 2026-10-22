@@ -1,5 +1,8 @@
 # MOONKATTY NEWS NODE на iMac 2017 (macOS Ventura 13.7.1, Intel x86_64) — установка и проверка
 
+> **УСТАРЕЛО для NODE 0.2.2 / v1.3.0-test.** Схема с `tailscale serve` (`*.ts.net:8443`, `NODE_TLS_MODE=tailscale`) для узлов НЕ используется и агентом 0.2.2 отклоняется. Актуальная инструкция: [../NODES_INSTALL_RU.md](../NODES_INSTALL_RU.md) — прямое подключение к адресу Tailscale 100.x с закреплённым сертификатом, без Serve и Funnel.
+
+
 Версия пакета: **MOONKATTY NODE 0.2.0**, профиль **NEWS NODE** (`role: news`), архив `moonkatty-node-0.2.0-darwin-x64.tar.gz`.
 Каждый шаг заканчивается блоком **Проверка**. Не переходите к следующему шагу, пока проверка не прошла. Ничего не ставится от root, порты в интернет не открываются.
 

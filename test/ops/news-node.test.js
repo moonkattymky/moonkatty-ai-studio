@@ -5,7 +5,7 @@ const test = require('node:test'); const assert = require('node:assert/strict');
 const fs = require('fs'), os = require('os'), path = require('path'), http = require('http'), crypto = require('crypto'); const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..'); const A = require('../../node-agent/agent.js'); const N = require('../../lib/ops/nodes.js');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'newsnode-')); const sha = b => crypto.createHash('sha256').update(b).digest('hex');
-const baseEnv = o => ({ HOME: tmp(), NODE_AGENT_ENV: '/nonexistent', NODE_ID: 'imac', NODE_TOKEN: 'nk_imac.' + 'a'.repeat(32), COORDINATOR_URL: 'https://mac-mini.tail1234.ts.net:8443', ...o });
+const baseEnv = o => ({ HOME: tmp(), NODE_AGENT_ENV: '/nonexistent', NODE_ID: 'imac', NODE_TOKEN: 'nk_imac.' + 'a'.repeat(32), COORDINATOR_URL: 'https://100.100.1.2:8790', ...o });
 
 test('iMac device profile = real hardware (Ventura 13.7.1), the wrong 12.5.1 is gone from code and docs', () => {
   const d = N.DEVICES.imac; assert.equal(d.os, 'macOS Ventura 13.7.1'); assert.equal(d.ramGB, 8); assert.match(d.cpu, /i5 3\.4 GHz, 4 cores/); assert.match(d.gpu, /Radeon Pro 570 4 GB/); assert.match(d.model, /Retina 5K 27" 2017/);
@@ -19,14 +19,13 @@ test('profile enforcement in the agent: no heavy AI / Blender / render / OpenCod
   for (const c of A.PROFILES.news.caps) assert.equal(A.allowCap('news', c), null, c);
   assert.equal(A.PROFILES.news.heavyAI, false); assert.equal(A.PROFILES.news.blender, false);
   await assert.rejects(() => A.config(baseEnv({ NODE_ALLOW_HEAVY_AI: '1' })), /запрещены профилем/); await assert.rejects(() => A.config(baseEnv({ NODE_ALLOW_BLENDER: '1' })), /запрещены профилем/);
-  const c = await A.config(baseEnv({ NODE_TLS_MODE: 'tailscale' })); assert.equal(c.profileKey, 'news'); assert.equal(c.limits.softRssMB, 260); assert.equal(c.limits.maxRssMB, 384);
+  await assert.rejects(A.config(baseEnv({ NODE_TLS_MODE: 'tailscale' })), /не поддерживается/); const c = await A.config(baseEnv({ NODE_TLS_MODE: 'pinned' })); assert.equal(c.tlsMode, 'pinned'); assert.equal(c.profileKey, 'news'); assert.equal(c.limits.softRssMB, 260); assert.equal(c.limits.maxRssMB, 384);
   const m = N.createNodeManager({ dir: tmp() }); assert.throws(() => m.registerNode({ id: 'imac', role: 'news', caps: ['blender.render'] }), /недопустимые/);
   assert.throws(() => m.submit({ capability: 'ai.summarize', input: {} }), /не разрешена/); assert.equal(N.ROLES.news.policy.heavyAI, false);
 });
-test('Tailscale TLS mode: only https://*.ts.net, normal CA verification; pinned mode still requires fingerprint', () => {
-  assert.throws(() => A.client({ url: 'https://192.168.1.10:8790', tlsMode: 'tailscale', token: 't' }), /ts\.net/);
-  assert.throws(() => A.client({ url: 'http://mac-mini.x.ts.net', tlsMode: 'tailscale', token: 't' }), /https/);
-  assert.equal(typeof A.client({ url: 'https://mac-mini.tail1234.ts.net:8443', tlsMode: 'tailscale', token: 't' }), 'function');
+test('r5: TLS is pinned only — tailscale (Serve / public CA) mode refused in client() and enroll(); pinned still requires a fingerprint', async () => {
+  for (const url of ['https://mac-mini.tail1234.ts.net:8443', 'https://100.100.1.2:8790']) assert.throws(() => A.client({ url, tlsMode: 'tailscale', token: 't' }), /не поддерживается/);
+  await assert.rejects(require('../../node-agent/enroll.js').enroll({ url: 'https://mac-mini.tail1234.ts.net:8443', tlsMode: 'tailscale', code: 'AAAAA-BBBBB-CCCCC', home: tmp() }), e => e.code === 'E_TLS_MODE');
   const d = tmp(); fs.writeFileSync(path.join(d, 'c.crt'), 'x'); assert.throws(() => A.client({ url: 'https://100.100.1.2:8790', certFile: path.join(d, 'c.crt'), fingerprint: '', token: 't' }), /FINGERPRINT/);
 });
 test('news.collect: streaming dedup across feeds, maxItemsPerJob and memory cap → partial result, never OOM', async () => {

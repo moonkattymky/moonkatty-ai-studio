@@ -4,7 +4,7 @@ const test = require('node:test'); const assert = require('node:assert/strict');
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto'); const { execFileSync, execFile } = require('child_process');
 const ROOT = path.join(__dirname, '..', '..'); const A = require('../../node-agent/agent.js'); const N = require('../../lib/ops/nodes.js');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'monnode-')); const sha = b => crypto.createHash('sha256').update(b).digest('hex');
-const env = o => ({ HOME: tmp(), NODE_AGENT_ENV: '/nonexistent', NODE_ID: 'macbook', NODE_TOKEN: 'nk_macbook.' + 'a'.repeat(32), COORDINATOR_URL: 'https://mac-mini.tail1234.ts.net:8443', NODE_TLS_MODE: 'tailscale', ...o });
+const env = o => ({ HOME: tmp(), NODE_AGENT_ENV: '/nonexistent', NODE_ID: 'macbook', NODE_TOKEN: 'nk_macbook.' + 'a'.repeat(32), COORDINATOR_URL: 'https://100.100.1.2:8790', NODE_TLS_MODE: 'pinned', ...o });
 
 test('MacBook device profile = real hardware (Monterey 12.7.6, 2 cores, Node 22 not 24)', () => {
   const d = N.DEVICES.macbook; assert.equal(d.os, 'macOS Monterey 12.7.6'); assert.match(d.model, /MacBook Pro Retina 13" Early 2015/); assert.match(d.cpu, /i5 2\.7 GHz, 2 cores/);

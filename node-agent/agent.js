@@ -3,7 +3,8 @@
 // (iMac Retina 5K 27" 2017, i5 3.4GHz 4c, 8 GB, macOS Ventura 13.7.1; MacBook Pro Retina 13" Early 2015, i5 2.7GHz 2c, 8 GB DDR3, macOS Monterey 12.7.6). Zero npm dependencies (only Node built-ins).
 // Runtime: iMac → Node.js 24 LTS darwin-x64 (official min macOS 13.5, Tier 1); MacBook (Monterey 12.7.6) → Node.js 22 LTS x64 (min macOS 11; Node 24 NOT allowed there).
 // Code is kept compatible with Node ≥ 16 (no fetch, no newer syntax-only APIs).
-// NODE_TLS_MODE=tailscale: Mac mini runs `tailscale serve --bg --https=8443 https+insecure://127.0.0.1:8790` (tailnet only, never funnel).
+// TLS: only NODE_TLS_MODE=pinned — the coordinator's self-signed Node API certificate pinned by SHA-256, reached directly on its Tailscale
+// address 100.x (nodes-022-final r5: the Node API does NOT run behind Tailscale Serve; Serve/Funnel are never needed for nodes).
 // Pull-only: the agent connects OUT to the coordinator over HTTPS with a pinned self-signed certificate; it listens on no port.
 // Never receives OpenCode/Studio credentials; X tasks are analytics/drafts only (never posting/liking/following).
 'use strict';
@@ -66,12 +67,11 @@ function signHeaders(cfg, method, p, data) { if (!cfg.deviceKey) return {}; cons
 function client(cfg) {
   const u = new URL(cfg.url); const isHttps = u.protocol === 'https:';
   if (!isHttps && !cfg.allowHttpForTests) throw new Error('COORDINATOR_URL должен быть https:// (TLS с закреплённым сертификатом)');
-  // TLS modes: 'tailscale' — coordinator behind `tailscale serve` (Let's Encrypt cert for <host>.<tailnet>.ts.net, normal CA
-  // verification, tailnet-only, never funnel); 'pinned' (default) — self-signed coordinator cert pinned by SHA-256.
-  if (cfg.tlsMode === 'tailscale') { if (!isHttps || !/\.ts\.net$/i.test(u.hostname)) throw new Error('NODE_TLS_MODE=tailscale: COORDINATOR_URL должен быть https://<mac-mini>.<tailnet>.ts.net (tailscale serve, без funnel)'); }
-  const pinPem = isHttps && cfg.tlsMode !== 'tailscale' ? fs.readFileSync(cfg.certFile, 'utf8') : null; const pin = (cfg.fingerprint || '').replace(/:/g, '').toLowerCase();
-  if (isHttps && cfg.tlsMode !== 'tailscale' && !/^[a-f0-9]{64}$/.test(pin)) throw new Error('COORDINATOR_FINGERPRINT (SHA-256, 64 hex) обязателен');
-  const agent = isHttps && cfg.tlsMode === 'tailscale' ? new https.Agent({ keepAlive: true, minVersion: 'TLSv1.2' }) : isHttps ? new https.Agent({ ca: pinPem, keepAlive: true, checkServerIdentity: (h, cert) => { const fp = String(cert.fingerprint256 || '').replace(/:/g, '').toLowerCase(); return fp === pin ? undefined : new Error('TLS pin mismatch: ' + fp); } }) : new http.Agent({ keepAlive: true });
+  // TLS: only 'pinned' — self-signed coordinator cert pinned by SHA-256 (r5: 'tailscale' mode = trust a public CA via Tailscale Serve, removed).
+  if (cfg.tlsMode && cfg.tlsMode !== 'pinned') throw new Error('NODE_TLS_MODE=tailscale не поддерживается: Node API координатора (v1.3.0-test) не стоит за Tailscale Serve — только закреплённый сертификат (NODE_TLS_MODE=pinned, https://100.x.y.z:<порт> + COORDINATOR_FINGERPRINT)');
+  const pinPem = isHttps ? fs.readFileSync(cfg.certFile, 'utf8') : null; const pin = (cfg.fingerprint || '').replace(/:/g, '').toLowerCase();
+  if (isHttps && !/^[a-f0-9]{64}$/.test(pin)) throw new Error('COORDINATOR_FINGERPRINT (SHA-256, 64 hex) обязателен');
+  const agent = isHttps ? new https.Agent({ ca: pinPem, keepAlive: true, checkServerIdentity: (h, cert) => { const fp = String(cert.fingerprint256 || '').replace(/:/g, '').toLowerCase(); return fp === pin ? undefined : new Error('TLS pin mismatch: ' + fp); } }) : new http.Agent({ keepAlive: true });
   return function req(method, p, body, { raw = false, timeout = 30000, toFile = null, maxBytes = Infinity } = {}) { return new Promise((res, rej) => {
     const data = body == null ? null : Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body));
     const r = (isHttps ? https : http).request({ method, hostname: u.hostname, port: u.port || (isHttps ? 443 : 80), path: '/api/nodes' + p, agent, timeout,
@@ -255,7 +255,7 @@ async function config(env = process.env) {
   if (profileKey && (e.NODE_ALLOW_HEAVY_AI === '1' || e.NODE_ALLOW_BLENDER === '1')) throw new Error(`профиль ${PROFILES[profileKey].title}: heavy AI / Blender запрещены профилем и не включаются переменными окружения`);
   const base = (PROFILES[profileKey] || PROFILES.news).limits; const limits = { ...base, ...(e.NODE_MAX_RSS_MB ? { maxRssMB: Math.min(1024, +e.NODE_MAX_RSS_MB) } : {}), ...(e.NODE_SOFT_RSS_MB ? { softRssMB: +e.NODE_SOFT_RSS_MB } : {}) };
   const xGrowth = profileKey === 'monitor' && e.NODE_X_GROWTH === '1';
-  const tlsMode = e.NODE_TLS_MODE === 'tailscale' ? 'tailscale' : 'pinned';
+  if (e.NODE_TLS_MODE && e.NODE_TLS_MODE !== 'pinned') throw new Error('NODE_TLS_MODE=tailscale не поддерживается: Node API координатора (v1.3.0-test) не стоит за Tailscale Serve — только закреплённый сертификат (NODE_TLS_MODE=pinned, https://100.x.y.z:<порт> + COORDINATOR_FINGERPRINT)'); const tlsMode = 'pinned';
   let deviceKey = null; try { const d = await EN.deviceIdentity(path.join(os.homedir(), '.moonkatty-node'), EN.keychain(e), { create: false }); if (d) deviceKey = d.key; } catch {}
   return { env: e, deviceKey, profileKey, limits, tlsMode, xGrowth, outboxDir: e.NODE_OUTBOX_DIR || path.join(e.NODE_WORK_DIR ? path.dirname(e.NODE_WORK_DIR) : home, 'outbox'), nodeId, token, url: e.COORDINATOR_URL, certFile: e.COORDINATOR_CERT || path.join(home, 'coordinator.crt'), fingerprint: e.COORDINATOR_FINGERPRINT, allowHttpForTests: e.NODE_AGENT_TEST_HTTP === '1',
     workDir: e.NODE_WORK_DIR || path.join(home, 'work'), actionLog: e.NODE_ACTION_LOG || path.join(e.NODE_WORK_DIR || path.join(home, 'work'), '..', 'actions.log'), statusPort: e.NODE_STATUS_PORT === '0' ? 0 : +(e.NODE_STATUS_PORT || 8791), profile: e.NODE_PROFILE || '', archiveDir: e.NODE_ARCHIVE_DIR || path.join(home, 'archive'), pollMs: +(e.NODE_POLL_MS || 5000), ntfyUrl: e.NODE_NTFY_URL || '', fault: e.NODE_AGENT_FAULT || '', slowMs: +(e.NODE_AGENT_SLOW_MS || 0) };

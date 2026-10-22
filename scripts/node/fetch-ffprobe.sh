@@ -14,5 +14,5 @@ echo "$ZIP_SHA  $T/f.zip" | shasum -a 256 -c - >/dev/null || { echo "ОШИБК�
 unzip -q "$T/f.zip" -d "$T" ffprobe
 echo "$BIN_SHA  $T/ffprobe" | shasum -a 256 -c - >/dev/null || { echo "ОШИБКА: SHA-256 ffprobe не совпадает — не устанавливаю"; exit 1; }
 if command -v lipo >/dev/null; then lipo -archs "$T/ffprobe" | grep -q x86_64 || { echo "ОШИБКА: не x86_64"; exit 1; }; fi
-mkdir -p "$DEST"; install -m 755 "$T/ffprobe" "$DEST/ffprobe"; xattr -d com.apple.quarantine "$DEST/ffprobe" 2>/dev/null || true
+mkdir -p "$DEST"; install -m 755 "$T/ffprobe" "$DEST/ffprobe"  # r5: no quarantine removal — curl does not set com.apple.quarantine; if macOS still blocks it, allow THIS file in Privacy & Security
 "$DEST/ffprobe" -hide_banner -version | head -1; echo "OK: $DEST/ffprobe (sha256 $BIN_SHA)"

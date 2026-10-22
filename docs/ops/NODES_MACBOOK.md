@@ -1,5 +1,8 @@
 # MOONKATTY NODE на MacBook Pro Retina 13" Early 2015 (Intel, macOS Monterey 12.7.6) — MONITOR NODE (пошагово)
 
+> **УСТАРЕЛО для NODE 0.2.2 / v1.3.0-test.** Схема с `tailscale serve` (`*.ts.net:8443`, `NODE_TLS_MODE=tailscale`) для узлов НЕ используется и агентом 0.2.2 отклоняется. Актуальная инструкция: [../NODES_INSTALL_RU.md](../NODES_INSTALL_RU.md) — прямое подключение к адресу Tailscale 100.x с закреплённым сертификатом, без Serve и Funnel.
+
+
 > **Актуальная инструкция — [MONITOR_NODE_MACBOOK.md](MONITOR_NODE_MACBOOK.md)** (пакет 0.2.0 `darwin-x64-monterey`, Node 22 LTS, Tailscale serve, лимиты RAM/CPU). Характеристики: Intel Core i5 2,7 ГГц 2 ядра, 8 ГБ DDR3, Intel Iris 6100, macOS Monterey 12.7.6, x86_64.
 
 Профиль **MONITOR NODE** (`role: monitor`). Задачи: мониторинг центральной студии, проверка результатов задач, технический анализ видео через ffprobe, уведомления (настраиваются только на самом MacBook: `NODE_NTFY_URL` в node-agent.env), лёгкие проверки сайтов/сервисов, статистика, X: только аналитика и черновики (никаких автопостов, лайков, подписок). Тяжёлые модели и 3D — никогда.

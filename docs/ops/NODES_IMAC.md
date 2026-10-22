@@ -1,5 +1,8 @@
 # MOONKATTY NODE на iMac Retina 5K 27" 2017 (Intel, macOS Ventura 13.7.1) — NEWS NODE (пошагово)
 
+> **УСТАРЕЛО для NODE 0.2.2 / v1.3.0-test.** Схема с `tailscale serve` (`*.ts.net:8443`, `NODE_TLS_MODE=tailscale`) для узлов НЕ используется и агентом 0.2.2 отклоняется. Актуальная инструкция: [../NODES_INSTALL_RU.md](../NODES_INSTALL_RU.md) — прямое подключение к адресу Tailscale 100.x с закреплённым сертификатом, без Serve и Funnel.
+
+
 > **Актуальная инструкция — [NEWS_NODE_IMAC.md](NEWS_NODE_IMAC.md)** (пакет 0.2.0, Node 24 LTS, Tailscale serve, лимиты RAM). iMac Retina 5K 27" 2017. Характеристики: i5 3.4 GHz 4 ядра, 8 ГБ DDR4, Radeon Pro 570 4 ГБ, macOS Ventura 13.7.1, x86_64.
 
 Профиль **NEWS NODE** (`role: news`). Задачи: сбор RSS и официальных источников, дедупликация, подготовка данных новостей, архивирование, лёгкая обработка изображений (sips), передача данных на Mac mini. Тяжёлые модели и 3D — никогда.

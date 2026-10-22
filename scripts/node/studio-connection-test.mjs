@@ -13,7 +13,7 @@ let cfg; try { cfg = await A.config(); ok('config: node-agent.env (chmod 600) + 
 catch (e) { ok('config', false, e.message); finish(); }
 const u = new URL(cfg.url || 'https://invalid'); const isTs = /\.ts\.net$/i.test(u.hostname);
 ok('адрес координатора: https и tailnet/частная сеть', u.protocol === 'https:' && (isTs || A.client && /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(u.hostname)), cfg.url);
-if (dry) { for (const s of ['DNS', 'TLS (сертификат *.ts.net или закреплённый SHA-256)', 'без токена → 401', 'с токеном GET /api/nodes/ping → 200 (только чтение)', 'профиль/capabilities без heavy AI/Blender', 'Tailscale funnel выключен']) console.log('PLAN ' + s); console.log('DRY-RUN: сеть не трогали'); process.exit(0); }
+if (dry) { for (const s of ['DNS', 'TLS (закреплённый SHA-256 сертификата координатора)', 'без токена → 401', 'с токеном GET /api/nodes/ping → 200 (только чтение)', 'профиль/capabilities без heavy AI/Blender', 'Tailscale funnel выключен']) console.log('PLAN ' + s); console.log('DRY-RUN: сеть не трогали'); process.exit(0); }
 try { const a = await dns.lookup(u.hostname); ok('DNS', true, `${u.hostname} → ${a.address}` + (isTs && !a.address.startsWith('100.') ? ' (ожидался 100.x Tailscale)' : '')); } catch (e) { ok('DNS', false, e.message); }
 await new Promise(r => { const o = { host: u.hostname, port: +u.port || 443, servername: u.hostname, minVersion: 'TLSv1.2', timeout: 10000 };
   if (cfg.tlsMode !== 'tailscale') { o.ca = fs.readFileSync(cfg.certFile, 'utf8'); o.checkServerIdentity = () => undefined; }

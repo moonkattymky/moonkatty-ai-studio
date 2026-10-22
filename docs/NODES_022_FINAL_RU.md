@@ -65,3 +65,20 @@
 
 ## Требования к тестам
 Наборы запускать на **Node.js 22** (`/home/box/node22` на ящике): `test:isolation` и `test:publish-guard` и сборка `better-sqlite3` (ABI 127) рассчитаны на Node 22; на другом major — `npm rebuild better-sqlite3` и возможные расхождения. Для `test:ops*` — `STUDIO_SQLITE=node`, Chrome (`/usr/bin/google-chrome`) для ui-e2e, ffmpeg/ffprobe для функций MONITOR.
+
+## r5 — QA-R4-001: рекомендации Tailscale Serve для узлов убраны
+**Решение и основания.** Node API координатора v1.3.0-test Serve не требует:
+- `lib/ops/nodes-server.js` (шапка): Node API — отдельный HTTPS-слушатель с самоподписанным сертификатом, узлы закрепляют его SHA-256; слушает 127.0.0.1 и один адрес Tailscale 100.x; «Tailscale Serve/Funnel are NOT used or enabled».
+- `lib/ops/nodes.js`: заголовки Serve по умолчанию не доверяются (`trustServeHeaders=false`, QA-NODE-002).
+- `docs/SECURITY_RECHECK_v1.2.4-test.md`: «Tailscale Serve и Funnel не используются»; `docs/MAC_TEST_NODES_v1.2.4.md`: `NODE_TLS_MODE=tailscale` и `*.ts.net` из примера убрать.
+- Serve в студии используется только для веб-панели/iPhone PWA (`tailscale serve --bg 8787`, `docs/CONNECT_MAC.md`, `docs/INSTALL_MAC.md`) — это координатор, не узлы; не менялось.
+- Схема `*.ts.net:8443` + `NODE_TLS_MODE=tailscale` — из старого трека 0.2.0 (`docs/ops/NEWS_NODE_IMAC.md`, `MONITOR_NODE_MACBOOK.md`), она требует новой настройки Serve на Mac mini (запрещено) и доверяет публичному CA вместо закреплённого сертификата.
+
+**Что сделано.**
+- Агент и подключение: `NODE_TLS_MODE=tailscale` больше не поддерживается — `config()`, `client()` и `enroll()` отклоняют его с понятным сообщением (`E_TLS_MODE`); подключение всегда `pinned`, отпечаток обязателен (в т.ч. для имени `*.ts.net`). Обоснование отказа вместо «не рекомендуется»: режим ослабляет проверку TLS (публичный CA вместо пина) и требует менять Tailscale на Mac mini.
+- `node-agent.env.example`: по умолчанию `NODE_TLS_MODE=pinned`, `https://100.x.y.z:8690`, сертификат и отпечаток; убрана подсказка ручной записи токена.
+- `enroll.html`: адрес `https://100.x.y.z:8690`, отпечаток обязателен. plist, комментарии agent.js, `studio-connection-test.mjs` — без Serve.
+- `fetch-ffprobe.sh`: убрано `xattr -d com.apple.quarantine` (curl не ставит карантин; снимать его не нужно и не разрешено политикой).
+- `NODES_INSTALL_RU.md`: формулировки про Serve уточнены (Serve веб-панели не трогать, для узлов не настраивать).
+- Старые инструкции 0.2.0 (`docs/ops/NEWS_NODE_IMAC.md`, `MONITOR_NODE_MACBOOK.md`, `NODES_IMAC.md`, `NODES_MACBOOK.md`) помечены «УСТАРЕЛО» со ссылкой на `NODES_INSTALL_RU.md`.
+- Тест `test/ops/node-advice-scan.test.js`: сканирует все текстовые файлы собранного пакета и актуальные документы (Serve/Funnel, `ts.net:8443`, `NODE_TLS_MODE=tailscale`, 0.0.0.0, `spctl --master-disable`, снятие карантина, sudo, токен открытым текстом, секрет/код в argv; строки с явным запретом допускаются), проверяет безопасные значения env.example и баннеры устаревших документов; тот же сканер на содержимом r4 (`e562345`) находит нарушения.
