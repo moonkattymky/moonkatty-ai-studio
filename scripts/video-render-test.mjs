@@ -33,9 +33,11 @@ ok('reject idempotencyKey not <runId>:<preset>', throws(() => api.createJob({ ty
 ok('no job rows created by rejected requests', jobs.list(500).length === 0);
 
 // --- mutual exclusion with a blender_template job + stub
-const bt = api.createJob({ type: 'blender_template', input: { template: 'scene_basic', params: {} } });
+// v1.3.2-test: blender_template jobs are refused by the shared 3D gate (lib/feature-gate.js) → hold the lock with the Blender stub directly.
+ok('blender_template job refused by 3D gate (feature_disabled), no row', throws(() => api.createJob({ type: 'blender_template', input: { template: 'scene_basic', params: {} } }), /3D-студия не одобрена/) && jobs.list(500).length === 0);
+const btP = blender.runTemplate('/fake/blender', 'scene_basic', 'build').catch(() => {});
 await until(() => heavy().holder && heavy().holder.startsWith('blender'));
-ok('blender_template holds the heavy lock', /^blender/.test(heavy().holder || ''), JSON.stringify(heavy()));
+ok('Blender (stub) holds the heavy lock', /^blender/.test(heavy().holder || ''), JSON.stringify(heavy()));
 const v1 = api.createJob({ type: 'video_render', input: good });
 const j1 = api.getJob(v1.jobId);
 ok('video_render job fields: key <runId>:<preset>, gpu_heavy, mac-mini, safeToRetry', j1.idempotencyKey === 'run_2026-10-21.a:youtube' && j1.resourceClass === 'gpu_heavy' && j1.requiresNode === 'mac-mini' && j1.safeToRetry === true, JSON.stringify(j1));
@@ -54,7 +56,7 @@ await until(() => ['failed', 'done'].includes(api.getJob(v2.jobId).internalStatu
 const f1 = api.getJob(v1.jobId);
 ok('stub: job failed with «Не подключено», no artifacts', f1.status === 'failed' && /Не подключено/.test(f1.error) && f1.artifacts.length === 0, JSON.stringify(f1));
 ok('stub: no output files created', !fs.existsSync(MEDIA) || fs.readdirSync(MEDIA).length === 0);
-await until(() => api.getJob(bt.jobId).internalStatus === 'failed');
+await btP;
 
 // --- strict serialization: plug a slow executor, measure overlap with blender + ollama + each other
 let active = 0, maxActive = 0; const log = [];

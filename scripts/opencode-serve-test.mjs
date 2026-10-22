@@ -130,19 +130,20 @@ await api('PUT', '/api/studio3d/settings', { blenderPath: T + '/bin/blender', op
 const terminal = j => ['waiting_approval', 'failed', 'blocked', 'cancelled', 'done'].includes(j.status);
 const waitJob = async (taskId) => { const t0 = Date.now(); let j; while (Date.now() - t0 < 90000) { const l = (await api('GET', '/api/jobs?limit=20')).j; j = Array.isArray(l) && l.find(x => x.taskId === taskId); if (j && terminal(j)) return (await api('GET', '/api/jobs/' + j.id)).j; await sleep(400); } return j; };
 const ev = j => (j?.events || []).map(e => e.msg).join('\n');
-const jRef = await waitJob((await api('POST', '/api/studio3d/run', { text: 'Кот соединение отклонено' })).j.id);
+const gate3d = j => { if (j && j.code === 'feature_disabled') { console.log('SKIP: design3d disabled in this build (DESIGN3D_ENABLED=false, feature_disabled) — 3D pipeline checks not run'); process.exit(2); } return j; };
+const jRef = await waitJob(gate3d((await api('POST', '/api/studio3d/run', { text: 'Кот соединение отклонено' })).j).id);
 const sp = jRef?.checkpoint?.vdir && JSON.parse(fs.readFileSync(path.join(jRef.checkpoint.vdir, 'scene_params.json'), 'utf8'));
 const blend = jRef?.checkpoint?.vdir && fs.readFileSync(path.join(jRef.checkpoint.vdir, 'scene.blend'));
 const png = jRef?.checkpoint?.vdir && fs.readFileSync(path.join(jRef.checkpoint.vdir, 'renders', 'preview.png'));
 ok('OpenCode down → fallback writes valid scene_params.json, .blend and PNG', jRef?.status === 'waiting_approval' && /\+fallback$/.test(jRef.checkpoint?.paramsBy || '') && /не записал scene_params\.json/.test(ev(jRef)) && sp && sp.subject !== 'import os' && blend?.slice(0, 7).toString() === 'BLENDER' && png?.readUInt32BE(0) === 0x89504e47 && png.readUInt32BE(16) === sp.render.width && jRef.outputs?.blendReady && jRef.outputs?.previewReady && jRef.outputs.blend.endsWith('/scene.blend') && jRef.outputs.preview.endsWith('/renders/preview.png'), (jRef?.error || '') + ' ' + jRef?.status);
 
 await api('PUT', '/api/opencode/auth', { url: `http://127.0.0.1:${UNAUTH}` });
-const j401 = await waitJob((await api('POST', '/api/studio3d/run', { text: 'Кот неверный пароль' })).j.id);
+const j401 = await waitJob(gate3d((await api('POST', '/api/studio3d/run', { text: 'Кот неверный пароль' })).j).id);
 ok('HTTP 401 stays blocked and does not write a fallback scene', j401?.status === 'blocked' && /401/.test(j401.error || '') && !(j401.checkpoint?.vdir && fs.existsSync(path.join(j401.checkpoint.vdir, 'scene.blend'))), j401?.error);
 
 await api('PUT', '/api/opencode/auth', { url: `http://127.0.0.1:${BAD}` });
 const before = prompts.length;
-const jBad = await waitJob((await api('POST', '/api/studio3d/run', { text: 'Кот плохой json' })).j.id);
+const jBad = await waitJob(gate3d((await api('POST', '/api/studio3d/run', { text: 'Кот плохой json' })).j).id);
 ok('bad JSON twice → fallback, exactly 2 prompts, files ready', jBad?.status === 'waiting_approval' && prompts.length - before === 2 && /не записал scene_params\.json/.test(ev(jBad)) && jBad.outputs?.sceneParamsReady && jBad.outputs?.blendReady, (jBad?.error || '') + ' prompts=' + (prompts.length - before));
 ok('studio log never contains the OpenCode password', !outLog.join('').includes(PW));
 

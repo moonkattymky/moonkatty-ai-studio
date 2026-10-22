@@ -42,7 +42,8 @@ const st = (await api('GET', '/api/studio3d/status?refresh=1')).j;
 ok('Blender detected, version + Python API probed headless', st.blender?.ok && /^\d+\.\d+/.test(st.blender.version) && st.blender.engines?.includes('CYCLES') && st.blender.gltf, `Blender ${st.blender?.version}, Python ${st.blender?.python}`);
 
 const waitJob = async (taskId, pred, ms = 240000) => { const t0 = Date.now(); let j; while (Date.now() - t0 < ms) { const l = (await api('GET', '/api/jobs?limit=100')).j; j = Array.isArray(l) && l.find(x => x.taskId === taskId); if (j && pred(j)) return (await api('GET', '/api/jobs/' + j.id)).j; await sleep(700); } return j ? (await api('GET', '/api/jobs/' + j.id)).j : null; };
-const run = async text => (await api('POST', '/api/studio3d/run', { text })).j;
+const gate3d = j => { if (j && j.code === 'feature_disabled') { console.log('SKIP: design3d disabled in this build (DESIGN3D_ENABLED=false, feature_disabled) — 3D pipeline checks not run'); process.exit(2); } return j; };
+const run = async text => gate3d((await api('POST', '/api/studio3d/run', { text })).j);
 const terminal = j => ['waiting_approval', 'failed', 'blocked', 'cancelled', 'done'].includes(j.status);
 const evText = j => (j?.events || []).map(e => `[${e.stage}] ${e.msg} ${e.rule || ''}`).join('\n');
 // ===== Stage C (v1.2.1): references, review, versions, re-render, downloads, viewer =====
@@ -65,7 +66,7 @@ const rg = await fetch(`${B}/api/projects3d/${proj}/references/${upj.sha256}`, {
 ok('reference served with nosniff + sandbox CSP', rg.status === 200 && rg.headers.get('x-content-type-options') === 'nosniff' && /sandbox/.test(rg.headers.get('content-security-policy')));
 ok('reference by bad sha → 404', (await api('GET', `/api/projects3d/${proj}/references/..%2F..%2Fstudio.db`)).status === 404);
 // --- run in this project
-const t1 = (await api('POST', '/api/studio3d/run', { text: 'Создай фиолетового кота MOONKATTY', projectId: proj })).j;
+const t1 = gate3d((await api('POST', '/api/studio3d/run', { text: 'Создай фиолетового кота MOONKATTY', projectId: proj })).j);
 const j1 = await waitJob(t1.id, terminal); ok('job in project reaches waiting_approval', j1?.status === 'waiting_approval' && j1.checkpoint.projectId === proj, j1?.status + ' ' + (j1?.error || '') + '\n' + evText(j1));
 const v1 = j1.checkpoint.version;
 // --- approval not settable via generic API

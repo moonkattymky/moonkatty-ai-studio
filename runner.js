@@ -89,6 +89,9 @@ module.exports = function createRunner(ctx) {
     const r = await ollamaDraft(draftPrompt(a, t), signal); return { status: 'waiting_approval', result: r.text, model: r.model };
   }
   async function runTask(a, t) {
+    // v1.3.2-test: shared 3D gate (lib/feature-gate.js) — 3D agent / 3D task refused BEFORE execution: task failed, nothing spawned.
+    let dis = null; if (ctx.gate3d && (ctx.gate3d.is3dAgent(a.id) || ctx.gate3d.is3dType(t.kind))) { try { ctx.gate3d.assert3dAllowed('runner:' + a.id); } catch (e) { dis = e.message; } }
+    if (dis) { Object.assign(t, { status: 'failed', error: dis, errorCode: 'feature_disabled', blockedReason: null, finishedAt: core.now() }); put('tasks', t); const ag = get('agents', a.id); if (ag) { Object.assign(ag, { lastError: dis }); addLog(ag, 'warn', 'Отклонено (feature_disabled): ' + t.title); put('agents', ag); } return; }
     const ac = new AbortController(); busy.set(a.id, { taskId: t.id, abort: ac });
     Object.assign(t, { status: 'in_progress', startedAt: core.now(), blockedReason: null }); put('tasks', t);
     Object.assign(a, { status: 'working', currentTaskId: t.id, lastRunAt: core.now() }); addLog(a, 'info', 'Взята задача: ' + t.title); put('agents', a);

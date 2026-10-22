@@ -73,7 +73,8 @@ await api('PUT', '/api/studio3d/settings', { opencodeModel: 'ollama/qwen2.5-code
 const terminal = j => ['waiting_approval', 'failed', 'blocked', 'cancelled', 'done'].includes(j.status);
 const waitJob = async (taskId, ms = 240000) => { const t0 = Date.now(); let j; while (Date.now() - t0 < ms) { const l = (await api('GET', '/api/jobs?limit=100')).j; j = Array.isArray(l) && l.find(x => x.taskId === taskId); if (j && terminal(j)) return (await api('GET', '/api/jobs/' + j.id)).j; await sleep(700); } return j; };
 const evText = j => (j?.events || []).map(e => `[${e.stage}] ${e.msg} ${e.rule || ''}`).join('\n');
-const run = async text => waitJob((await api('POST', '/api/studio3d/run', { text })).j.id);
+const gate3d = j => { if (j && j.code === 'feature_disabled') { console.log('SKIP: design3d disabled in this build (DESIGN3D_ENABLED=false, feature_disabled) — 3D pipeline checks not run'); process.exit(2); } return j; };
+const run = async text => waitJob(gate3d((await api('POST', '/api/studio3d/run', { text })).j).id);
 // 1. full pipeline: no tool calls, JSON in text → studio writes params → real Blender → PNG
 const j1 = await run('Кот FAKE_JSON фиолетовый');
 ok('no-tool-call agent: job reaches waiting_approval (full pipeline)', j1?.status === 'waiting_approval', j1?.status + ' ' + (j1?.error || '') + '\n' + evText(j1));

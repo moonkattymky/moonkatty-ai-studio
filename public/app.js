@@ -636,11 +636,12 @@ BIND.nodes = v => {
 VIEWS.studio3d = () => {
   if (MODE !== 'server') return '<div class="devbox">3D Studio работает только в приложении (серверный режим): нужен локальный Blender и OpenCode server.</div>';
   const st = S3.status; const b = st?.blender, oc = st?.opencode; const P = S3.project;
-  return `<div class="grid g2"><div class="card"><h3>Новая 3D-задача ${P ? `<span class="small mut">→ проект ${esc(P.id)}</span>` : ''}</h3>
+  const off3d = st?.design3d && st.design3d.enabled === false; // v1.3.2-test: shared 3D gate → page shows the 403 message, actions disabled
+  return `${off3d ? `<div class="devbox" id="s3disabled" role="alert" style="border-color:#ef4444;margin-bottom:10px"><b>⛔ 403 feature_disabled</b> — ${esc(st.design3d.message)}</div>` : ''}<div class="grid g2"><div class="card"><h3>Новая 3D-задача ${P ? `<span class="small mut">→ проект ${esc(P.id)}</span>` : ''}</h3>
       <textarea id="s3text" rows="3" placeholder="Например: фиолетовый кот MOONKATTY в студийном свете"></textarea>
       <label>Референсы (PNG/JPEG/WEBP, до 15 МБ)</label><input type="file" id="s3refs" accept="image/png,image/jpeg,image/webp" multiple>
       ${P?.references?.length ? `<div class="row" style="flex-wrap:wrap;margin-top:6px">${P.references.map(r => `<img src="/api/projects3d/${encodeURIComponent(P.id)}/references/${r.sha256}" alt="${esc(r.name)}" title="${esc(r.name)} · sha256 ${r.sha256.slice(0, 12)}…" style="width:64px;height:64px;object-fit:cover;border-radius:6px">`).join('')}</div><div class="small mut">Референсы сохранены в папке проекта (SHA-256). Использование референсов моделью — этап D, ${DEV('В разработке')}</div>` : ''}
-      <div class="row" style="margin-top:8px"><button class="btn" id="s3run">Создать 3D-модель</button>${P ? '<button class="btn sm" id="s3new">Новый проект</button>' : ''}</div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="s3run"${off3d ? ' disabled title="3D-студия не одобрена"' : ''}>Создать 3D-модель</button>${P ? '<button class="btn sm" id="s3new">Новый проект</button>' : ''}</div>
       <p class="small mut">Director назначает задачу агенту 3D DESIGN → студия проверяет параметры и сама записывает scene_params.json. Если OpenCode недоступен или не вернул JSON, берутся уже проверенные параметры. Дальше Blender (без окна) собирает сцену, сохраняет .blend, открывает её заново и рендерит PNG. Пути к файлам видны в задании. Произвольные команды и файлы вне папки проекта запрещены политикой.</p></div>
     <div class="card"><h3>Окружение <button class="btn sm" id="s3ref">Проверить</button></h3>
       <div class="small">Blender: ${b ? (b.ok ? `<span class="badge b-ok">${esc(b.version)}</span> <span class="mut">${esc(b.bin)}</span>` : `<span class="badge b-err">Не найден</span> <span class="mut">${esc(b.error || '')}</span>`) : '…'}</div>

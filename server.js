@@ -15,6 +15,8 @@ const egress = require('./lib/egress.js'), heavy = require('./lib/heavy-lock.js'
 const hostMem = require('./lib/host-memory.js');
 
 const PORT = +process.env.PORT || CFG.defaultPort;
+// v1.3.2-test candidate: ONE shared 3D gate (lib/feature-gate.js) — see that file for every covered entry point.
+const gate3d = require('./lib/feature-gate.js'); const DESIGN3D_ENABLED = gate3d.DESIGN3D_ENABLED, DESIGN3D_DISABLED_MSG = gate3d.DESIGN3D_DISABLED_MSG;
 const HOST = process.env.HOST || '127.0.0.1';
 // v1.2.4: the main panel listens on loopback ONLY (never 0.0.0.0, LAN or a public address). Nodes use their own TLS listener.
 if (!/^(127\.\d+\.\d+\.\d+|::1|localhost)$/.test(HOST)) { console.error(`ОТКАЗ: HOST=${HOST} — панель слушает только 127.0.0.1/::1`); process.exit(78); }
@@ -140,14 +142,14 @@ const meta = CFG.IS_TEST ? (() => { metaCtx.keySource = require('./lib/keystore.
   : (() => { try { return require('./meta.js')(app, metaCtx); } catch (e) { console.error('ОТКАЗ: модуль публикации недоступен для prod-сборки (' + e.message + ')'); process.exit(78); } })();
 const nodeHooks = {}; // v1.2.4: Node Manager (lib/ops/nodes-server.js) is mounted after auth; runner reaches it late-bound
 const worldHooks = {};
-const runner = require('./runner.js')({ get, put, list, log, core, meta, dataDir: path.dirname(DB_PATH), brand: BRAND, onAgentStart: a => worldHooks.onAgentStart && worldHooks.onAgentStart(a), runViaNode: (a, t, s) => nodeHooks.runViaNode ? nodeHooks.runViaNode(a, t, s) : Promise.reject(Object.assign(new Error('Node Manager выключен'), { blocked: true })) });
+const runner = require('./runner.js')({ get, put, list, log, core, meta, gate3d, dataDir: path.dirname(DB_PATH), brand: BRAND, onAgentStart: a => worldHooks.onAgentStart && worldHooks.onAgentStart(a), runViaNode: (a, t, s) => nodeHooks.runViaNode ? nodeHooks.runViaNode(a, t, s) : Promise.reject(Object.assign(new Error('Node Manager выключен'), { blocked: true })) });
 // ---- v1.2.0: job engine + 3D DESIGN agent (OpenCode server + Blender) ----
 const jobs = require('./lib/jobs.js')(db, { redact: s => sec.redact(s) });
 const ws3d = require('./lib/workspace.js')(path.dirname(DB_PATH));
 const blender = require('./lib/blender.js')();
 const policy = require('./lib/policy.js'), SP = require('./lib/scene-params.js');
 const design3d = require('./lib/executors/design3d.js')({ jobs, ws: ws3d, blender, get, put, log, sec, ollamaStatus: runner.ollamaStatus, ollamaJson: runner.ollamaJson });
-runner.register('design3d', design3d.run);
+runner.register('design3d', (a, t, signal) => { gate3d.assert3dAllowed('runner:design3d'); return design3d.run(a, t, signal); });
 const services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core, log, mediaRoot: path.join(DATA_DIR, 'media') }); app.locals.services = services; module.exports = { services };
 // Studio 2 media-automation: real video_render executor (lazy factory — TTS is detected on first render, not at boot).
 // Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
@@ -285,6 +287,9 @@ async function llmPlan(text, onStart) {
   return { planner: 'llm:' + model, summary: j.summary || '', tasks: (j.tasks || []).map(t => ({ ...t, agentId: ids.has(t.agentId) ? t.agentId : 'director' })) };
 }
 function finishPlan(text, user, plan, llmError) {
+  if (plan.tasks.some(t => gate3d.is3dAgent(t.agentId) || gate3d.is3dType(t.kind)) && !DESIGN3D_ENABLED) { try { gate3d.assert3dAllowed('director/chat'); } catch {} // 3D not approved: refuse the whole plan, no task created
+    const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, code: 'feature_disabled', text: DESIGN3D_DISABLED_MSG, taskIds: [] });
+    log('warn', 'director', 'Запрос с задачей 3D отклонён (feature_disabled)', user); return { disabled: true, message: msg, tasks: [] }; }
   const created = plan.tasks.map(t => put('tasks', { id: core.uid(), ...(t.agentId === 'design3d' ? { kind: '3d' } : {}), title: t.title, description: t.description || '', agentId: t.agentId, priority: t.priority || 'normal',
     status: 'queued', project: /новост|news/i.test(text) ? 'news' : 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director' }));
   const msg = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: plan.planner, llmError, text: plan.summary, taskIds: created.map(t => t.id) });
@@ -302,7 +307,7 @@ app.post('/api/director/chat', async (req, res) => {
     const note = put('chat', { id: core.uid(), role: 'director', at: core.now(), planner: 'queued', text: `Студия занята (${hs.holder || 'тяжёлая задача'}) — запрос поставлен в очередь, ответ появится здесь после её завершения.` });
     res.status(202).json({ status: 'busy_queued', message: note, heavy: hs, tasks: [] });
     const r = await work; if (r.full) return; finishPlan(text, user, r.plan, r.llmError); return; }
-  res.json(finishPlan(text, user, first.plan, first.llmError));
+  const fp = finishPlan(text, user, first.plan, first.llmError); if (fp.disabled) return res.status(403).json({ error: DESIGN3D_DISABLED_MSG, code: 'feature_disabled', feature: 'design3d', message: fp.message, tasks: [] }); res.json(fp);
 });
 
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
@@ -422,11 +427,13 @@ const jobView = j => {
   return { ...j, pid: undefined, outputs, publicStatus: services.PUBLIC[j.status], task: get('tasks', j.taskId), stages: design3d.STAGES.map(s => ({ id: s, label: design3d.STAGE_LABEL[s] })) };
 };
 app.get('/api/jobs', (req, res) => { const s = req.query.status; res.json(jobs.list(Math.min(+req.query.limit || 30, 200)).filter(j => !s || j.status === s || services.PUBLIC[j.status] === s).map(jobView)); });
+// 3D gate — route level (shared guard). GET status stays readable so the 3D Studio page can show «недоступно».
+app.use('/api/studio3d', (req, res, next) => req.method === 'GET' ? next() : gate3d.guard('/api/studio3d' + req.path)(req, res, next));
+app.use(/^\/api\/projects3d\/[^/]+\/[^/]+\/(rerender|run)$/, (req, res, next) => req.method === 'GET' ? next() : gate3d.guard('/api/projects3d/*/' + req.path.split('/').pop())(req, res, next));
+app.use(/^\/api\/jobs\/[^/]+\/(retry|confirm|review)$/, (req, res, next) => { if (req.method !== 'POST') return next(); const seg = String(req.originalUrl || '').split('?')[0].split('/'); const id = seg[3]; const act = seg[4]; const j = id ? jobs.get(id) : null; if ((act !== 'retry' || (j && (gate3d.is3dType(j.kind) || gate3d.is3dType(j.type)))) && gate3d.send403(res, 'POST /api/jobs/:id/' + act)) return; next(); });
 // v1.3.2-test candidate: opencode_task has no sandboxed runner in this build (feat/e2e-task-runners NOT merged) → disabled, 403, UI shows «недоступно».
 const OPENCODE_TASK_ENABLED = false;
-// v1.3.2-test candidate (Studio 4): design3d pipeline includes an OpenCode agent and 3D is not approved by the owner → disabled on POST /api/jobs.
-const DESIGN3D_ENABLED = false;
-app.post('/api/jobs', (req, res) => { const b = req.body || {}; if (!OPENCODE_TASK_ENABLED && (b.type === 'opencode_task' || b.kind === 'opencode_task')) return res.status(403).json({ error: 'opencode_task недоступен в этой тестовой сборке (нет изолированного раннера)', code: 'feature_disabled', feature: 'opencode_task' }); if (!DESIGN3D_ENABLED && (b.type === 'design3d' || b.kind === 'design3d')) return res.status(403).json({ error: 'design3d недоступен в этой тестовой сборке (3D-студия не одобрена)', code: 'feature_disabled', feature: 'design3d' }); try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { res.status(400).json({ error: e.message }); } });
+app.post('/api/jobs', (req, res) => { const b = req.body || {}; if (!OPENCODE_TASK_ENABLED && (b.type === 'opencode_task' || b.kind === 'opencode_task')) return res.status(403).json({ error: 'opencode_task недоступен в этой тестовой сборке (нет изолированного раннера)', code: 'feature_disabled', feature: 'opencode_task' }); if ((gate3d.is3dType(b.type) || gate3d.is3dType(b.kind)) && gate3d.send403(res, 'POST /api/jobs ' + (b.type || b.kind))) return; try { const r = services.jobsApi.createJob({ type: b.type, agent: 'design3d', input: b.input && typeof b.input === 'object' ? b.input : {}, timeoutSec: +b.timeoutSec || undefined, maxAttempts: +b.maxAttempts || undefined, resourceClass: b.resourceClass, requiresNode: b.requiresNode, idempotencyKey: b.idempotencyKey, safeToRetry: b.safeToRetry }); res.status(201).json(r); } catch (e) { if (e.code === 'feature_disabled') return res.status(403).json(gate3d.body403(e)); res.status(400).json({ error: e.message }); } });
 app.get('/api/jobs/:id', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); res.json({ ...jobView(j), events: jobs.events(j.id, +req.query.after || 0) }); });
 app.post('/api/jobs/:id/cancel', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' }); if (['blender_template', 'video_render'].includes(j.kind)) { jobs.update(j.id, { status: 'cancelled' }); services.jobsApi.cancelJob(j.id); return res.json(jobView(jobs.get(j.id))); }
   const t = get('tasks', j.taskId); if (t && !['done', 'cancelled'].includes(t.status)) { t.status = 'cancelled'; put('tasks', t); }
@@ -451,7 +458,7 @@ app.post('/api/studio3d/run', (req, res) => {
   if (a.status !== 'working') runner.start('design3d', req.user); else runner.tick(); res.status(201).json(t); });
 const SAFE_PATH = /^\/[^\0\n\r]{1,400}$/, SAFE_MODEL = /^[A-Za-z0-9._-]{1,64}\/[A-Za-z0-9._:\/-]{1,128}$/;
 app.get('/api/studio3d/status', async (req, res) => { const bi = get('integrations', 'blender') || {}; const oc = get('integrations', 'opencode') || {};
-  res.json({ blender: await blender.detect(bi.path, { force: req.query.refresh === '1' }), blenderPath: bi.path || '', opencode: await ocView(), opencodeModel: oc.model || '', agent: get('agents', 'design3d') }); });
+  res.json({ design3d: gate3d.status(), blender: await blender.detect(bi.path, { force: req.query.refresh === '1' }), blenderPath: bi.path || '', opencode: await ocView(), opencodeModel: oc.model || '', agent: get('agents', 'design3d') }); });
 app.put('/api/studio3d/settings', (req, res) => { const b = req.body || {};
   if ('blenderPath' in b) { if (b.blenderPath && !SAFE_PATH.test(b.blenderPath)) return res.status(400).json({ error: 'Путь к Blender: абсолютный путь' }); const it = get('integrations', 'blender') || { id: 'blender', name: 'Blender' }; it.path = b.blenderPath || ''; put('integrations', it); }
   if ('opencodeModel' in b) { if (b.opencodeModel && !SAFE_MODEL.test(b.opencodeModel)) return res.status(400).json({ error: 'Модель: provider/model, например ollama/qwen3:8b или ollama/qwen2.5-coder:7b' }); const it = ocItem(); it.model = b.opencodeModel || ''; put('integrations', it); }
@@ -480,7 +487,7 @@ app.post('/api/projects3d/:pid/references', express.raw({ type: () => true, limi
   catch (e) { res.status(e.status || 400).json({ error: e.message }); } });
 app.get('/api/projects3d/:pid/references/:sha', (req, res) => { if (!projOk(req, res)) return; const f = ws3d.refFile(req.params.pid, req.params.sha); if (!f) return res.status(404).json({ error: 'not found' });
   res.setHeader('Content-Type', f.mime); res.setHeader('X-Content-Type-Options', 'nosniff'); res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; sandbox"); res.setHeader('Cache-Control', 'no-store'); res.sendFile(f.path); });
-function new3dTask(fields, user) { const a = get('agents', 'design3d'); if (!a || !a.enabled) throw Object.assign(new Error('Агент 3D DESIGN выключен'), { status: 409 });
+function new3dTask(fields, user) { gate3d.assert3dAllowed('new3dTask'); const a = get('agents', 'design3d'); if (!a || !a.enabled) throw Object.assign(new Error('Агент 3D DESIGN выключен'), { status: 409 });
   const t = put('tasks', { id: core.uid(), kind: '3d', agentId: 'design3d', priority: 'normal', status: 'queued', project: 'main', schedule: { type: 'none' }, createdAt: core.now(), source: 'director', ...fields });
   if (a.status !== 'working') runner.start('design3d', user); else runner.tick(); return t; }
 // Human review of a finished 3D job. The ONLY way to approve/reject (generic CRUD cannot set status of 3D tasks).
@@ -495,7 +502,7 @@ app.post('/api/jobs/:id/review', (req, res) => { const j = jobs.get(req.params.i
   jobs.update(j.id, { status: action === 'approve' ? 'done' : 'rejected' }); jobs.event(j.id, 'info', 'verify', `Решение человека: ${review.decision}${comment ? ' — ' + comment : ''}`, 'review.' + action);
   if (t) { Object.assign(t, { status: action === 'approve' ? 'done' : 'cancelled', review }, action === 'approve' ? { completedAt: core.now() } : {}); put('tasks', t); }
   let next = null;
-  if (action === 'rework') { try { next = new3dTask({ title: ('Доработка ' + cp.version + ': ' + comment).slice(0, 120), description: comment, projectId3d: cp.projectId, reworkOf: j.id, comment, baseParams: cp.params, baseVersion: cp.version }, req.user); } catch (e) { return res.status(e.status || 500).json({ error: e.message }); } }
+  if (action === 'rework') { try { next = new3dTask({ title: ('Доработка ' + cp.version + ': ' + comment).slice(0, 120), description: comment, projectId3d: cp.projectId, reworkOf: j.id, comment, baseParams: cp.params, baseVersion: cp.version }, req.user); } catch (e) { return res.status(e.status || 500).json({ error: e.message, ...(e.code ? { code: e.code, feature: e.feature } : {}) }); } }
   log('info', 'studio3d', `Версия ${cp.projectId}/${cp.version}: ${review.decision}${comment ? ' — ' + comment : ''}`, req.user); res.json({ ok: true, review, nextTask: next }); });
 // Re-run the vetted template with new lighting/camera/animation/render params (no agent; new version from the chosen one).
 app.post('/api/projects3d/:pid/:ver/rerender', (req, res) => { if (!projOk(req, res)) return; const info = ws3d.versionInfo(req.params.pid, req.params.ver); if (!info.params) return res.status(400).json({ error: 'У версии нет проверенных параметров' });

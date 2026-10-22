@@ -55,7 +55,7 @@ note('3 Ollama', ollama === 'up' ? 'PASS' : 'MOCK', ollama === 'up' ? 'лока�
 const srv = start();
 ok('server boots', await up(srv), srv.log().slice(-300));
 const health = await (await fetch(BASE + '/api/health')).json();
-ok('health flavor test schema 6 version', health.flavor === 'test' && health.schemaVersion === 6 && health.version === JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version && /^1\.3\.[01]-test$/.test(health.version), JSON.stringify(health).slice(0, 180));
+ok('health flavor test schema 6 version', health.flavor === 'test' && health.schemaVersion === 6 && health.version === JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version && /^1\.3\.[012]-test$/.test(health.version), JSON.stringify(health).slice(0, 180));
 const tok = fs.readFileSync(path.join(UD, 'app-token'), 'utf8').trim();
 const H = { 'content-type': 'application/json', 'x-studio-request': '1', 'x-studio-app-token': tok };
 const api = async (m, p, b) => { const r = await fetch(BASE + p, { method: m, headers: H, body: b == null ? undefined : JSON.stringify(b) }); let j = null; try { j = await r.json(); } catch {} return { s: r.status, j }; };
