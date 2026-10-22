@@ -1,10 +1,12 @@
 // Server security tests (fake credentials only). Usage: node scripts/security-test.mjs
 import os from 'os'; globalThis.__os = os;
-// Starts its own server on a temp data dir and port 8795.
+// Starts its own server on a unique temp data dir (mkdtemp) and a random free port.
 import { spawn } from 'child_process'; import fs from 'fs'; import http from 'http';
-const PORT = 8795, UD = '/tmp/mk-sec-test', B = `http://127.0.0.1:${PORT}`; fs.rmSync(UD, { recursive: true, force: true });
+const PORT = await new Promise(r => { const t = http.createServer().listen(0, '127.0.0.1', () => { const p = t.address().port; t.close(() => r(p)); }); });
+const UD = fs.mkdtempSync((await import('path')).join(os.tmpdir(), 'mk-sec-test-')), B = `http://127.0.0.1:${PORT}`;
 const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: UD, PORT: String(PORT) }, stdio: 'ignore' });
-process.on('exit', () => { try { srv.kill('SIGKILL'); } catch {} }); // cleanup: never leave the server on 8795 (also on crash)
+process.on('exit', () => { try { srv.kill('SIGKILL'); } catch {} }); // cleanup: never leave the server running (also on crash)
+process.on('exit', () => { try { fs.rmSync(UD, { recursive: true, force: true }); } catch {} });
 const sleep = ms => new Promise(r => setTimeout(r, ms)); await sleep(2500);
 const res = []; const ok = (n, c, x = '') => { res.push([n, !!c]); console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' — ' + x : '')); };
 const R = { 'x-studio-request': '1', 'content-type': 'application/json' };
