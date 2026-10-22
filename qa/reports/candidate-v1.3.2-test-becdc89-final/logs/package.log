@@ -1,0 +1,173 @@
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
+added 387 packages in 1s
+node-v24.22.0-darwin-arm64.tar.gz: OK
+Node v24.22.0 darwin-arm64 → build/node/darwin-arm64/node
+build-info: /workspace/finbuild/desktop/build-info.json builtAt=2026-10-22T19:39:47.000Z
+  • electron-builder  version=26.15.3 os=6.12.94+
+  • loaded configuration  file=/workspace/finbuild/.eb-config.json
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=darwin arch=arm64 electron=44.9.1 appOutDir=dist/mac-arm64
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=/workspace/finbuild/dist/mac-arm64
+  • searching for node modules  pm=npm searchDir=/workspace/finbuild
+  • duplicate dependency references  dependencies=["once@1.4.0","once@1.4.0","once@1.4.0","pump@3.0.4","readable-stream@3.6.2","end-of-stream@1.4.5","mime-types@3.0.2","debug@4.4.3","http-errors@2.0.1","on-finished@2.4.1","qs@6.16.1","http-errors@2.0.1","iconv-lite@0.7.3","type-is@2.1.0","debug@4.4.3","on-finished@2.4.1","get-intrinsic@1.3.0","call-bind-apply-helpers@1.0.2","call-bind-apply-helpers@1.0.2","es-object-atoms@1.1.2","call-bound@1.0.4","get-intrinsic@1.3.0","side-channel-map@1.0.1","debug@4.4.3","debug@4.4.3","http-errors@2.0.1","mime-types@3.0.2","on-finished@2.4.1","send@1.2.1","mime-types@3.0.2"]
+  • executing @electron/fuses  electronPath=dist/mac-arm64/MOONKATTY AI STUDIO TEST.app
+  • skipped macOS application code signing  reason=supported only on macOS
+signing dist/mac-arm64/MOONKATTY AI STUDIO TEST.app in place
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app
+signing 12 nested bundles in the following order:
+Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Renderer).app
+Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Plugin).app
+Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (GPU).app
+Contents/Frameworks/Electron Framework.framework/Versions/A
+Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper.app
+Contents/Frameworks/ReactiveObjC.framework/Versions/A
+Contents/Frameworks/Squirrel.framework/Versions/A
+Contents/Frameworks/Electron Framework.framework
+Contents/Frameworks/Mantle.framework/Versions/A
+Contents/Frameworks/ReactiveObjC.framework
+Contents/Frameworks/Squirrel.framework
+Contents/Frameworks/Mantle.framework
+entering nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Renderer).app
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Renderer).app into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Renderer).app
+signing main executable Contents/MacOS/MOONKATTY AI STUDIO TEST Helper (Renderer)
+leaving nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Renderer).app
+entering nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Plugin).app
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Plugin).app into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Plugin).app
+signing main executable Contents/MacOS/MOONKATTY AI STUDIO TEST Helper (Plugin)
+leaving nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (Plugin).app
+entering nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (GPU).app
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (GPU).app into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (GPU).app
+signing main executable Contents/MacOS/MOONKATTY AI STUDIO TEST Helper (GPU)
+leaving nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper (GPU).app
+entering nested bundle Contents/Frameworks/Electron Framework.framework/Versions/A
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Electron Framework.framework/Versions/A into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Electron Framework.framework/Versions/A
+signing Mach-O file Helpers/app_shim_loader
+signing Mach-O file Helpers/chrome_crashpad_handler
+signing Mach-O file Libraries/libffmpeg.dylib
+signing Mach-O file Libraries/libvk_swiftshader.dylib
+signing main executable Electron Framework
+leaving nested bundle Contents/Frameworks/Electron Framework.framework/Versions/A
+entering nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper.app
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper.app into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper.app
+signing main executable Contents/MacOS/MOONKATTY AI STUDIO TEST Helper
+leaving nested bundle Contents/Frameworks/MOONKATTY AI STUDIO TEST Helper.app
+entering nested bundle Contents/Frameworks/ReactiveObjC.framework/Versions/A
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/ReactiveObjC.framework/Versions/A
+signing main executable ReactiveObjC
+leaving nested bundle Contents/Frameworks/ReactiveObjC.framework/Versions/A
+entering nested bundle Contents/Frameworks/Squirrel.framework/Versions/A
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Squirrel.framework/Versions/A into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Squirrel.framework/Versions/A
+signing Mach-O file Resources/ShipIt
+signing main executable Squirrel
+leaving nested bundle Contents/Frameworks/Squirrel.framework/Versions/A
+entering nested bundle Contents/Frameworks/Electron Framework.framework
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Electron Framework.framework into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Electron Framework.framework
+leaving nested bundle Contents/Frameworks/Electron Framework.framework
+entering nested bundle Contents/Frameworks/Mantle.framework/Versions/A
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Mantle.framework/Versions/A into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Mantle.framework/Versions/A
+signing main executable Mantle
+leaving nested bundle Contents/Frameworks/Mantle.framework/Versions/A
+entering nested bundle Contents/Frameworks/ReactiveObjC.framework
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/ReactiveObjC.framework into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/ReactiveObjC.framework
+leaving nested bundle Contents/Frameworks/ReactiveObjC.framework
+entering nested bundle Contents/Frameworks/Squirrel.framework
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Squirrel.framework into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Squirrel.framework
+leaving nested bundle Contents/Frameworks/Squirrel.framework
+entering nested bundle Contents/Frameworks/Mantle.framework
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Mantle.framework into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app/Contents/Frameworks/Mantle.framework
+leaving nested bundle Contents/Frameworks/Mantle.framework
+signing bundle at dist/mac-arm64/MOONKATTY AI STUDIO TEST.app into dist/mac-arm64/MOONKATTY AI STUDIO TEST.app
+signing Mach-O file Contents/Resources/node/node
+signing main executable Contents/MacOS/MOONKATTY AI STUDIO TEST
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.moonkatty.aistudio.test
+          flags: CodeSignatureFlags(ADHOC | RUNTIME)
+          identifier: node
+MOONKATTY AI STUDIO TEST 1.3.2-test (macOS arm64, ad-hoc signed, NOT notarized, built on Linux) — flavor: test
+bundle id: com.moonkatty.aistudio.test
+branch: HEAD
+commit: becdc89a1d281e14730236bd4e60f32e3182f088
+SOURCE_DATE_EPOCH: 1792697987 (2026-10-22T19:39:47Z)
+electron: 44.9.1  electron-builder: 26.15.3  bundled node: v24.22.0
+zip sha256: 6b076fb2a22325d64106e539047a1d48569267747cc64697613acbe28b4ec0a1
+fuses:
+  RunAsNode is Disabled
+  EnableCookieEncryption is Enabled
+  EnableNodeOptionsEnvironmentVariable is Disabled
+  EnableNodeCliInspectArguments is Disabled
+  EnableEmbeddedAsarIntegrityValidation is Enabled
+  OnlyLoadAppFromAsar is Enabled
+  LoadBrowserProcessSpecificV8Snapshot is Disabled
+  GrantFileProtocolExtraPrivileges is Enabled
+  WasmTrapHandlers is Enabled
+release-manifest.json:
+{
+  "manifestVersion": 1,
+  "version": "1.3.2-test",
+  "channel": "test",
+  "sourceCommit": "becdc89a1d281e14730236bd4e60f32e3182f088",
+  "branch": "HEAD",
+  "arch": "arm64",
+  "platform": "darwin",
+  "bundleId": "com.moonkatty.aistudio.test",
+  "appName": "MOONKATTY AI STUDIO TEST",
+  "dataDirName": "MOONKATTY AI STUDIO TEST",
+  "dataDir": "~/Library/Application Support/MOONKATTY AI STUDIO TEST/",
+  "logDir": "~/Library/Logs/MOONKATTY AI STUDIO TEST/",
+  "launchdLabel": "com.moonkatty.aistudio.test.server",
+  "keychainServicePrefix": "MOONKATTY AI STUDIO.test",
+  "keychainItems": [
+    {
+      "service": "MOONKATTY AI STUDIO.test",
+      "account": "studio-master-key"
+    },
+    {
+      "service": "MOONKATTY AI STUDIO.test",
+      "account": "opencode-server-password"
+    }
+  ],
+  "defaultPort": 8687,
+  "opencodeUrl": "http://127.0.0.1:4097",
+  "dbSchemaVersion": 6,
+  "minUpgradeFrom": null,
+  "isolated": true,
+  "isolatedFrom": [
+    "com.moonkatty.aistudio"
+  ],
+  "electron": "44.9.1",
+  "signing": "adhoc",
+  "notarized": false,
+  "assets": [
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.2-test-arm64-mac.zip",
+      "size": 170097781,
+      "sha256": "6b076fb2a22325d64106e539047a1d48569267747cc64697613acbe28b4ec0a1"
+    },
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.2-test-arm64-mac.zip.sha256",
+      "size": 116,
+      "sha256": "e717116346a44f42d80458b341d5819b24a9164f8641486d210c2729b1618f68"
+    },
+    {
+      "name": "MANIFEST.sha256",
+      "size": 179519,
+      "sha256": "975ef47ac689a4efe0fce5160b500171640c366ac63a60d2e8e900a36910c6ab"
+    },
+    {
+      "name": "sbom.cdx.json",
+      "size": 201413,
+      "sha256": "daf6f8f3866126a8264b44ec29f53a4e536c25c46e5ea0e6f39746e5863909a7"
+    },
+    {
+      "name": "BUILD-INFO.txt",
+      "size": 785,
+      "sha256": "1af75aa1739145bc4d3fae108777ca670de19a2cf2eea543ceb3bd5c838a0f1a"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+PASS hardSplit: every piece <= 26 chars
+PASS chunk(26): no line over limit
+PASS buildSrt+validateSrt(26) ok
+PASS wrapWords(26) on-screen lines within limit
+PASS hardSplit: every piece <= 28 chars
+PASS chunk(28): no line over limit
+PASS buildSrt+validateSrt(28) ok
+PASS wrapWords(28) on-screen lines within limit
+PASS hardSplit: every piece <= 42 chars
+PASS chunk(42): no line over limit
+PASS buildSrt+validateSrt(42) ok
+PASS wrapWords(42) on-screen lines within limit
+PASS hardSplit: every piece <= 46 chars
+PASS chunk(46): no line over limit
+PASS buildSrt+validateSrt(46) ok
+PASS wrapWords(46) on-screen lines within limit
+PASS hardSplit keeps all characters (rejoin minus added hyphens)
+PASS URL split at natural break points (no added hyphen mid-token)
+PASS short words untouched
+SKIP real 9:16 render: set PW_FILE
+
+19 passed, 0 failed

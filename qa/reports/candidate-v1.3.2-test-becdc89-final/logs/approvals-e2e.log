@@ -1,0 +1,48 @@
+PASS server boots on 8921
+PASS setup owner
+PASS owner session login
+PASS confirm:true alone -> 403 needs_owner
+PASS R2 app token cannot approve (even with password)
+PASS R2 session without password cannot approve
+PASS agent/app token cannot approve its own request
+PASS approve (owner session + password, other principal) -> executed
+PASS status exposed: approved, consumed, execStatus executed
+PASS action effect: savings target 5000 applied
+PASS journal has executed entry for approval
+PASS R1 replay of consumed id -> 409 consumed
+PASS R1 re-approve same id -> 409 consumed
+PASS R3 999999 with consumed id for 5000 -> rejected (409 consumed)
+PASS R3 pending id + other value -> 403
+PASS R3 pending request did not overwrite applied value
+PASS paid_ads approved -> executed:false, external_disabled (no payment)
+PASS N1 app token + forged mk_session=deadbeef -> 403 (app channel)
+PASS N1 app token + real session cookie -> still app channel, 403
+PASS N1 approval stays pending, not executed
+PASS rejected id -> 403
+PASS mixed Authorization + session cookie -> 403 (app channel)
+PASS concurrent double approve -> exactly one 200 executed, other 409
+PASS owner self-approval without password -> 403 owner_reauth
+PASS owner self-approval via token+cookie -> 403
+PASS owner self-approval (session + fresh password) -> executed
+PASS journal event exactly 'owner_self_approval'
+PASS owner self-approval replay -> 409 consumed
+PASS owner self-approved id + other params -> rejected
+PASS progressive delay: immediate retry -> 429 throttled (even correct pw)
+PASS five wrong passwords -> owner_reauth
+PASS correct password after lockout -> 429 locked, not executed
+PASS channel checked before password (app -> owner_session_required)
+PASS limiter is persisted in SQLite world_auth_fails keyed by user
+(node:1092788) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS server boots on 8921
+PASS same session cookie still valid after restart (no new login)
+PASS restart: lockout persists across restart -> 429 locked
+PASS restart: consumed id still 409 consumed
+PASS lockout again (DoS attempt from session)
+PASS owner main login
+PASS successful main login after lockout resets limiter
+PASS whitespace-only token header + cookie -> not a session (rejected)
+PASS lockout expires; correct password -> executed, counter reset
+PASS payload tampered in DB -> hash mismatch at execution, not executed
+PASS owner self-approval outside window -> 403 self_approval, not executed
+ALL PASS

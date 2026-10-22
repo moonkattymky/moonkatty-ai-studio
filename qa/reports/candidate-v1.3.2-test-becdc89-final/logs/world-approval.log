@@ -1,0 +1,19 @@
+PASS confirm:true alone -> needs_owner
+PASS no approval -> needs_owner
+PASS pending id -> needs_owner
+PASS rejected id -> needs_owner
+PASS mismatched action id -> needs_owner
+PASS unknown id -> needs_owner
+PASS legacy row without hash/expiry -> rejected
+PASS params mismatch (target_usd 999) -> needs_owner
+PASS key order does not matter
+PASS other user using alice's approval -> user_mismatch
+PASS valid approved id -> allow
+PASS consume once -> true
+PASS reused id -> needs_owner
+PASS second consume -> false
+PASS expired id -> needs_owner
+PASS auto tier unaffected
+PASS forbidden still denied with approval
+PASS journal records rejection reason
+ALL PASS

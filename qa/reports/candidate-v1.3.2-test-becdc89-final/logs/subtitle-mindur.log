@@ -1,0 +1,39 @@
+PASS fixture lengths 64/100
+PASS first cue short → borrows from next — [{"start":0,"end":0.8,"text":"a"},{"start":0.8,"end":3,"text":"b"}]
+PASS last cue short, no room after → borrows from previous — [{"start":0,"end":2.5,"text":"a"},{"start":2.5,"end":3.3,"text":"b"}]
+PASS last cue short, free time after → extends into it
+PASS consecutive short cues → all >= min, no overlap, span kept — [1.38,0.8,0.8,0.8,2.22]
+PASS timeline too tight → merged (text joined) — [{"start":0,"end":1,"text":"a b"}]
+PASS merged text keeps both
+PASS merge refused if it would exceed 2 lines (no illegal lines produced)
+PASS merge concatenates karaoke word timings
+PASS uses free gaps first, neighbours untouched when gaps suffice — [{"start":0,"end":1,"text":"a"},{"start":1.4000000000000001,"end":2.2,"text":"b"},{"start":2.2,"end":4,"text":"c"}]
+PASS input not mutated
+PASS buildSrt 16:9 64ch lat 6s: valid, all >= 0.8s
+PASS buildSrt 16:9 64ch lat 12s: valid, all >= 0.8s
+PASS buildSrt 16:9 64ch lat 30s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch lat 6s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch lat 12s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch lat 30s: valid, all >= 0.8s
+PASS buildSrt 16:9 64ch cyr 6s: valid, all >= 0.8s
+PASS buildSrt 16:9 64ch cyr 12s: valid, all >= 0.8s
+PASS buildSrt 16:9 64ch cyr 30s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch cyr 6s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch cyr 12s: valid, all >= 0.8s
+PASS buildSrt 16:9 100ch cyr 30s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch lat 6s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch lat 12s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch lat 30s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch lat 6s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch lat 12s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch lat 30s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch cyr 6s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch cyr 12s: valid, all >= 0.8s
+PASS buildSrt 9:16 64ch cyr 30s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch cyr 6s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch cyr 12s: valid, all >= 0.8s
+PASS buildSrt 9:16 100ch cyr 30s: valid, all >= 0.8s
+PASS F-1 shape (16:9, 64ch, tight story) valid
+SKIP real renders: set PW_FILE
+
+36 passed, 0 failed
