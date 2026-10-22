@@ -66,7 +66,7 @@
 ## Требования к тестам
 Наборы запускать на **Node.js 22** (`/home/box/node22` на ящике): `test:isolation` и `test:publish-guard` и сборка `better-sqlite3` (ABI 127) рассчитаны на Node 22; на другом major — `npm rebuild better-sqlite3` и возможные расхождения. Для `test:ops*` — `STUDIO_SQLITE=node`, Chrome (`/usr/bin/google-chrome`) для ui-e2e, ffmpeg/ffprobe для функций MONITOR.
 
-## r5 — QA-R4-001: рекомендации Tailscale Serve для узлов убраны
+## r5 — QA-R4-001: Tailscale Serve для узлов НЕ используется (рекомендации убраны)
 **Решение и основания.** Node API координатора v1.3.0-test Serve не требует:
 - `lib/ops/nodes-server.js` (шапка): Node API — отдельный HTTPS-слушатель с самоподписанным сертификатом, узлы закрепляют его SHA-256; слушает 127.0.0.1 и один адрес Tailscale 100.x; «Tailscale Serve/Funnel are NOT used or enabled».
 - `lib/ops/nodes.js`: заголовки Serve по умолчанию не доверяются (`trustServeHeaders=false`, QA-NODE-002).
