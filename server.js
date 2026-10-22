@@ -427,6 +427,11 @@ app.post('/api/jobs/:id/cancel', (req, res) => { const j = jobs.get(req.params.i
 app.post('/api/jobs/:id/retry', (req, res) => { const j = jobs.get(req.params.id); if (!j) return res.status(404).json({ error: 'not found' });
   if (!['failed', 'blocked', 'cancelled'].includes(j.status)) return res.status(400).json({ error: 'Повтор возможен только для заданий с ошибкой, блокировкой или отменённых' });
   if (j.retries >= j.maxRetries) return res.status(400).json({ error: `Лимит повторов исчерпан (${j.maxRetries})` });
+  if (['opencode_task', 'render_segment'].includes(j.kind)) { try { const TRr = require('./lib/task-runners.js'), ts = (j.checkpoint && j.checkpoint.timeoutSec) || null; let action, params; // NEW-5: retry = new owner approval, own runner
+    if (j.kind === 'opencode_task') { action = 'agent_code_execution'; params = { kind: 'opencode_task', prompt: TRr.checkPrompt(j.input && j.input.prompt), timeoutSec: ts }; }
+    else { const v = TRr.validateSegment(j.input || {}, path.join(DATA_DIR, 'media')); if (!v.ok) throw new Error('render_segment: ' + v.errors.join('; ')); action = 'render_segment_execution'; params = { kind: 'render_segment', input: v.input, timeoutSec: ts }; }
+    const id = world.requestOwner(action, { params, detail: 'retry ' + j.kind + ' ' + j.id, actor: req.user + '@api' }); jobs.event(j.id, 'info', j.kind, 'Повтор: нужно подтверждение владельца ' + id);
+    return res.status(403).json({ error: 'Нужно подтверждение владельца', code: 'needs_owner', approvalId: id }); } catch (e) { return res.status(400).json({ error: e.message }); } }
   jobs.update(j.id, { status: 'queued', retries: j.retries + 1, error: null }); jobs.event(j.id, 'info', j.stage, `Повтор запрошен человеком (${j.retries + 1}/${j.maxRetries})`);
   if (j.kind === 'video_render') { const t = get('tasks', j.taskId); if (t) { Object.assign(t, { status: 'in_progress', error: null }); put('tasks', t); } services.startVideoJob(j.id); return res.json(jobView(jobs.get(j.id))); }
   const t = get('tasks', j.taskId); Object.assign(t, { status: 'queued', retryRequested: true, blockedReason: null, error: null }); put('tasks', t);
