@@ -203,3 +203,27 @@
 - TESTED: компоненты покрыты проходящими тестами — test:opencode-json 22/22 (разбор scene_params/запасной путь design3d), test:opencode-serve 21/21 (прогоны Studio 4 r1/r2). Полный e2e `scripts/design3d-test.mjs` (`package.json:18` test:3d) на Linux SKIP без opencode/Blender.
 - Не INTEGRATED: по определению раздела 0 (и Studio) INTEGRATED требует прогнанного в собранном приложении цикла UI→сервер→исполнитель→реальный Blender. Проводка есть (`public/app.js:565` → `server.js:435` → runner → `lib/executors/design3d.js` → `lib/blender.js`), но ни разу не исполнена с реальным Blender — нет .blend/PNG/GLB-доказательств. Studio прав; «INTEGRATED» у Studio 3 — завышение (Studio 3 сам указывает, что тест SKIP).
 - Чтобы перейти в INTEGRATED: прогнать test:3d с Blender ≥4.2 + opencode serve (Linux CI или Mac) и приложить файлы; для VERIFIED ON DEVICE — тот же прогон на Mac mini M5 Pro с Blender 5.2.2 (BLOCKED).
+
+### 5.5 `/workspace/out/audit-e2e/studio2_agents.md` (найден 19:37 IDT) — вердикт: **PASS по сути, FAIL по статусам** (главный дефект подтверждён; 2 ярлыка INTEGRATED завышены; ошибки в тестах и номерах строк)
+| Утверждение | Проверка по 3b72817 | Итог |
+|---|---|---|
+| confirm:true из клиента обходит одобрение владельца | `lib/world/permissions.js:16-18`, `lib/world/index.js:176,190-195,197-204`; доказано на TEST-сервере (см. начало файла, QA-E2E-001) | CONFIRMED (серьёзность HIGH); ссылка `permissions.js:39-46` — DISCREPANCY (файл 25 строк) |
+| jobs на SQLite, статусы | `lib/jobs.js:7-8` | CONFIRMED |
+| Типы jobs, заглушки opencode_task/render_segment | реально `lib/services.js:13-17` (TYPES), host3d `:103`; отчёт: `:68-75`, `:71-72`, `:158` | CONFIRMED по сути, номера строк — DISCREPANCY |
+| video_render подключён, llm=null, jobsapi выкл | `server.js:152-157` | CONFIRMED |
+| POST /api/jobs всегда agent:'design3d' | `server.js:421` | CONFIRMED |
+| OpenCode в runner выкл по умолчанию (STUDIO_OPENCODE=1) | `runner.js:28,47` | CONFIRMED |
+| publishing/community без публикации, шаблонные ответы | `runner.js:78-83`; 403 в TEST `server.js:200` | CONFIRMED |
+| AI CEO — шаблон из 3 задач, без LLM | `lib/world/ceo.js:10-15`, runner `index.js:73` | CONFIRMED |
+| Marketing — только sample-снапшот (mock) | `lib/world/platform-read.js:31-38` → `createReadApi()` без провайдеров; `media-automation/fixtures/platforms-snapshot.sample.json:5` «SAMPLE: every platform is dataMode=mock» | CONFIRMED |
+| Live-режим: owner-флаг + одобрение live_mode | `media-automation/src/platforms/registry.js:20-25` | CONFIRMED |
+| Доход = income+confirmed+payout_id+не demo; оценки отдельно; просмотры отвергаются | `lib/world/revenue.js:74-76`, `lib/world/index.js:150` | CONFIRMED |
+| test:world FAIL (ECONNREFUSED) | прогон Studio 2 на Node 20.19.2; Studio 4 на Node 22.23.4: **62 PASS / 0 FAIL** | DISCREPANCY (ошибка окружения, не продукта) |
+| test:publish-guard FAIL (ERR_UNKNOWN_BUILTIN_MODULE) | требует Node 22 (node:sqlite); Studio 4: 59/0 PASS | DISCREPANCY (ошибка окружения) |
+| asar побайтно совпадает с исходниками | Studio 4 не повторял побайтно; asar 919 записей из того же zip | UNVERIFIABLE (частично) |
+| Ни один модуль не VERIFIED ON DEVICE | доказательств с устройств нет | CONFIRMED |
+
+**Ярлыки INTEGRATED Studio 2 против определений раздела 0** (INTEGRATED = TESTED + e2e по HTTP в собранном приложении с реальным исполнителем):
+- «AI-агенты / jobs — INTEGRATED (частично)»: **не подтверждается → TESTED (частично)**. HTTP-маршруты и SQLite-очередь реальны, но реальные исполнители (Ollama, Blender, ffmpeg+TTS) ни разу не прогнаны e2e: test:runner мокает Ollama, video — фейковая фабрика (сам Studio 2 это пишет), design3d e2e SKIP.
+- «Revenue Director — INTEGRATED (локально)»: **не подтверждается → TESTED**. Ledger и импорт CSV покрыты test:world (62/0 на Node 22), но внешних источников выплат нет, owner-гейт обходится (QA-E2E-001); пока дефект не исправлен, уровень выше TESTED не допускается.
+- «AI CEO — IMPLEMENTED», «Marketing — IMPLEMENTED, данные MOCK»: занижены, фактически **TESTED** (test:world 62/0 покрывает world-модули), но с оговоркой: Marketing работает только на mock-данных.
