@@ -122,9 +122,9 @@ ok('M-1 isPackaged: env(source-checkout) + plain path -> false (dev only)', TR.i
   fs.rmSync(path.join(mr, 'sub')); fs.renameSync(path.join(mr, 'sub.old'), path.join(mr, 'sub'));
   ok('L-2 nested file without race -> copied', fs.readFileSync(TR.copyConfined('sub/b.wav', mr, fs.mkdtempSync(path.join(TMP, 'cp-'))), 'utf8') === 'GOOD'); }
 // llm_unavailable fast-fail: no LLM channel in the no-network sandbox -> fails at once, heavy lock released
-{ delete process.env.MK_TEST_LLM_STUB; const P0 = process.env.PATH; process.env.PATH = shim + ':' + P0; const t0 = Date.now(); const id = S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'needs llm' }, approvalId: OA }).jobId; const j = await wait(id);
+{ delete process.env.MK_TEST_LLM_STUB; process.env.MK_TEST_OLLAMA_PORT = '1'; /* Ollama down (box may run a real one on 11434) */ const P0 = process.env.PATH; process.env.PATH = shim + ':' + P0; const t0 = Date.now(); const id = S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'needs llm' }, approvalId: OA }).jobId; const j = await wait(id);
   ok('opencode without LLM channel -> failed llm_unavailable fast, heavy lock released', j.internalStatus === 'failed' && /llm_unavailable/.test(j.error || '') && Date.now() - t0 < 5000 && !JSON.stringify(S.heavyStatus()).includes(id), JSON.stringify({ s: j.internalStatus, e: j.error, ms: Date.now() - t0, h: S.heavyStatus() }));
-  process.env.MK_TEST_LLM_STUB = '1'; process.env.PATH = P0; }
+  process.env.MK_TEST_LLM_STUB = '1'; delete process.env.MK_TEST_OLLAMA_PORT; process.env.PATH = P0; }
 // 6 resume after restart: queued render_segment re-runs (safeToRetry), opencode_task (safeToRetry=false) fails
 const rs = jobs.create('t-r', 'render_segment', 'render_segment'); jobs.update(rs.id, { status: 'queued', safeToRetry: true, input: { script: '', durationSec: 1, aspect: '1:1', engine: 'ffmpeg' } });
 const ro = jobs.create('t-o', 'opencode_task', 'opencode_task'); jobs.update(ro.id, { status: 'queued', safeToRetry: false, input: { prompt: 'x' } });
