@@ -29,6 +29,18 @@ const cn = await call('sess', 'POST', '/api/jobs/' + JID + '/cancel');
 await sleep(1500); const n1 = fs.readFileSync(alive, 'utf8').length; await sleep(1500); const n2 = fs.readFileSync(alive, 'utf8').length;
 ok('HTTP cancel -> cancelled and child process stopped', cn.s === 200 && n1 === n2, JSON.stringify({ s: cn.s, n1, n2 }));
 ok('job status cancelled', ['cancelled'].includes((await call('sess', 'GET', '/api/jobs/' + JID)).j?.status), '');
+const r1 = await call('app', 'POST', '/api/jobs', { type: 'render_segment', input: { durationSec: 1, aspect: '1:1' } });
+ok('POST /api/jobs render_segment -> 403 needs_owner + approvalId', r1.s === 403 && r1.j.code === 'needs_owner' && !!r1.j.approvalId, JSON.stringify(r1.j));
+ok('no render_segment job before approval', !((await call('sess', 'GET', '/api/jobs')).j || []).some(j => j.type === 'render_segment' || j.kind === 'render_segment'));
+const ra = await call('app', 'POST', '/api/jobs', { type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/passwd' } });
+const rb = await call('app', 'POST', '/api/jobs', { type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/nope-xyz' } });
+ok('render_segment audioPath outside media -> 400, uniform error, no approval created', ra.s === 400 && rb.s === 400 && ra.j.error === rb.j.error, JSON.stringify([ra.j, rb.j]));
+ok('app token cannot approve render_segment', (await call('app', 'POST', '/api/world/approvals/' + r1.j.approvalId, { decision: 'approve', password: PW })).s === 403);
+const rap = await call('sess', 'POST', '/api/world/approvals/' + r1.j.approvalId, { decision: 'approve', password: PW });
+ok('owner approval -> executor creates render_segment job', rap.s === 200 && rap.j.executed === true && !!rap.j.result?.jobId, JSON.stringify(rap.j));
+let rj = null; for (let i = 0; i < 100; i++) { await sleep(200); rj = (await call('sess', 'GET', '/api/jobs/' + rap.j.result?.jobId)).j; if (rj && !['queued', 'running'].includes(rj.status)) break; }
+ok('approved render_segment runs (ffmpeg) -> done', ['done', 'succeeded'].includes(rj?.status), JSON.stringify(rj && { s: rj.status, e: rj.error }));
+ok('replay of render approval -> 409 consumed', (await call('sess', 'POST', '/api/world/approvals/' + r1.j.approvalId, { decision: 'approve', password: PW })).s === 409);
 await stop(); await start({ MK_TEST_REAL_RUNNERS: '' }); cookie = ''; await call('sess', 'POST', '/api/auth/login', { username: 'igor', password: PW });
 const c2 = await call('app', 'POST', '/api/jobs', { type: 'opencode_task', input: { prompt: 'again' } });
 const ap2 = await call('sess', 'POST', '/api/world/approvals/' + c2.j.approvalId, { decision: 'approve', password: PW }); let st = null;

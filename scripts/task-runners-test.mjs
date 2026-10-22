@@ -13,10 +13,10 @@ const wait = async (id, ms = 60000) => { const t = Date.now(); for (;;) { const 
 const OUT = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-tr-out-')); // outside the data dir: shim + "attacker" targets
 const shim = path.join(OUT, 'bin'); fs.mkdirSync(shim); fs.writeFileSync(path.join(TMP, 'secret.txt'), 'TOPSECRET');
 fs.writeFileSync(path.join(shim, 'opencode'), `#!/bin/sh\necho "opencode shim $@"\necho "ENV:$(env | cut -d= -f1 | tr '\\n' ,)"\necho "SECRETVAL:$STUDIO_SECRET_KEY"\ncat ${TMP}/secret.txt 2>/dev/null && echo READ_HIDDEN\necho x > ${OUT}/escape.txt 2>/dev/null && echo WROTE_OUTSIDE\necho ok > ./inside.txt && echo WROTE_INSIDE\nsleep 30\n`, { mode: 0o755 });
-S.setApprovalCheck((id, p) => id === 'appr-ok'); const OA = 'appr-ok';
+S.setApprovalCheck(id => id === 'appr-ok'); const OA = 'appr-ok';
 const ff = spawnSync('which', ['ffmpeg'], { encoding: 'utf8' }).stdout.trim();
 // 1 real ffmpeg render
-if (ff) { const { jobId } = S.jobsApi.createJob({ type: 'render_segment', input: { script: 'Привет, MOONKATTY', durationSec: 2, aspect: '9:16' } });
+if (ff) { const { jobId } = S.jobsApi.createJob({ type: 'render_segment', input: { script: 'Привет, MOONKATTY', durationSec: 2, aspect: '9:16' }, approvalId: OA });
   const j = await wait(jobId); const a = (j.artifacts || [])[0] || {};
   const pr = a.path ? spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,width,height:format=duration', '-of', 'json', a.path], { encoding: 'utf8' }) : { stdout: '{}' };
   const info = JSON.parse(pr.stdout || '{}'); const v = (info.streams || []).find(s => s.codec_type === 'video') || {};
@@ -24,13 +24,13 @@ if (ff) { const { jobId } = S.jobsApi.createJob({ type: 'render_segment', input:
   ok('host3d.renderSegment returns real videoPath', fs.existsSync((await S.host3d.renderSegment({ script: '', durationSec: 1, outPath: path.join(TMP, 'h.mp4') })).videoPath));
 } else ok('ffmpeg available on box', false, 'ffmpeg not found');
 // 2 validation
-let threw = false; try { S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 0 } }); } catch { threw = true; } ok('render_segment invalid durationSec rejected', threw);
+let threw = false; try { S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 0 }, approvalId: OA }); } catch { threw = true; } ok('render_segment invalid durationSec rejected', threw);
 threw = false; try { S.jobsApi.createJob({ type: 'opencode_task', input: {} }); } catch { threw = true; } ok('opencode_task empty prompt rejected', threw);
 // 3 tools missing -> honest failure
 const P0 = process.env.PATH, H0 = process.env.HOME; process.env.PATH = '/nonexistent'; process.env.HOME = TMP; delete process.env.OPENCODE_BIN;
 let r = await wait(S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'hello' }, approvalId: OA }).jobId); ok('opencode missing -> failed "opencode not installed"', r.status === 'failed' && /opencode not installed/.test(r.error), r.error);
-r = await wait(S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 } }).jobId); ok('ffmpeg missing -> failed "ffmpeg not installed"', r.status === 'failed' && /ffmpeg not installed/.test(r.error), r.error);
-r = await wait(S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, engine: 'blender' } }).jobId); ok('blender missing (engine=blender) -> failed honestly', r.status === 'failed' && !!r.error, r.error);
+r = await wait(S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 }, approvalId: OA }).jobId); ok('ffmpeg missing -> failed "ffmpeg not installed"', r.status === 'failed' && /ffmpeg not installed/.test(r.error), r.error);
+r = await wait(S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, engine: 'blender' }, approvalId: OA }).jobId); ok('blender missing (engine=blender) -> failed honestly', r.status === 'failed' && !!r.error, r.error);
 process.env.PATH = shim + ':' + P0;
 // 4 timeout (real child process: opencode shim sleeping 30s, timeoutSec 1)
 const t0 = Date.now(); r = await wait(S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'x' }, timeoutSec: 1, approvalId: OA }).jobId); ok('opencode_task timeout -> failed timeout, child killed', r.status === 'failed' && /timeout/.test(r.error) && Date.now() - t0 < 10000, r.error);
@@ -48,18 +48,20 @@ delete process.env.STUDIO_SECRET_KEY; delete process.env.MK_FAKE_TOKEN;
 process.env.PATH = P0; process.env.HOME = H0;
 // 7 approval / prompt / audioPath / test flavor / no sandbox
 const thr = f => { try { f(); return null; } catch (e) { return e.message; } };
+ok('render_segment without approval -> rejected', /подтверждение/.test(thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 } })) || ''));
+ok('render_segment with forged approvalId -> rejected', /подтверждение/.test(thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 }, approvalId: 'forged' })) || ''));
 ok('opencode_task without approval -> rejected', /подтверждение/.test(thr(() => S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'x' } })) || ''));
 ok('opencode_task with forged approvalId -> rejected', /подтверждение/.test(thr(() => S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: 'x' }, approvalId: 'forged' })) || ''));
 ok('prompt starting with "-" rejected', /"-"/.test(thr(() => S.jobsApi.createJob({ type: 'opencode_task', input: { prompt: '--dangerous-flag' }, approvalId: OA })) || ''));
 const media = path.join(TMP, 'media'); fs.writeFileSync(path.join(media, 'ok.wav'), 'x'); fs.symlinkSync('/etc/passwd', path.join(media, 'link.wav'));
-const e1 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/passwd' } }));
-const e2 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/nonexistent-xyz' } }));
-const e3 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: path.join(media, 'link.wav') } }));
-const e4 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '../secret.txt' } }));
+const e1 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/passwd' }, approvalId: OA }));
+const e2 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '/etc/nonexistent-xyz' }, approvalId: OA }));
+const e3 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: path.join(media, 'link.wav') }, approvalId: OA }));
+const e4 = thr(() => S.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1, audioPath: '../secret.txt' }, approvalId: OA }));
 ok('audioPath outside media / missing / symlink-out / ../ -> one uniform error (no existence oracle)', e1 && e1 === e2 && e2 === e3 && e3 === e4, [e1, e2, e3, e4].join(' | '));
 ok('audioPath inside media accepted (realpath)', TR.validateSegment({ durationSec: 1, audioPath: 'ok.wav' }, media).input?.audioPath === fs.realpathSync(path.join(media, 'ok.wav')));
 const ST = mk({ isTest: true }); ST.setApprovalCheck(() => true); delete process.env.MK_TEST_REAL_RUNNERS;
-r = await wait(ST.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 } }).jobId); ok('TEST flavor: real runners disabled -> failed honestly', r.status === 'failed' && /TEST/.test(r.error), r.error);
+r = await wait(ST.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 }, approvalId: OA }).jobId); ok('TEST flavor: real runners disabled -> failed honestly', r.status === 'failed' && /TEST/.test(r.error), r.error);
 const ns = spawnSync(process.execPath, ['-e', "process.stdout.write(String(require('./lib/task-runners.js').sandboxed('/bin/true', [], { workDir: '/tmp' })))"], { cwd: path.join(path.dirname(new URL(import.meta.url).pathname), '..'), env: { PATH: '/nonexistent' }, encoding: 'utf8' });
 ok('no sandbox available -> sandboxed() null (opencode refused)', ns.stdout === 'null', ns.stdout + ns.stderr);
 // 6 resume after restart: queued render_segment re-runs (safeToRetry), opencode_task (safeToRetry=false) fails
