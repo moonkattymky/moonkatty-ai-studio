@@ -78,7 +78,7 @@ const validSeal = it => { const p = it && it.publication; if (!p || typeof p.sea
 // There is no "legacy" exception any more: unsealed rows are demoted at startup (see demoteUnsealed) and edits are refused.
 const looksPublished = o => o && (o.status === 'published' || o.externalId || o.publication || o.publishedAt);
 const put = (col, obj) => {
-  if (col === 'tasks' && gate3d.is3dTask(obj) && !gate3d.DESIGN3D_ENABLED) { const cur = get('tasks', obj.id); // v1.3.2-test: task-creation choke point — no new 3D task, legacy 3D rows can only end failed/cancelled
+  if (col === 'tasks' && !gate3d.DESIGN3D_ENABLED && gate3d.is3dTask(obj, !!get('tasks', obj.id))) { const cur = get('tasks', obj.id); // new rows: strict; existing legacy video_render rows: lenient // v1.3.2-test: task-creation choke point — no new 3D task, legacy 3D rows can only end failed/cancelled
     if (!cur) gate3d.assert3dAllowed('tasks.put:' + (obj.agentId || obj.kind)); if (!['failed', 'cancelled', 'done'].includes(obj.status)) obj = Object.assign({}, obj, { status: 'failed', error: gate3d.DESIGN3D_DISABLED_MSG, errorCode: 'feature_disabled' }); }
   if (col === 'queue' && looksPublished(obj) && !validSeal(obj)) { const e = new Error('Статус «опубликовано» ставит только модуль публикации после ответа платформы'); e.code = 'published_internal_only'; throw e; }
   q.put.run(col, obj.id, JSON.stringify(obj)); return obj; };
