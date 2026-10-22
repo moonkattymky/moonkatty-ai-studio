@@ -153,8 +153,13 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
 // Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
 { const { createVideoRenderExecutor } = require('./media-automation/src/jobs'); let vf = null;
   const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
-  const llm = null; /* no Ollama unload hook in this build */
-  services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm })); }
+  // Ollama unload before render (frees RAM/VRAM): loopback Ollama only, keep_alive=0 for every loaded model; failures are logged, never fatal.
+  const llm = { async unload() { const it = get('integrations', 'ollama') || {}; const url = (it.url || 'http://127.0.0.1:11434').replace(/\/$/, '').replace('localhost', '127.0.0.1');
+    if (!/^http:\/\/(127\.0\.0\.1|\[::1\]):11434$/.test(url)) throw new Error('Ollama unload: только loopback');
+    const ps = await (await fetch(url + '/api/ps', { signal: AbortSignal.timeout(3000) })).json();
+    // keep_alive=0 unload is not a generation; it is invoked by the video_render executor, which already runs inside withHeavy('video_render:<id>') (lib/services.js) — nesting withHeavy here would deadlock.
+    for (const m of ps.models || []) await fetch(url + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: m.name, keep_alive: 0 }), signal: AbortSignal.timeout(10000) }); } };
+  services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm, log: (ev, m) => log(ev === 'ollama_unload_failed' ? 'warn' : 'info', 'video', ev + (m ? ': ' + m : '')) })); }
 const world = require('./lib/world')({ db, q, get, put, list, log, core, runner, services, CFG, sec });
 worldHooks.onAgentStart = world.onAgentStart; world.boot();
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
@@ -501,6 +506,8 @@ app.post('/api/projects3d/:pid/:ver/rerender', (req, res) => { if (!projOk(req, 
 world.mount(app); // v1.3.0-test: mission, CEO, QC, revenue, growth. Social publisher is not mounted here.
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
+// NEWS → VIDEO end-to-end (auth + CSRF already applied by the /api middleware above). No publishing.
+app.locals.newsVideo = require('./lib/news-video.js')({ app, dataDir: DATA_DIR, services, log, runner });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
 app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
 // Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).

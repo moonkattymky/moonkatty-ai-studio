@@ -314,8 +314,8 @@ function mediaPlayer(f) { if (!f) return ''; const u = esc(f.url), k = f.mime + 
 VIEWS.news = () => {
   const eps = DB.episodes.filter(e => e.project === 'news').sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return `<div class="row" style="margin-bottom:14px"><button class="btn primary" id="newEp">+ Новый выпуск</button><button class="btn" data-task-new="news" data-project="news">+ Задача NEWS</button><span class="sp"></span>
-    <button class="btn" disabled>Автопоиск новостей</button>${DEV()}</div>
-  <div class="devbox" style="margin-bottom:14px">Этапы конвейера отмечаются вручную (нажмите на этап) или по итогам задач агентов. Автоматическое выполнение этапов (поиск, фактчек, перевод, TTS-озвучка, рендер, публикация) — <b>в разработке</b>. Плееры появляются, когда к версии прикреплён файл.</div>
+</div>${nvPanel()}
+  <div class="devbox" style="margin-bottom:14px">Ниже — ручной учёт выпусков (этапы отмечаются вручную). Автоматическая цепочка — в блоке NEWS → VIDEO выше (публикация отключена).</div>
   ${eps.length ? eps.map(e => `<div class="card" style="margin-bottom:14px"><h3><span>${esc(e.title)} <small>${e.durationMin ? e.durationMin + ' мин · ' : ''}${fmt(e.createdAt)}</small></span><span class="row"><button class="btn sm" data-ep-edit="${e.id}">Изм.</button><button class="btn sm danger" data-ep-del="${e.id}">✕</button></span></h3>
     ${e.sources?.length ? `<div class="small mut">Источники: ${e.sources.map(s => `<a href="${safeUrl(s)}" target="_blank" rel="noopener noreferrer">${esc(s.replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(', ')}</div>` : '<div class="small mut">Источники не указаны</div>'}
     ${C.LANGS.map(L => { const v = e.versions[L], m = (e.media || {})[L] || {}; const doneN = C.PIPELINE.filter(([k]) => v[k] === 'done').length;
@@ -333,7 +333,7 @@ function epForm(e) {
       return act(() => isNew ? api('POST', '/api/episodes', { ...e, ...body }) : api('PUT', '/api/episodes/' + e.id, body), 'Сохранено'); });
 }
 BIND.news = v => {
-  bindPlan(v); v.querySelector('#newEp').onclick = () => epForm();
+  bindPlan(v); nvBind(v); v.querySelector('#newEp').onclick = () => epForm();
   v.querySelectorAll('[data-ep-edit]').forEach(b => b.onclick = () => epForm(DB.episodes.find(e => e.id === b.dataset.epEdit)));
   v.querySelectorAll('[data-ep-del]').forEach(b => b.onclick = () => confirmDo('Удалить выпуск?', () => act(() => api('DELETE', '/api/episodes/' + b.dataset.epDel), 'Удалено')));
   v.querySelectorAll('[data-stage]').forEach(s => s.onclick = () => { const [id, L, k] = s.dataset.stage.split('|'); const e = DB.episodes.find(x => x.id === id);
@@ -346,6 +346,60 @@ BIND.news = v => {
       <label>Видео</label><select name="video">${fo(/video|mp4|mov|webm/i, m.video)}</select><label>Субтитры</label><select name="subs">${fo(/srt|vtt/i, m.subs)}</select>`,
       fd => act(() => api('PUT', '/api/episodes/' + id, { media: { ...(e.media || {}), [L]: fd } }), 'Файлы привязаны')); });
 };
+
+// ---- NEWS → VIDEO (e2e): автопоиск (публичные RSS) → проверка → сценарий → правка/утверждение владельцем → TTS+ffmpeg рендер → MP4 предпросмотр/экспорт. Без публикации.
+const NV = { st: null, cands: [], runs: [], drafts: [], sel: new Set(), busy: '', timer: null, loaded: false, err: '' };
+const NVS = { draft: ['Черновик', ''], approved: ['Утверждён', 'b-ok'], rendering: ['Рендер…', 'b-pur'], rendered: ['MP4 готов', 'b-ok'], render_failed: ['Ошибка рендера', 'b-err'] };
+const CRED = { high: 'b-ok', medium: 'b-warn', low: 'b-err' };
+async function nvLoad(full) {
+  if (MODE === 'browser') return;
+  try { const [d, s, st] = await Promise.all([api('GET', '/api/newsvideo/drafts'), full || !NV.loaded ? api('GET', '/api/newsvideo/stories') : null, full || !NV.st ? api('GET', '/api/newsvideo/status') : null]);
+    NV.drafts = d; if (s) { NV.cands = s.candidates; NV.runs = s.runs; } if (st) NV.st = st; NV.loaded = true; NV.err = ''; } catch (e) { NV.err = e.message; }
+  clearTimeout(NV.timer); if (NV.drafts.some(x => x.status === 'rendering')) NV.timer = setTimeout(() => { if (['news', 'video'].includes(ROUTE)) nvLoad().then(render); }, 4000);
+}
+const nvFile = (d, k, dl) => `/api/newsvideo/drafts/${encodeURIComponent(d.id)}/file?kind=${k}${dl ? '&download=1' : ''}&r=${d.renders.length}`;
+function nvEnv() { const s = NV.st; if (!s) return '<span class="small mut">Проверка окружения…</span>';
+  const b = (ok, t) => `<span class="badge ${ok ? 'b-ok' : 'b-err'} b-none">${esc(t)}</span>`;
+  return `<div class="row small">${b(s.tts.ok, s.tts.ok ? 'TTS: ' + s.tts.engine : 'TTS нет')}${b(s.ffmpeg, 'ffmpeg')}${b(s.rsvg, 'rsvg-convert')}${b(s.ollama.ok, s.ollama.ok ? 'Ollama: ' + s.ollama.model : 'Ollama нет → экстрактивный текст')}</div>${s.tts.ok ? '' : `<div class="small" style="color:#ef4444">${esc(s.tts.error)}</div>`}`; }
+function nvDraftCard(d, compact) {
+  const last = d.renders[d.renders.length - 1]; const ok = d.renders.some(r => r.status === 'succeeded');
+  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}"><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></h3>
+    ${compact ? '' : d.stories.map(s => `<div class="list-item" style="display:block"><b>${esc(s.headline)}</b> <span class="badge b-none ${CRED[s.credibility.level]}">${esc(s.credibility.status)} · ${s.credibility.score}</span> <span class="small mut">${esc(s.provider)}${s.fallbackReason ? ' (' + esc(s.fallbackReason) + ')' : ''}${s.edited ? ' · правка владельца' : ''}</span>
+      <div class="small" style="margin:4px 0">${esc(s.text)}</div><div class="small mut">${s.sources.map(x => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>${x.published ? ' ' + esc(String(x.published).slice(0, 16)) : ''}`).join(' · ')}</div></div>`).join('')}
+    ${last ? `<div class="small mut">Рендер ${esc(last.preset)} ${esc(last.runId)}: ${esc(last.status)}${last.attempt ? ' (попытка ' + last.attempt + ')' : ''}</div>${last.error ? `<div class="small" style="color:#ef4444" data-nv-error>${esc(last.error)}</div>` : ''}` : ''}
+    ${ok ? `<video controls preload="metadata" data-nv-video src="${nvFile(d, 'mp4')}" style="width:100%;max-height:340px;border-radius:8px;margin-top:6px"></video>` : ''}
+    <div class="row" style="margin-top:8px">${['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
+      ${d.status === 'draft' ? `<button class="btn sm primary" data-nv-approve="${esc(d.id)}">Утвердить сценарий</button>` : ''}
+      ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube">Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts">Рендер 9:16</button>` : ''}
+      ${d.status === 'render_failed' && last ? `<button class="btn sm" data-nv-retry="${esc(last.jobId)}">Повторить</button>` : ''}
+      ${ok ? `<a class="btn sm" data-nv-export href="${nvFile(d, 'mp4', 1)}">Экспорт MP4</a><a class="btn sm" href="${nvFile(d, 'srt', 1)}">SRT</a>` : ''}</div></div>`;
+}
+function nvPanel() {
+  if (MODE === 'browser') return '<div class="devbox" style="margin-bottom:14px">Автопоиск и рендер доступны только в серверном режиме.</div>';
+  const run = NV.runs[0];
+  return `<div class="card" style="margin-bottom:14px" id="nvPanel"><h3><span>NEWS → VIDEO</span><span class="row"><button class="btn primary" id="nvSearch" ${NV.busy ? 'disabled' : ''}>${NV.busy === 'search' ? 'Поиск…' : 'Автопоиск новостей'}</button></span></h3>
+    ${nvEnv()}${NV.err ? `<div class="small" style="color:#ef4444">${esc(NV.err)}</div>` : ''}
+    ${run ? `<div class="small mut" id="nvRun">Последний поиск ${fmt(run.at)}: ${esc(run.status)}, получено ${run.fetched || 0}, новых ${run.new || 0}${(run.errors || []).length ? ', ошибки: ' + run.errors.map(e => esc(e.source + ': ' + e.error)).join('; ') : ''}</div>` : '<div class="small mut">Поиск ещё не запускался. Источники: ' + (NV.st ? NV.st.sources.map(s => esc(s.name)).join(', ') : '') + '</div>'}
+    ${NV.cands.length ? `<div style="max-height:320px;overflow:auto;margin-top:8px" id="nvCands">${NV.cands.map(c => `<label class="list-item" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-nv-pick="${esc(c.id)}" ${NV.sel.has(c.id) ? 'checked' : ''} style="width:auto">
+      <span class="sp"><b>${esc(c.headline)}</b> <span class="badge b-none ${CRED[c.credibility.level]}" title="${esc(c.credibility.reasons.join(', '))}">${esc(c.credibility.status)} · ${c.credibility.score}</span>${c.credibility.dateIssues.length ? ` <span class="badge b-warn b-none">${esc(c.credibility.dateIssues.map(d => d.issue).join(','))}</span>` : ''}
+      <div class="small mut">${esc(String(c.published).slice(0, 16))} · ${c.sources.map(s => esc(s.name)).join(', ')} · ${esc(c.category || '')}</div></span></label>`).join('')}</div>
+      <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button></div>` : ''}
+    <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
+}
+async function nvDo(busy, fn, ok) { NV.busy = busy; render(); try { await fn(); if (ok) toast(ok); } catch (e) { toast('Ошибка: ' + e.message, true); } NV.busy = ''; await nvLoad(); render(); }
+function nvBind(v) {
+  if (MODE === 'browser') return; if (!NV.loaded) { nvLoad(true).then(render); return; }
+  const q = s => v.querySelectorAll(s);
+  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; }, 'Поиск завершён');
+  q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
+  const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
+  q('[data-nv-approve]').forEach(b => b.onclick = () => nvDo('approve', () => api('POST', `/api/newsvideo/drafts/${b.dataset.nvApprove}/approve`), 'Утверждено → передано в VIDEO'));
+  q('[data-nv-render]').forEach(b => b.onclick = () => { const [id, preset] = b.dataset.nvRender.split('|'); nvDo('render', () => api('POST', `/api/newsvideo/drafts/${id}/render`, { preset }), 'Рендер поставлен в очередь'); });
+  q('[data-nv-retry]').forEach(b => b.onclick = () => nvDo('retry', () => api('POST', `/api/jobs/${b.dataset.nvRetry}/retry`), 'Повтор запущен'));
+  q('[data-nv-edit]').forEach(b => b.onclick = () => { const d = NV.drafts.find(x => x.id === b.dataset.nvEdit);
+    modal(`<h2>Сценарий ${esc(d.ref)}</h2><p class="small mut">После правки нужно снова утвердить.</p><label>Название</label><input name="title" value="${esc(d.title)}">${d.stories.map((s, i) => `<label>Заголовок ${i + 1}</label><input name="h${i}" value="${esc(s.headline)}"><label>Текст диктора ${i + 1}</label><textarea name="t${i}" rows="4">${esc(s.text)}</textarea>`).join('')}`,
+      fd => nvDo('edit', () => api('PUT', '/api/newsvideo/drafts/' + d.id, { title: fd.title, stories: d.stories.map((s, i) => ({ id: s.id, headline: fd['h' + i], text: fd['t' + i] })) }), 'Сохранено')); });
+}
 
 // ---- PROJECT ----
 VIEWS.project = () => {
@@ -366,13 +420,14 @@ VIEWS.video = () => {
       <select id="vfmt" style="width:auto">${opts([['16:9', '16:9 YouTube'], ['9:16', '9:16 Shorts/TikTok']], fmtSel)}</select></span></h3>
     <div style="aspect-ratio:${fmtSel.replace(':', '/')};max-height:420px;margin:auto;background:#07080b;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;overflow:hidden">
       ${vf ? `<video controls src="${esc(vf.url)}" style="width:100%;height:100%;object-fit:contain"></video>` : '<span class="mut small" style="padding:10px;text-align:center">Нет видеофайла (прикрепите в MOONKATTY NEWS → Файлы, версия EN)</span>'}</div>
-    <div class="row" style="margin-top:10px"><button class="btn" disabled>Рендер</button><button class="btn" disabled>Экспорт</button>${DEV('рендер/экспорт — в разработке')}</div></div>
+    </div>
+  <div class="card"><h3>Рендер NEWS-выпусков (TTS + ffmpeg → MP4)</h3>${MODE === 'browser' ? '<div class="empty">Только в серверном режиме</div>' : `${nvEnv()}${NV.drafts.filter(d => d.status !== 'draft').length ? NV.drafts.filter(d => d.status !== 'draft').map(d => nvDraftCard(d, true)).join('') : '<div class="empty">Нет утверждённых сценариев — утвердите сценарий в MOONKATTY NEWS</div>'}`}</div>
   <div class="card"><h3>Очередь рендера <button class="btn sm" data-task-new="video">+ Задача VIDEO</button></h3>${taskTable(rq, 'Очередь пуста')}</div>
   <div class="card"><h3>Аудиодорожки</h3>${auds.length ? auds.map(f => `<div class="list-item"><span class="sp">${esc(f.name)}</span>${mediaPlayer(f)}</div>`).join('') : '<div class="empty">Нет аудиофайлов</div>'}</div>
   <div class="card"><h3>Субтитры и видео</h3>${[...subs, ...vids].length ? [...subs, ...vids].map(f => `<div class="list-item"><span class="sp">${esc(f.name)}</span><span class="small mut">${fmtSize(f.size)}</span><a class="btn sm" href="${esc(f.url)}" download="${esc(f.name)}">Скачать</a></div>`).join('') : '<div class="empty">Нет файлов</div>'}
-    <p class="small mut">Автогенерация субтитров — ${DEV()}</p></div></div>`;
+    <p class="small mut">Субтитры (SRT) создаются автоматически при рендере NEWS-выпуска.</p></div></div>`;
 };
-BIND.video = v => { const a = v.querySelector('#vep'), b = v.querySelector('#vfmt'); if (a) a.onchange = () => { SUB.vep = a.value; render(); }; b.onchange = () => { SUB.vfmt = b.value; render(); }; };
+BIND.video = v => { nvBind(v); const a = v.querySelector('#vep'), b = v.querySelector('#vfmt'); if (a) a.onchange = () => { SUB.vep = a.value; render(); }; b.onchange = () => { SUB.vfmt = b.value; render(); }; };
 
 // ---- 3D STUDIO (v1.2.1): task → Director → 3D DESIGN agent (OpenCode server) → Blender headless; review, versions, re-render ----
 const S3 = { jobs: [], job: null, status: null, timer: null, sel: null, proj: null, project: null, ver: null, tab: 'png', viewerKey: null };
