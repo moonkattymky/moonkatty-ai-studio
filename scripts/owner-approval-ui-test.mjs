@@ -40,5 +40,17 @@ t('пароль владельца не попал в консоль', !consoleT
 t('пароль не остался в DOM', !(await p.content()).includes(OWNER_PW));
 await p.evaluate(() => { SUB.social = 'community'; location.hash = 'social'; render(); }); await p.waitForSelector('[data-creply="c1"]');
 const rb = p.locator('[data-creply="c1"]'); t('comments: кнопка ответа отключена', await rb.isDisabled()); t('comments: подпись «не реализовано»', /не реализовано/.test(await rb.textContent()));
+// Studio 2 contract b1073fd: 409 consumed → Russian text; opencode_task 403 needs_owner → Approval Center
+t('409 consumed → «одобрение уже использовано»', await p.evaluate(() => /одобрение уже использовано/i.test(ownerErrText(409, { code: 'consumed' }))));
+await p.route('**/api/jobs', r => r.request().method() === 'POST' ? r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ code: 'needs_owner', approvalId: 'ap-oc-1', error: 'owner' }) }) : r.continue());
+await p.evaluate(() => { location.hash = 'dashboard'; });
+await p.evaluate(() => act(() => api('POST', '/api/jobs', { kind: 'opencode_task', payload: { task: 'x' } })));
+await p.waitForFunction(() => location.hash === '#revenue', null, { timeout: 5000 }).catch(() => {});
+t('opencode_task 403 needs_owner → переход в Центр подтверждений', await p.evaluate(() => location.hash === '#revenue' && OWNER_PENDING.id === 'ap-oc-1'));
+t('opencode_task: показано сообщение с № запроса', await p.locator('#toast').innerText().then(x => /ap-oc-1/.test(x)));
+// params-bound: savings approvalId not reused for a different target
+{ const before = savBodies.length; await p.evaluate(() => { WC.savAppr = { id: 'ap-9', target: 500 }; });
+  await p.fill('#savForm [name=target]', '777').catch(() => {}); await p.evaluate(() => document.querySelector('#savForm')?.requestSubmit()); await p.waitForTimeout(800);
+  const b = savBodies.slice(before).at(-1); t('approvalId не переиспользуется при других параметрах', b && !b.approvalId && b.target_usd === 777, JSON.stringify(b)); }
 t('нет JS-ошибок', !errs.length, errs.join('; '));
 await br.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

@@ -118,9 +118,10 @@ const OWNER_ERR = {
   self_approval: 'Нельзя подтвердить собственный запрос: запрос из этой сессии должен подтвердить владелец из другой сессии.',
   owner_session_required: 'Подтверждать можно только из сессии владельца в браузере (вход по паролю), а не через токен приложения.',
   expired: 'Срок подтверждения истёк. Создайте запрос заново.',
+  consumed: 'Одобрение уже использовано. Запросите новое.',
   not_wired: 'Центр подтверждений на сервере не подключён — подтверждение пока невозможно.'
 };
-function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && c === 'expired') return OWNER_ERR.expired;
+function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && (c === 'expired' || c === 'consumed')) return OWNER_ERR[c];
   if (status === 403 && c && OWNER_ERR[c]) return OWNER_ERR[c] + (c === 'needs_owner' && j.approvalId ? ` (запрос № ${j.approvalId})` : '');
   if (status === 409 && c === 'needs_owner') return 'Это подтверждение уже использовано. Запросите новое.';
   if (status === 503 && c === 'not_wired') return OWNER_ERR.not_wired; return null; }
@@ -135,7 +136,10 @@ function ownerApprove(id, done) {
   f.querySelector('.btn.primary').textContent = 'Подтвердить'; f.querySelector('input[name=password]').focus();
 }
 async function loadAll() { const cols = C.COLLECTIONS; const res = await Promise.all([...cols.map(c => api('GET', '/api/' + c)), api('GET', '/api/system').catch(() => null)]); cols.forEach((c, i) => DB[c] = res[i]); SYS = res[cols.length]; }
-async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); } }
+// Any owner-tier 403 needs_owner (e.g. POST /api/jobs {kind:'opencode_task'}) → show message and open the Approval Center (Очередь владельца).
+function ownerRedirect(e) { if (e && e.status === 403 && e.code === 'needs_owner' && e.approvalId) { OWNER_PENDING.id = e.approvalId; navTo('revenue'); return true; } return false; }
+const OWNER_PENDING = { id: null };
+async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); ownerRedirect(e); } }
 function toast(m, err) { const d = document.createElement('div'); d.textContent = i18n.tr(m); if (err) d.style.borderColor = '#ef4444'; $('#toast').append(d); setTimeout(() => d.remove(), 3500); }
 
 // ================= Helpers =================
@@ -987,7 +991,7 @@ BIND.revenue = v => {
     const imp = root.querySelector('#impForm'); if (imp) imp.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/import', { csv: new FormData(imp).get('csv') }); WC.data = null; }, 'Импорт записан'); };
     const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { const ap = WC.savAppr && WC.savAppr.target === n ? WC.savAppr.id : undefined;
       try { await api('POST', '/api/world/savings', ap ? { target_usd: n, approvalId: ap } : { target_usd: n }); WC.savAppr = null; }
-      catch (e) { if (e.code === 'needs_owner' && e.approvalId) WC.savAppr = { id: e.approvalId, target: n }; else if (e.status === 409) WC.savAppr = null; throw e; }
+      catch (e) { if (e.code === 'needs_owner' && e.approvalId) WC.savAppr = { id: e.approvalId, target: n }; else if (e.status === 409 || e.code === 'params_mismatch') WC.savAppr = null; throw e; }
       finally { WC.data = null; } }, 'Цель сохранена'); };
     root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => b.dataset.dec === 'approve'
       ? ownerApprove(b.dataset.ap, async () => { WC.data = null; await loadAll(); render(); })
