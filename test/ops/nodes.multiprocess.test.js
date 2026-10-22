@@ -84,3 +84,12 @@ test('QA-NODE-001 residual (r3): real coordinator process killed and restarted f
   const ok = await until(async () => (await send(mk(Date.now() + 26e3))).status === 200, 10000); assert.ok(ok, 'fresh signed request (same +skew clock) passes after restart');
   assert.deepEqual(await send(mk(Date.now() + 1e3)), { status: 401, code: 'E_REPLAY' }, 'below the node high-water mark → refused');
 });
+
+test('r3: a running real agent survives a fast coordinator restart (E_REPLAY → fresh signature after 3 s, not a 60 s auth pause) and completes a job', { skip: !STUDIO && 'studio coordinator only (COORD_HELPER=studio)', timeout: 90000 }, async () => {
+  const c = await startCoord(); const im = await admin(c, '/register', { id: 'imac', role: 'imac' }); const ai = agent(c, 'imac', tok(im));
+  await until(async () => (await admin(c, '/status')).nodes.every(n => n.status === 'online'));
+  await admin(c, '/restart'); const t0 = Date.now();
+  const d = await admin(c, '/submit', { capability: 'news.dedup', input: { items: [{ title: 'a', link: 'a' }, { title: 'A', link: 'a' }] } });
+  const r = await until(async () => { const j = await job(c, d.jobId); return j.status === 'succeeded' && j; }, 30000); assert.equal(r.nodeId, 'imac');
+  assert.ok(Date.now() - t0 < 30000); assert.ok(!/пауза 60 с/.test(ai.out.join('')), 'no 60 s auth pause: ' + ai.out.join('').slice(-400)); ai.kill();
+});
