@@ -11,7 +11,7 @@ let pass = 0, fail = 0; const t = (n, c, x = '') => { c ? pass++ : fail++; conso
 const br = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 const p = await br.newPage(); const errs = [], consoleTxt = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => consoleTxt.push(m.text()));
 const apprBodies = [], savBodies = [];
-const seq = [[403, { error: 'x', code: 'owner_reauth' }], [403, { error: 'x', code: 'self_approval' }], [403, { error: 'x', code: 'owner_session_required' }], [409, { error: 'x', code: 'expired' }], [200, { ok: true, status: 'approved', executed: true }], [200, { ok: true, status: 'rejected' }]];
+const seq = [[403, { error: 'x', code: 'owner_reauth' }], [403, { error: 'x', code: 'self_approval' }], [403, { error: 'x', code: 'owner_session_required' }], [409, { error: 'x', code: 'expired' }], [200, { ok: true, status: 'approved', executed: true, execStatus: 'executed', result: { ok: true } }], [200, { ok: true, status: 'rejected' }]];
 await p.route('**/api/world/approvals/**', async r => { apprBodies.push(r.request().postDataJSON()); const [s, j] = seq[apprBodies.length - 1] || [500, {}]; await r.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(j) }); });
 await p.route('**/api/world/savings', async r => { const b = r.request().postDataJSON(); savBodies.push(b); await r.fulfill(b.approvalId === 'ap-1' ? { status: 200, contentType: 'application/json', body: '{"ok":true}' } : { status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Нужно подтверждение владельца', code: 'needs_owner', approvalId: 'ap-1' }) }); });
 await p.route('**/api/world/command-center', async r => { const res = await r.fetch(); const j = await res.json(); j.approvals = [{ id: 'ap-1', action: 'critical_settings', detail: 'savings target 500', status: 'pending' }]; await r.fulfill({ response: res, json: j }); });
@@ -22,7 +22,7 @@ await p.evaluate(() => location.hash = 'revenue'); await p.waitForSelector('#sav
 await p.fill('#savForm input[name=target]', '500'); await p.click('#savForm button'); const tNeeds = await lastToast();
 t('savings: 403 needs_owner → понятное сообщение с номером запроса', /Нужно подтверждение владельца.*ap-1/.test(tNeeds), tNeeds);
 t('savings: первый запрос без confirm и без approvalId', savBodies[0] && !('confirm' in savBodies[0]) && !savBodies[0].approvalId);
-const expect = [['owner_reauth', /Неверный пароль владельца/], ['self_approval', /Нельзя подтвердить собственный запрос/], ['owner_session_required', /только из сессии владельца/], ['expired', /Срок подтверждения истёк/], ['ok', /Подтверждено/]];
+const expect = [['owner_reauth', /Неверный пароль владельца/], ['self_approval', /Нельзя подтвердить собственный запрос/], ['owner_session_required', /только из сессии владельца/], ['expired', /Срок подтверждения истёк/], ['ok', /Подтверждено и выполнено/]];
 for (const [code, re] of expect) {
   await p.waitForSelector('[data-ap="ap-1"][data-dec="approve"]'); await p.click('[data-ap="ap-1"][data-dec="approve"]');
   const inp = p.locator('#modal input[name=password]'); t(`${code}: поле пароля type=password`, (await inp.getAttribute('type')) === 'password');
@@ -30,8 +30,10 @@ for (const [code, re] of expect) {
   const b = apprBodies.at(-1); t(`${code}: тело {decision:approve,password}, без confirm`, b && b.decision === 'approve' && b.password === OWNER_PW && !('confirm' in b));
   t(`${code}: поле пароля очищено после отправки`, (await p.locator('#modal input[name=password]').inputValue().catch(() => '')) === '');
 }
-await p.fill('#savForm input[name=target]', '500'); await p.click('#savForm button'); await lastToast();
-t('savings: повтор после подтверждения шлёт approvalId', savBodies.at(-1) && savBodies.at(-1).approvalId === 'ap-1' && !('confirm' in savBodies.at(-1)));
+// QA-DD-001: approval executes server-side → UI shows the result, never re-sends the action with approvalId
+t('QA-DD-001: после подтверждения действие НЕ отправляется повторно', savBodies.length === 1, 'savings POSTs: ' + savBodies.length);
+t('QA-DD-001: результат выполнения показан в «Очереди владельца»', /Подтверждено и выполнено.*ap-1/.test(await p.locator('[data-ap-result]').innerText().catch(() => '')));
+t('QA-DD-001: текст needs_owner не просит повторить действие', !/повторите действие/.test(tNeeds));
 await p.waitForSelector('[data-ap="ap-1"][data-dec="reject"]'); await p.click('[data-ap="ap-1"][data-dec="reject"]'); await lastToast();
 t('reject: без пароля', apprBodies.at(-1).decision === 'reject' && !('password' in apprBodies.at(-1)));
 const store = await p.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + document.cookie);
@@ -48,9 +50,7 @@ await p.evaluate(() => act(() => api('POST', '/api/jobs', { kind: 'opencode_task
 await p.waitForFunction(() => location.hash === '#revenue', null, { timeout: 5000 }).catch(() => {});
 t('opencode_task 403 needs_owner → переход в Центр подтверждений', await p.evaluate(() => location.hash === '#revenue' && OWNER_PENDING.id === 'ap-oc-1'));
 t('opencode_task: показано сообщение с № запроса', await p.locator('#toast').innerText().then(x => /ap-oc-1/.test(x)));
-// params-bound: savings approvalId not reused for a different target
-{ const before = savBodies.length; await p.evaluate(() => { WC.savAppr = { id: 'ap-9', target: 500 }; });
-  await p.fill('#savForm [name=target]', '777').catch(() => {}); await p.evaluate(() => document.querySelector('#savForm')?.requestSubmit()); await p.waitForTimeout(800);
-  const b = savBodies.slice(before).at(-1); t('approvalId не переиспользуется при других параметрах', b && !b.approvalId && b.target_usd === 777, JSON.stringify(b)); }
+// QA-DD-001: savings form never sends approvalId (no retry path)
+t('savings: approvalId никогда не отправляется', savBodies.every(b => !('approvalId' in b)));
 t('нет JS-ошибок', !errs.length, errs.join('; '));
 await br.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
