@@ -152,7 +152,7 @@ const owner = await api('POST', '/api/world/action', { action: 'paid_ads', detai
 const deny = await api('POST', '/api/world/action', { action: 'spam' });
 const approved = await api('POST', '/api/world/approvals/' + owner.j.approvalId, { decision: 'approve' });
 ok('11 auto allowed', allow.s === 200 && allow.j.executed === true, JSON.stringify(allow.j));
-ok('11 owner gate does not execute', owner.s === 403 && owner.j.code === 'needs_owner' && approved.j.executed === false, JSON.stringify(approved.j));
+ok('11 owner gate does not execute', owner.s === 403 && owner.j.code === 'needs_owner' && approved.j.executed !== true && approved.s >= 400 /* app token cannot approve (QA-E2E-001 R2) */, JSON.stringify(approved.j));
 ok('11 forbidden denied', deny.s === 403 && deny.j.code === 'forbidden');
 for (const action of ['botting', 'bought_followers', 'platform_evasion', 'fake_followers']) {
   const banned = await api('POST', '/api/world/action', { action });
