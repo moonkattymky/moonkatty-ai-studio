@@ -313,8 +313,9 @@ app.post('/api/director/chat', async (req, res) => {
   const fp = finishPlan(text, user, first.plan, first.llmError); if (fp.disabled) return res.status(403).json({ error: DESIGN3D_DISABLED_MSG, code: 'feature_disabled', feature: 'design3d', message: fp.message, tasks: [] }); res.json(fp);
 });
 
+const BUILD_COMMIT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'desktop', 'build-info.json'), 'utf8')).commit || null; } catch { return null; } })(); // v1.3.3-test: identity for the desktop shell
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
-  res.json({ ok: dbOk, app: 'moonkatty-ai-studio', flavor: CFG.flavor, product: CFG.product, schemaVersion: DB_SCHEMA_VERSION, mode: 'server', version: require('./package.json').version, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
+  res.json({ ok: dbOk, app: 'moonkatty-ai-studio', flavor: CFG.flavor, product: CFG.product, schemaVersion: DB_SCHEMA_VERSION, mode: 'server', version: require('./package.json').version, commit: BUILD_COMMIT, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
 app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, heavy: heavy.status(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
 app.post('/api/agents/:id/start', (req, res) => { try { res.json(runner.start(req.params.id, req.user)); } catch (e) { if (e.code === 'feature_disabled') return res.status(403).json(gate3d.body403(e)); res.status(400).json({ error: e.message }); } });
 app.post('/api/agents/:id/stop', (req, res) => { try { res.json(runner.stop(req.params.id, req.user)); } catch (e) { res.status(400).json({ error: e.message }); } });
@@ -612,8 +613,9 @@ const PID_FILE = path.join(path.dirname(DB_PATH), 'server.pid');
 const srv = app.listen(PORT, HOST, err => { if (err) return; startBackground(); fs.writeFileSync(PID_FILE, String(process.pid)); console.log(`${CFG.product}: http://${HOST}:${PORT} (pid ${process.pid}, db ${db.driver || 'better-sqlite3'})`); });
 srv.on('error', async e => {
   if (e.code !== 'EADDRINUSE') throw e;
-  let ours = false; try { ours = (await (await fetch(`http://127.0.0.1:${PORT}/api/health`, { signal: AbortSignal.timeout(3000) })).json()).app === 'moonkatty-ai-studio'; } catch {}
-  console.error(ours ? `Сервер уже запущен на порту ${PORT} — второй экземпляр не нужен` : `Порт ${PORT} занят другим процессом`); process.exit(ours ? 0 : 3);
+  let h = null; try { h = await (await fetch(`http://127.0.0.1:${PORT}/api/health`, { signal: AbortSignal.timeout(3000) })).json(); } catch {}
+  const ours = !!h && h.app === 'moonkatty-ai-studio' && (h.flavor || 'prod') === CFG.flavor, same = ours && h.version === require('./package.json').version; // v1.3.3-test: same version only
+  console.error(same ? `Сервер уже запущен на порту ${PORT} — второй экземпляр не нужен` : ours ? `Порт ${PORT} занят другой версией сервера (v${h.version}, pid ${h.pid}); эта версия v${require('./package.json').version} не запущена` : `Порт ${PORT} занят другим процессом`); process.exit(same ? 0 : 3);
 });
 const shutdown = sig => { console.log('Остановка по ' + sig); srv.close(); try { if (fs.readFileSync(PID_FILE, 'utf8') === String(process.pid)) fs.unlinkSync(PID_FILE); } catch {} try { db.close(); } catch {} process.exit(0); };
 process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'));

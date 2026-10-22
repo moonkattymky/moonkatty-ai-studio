@@ -89,8 +89,8 @@ async function ollama() {
 async function status() {
   const c = cfg(); const h = await svc.health(c.port);
   return { port: c.port, cfg: { autoStartServer: c.autoStartServer, startAtLogin: c.startAtLogin }, version: app.getVersion(), commit: BUILD.commit, platform: process.platform + '/' + process.arch,
-    server: h ? (h.foreign ? { ok: false, detail: `Порт ${c.port} занят другим приложением` } : { ok: true, detail: `pid ${h.pid}, работает ${h.uptimeSec} с, v${h.version}` }) : { ok: false, detail: 'Не запущен' },
-    db: h && !h.foreign ? { ok: h.db === 'ok', detail: `${h.dbDriver}, ${path.join(dataDir(), 'studio.db')}` } : { ok: false, detail: 'Нет данных — сервер не запущен' },
+    server: h ? (h.foreign ? { ok: false, detail: `Порт ${c.port} занят другим приложением` } : h.stale ? { ok: false, stale: true, detail: `На порту ${c.port} работает другая версия сервера (v${h.version}${h.commit ? ', ' + String(h.commit).slice(0, 7) : ''}, pid ${h.pid}), а это приложение v${svc.EXPECT.version}. Нажмите «Запустить сервер» — старый сервер TEST будет перезапущен этой версией.` } : { ok: true, detail: `pid ${h.pid}, работает ${h.uptimeSec} с, v${h.version}` }) : { ok: false, detail: 'Не запущен' },
+    db: h && !h.foreign && !h.stale ? { ok: h.db === 'ok', detail: `${h.dbDriver}, ${path.join(dataDir(), 'studio.db')}` } : { ok: false, detail: 'Нет данных — сервер не запущен' },
     keys: h && h.keySource ? { ok: true, detail: h.keySource === 'keychain' ? 'macOS Keychain' : h.keySource } : null,
     ollama: await ollama(), launchd: await svc.launchdStatus() };
 }
@@ -98,9 +98,13 @@ async function status() {
 const fromStartup = e => !!e.senderFrame && isStartup(e.senderFrame.url) && e.sender === win?.webContents;
 const handle = (ch, fn) => ipcMain.handle(ch, (e, ...a) => { if (!fromStartup(e)) throw new Error('IPC denied'); return fn(...a); });
 handle('status', () => status());
-handle('start-server', async () => { const c = cfg(); const h = await svc.health(c.port); if (h && !h.foreign) return { ok: true, already: true };
+handle('start-server', async () => { const c = cfg(); const h = await svc.health(c.port); if (h && !h.foreign && !h.stale) return { ok: true, already: true };
   if (h && h.foreign) return { ok: false, error: `Порт ${c.port} занят другим приложением` };
-  const r = await svc.installAndStart(svcOpts(c)); const ok = await svc.waitHealthy(c.port); return { ok: !!ok, method: r.method, error: ok ? null : 'Сервер не ответил за 20 с — см. журнал ' + path.join(logDir(), 'server.log') }; });
+  if (h && h.stale && process.platform !== 'darwin') { // dev/test path: stop exactly that PID (our own flavor's server, reported by its /api/health)
+    try { process.kill(h.pid, 'SIGTERM'); } catch (e) { return { ok: false, error: `Не удалось остановить старый сервер v${h.version} (pid ${h.pid}): ${e.message}` }; }
+    for (let i = 0; i < 20 && await svc.health(c.port); i++) await new Promise(r => setTimeout(r, 250)); }
+  const r = await svc.installAndStart({ ...svcOpts(c), restart: !!(h && h.stale) }); if (h && h.stale && r.method === 'launchd') r.restartedStale = h.version; const ok = await svc.waitHealthy(c.port); const now = ok ? null : await svc.health(c.port);
+  return { ok: !!ok, method: r.method, error: ok ? null : now && now.stale ? `На порту ${c.port} всё ещё отвечает сервер v${now.version} (pid ${now.pid}), а не v${svc.EXPECT.version}. Остановите старую версию TEST и повторите.` : 'Сервер не ответил за 20 с — см. журнал ' + path.join(logDir(), 'server.log') }; });
 handle('open-panel', () => { const c = cfg(); installTokenHeader(c); win && win.loadURL(panelOrigin(c) + '/'); return true; });
 handle('set-cfg', async patch => {
   if (!patch || typeof patch !== 'object') throw new Error('bad args'); const c = cfg();

@@ -39,8 +39,16 @@ function plist(o) {
 }
 const run = (cmd, args) => new Promise(res => execFile(cmd, args, { timeout: 15000 }, (e, so, se) => res({ ok: !e, code: e ? e.code : 0, out: String(so || '') + String(se || '') })));
 const uid = () => process.getuid ? process.getuid() : 0;
-async function health(port) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2500) }); const j = await r.json(); return j.app === 'moonkatty-ai-studio' && (j.flavor || 'prod') === CFG.flavor ? j : { foreign: true }; } catch (e) { return null; } }
-async function waitHealthy(port, ms = 20000) { const end = Date.now() + ms; while (Date.now() < end) { const h = await health(port); if (h && !h.foreign) return h; await new Promise(r => setTimeout(r, 500)); } return null; }
+// v1.3.3-test: identity = app + flavor + VERSION (+ commit when both sides know it). A server of the same flavor but another
+// version (e.g. an older TEST build still running on the shared TEST port 8687 under the same launchd label) is "stale":
+// it is never reused as ours — the panel would otherwise show that old build's UI (no NEWS → VIDEO).
+const EXPECT = (() => { let commit = null; try { commit = JSON.parse(fs.readFileSync(path.join(__dirname, 'build-info.json'), 'utf8')).commit || null; } catch {}
+  return { version: require('../package.json').version, commit: commit && commit !== 'dev' ? commit : null }; })();
+async function health(port) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2500) }); const j = await r.json();
+  if (!(j.app === 'moonkatty-ai-studio' && (j.flavor || 'prod') === CFG.flavor)) return { foreign: true };
+  if (j.version !== EXPECT.version || (EXPECT.commit && j.commit && j.commit !== EXPECT.commit)) return { stale: true, version: j.version || '?', commit: j.commit || null, pid: j.pid };
+  return j; } catch (e) { return null; } }
+async function waitHealthy(port, ms = 20000) { const end = Date.now() + ms; while (Date.now() < end) { const h = await health(port); if (h && !h.foreign && !h.stale) return h; await new Promise(r => setTimeout(r, 500)); } return null; }
 async function installAndStart(o) {
   fs.mkdirSync(o.logDir, { recursive: true }); fs.mkdirSync(o.dataDir, { recursive: true });
   if (process.platform !== 'darwin') { // dev/test path: detached process, independent of the window
@@ -52,7 +60,7 @@ async function installAndStart(o) {
   const content = plist(o); const changed = !fs.existsSync(f) || fs.readFileSync(f, 'utf8') !== content || fs.existsSync(other);
   if (changed) { await run('/bin/launchctl', ['bootout', `gui/${uid()}/${LABEL}`]); try { fs.unlinkSync(other); } catch {} fs.writeFileSync(f, content); }
   const b = await run('/bin/launchctl', ['bootstrap', `gui/${uid()}`, f]); // "already loaded" is fine
-  const k = await run('/bin/launchctl', ['kickstart', `gui/${uid()}/${LABEL}`]);
+  const k = await run('/bin/launchctl', ['kickstart', ...(o.restart ? ['-k'] : []), `gui/${uid()}/${LABEL}`]); // -k: kill the running (stale) job and start this build's server
   return { method: 'launchd', plist: f, bootstrap: b.out.trim(), kickstart: k.ok ? 'ok' : k.out.trim() };
 }
 async function stop(port) {
@@ -62,4 +70,4 @@ async function stop(port) {
 }
 async function setStartAtLogin(o) { if (process.platform !== 'darwin') return { ok: false, out: 'Только macOS' }; return installAndStart(o); }
 async function launchdStatus() { if (process.platform !== 'darwin') return null; const r = await run('/bin/launchctl', ['print', `gui/${uid()}/${LABEL}`]); return { loaded: r.ok, state: (/state = (\w+)/.exec(r.out) || [])[1] || null, lastExit: (/last exit code = ([^\n]+)/.exec(r.out) || [])[1] || null }; }
-module.exports = { LABEL, plistPath, plist, health, waitHealthy, installAndStart, stop, setStartAtLogin, launchdStatus };
+module.exports = { EXPECT, LABEL, plistPath, plist, health, waitHealthy, installAndStart, stop, setStartAtLogin, launchdStatus };
