@@ -1,0 +1,37 @@
+== world-approval-test
+exit:0
+18
+ALL PASS
+== world-approval-e2e-test
+exit:0
+50
+ALL PASS
+== world-approval-e2e-test
+exit:0
+50
+ALL PASS
+== security-test
+exit:0
+52
+{"passed":52,"failed":[]}
+== world-class-test
+exit:1
+62
+FAIL 3 runtime reports ollama without inventing a model — Модель qwen3:8b не установлена (ollama pull qwen3:8b)
+FAILED 1
+== isolation-test
+exit:0
+65
+{"passed":65,"failed":[]}
+== policy-test
+exit:0
+46
+== publish-guard-test
+exit:0
+73
+{"passed":73,"failed":[]}
+ops:0
+# tests 121
+# pass 119
+# fail 0
+# skipped 2
