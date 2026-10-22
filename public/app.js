@@ -497,7 +497,7 @@ VIEWS.nodes = () => {
     <label>Название</label><input id="nname" placeholder="iMac NEWS NODE">
     <p class="small mut">Для выдачи/смены токена и сохранения настроек нужен пароль владельца и ввод слова-подтверждения.</p></div></div>
     <div class="card" style="margin-top:14px"><label>Пароль владельца</label><input type="password" id="npw" autocomplete="current-password">
-    <label>Подтверждение (ПОДКЛЮЧИТЬ — код, ПОДТВЕРДИТЬ — устройство, ВЫДАТЬ — прямой токен 0.2.0, СМЕНИТЬ — смена токена, ОТОЗВАТЬ — отзыв, СОХРАНИТЬ — настройки)</label><input id="nconf">
+    <label>Подтверждение (ПОДКЛЮЧИТЬ — код, ПОДТВЕРДИТЬ — устройство, ОТКЛОНИТЬ — отклонить устройство, ВЫДАТЬ — прямой токен 0.2.0, СМЕНИТЬ — смена токена, ОТОЗВАТЬ — отзыв, СОХРАНИТЬ — настройки)</label><input id="nconf">
     <div class="row" style="margin-top:8px"><button class="btn" id="nreg">Зарегистрировать</button><button class="btn sm" id="nsave">Сохранить настройки</button></div></div>
     ${I ? `<div class="card" style="margin-top:14px;border-color:#f59e0b"><h3>Токен узла ${esc(I.id)} — показан ОДИН раз</h3><code style="word-break:break-all">${esc(I.token)}</code>
       <p class="small">Keychain на узле: service <code>${esc(I.keychainService)}</code>, account <code>${esc(I.keychainAccount)}</code> (install.sh записывает через stdin). Отпечаток: <code style="word-break:break-all">${esc(I.fingerprint)}</code>${I.coordinatorUrl ? `<br>COORDINATOR_URL: <code>${esc(I.coordinatorUrl)}</code>` : ''}</p>
@@ -528,7 +528,7 @@ BIND.nodes = v => {
     if (!confirm(`Подтвердить устройство для узла ${q.nodeId} (${q.role})?\n\nКлюч устройства: ${dv.pubKeyShort}\nSHA-256: ${dv.pubKeyFingerprint}\ndeviceId: ${dv.deviceId}\nСеть: ${nodePeer(dv)}\n\nКлюч должен совпадать с экраном узла. Имя/модель сообщены устройством и не проверены.`)) return;
     let ack = false; if (!dv.peerVerified) { ack = confirm('ВНИМАНИЕ: координатор не смог определить устройство Tailscale, с которого пришёл запрос.\nПодтверждайте, только если вы САМИ сейчас ввели этот код на своём компьютере и ключ устройства совпадает с его экраном.\n\nПодтвердить без проверки адреса Tailscale?'); if (!ack) return; }
     run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, { password: pw(), confirm: cf(), acknowledgeUnverifiedPeer: ack }), 'Устройство подтверждено — узел получит токен'); });
-  v.querySelectorAll('[data-enr]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enr)}/reject`, {}), 'Отклонено'));
+  v.querySelectorAll('[data-enr]').forEach(b => b.onclick = () => run(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enr)}/reject`, { password: pw(), confirm: cf() }), 'Отклонено'));
   const h = v.querySelector('#nhide'); if (h) h.onclick = () => { NODES.issued = null; v.innerHTML = VIEWS.nodes(); BIND.nodes(v); };
 };
 VIEWS.studio3d = () => {
