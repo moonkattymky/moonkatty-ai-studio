@@ -177,11 +177,12 @@ test('manifest validation rejects path-like asset names and bad identity', () =>
 
 test('pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched', async () => {
   const d = tmp(); const db = open(path.join(d, 'studio.db')); db.exec("CREATE TABLE items (col TEXT, id TEXT, data TEXT, PRIMARY KEY(col,id)); CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT); INSERT INTO items VALUES ('tasks','t1','{}');");
-  const backups = createUpdateBackups({ db, openDb: open, dir: path.join(d, 'ops', 'update-center', 'backups') });
+  fs.writeFileSync(path.join(d, 'settings.json'), '{"theme":"dark"}'); fs.mkdirSync(path.join(d, 'workspace')); fs.writeFileSync(path.join(d, 'workspace', 'note.md'), 'user file');
+  const backups = createUpdateBackups({ db, openDb: open, dir: path.join(d, 'ops', 'update-center', 'backups'), dataDir: d, dbFile: path.join(d, 'studio.db') }); // E2E-UC: + settings/user files
   const kp = keys(); const r = release({ priv: kp.privateKey, manifest: { dbSchemaVersion: 1 } }); // same schema as the fixture DB
   const { uc } = center({ kp, fetchImpl: fakeGitHub([r]), update: createUpdateManager(), db, backups }); await uc.check();
   let p = uc.installPlan(r.tag); assert.equal(p.allowed, false);
-  const b = uc.preBackup(); assert.equal(b.verified, true); assert.equal(b.integrity, 'ok');
+  const b = uc.preBackup(); assert.equal(b.verified, true, b.problems.join()); assert.equal(b.integrity, 'ok'); assert.equal(b.files.count, 2, 'settings.json + workspace/note.md (live DB excluded)'); assert.equal(b.files.verified, true);
   await uc.download(r.tag); p = uc.installPlan(r.tag); assert.equal(p.allowed, false, 'still needs owner approval'); uc.approve(r.tag, { user: 'igor' });
   p = uc.installPlan(r.tag); assert.equal(p.allowed, true, p.reasons.join()); assert.equal(p.manual, true); assert.equal(p.mode, 'replace');
   const all = [...p.steps, ...p.rollback].join('\n'); assert.match(all, /previous\.app/); assert.doesNotMatch(all, /xattr|spctl --master|rm -rf/);

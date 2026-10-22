@@ -6,6 +6,8 @@
   const mb = b => b == null ? '—' : (b / 1e6).toFixed(1) + ' МБ';
   const pct = (a, b) => b ? Math.min(100, Math.round(a / b * 100)) : 0;
   const bar = (p, label) => `<div class="small">${esc(label)} ${p}%</div><div style="background:#0002;border-radius:4px;height:8px"><div style="width:${p}%;height:8px;border-radius:4px;background:var(--accent,#7c5cff)"></div></div>`;
+  const STAGE_ORDER = ['checking', 'backup', 'staging', 'verifying-staged', 'swapping', 'restarting', 'health', 'done'];
+  const STAGES = { checking: 'проверки', backup: 'бэкап', staging: 'распаковка', 'verifying-staged': 'проверка пакета', swapping: 'замена', restarting: 'перезапуск', health: 'health check', done: 'готово', 'rolling-back': 'откат…', 'rolled-back': 'откат выполнен', 'rollback-failed': 'ОТКАТ НЕ УДАЛСЯ', failed: 'ошибка' };
   const badge = (ok, t) => `<span class="badge ${ok ? 'b-ok' : 'b-err'}">${esc(t)}</span>`;
   function rel(r) {
     const d = r.download, g = r.gate || {}, m = r.manifest || {};
@@ -14,6 +16,7 @@
     const p = PLAN[r.tag];
     return `<div class="card" style="margin-top:8px"><div class="row"><b>${esc(r.tag)}</b> ${r.prerelease ? '<span class="badge b-warn">prerelease</span>' : ''} ${r.newer ? '<span class="badge b-ok">новее</span>' : '<span class="small mut">не новее текущей</span>'}
       ${badge(r.verified, r.verified ? 'подпись проверена' : 'не проверено')} <a class="small" href="${esc(r.url)}" target="_blank" rel="noopener">GitHub</a></div>
+      <div class="small">Версия <b>${esc(r.version || '—')}</b> · опубликовано ${r.publishedAt ? esc(new Date(r.publishedAt).toLocaleString('ru-RU')) : '—'}${m.builtAt ? ' · собрано ' + esc(new Date(m.builtAt).toLocaleString('ru-RU')) : ''} · размер пакета ${mb(((m.assets || []).find(a => /-arm64-mac\.zip$/.test(a.name)) || {}).size)}</div>
       ${r.manifest ? `<div class="small mut">канал ${esc(m.channel)} · bundleId ${esc(m.bundleId)} · данные «${esc(m.dataDirName)}» · launchd ${esc(m.launchdLabel)} · схема БД ${esc(m.dbSchemaVersion ?? '—')} · commit ${esc(String(m.sourceCommit || '—').slice(0, 9))}</div>` : ''}
       ${r.problems.length ? `<div class="small">${r.problems.map(x => '⚠ ' + esc(x)).join('<br>')}</div>` : ''}
       <div class="small"><b>Совместимость:</b> ${badge(r.compat && r.compat.ok, r.compat && r.compat.ok ? 'OK' : 'нет')} ${esc(r.compat && r.compat.detail || '')}</div>
@@ -24,7 +27,7 @@
       <div class="row" style="margin-top:6px">${r.verified && U.mechanism && U.mechanism.downloadEnabled ? `<button class="btn sm primary" data-ucdl="${esc(r.tag)}" ${d && ['downloading', 'verifying'].includes(d.status) ? 'disabled' : ''}>Скачать обновление</button>` : '<span class="small mut">Скачивание через Update Center запрещено (нет проверенной подписи) — только ручная проверка по docs/ops/UPDATE_CENTER.md</span>'}
         ${d && d.status !== 'verified' ? `<button class="btn sm" data-ucclean="${esc(r.tag)}">Очистить временные файлы</button>` : ''}
         ${r.manifest ? `<button class="btn sm" data-ucplan="${esc(r.tag)}">План установки</button>` : ''}
-        ${r.verified && U.mechanism && U.mechanism.installEnabled && g.mode !== 'side-by-side' && !r.approved ? `<button class="btn sm" data-ucappr="${esc(r.tag)}">Разрешить замену (владелец)</button>` : r.approved ? '<span class="small">✔ одобрено владельцем</span>' : ''}</div>
+        ${r.verified && d && d.status === 'verified' && U.mechanism && U.mechanism.installEnabled && U.approvalCenter && U.installer && g.mode !== 'side-by-side' ? `<button class="btn sm primary" data-ucreq="${esc(r.tag)}">Запросить установку (подтверждение владельца в Approval Center)</button>` : ''}</div>
       ${p ? `<div class="card" style="margin-top:6px"><b>Ручная установка ${p.allowed ? '' : '(запрещена)'}</b><ol class="small">${p.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol><b class="small">Откат</b><ol class="small">${p.rollback.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
         <div class="small mut">Не трогаем: ${p.services.untouched.map(esc).join(' · ')}</div><div class="small mut">Автоустановка: ${p.autoInstall.enabled ? 'включена' : 'выключена (нет флагов: ' + esc(p.autoInstall.missing.join(', ')) + ')'}</div></div>` : ''}</div>`;
   }
@@ -46,6 +49,11 @@
       ${U.keysLoaded ? '' : '<div class="small">⚠ для канала этой сборки нет доверенного ключа — ни один релиз не будет считаться проверенным</div>'}
       <div class="small mut">Установка только вручную. Gatekeeper/карантин не обходятся. Ollama, OpenCode, Keychain и данные пользователя не затрагиваются. Автоустановка: ${U.autoInstall.enabled ? 'включена' : 'выключена'}.</div>
       ${U.releases.length ? U.releases.map(rel).join('') : '<div class="small mut" style="margin-top:6px">Релизы не загружены — нажмите «Проверить обновления».</div>'}
+      ${U.install ? `<div class="card" id="ucInstall" style="margin-top:8px"><b>Установка ${esc(U.install.tag || '')}</b> ${esc(U.install.from || '')} → ${esc(U.install.to || '')}: <b>${esc(STAGES[U.install.stage] || U.install.stage)}</b>${U.install.error ? ' · ' + esc(U.install.error) : ''}
+        ${bar(Math.round((STAGE_ORDER.indexOf(U.install.stage) + 1) / STAGE_ORDER.length * 100), 'Этап')}</div>` : ''}
+      ${U.installer ? '' : '<div class="small mut">Установщик для этой платформы недоступен — установка только вручную (BLOCKED до QA на Mac).</div>'}
+      <details style="margin-top:8px"><summary class="small">История обновлений (${(U.history || []).length})</summary><table class="small"><tr><th>Когда</th><th>Действие</th><th>Релиз</th><th>Результат</th><th>Детали</th></tr>
+        ${(U.history || []).map(h => `<tr><td>${esc(new Date(h.at).toLocaleString('ru-RU'))}</td><td>${esc(h.action)}</td><td>${esc(h.tag || '—')}</td><td>${esc(h.result || '')}</td><td>${esc(h.error || h.approvalId || h.backupId || '')}</td></tr>`).join('')}</table></details>
       <div id="ucOut" class="small"></div></div>`;
   };
   async function load() { try { U = await api('GET', '/api/ops/update-center'); ERR = null; } catch (e) { ERR = e.message; } if (ROUTE === 'settings') render(); }
@@ -64,8 +72,8 @@
     v.querySelectorAll('[data-ucdl]').forEach(b => b.onclick = () => act('', () => api('POST', `/api/ops/update-center/${encodeURIComponent(b.dataset.ucdl)}/download`, {})));
     v.querySelectorAll('[data-ucclean]').forEach(b => b.onclick = () => act('', () => api('POST', `/api/ops/update-center/${encodeURIComponent(b.dataset.ucclean)}/clean`, {})));
     v.querySelectorAll('[data-ucplan]').forEach(b => b.onclick = () => act('', async () => { PLAN[b.dataset.ucplan] = await api('GET', `/api/ops/update-center/${encodeURIComponent(b.dataset.ucplan)}/plan`); }));
-    v.querySelectorAll('[data-ucappr]').forEach(b => b.onclick = () => { const pw = prompt('Пароль владельца для разрешения установки поверх текущей сборки:'); if (pw) act('', () => api('POST', `/api/ops/update-center/${encodeURIComponent(b.dataset.ucappr)}/approve`, { password: pw })); });
-    clearInterval(timer); if (U && U.releases.some(r => r.download && ['downloading', 'verifying'].includes(r.download.status))) timer = setTimeout(() => { if (ROUTE === 'settings') load(); }, 1000);
+    v.querySelectorAll('[data-ucreq]').forEach(b => b.onclick = () => act('', async () => { const r = await api('POST', `/api/ops/update-center/${encodeURIComponent(b.dataset.ucreq)}/install-request`, {}); return 'Запрос создан: ' + r.approvalId + ' — подтвердите в Approval Center (пароль владельца)'; }));
+    clearInterval(timer); if (U && (U.releases.some(r => r.download && ['downloading', 'verifying'].includes(r.download.status)) || (U.install && !U.install.finishedAt))) timer = setTimeout(() => { if (ROUTE === 'settings') load(); }, 1000);
   };
   // v1.3.0-test: enabled iff the server mounted the routes (STUDIO_OPS_UPDATE=1): 404 = off, 401 = not logged in yet
   let tries = 0; const probe = () => fetch('/api/ops/update-center', { credentials: 'same-origin', headers: { 'x-studio-request': '1' } }).then(r => {

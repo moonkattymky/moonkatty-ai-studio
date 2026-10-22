@@ -207,7 +207,7 @@ meta.mountProtected();
 { const nodes = require('./lib/ops/nodes-server.js').mountNodes(app, { CFG, dataDir: path.dirname(DB_PATH), log, q, heavy, checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
   nodeHooks.runViaNode = nodes.runViaNode; }
 // v1.3.0-test: Update Center (download + verify + manual install plan; auto-install off) — only with STUDIO_OPS_UPDATE=1.
-require('./lib/ops/update-center-mount.js').mountUpdateCenter(app, { CFG, dataDir: path.dirname(DB_PATH), db, openDb, log, version: require('./package.json').version, env: process.env, dbSchemaVersion: DB_SCHEMA_VERSION, port: PORT,
+require('./lib/ops/update-center-mount.js').mountUpdateCenter(app, { CFG, dataDir: path.dirname(DB_PATH), db, openDb, log, version: require('./package.json').version, env: process.env, dbSchemaVersion: DB_SCHEMA_VERSION, port: PORT, core, sec, sessionUser: req => getSession(req)?.user || null, dbFile: DB_PATH,
   checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
 
 // ---- Backup / restore ----
