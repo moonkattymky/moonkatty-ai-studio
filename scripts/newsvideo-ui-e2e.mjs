@@ -16,6 +16,11 @@ await p.click('#nvDraft'); await p.waitForFunction(b => document.querySelectorAl
 const card = p.locator('#nvPanel [data-nv-draft]').first(); const id = await card.getAttribute('data-nv-draft'); ok('news: черновик сценария создан', !!id, id);
 await card.locator('[data-nv-edit]').click(); await p.fill('#modal input[name=title]', 'MOONKATTY News UI test'); await p.click('#modal button.primary');
 await p.waitForFunction(i => document.querySelector(`#nvPanel [data-nv-draft="${i}"] h3`)?.textContent.includes('UI test'), id, { timeout: 20000 }); ok('news: правка владельцем сохранена', true);
+{ const card = `#nvPanel [data-nv-draft="${id}"]`;
+  ok('news: черновик помечен «требует проверки фактов»', /требует проверки фактов/.test(await p.locator(card + ' [data-nv-fcbadge]').innerText()));
+  const links = await p.locator(card + ' [data-nv-sentences] a').count(); ok('news: ссылки на источники по предложениям (' + links + ')', links > 0);
+  ok('news: «Утвердить» заблокировано без отметки проверки фактов', await p.locator(card + ' [data-nv-approve]').isDisabled());
+  await p.locator(card + ' [data-nv-fc]').check(); await p.waitForFunction(s => !document.querySelector(s + ' [data-nv-approve]').disabled, card); }
 await p.locator(`#nvPanel [data-nv-draft="${id}"] [data-nv-approve]`).click(); await p.waitForSelector(`#nvPanel [data-nv-draft="${id}"] [data-nv-render]`, { timeout: 60000 }); ok('news: утверждено → кнопки рендера', true);
 await p.screenshot({ path: OUT + '/ui_news.png', fullPage: true });
 await p.evaluate(() => location.hash = 'video'); await p.waitForSelector(`[data-nv-draft="${id}"] [data-nv-render]`, { timeout: 20000 });

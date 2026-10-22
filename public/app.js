@@ -375,7 +375,7 @@ BIND.news = v => {
 };
 
 // ---- NEWS → VIDEO (e2e): автопоиск (публичные RSS) → проверка → сценарий → правка/утверждение владельцем → TTS+ffmpeg рендер → MP4 предпросмотр/экспорт. Без публикации.
-const NV = { st: null, cands: [], runs: [], drafts: [], sel: new Set(), busy: '', timer: null, loaded: false, err: '' };
+const NV = { st: null, cands: [], runs: [], drafts: [], sel: new Set(), busy: '', timer: null, loaded: false, err: '', fc: new Set() };
 const NVS = { draft: ['Черновик', ''], approved: ['Утверждён', 'b-ok'], rendering: ['Рендер…', 'b-pur'], rendered: ['MP4 готов', 'b-ok'], render_failed: ['Ошибка рендера', 'b-err'] };
 const CRED = { high: 'b-ok', medium: 'b-warn', low: 'b-err' };
 async function nvLoad(full) {
@@ -388,15 +388,22 @@ const nvFile = (d, k, dl) => `/api/newsvideo/drafts/${encodeURIComponent(d.id)}/
 function nvEnv() { const s = NV.st; if (!s) return '<span class="small mut">Проверка окружения…</span>';
   const b = (ok, t) => `<span class="badge ${ok ? 'b-ok' : 'b-err'} b-none">${esc(t)}</span>`;
   return `<div class="row small">${b(s.tts.ok, s.tts.ok ? 'TTS: ' + s.tts.engine : 'TTS нет')}${b(s.ffmpeg, 'ffmpeg')}${b(s.rsvg, 'rsvg-convert')}${b(s.ollama.ok, s.ollama.ok ? 'Ollama: ' + s.ollama.model : 'Ollama нет → экстрактивный текст')}</div>${s.tts.ok ? '' : `<div class="small" style="color:#ef4444">${esc(s.tts.error)}</div>`}`; }
+// Fact-check aid: every sentence with the source items that support it; weak support / unknown names / numbers are flagged.
+function nvSentences(s) { const fc = s.factCheck; if (!fc) return `<div class="small" style="margin:4px 0">${esc(s.text)}</div>`;
+  return `<ol class="small" style="margin:4px 0 4px 18px;padding:0" data-nv-sentences>${fc.sentences.map(x => `<li style="margin:2px 0"${x.flags.length ? ' data-nv-flag' : ''}>${esc(x.text)} ${x.sources.map((src, i) => `<a href="${safeUrl(src.url)}" target="_blank" rel="noopener noreferrer" title="${esc(src.name)} · совпадение ${Math.round(src.support * 100)}%">[${i + 1}]</a>`).join(' ')}${x.flags.length ? ` <span style="color:#f59e0b">⚠ ${esc(x.flags.join('; '))}</span>` : ''}</li>`).join('')}</ol>`; }
 function nvDraftCard(d, compact) {
   const last = d.renders[d.renders.length - 1]; const ok = d.renders.some(r => r.status === 'succeeded');
-  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}"><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></h3>
+  const checked = d.factCheck && d.factCheck.checked; const flagged = d.stories.reduce((a, s) => a + ((s.factCheck && s.factCheck.flagged) || 0), 0);
+  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}"><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="row"><span class="badge ${checked ? 'b-ok' : 'b-warn'} b-none" data-nv-fcbadge>${checked ? 'факты проверены владельцем' : 'требует проверки фактов'}</span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></span></h3>
+    ${checked ? '' : `<div class="devbox small" style="margin-bottom:6px" data-nv-fcwarn>Текст написан автоматически (${esc([...new Set(d.stories.map(s => s.provider))].join(', '))}) и <b>может содержать выдуманные факты</b>. Сверьте каждое предложение с источниками [1], [2]…${flagged ? ` Подозрительных предложений: <b>${flagged}</b>.` : ''}</div>`}
+    ${d.staleRender ? '<div class="small" style="color:#f59e0b" data-nv-stale>Последнее видео сделано по старой версии текста — утвердите и отрендерите заново.</div>' : ''}
     ${compact ? '' : d.stories.map(s => `<div class="list-item" style="display:block"><b>${esc(s.headline)}</b> <span class="badge b-none ${CRED[s.credibility.level]}">${esc(s.credibility.status)} · ${s.credibility.score}</span> <span class="small mut">${esc(s.provider)}${s.fallbackReason ? ' (' + esc(s.fallbackReason) + ')' : ''}${s.edited ? ' · правка владельца' : ''}</span>
-      <div class="small" style="margin:4px 0">${esc(s.text)}</div><div class="small mut">${s.sources.map(x => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>${x.published ? ' ' + esc(String(x.published).slice(0, 16)) : ''}`).join(' · ')}</div></div>`).join('')}
+      ${nvSentences(s)}<div class="small mut">Источники: ${s.sources.map(x => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>${x.published ? ' ' + esc(String(x.published).slice(0, 16)) : ''}`).join(' · ')}</div></div>`).join('')}
     ${last ? `<div class="small mut">Рендер ${esc(last.preset)} ${esc(last.runId)}: ${esc(last.status)}${last.attempt ? ' (попытка ' + last.attempt + ')' : ''}</div>${last.error ? `<div class="small" style="color:#ef4444" data-nv-error>${esc(last.error)}</div>` : ''}` : ''}
     ${ok ? `<video controls preload="metadata" data-nv-video src="${nvFile(d, 'mp4')}" style="width:100%;max-height:340px;border-radius:8px;margin-top:6px"></video>` : ''}
     <div class="row" style="margin-top:8px">${['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
-      ${d.status === 'draft' ? `<button class="btn sm primary" data-nv-approve="${esc(d.id)}">Утвердить сценарий</button>` : ''}
+      ${d.status === 'draft' && !compact ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-nv-fc="${esc(d.id)}" ${NV.fc.has(d.id) ? 'checked' : ''} style="width:auto">Факты проверены по источникам</label><button class="btn sm primary" data-nv-approve="${esc(d.id)}" ${NV.fc.has(d.id) ? '' : 'disabled title="Сначала отметьте проверку фактов"'}>Утвердить сценарий</button>` : ''}
+      ${d.status === 'draft' && compact ? '<span class="small mut">Проверка фактов и утверждение — в разделе «Новости»</span>' : ''}
       ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube">Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts">Рендер 9:16</button>` : ''}
       ${d.status === 'render_failed' && last ? `<button class="btn sm" data-nv-retry="${esc(last.jobId)}">Повторить</button>` : ''}
       ${ok ? `<a class="btn sm" data-nv-export href="${nvFile(d, 'mp4', 1)}">Экспорт MP4</a><a class="btn sm" href="${nvFile(d, 'srt', 1)}">SRT</a>` : ''}</div></div>`;
@@ -410,7 +417,7 @@ function nvPanel() {
     ${NV.cands.length ? `<div style="max-height:320px;overflow:auto;margin-top:8px" id="nvCands">${NV.cands.map(c => `<label class="list-item" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-nv-pick="${esc(c.id)}" ${NV.sel.has(c.id) ? 'checked' : ''} style="width:auto">
       <span class="sp"><b>${esc(c.headline)}</b> <span class="badge b-none ${CRED[c.credibility.level]}" title="${esc(c.credibility.reasons.join(', '))}">${esc(c.credibility.status)} · ${c.credibility.score}</span>${c.credibility.dateIssues.length ? ` <span class="badge b-warn b-none">${esc(c.credibility.dateIssues.map(d => d.issue).join(','))}</span>` : ''}
       <div class="small mut">${esc(String(c.published).slice(0, 16))} · ${c.sources.map(s => esc(s.name)).join(', ')} · ${esc(c.category || '')}</div></span></label>`).join('')}</div>
-      <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button></div>` : ''}
+      <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button>${NV.busy === 'draft' ? '<button class="btn sm danger" id="nvCancel">Отменить</button>' : ''}</div>` : ''}
     <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
 }
 async function nvDo(busy, fn, ok) { NV.busy = busy; render(); try { await fn(); if (ok) toast(ok); } catch (e) { toast('Ошибка: ' + e.message, true); } NV.busy = ''; await nvLoad(); render(); }
@@ -420,12 +427,15 @@ function nvBind(v) {
   const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; }, 'Поиск завершён');
   q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
   const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
-  q('[data-nv-approve]').forEach(b => b.onclick = () => nvDo('approve', () => api('POST', `/api/newsvideo/drafts/${b.dataset.nvApprove}/approve`), 'Утверждено → передано в VIDEO'));
+  const cb = v.querySelector('#nvCancel'); if (cb) cb.onclick = () => api('POST', '/api/newsvideo/drafts/cancel').then(() => toast('Отмена отправлена'), e => toast('Ошибка: ' + e.message, true));
+  q('[data-nv-fc]').forEach(c => c.onchange = () => { c.checked ? NV.fc.add(c.dataset.nvFc) : NV.fc.delete(c.dataset.nvFc); render(); });
+  q('[data-nv-approve]').forEach(b => b.onclick = () => { const d = NV.drafts.find(x => x.id === b.dataset.nvApprove); if (!d || !NV.fc.has(d.id)) return toast('Сначала отметьте «Факты проверены по источникам»', true);
+    nvDo('approve', async () => { await api('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: d.contentHash }); NV.fc.delete(d.id); }, 'Утверждено → передано в VIDEO'); });
   q('[data-nv-render]').forEach(b => b.onclick = () => { const [id, preset] = b.dataset.nvRender.split('|'); nvDo('render', () => api('POST', `/api/newsvideo/drafts/${id}/render`, { preset }), 'Рендер поставлен в очередь'); });
   q('[data-nv-retry]').forEach(b => b.onclick = () => nvDo('retry', () => api('POST', `/api/jobs/${b.dataset.nvRetry}/retry`), 'Повтор запущен'));
   q('[data-nv-edit]').forEach(b => b.onclick = () => { const d = NV.drafts.find(x => x.id === b.dataset.nvEdit);
     modal(`<h2>Сценарий ${esc(d.ref)}</h2><p class="small mut">После правки нужно снова утвердить.</p><label>Название</label><input name="title" value="${esc(d.title)}">${d.stories.map((s, i) => `<label>Заголовок ${i + 1}</label><input name="h${i}" value="${esc(s.headline)}"><label>Текст диктора ${i + 1}</label><textarea name="t${i}" rows="4">${esc(s.text)}</textarea>`).join('')}`,
-      fd => nvDo('edit', () => api('PUT', '/api/newsvideo/drafts/' + d.id, { title: fd.title, stories: d.stories.map((s, i) => ({ id: s.id, headline: fd['h' + i], text: fd['t' + i] })) }), 'Сохранено')); });
+      fd => nvDo('edit', () => (NV.fc.delete(d.id), api('PUT', '/api/newsvideo/drafts/' + d.id, { title: fd.title, stories: d.stories.map((s, i) => ({ id: s.id, headline: fd['h' + i], text: fd['t' + i] })) })), 'Сохранено')); });
 }
 
 // ---- PROJECT ----
