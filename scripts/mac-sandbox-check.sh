@@ -28,4 +28,18 @@ fs.writeFileSync(s,'#!/bin/bash\nperl -e \'use POSIX; setsid(); while(1){open F,
 const ac=new AbortController();const p=T.run(s,[],{cwd:'$W',signal:ac.signal}).catch(e=>e);
 setTimeout(async()=>{ac.abort();await p;setTimeout(()=>{const a=fs.readFileSync(f).length;setTimeout(()=>{process.exit(a>0&&a===fs.readFileSync(f).length?0:1)},1200)},600)},800);"
 ok "cancel kills setsid-escaped grandchild (ps walk)" $([ $? = 0 ] && echo 1 || echo 0)
+# 7b. N3-1: double-fork + setsid grandchild reparented to launchd (ps tree walk misses it) -> marker/cwd sweep kills it
+node -e "
+const T=require('./lib/task-runners.js'),fs=require('fs');const f='$W/g7b.txt',s='$W/k7b.sh';
+fs.writeFileSync(s,'#!/bin/bash\n( perl -e \'use POSIX; exit if fork; setsid(); chdir \"/\"; while(1){open F,\">>$W/g7b.txt\";print F 1;close F;select(undef,undef,undef,0.2)}\' & ) &\nsleep 60\n',{mode:0o755});
+const ac=new AbortController();const p=T.run(s,[],{cwd:'$W',signal:ac.signal}).catch(e=>e);
+setTimeout(async()=>{ac.abort();await p;setTimeout(()=>{const a=fs.existsSync(f)?fs.readFileSync(f).length:0;setTimeout(()=>{process.exit(a>0&&a===fs.readFileSync(f).length?0:1)},1200)},800)},1000);"
+ok "7b cancel kills double-forked setsid grandchild reparented to launchd (env-marker sweep, ps -E)" $([ $? = 0 ] && echo 1 || echo 0)
+# 7c. same, but env -i (marker gone) and cwd stays in the task dir -> lsof cwd sweep
+node -e "
+const T=require('./lib/task-runners.js'),fs=require('fs');const f='$W/g7c.txt',s='$W/k7c.sh';
+fs.writeFileSync(s,'#!/bin/bash\n( env -i /usr/bin/perl -e \'use POSIX; exit if fork; setsid(); while(1){open F,\">>$W/g7c.txt\";print F 1;close F;select(undef,undef,undef,0.2)}\' & ) &\nsleep 60\n',{mode:0o755});
+const ac=new AbortController();const p=T.run(s,[],{cwd:'$W',signal:ac.signal}).catch(e=>e);
+setTimeout(async()=>{ac.abort();await p;setTimeout(()=>{const a=fs.existsSync(f)?fs.readFileSync(f).length:0;setTimeout(()=>{process.exit(a>0&&a===fs.readFileSync(f).length?0:1)},1200)},800)},1000);"
+ok "7c cancel kills reparented grandchild without env marker (lsof cwd sweep)" $([ $? = 0 ] && echo 1 || echo 0)
 rm -rf "$W" "$P" /tmp/mk-sbx-out-$$.txt; exit $F
