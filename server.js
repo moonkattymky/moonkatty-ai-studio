@@ -213,6 +213,13 @@ meta.mountProtected();
 // v1.3.0-test: Update Center (download + verify + manual install plan; auto-install off) — only with STUDIO_OPS_UPDATE=1.
 require('./lib/ops/update-center-mount.js').mountUpdateCenter(app, { CFG, dataDir: path.dirname(DB_PATH), db, openDb, log, version: require('./package.json').version, env: process.env, dbSchemaVersion: DB_SCHEMA_VERSION, port: PORT,
   checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
+// ---- SYSTEM DOCTOR (diagnostics + safe self-repair; owner never needs a terminal) ----
+{ const doctor = require('./lib/ops/doctor/mount.js').mountDoctor(app, {
+  CFG, db, openDb, log, sec, heavy, runner, blender, port: PORT, core, hostMem,
+  dataDir: path.dirname(DB_PATH), dbPath: DB_PATH, backupDir: BACKUP_DIR,
+  checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); },
+  listLogs: () => list('logs') });
+  doctor.arm(); }
 
 // ---- Backup / restore ----
 // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
