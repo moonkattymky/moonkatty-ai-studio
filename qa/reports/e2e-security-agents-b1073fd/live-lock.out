@@ -1,0 +1,66 @@
+fail chain [
+  '403:owner_reauth',
+  '429:throttled:1',
+  '403:owner_reauth',
+  '429:throttled:1',
+  '403:owner_reauth',
+  '429:throttled:1',
+  '403:owner_reauth',
+  '429:throttled:1',
+  '403:owner_reauth',
+  '429:locked:120',
+  '429:locked:120'
+]
+correct during lock {
+  s: 429,
+  j: {
+    error: 'Слишком много неверных паролей, вход временно заблокирован',
+    code: 'locked'
+  },
+  ra: '120'
+}
+after restart old cookie {
+  s: 429,
+  j: {
+    error: 'Слишком много неверных паролей, вход временно заблокирован',
+    code: 'locked'
+  },
+  ra: '120'
+}
+after login new session {
+  s: 200,
+  j: {
+    ok: true,
+    status: 'approved',
+    executed: true,
+    execStatus: 'executed',
+    result: { executed: true, status: 'executed', applied: [Object] },
+    approval: {
+      id: 'mvjteqixzfsv9o',
+      action: 'critical_settings',
+      status: 'approved',
+      requestedBy: 'owner@app',
+      decidedBy: 'owner',
+      decidedAt: '2026-10-22T17:28:41.424Z',
+      expiresAt: '2026-10-23T17:28:36.297Z',
+      consumed: true,
+      consumedAt: '2026-10-22T17:28:41.427Z',
+      execStatus: 'executed',
+      execResult: [Object],
+      execAt: '2026-10-22T17:28:41.427Z'
+    }
+  },
+  ra: null
+}
+auth_fails []
+file:///workspace/live-lock.mjs:36
+const d0=new DatabaseSync(':memory:'); require('/workspace/mk/lib/world/schema.js').migrate(d0); require('/workspace/mk/lib/world/schema.js').migrate(d0);
+                                       ^
+
+ReferenceError: Cannot determine intended module format because both require() and top-level await are present. If the code is intended to be CommonJS, wrap await in an async function. If the code is intended to be an ES module, replace require() with import.
+    at file:///workspace/live-lock.mjs:36:40
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  code: 'ERR_AMBIGUOUS_MODULE_SYNTAX'
+}
+
+Node.js v22.23.4

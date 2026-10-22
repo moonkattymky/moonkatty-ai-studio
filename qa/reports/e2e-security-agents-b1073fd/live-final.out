@@ -1,0 +1,36 @@
+M1 savings no confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtdu5x7r73i3"}
+M2 savings confirm:true => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtdu63wkfbb7"}
+M3 paid_ads confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtdu67p8s04i","tier":"owner"}
+M4 critical_settings confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtdu6cesbw57","tier":"owner"}
+M5 fake_views confirm => 403 {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+N1a pure app => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1b app+fake cookie => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1c app+real cookie => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1d empty token + session => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1e whitespace token + session => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1f empty Authorization + session => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1g empty x-api-key + session => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1h Bearer session alone => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+N1i cookie session approve app req => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":300}},"approval":{"id":"mvjtdu6jnl8r5r"
+R1 reuse /savings 999 => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+R1 reuse same params 300 => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+R1 re-approve => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+ORD not_found => 404 {"error":"not found","code":"not_found"}
+reject => 200 {"ok":true,"status":"rejected"}
+ORD already_decided => 409 {"error":"уже решено","code":"already_decided","status":"rejected"}
+SELF within window => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":50}},"approval":{"id":"mvjtdu8vqtx32t",
+SELF outside window => 403 {"error":"Нельзя подтвердить собственный запрос","code":"self_approval"}
+CROSS app-req session-approve => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd":52}},"approval":{"id":"mvjtdvwpnve9e3",
+N2 statuses: ["403","403","429:1","403","429:1","429:1","403","429:1"]
+N2 correct while locked => 429 {"error":"Подождите перед следующей попыткой","code":"throttled"} ra=1
+N2 XFF spoof still locked => 429 {"error":"Подождите перед следующей попыткой","code":"throttled"} ra=1
+auth_fails: [{"user":"owner|127.0.0.1","fails":4,"locked_until":0,"next_at":1792690077695,"updated_at":"2026-10-22T17:27:57.295Z"}]
+tampered mvjtdvxwf3rhej
+N2 old session after restart (persist lock) => 200 {"ok":true,"status":"approved","executed":false,"execStatus":"failed","result":{"error":"payload не совпадает с хэшем, сохранённым при запросе"},"approval":{"id":"mvjtdvxwf3rhej","action":"critical_se
+N2 new login clears lock + approve => 409 {"error":"уже решено","code":"already_decided","status":"approved"}
+ORD expired => 409 {"error":"срок подтверждения истёк","code":"expired"}
+TAMPER payload => 409 {"error":"уже решено","code":"already_decided","status":"approved"}
+journal has owner_self_approval: true
+pw leaked: false
+approvals after: 10 before was 10
+race10: {"200":1,"409":9}
