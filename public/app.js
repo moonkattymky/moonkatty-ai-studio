@@ -428,11 +428,17 @@ function nvPanel() {
       <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button>${NV.busy === 'draft' ? '<button class="btn sm danger" id="nvCancel">Отменить</button>' : ''}</div>` : ''}
     <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
 }
+// S5-NV-02: the search toast reflects run.status (failed / partial / nothing fetched), not a blanket «Поиск завершён».
+function nvSearchMsg(run) { const r = run || {}, ne = (r.errors || []).length, f = r.fetched || 0;
+  if (r.status === 'failed') return { err: true, kind: 'failed', text: `Поиск не удался: источники недоступны (ошибок: ${ne}). Проверьте сеть.` };
+  if (r.status === 'partial') return { err: true, kind: 'partial', text: `Поиск выполнен частично: ошибок источников ${ne}; получено ${f}, новых ${r.new || 0}` };
+  if (!f) return { err: true, kind: 'empty', text: 'Поиск завершён, но источники ничего не вернули (0 материалов)' };
+  return { err: false, kind: 'ok', text: `Поиск завершён: получено ${f}, новых ${r.new || 0}` }; }
 async function nvDo(busy, fn, ok) { NV.busy = busy; render(); try { await fn(); if (ok) toast(ok); } catch (e) { toast('Ошибка: ' + e.message, true); } NV.busy = ''; await nvLoad(); render(); }
 function nvBind(v) {
   if (MODE === 'browser') return; if (!NV.loaded) { nvLoad(true).then(render); return; }
   const q = s => v.querySelectorAll(s);
-  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; }, 'Поиск завершён');
+  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; const m = nvSearchMsg(r.run); toast(m.text, m.err); });
   q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
   const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
   const cb = v.querySelector('#nvCancel'); if (cb) cb.onclick = () => api('POST', '/api/newsvideo/drafts/cancel').then(() => toast('Отмена отправлена'), e => toast('Ошибка: ' + e.message, true));
