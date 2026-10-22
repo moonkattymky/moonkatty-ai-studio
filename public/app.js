@@ -111,9 +111,10 @@ async function api(method, path, body) {
 }
 // ---- OWNER APPROVAL CONTRACT (Studio 2, feat/e2e-security-agents) ----
 // Owner actions never send confirm:true. Flow: action → 403 needs_owner + approvalId → owner approves
-// POST /api/world/approvals/:id {decision:'approve', password} from a password session → retry the action with {approvalId}.
+// POST /api/world/approvals/:id {decision:'approve', password} from a password session → the server EXECUTES the action itself
+// (execApproval) and returns {executed, execStatus, result}. The UI shows that result and never retries the action (QA-DD-001).
 const OWNER_ERR = {
-  needs_owner: 'Нужно подтверждение владельца: запрос добавлен в «Очередь владельца». После подтверждения повторите действие.',
+  needs_owner: 'Нужно подтверждение владельца: запрос добавлен в «Очередь владельца». После подтверждения действие выполнится автоматически — повторять не нужно.',
   owner_reauth: 'Неверный пароль владельца — подтверждение не выполнено. Введите пароль ещё раз.',
   self_approval: 'Нельзя подтвердить собственный запрос: запрос из этой сессии должен подтвердить владелец из другой сессии.',
   owner_session_required: 'Подтверждать можно только из сессии владельца в браузере (вход по паролю), а не через токен приложения.',
@@ -121,6 +122,9 @@ const OWNER_ERR = {
   consumed: 'Одобрение уже использовано. Запросите новое.',
   not_wired: 'Центр подтверждений на сервере не подключён — подтверждение пока невозможно.'
 };
+const EXEC_TEXT = { executed: 'Подтверждено и выполнено', external_disabled: 'Подтверждено. Внешнее действие в этой сборке отключено — не выполнялось', not_wired: 'Подтверждено, но исполнитель не подключён — действие не выполнялось', failed: 'Подтверждено, но выполнение не удалось' };
+function execText(r) { const st = (r && r.execStatus) || (r && r.executed ? 'executed' : 'not_executed'); const err = r && r.result && r.result.error;
+  return { status: st, ok: st === 'executed' || st === 'external_disabled', text: (EXEC_TEXT[st] || 'Подтверждено, статус выполнения: ' + st) + (err ? ': ' + err : '') }; }
 function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && (c === 'expired' || c === 'consumed')) return OWNER_ERR[c];
   if (status === 403 && c && OWNER_ERR[c]) return OWNER_ERR[c] + (c === 'needs_owner' && j.approvalId ? ` (запрос № ${j.approvalId})` : '');
   if (status === 409 && c === 'needs_owner') return 'Это подтверждение уже использовано. Запросите новое.';
@@ -129,7 +133,7 @@ function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && 
 function ownerApprove(id, done) {
   const f = modal(`<h2>Подтверждение владельца</h2><p class="small">Введите пароль владельца, чтобы подтвердить запрос.</p><input type="password" name="password" autocomplete="current-password" required>`, async fd => {
     let pw = fd.password; fd.password = ''; const inp = f.querySelector('input[name=password]'); if (inp) inp.value = '';
-    try { await api('POST', '/api/world/approvals/' + encodeURIComponent(id), { decision: 'approve', password: pw }); pw = ''; toast('Подтверждено'); }
+    try { const r = await api('POST', '/api/world/approvals/' + encodeURIComponent(id), { decision: 'approve', password: pw }); pw = ''; OWNER_PENDING.last = { id, ...execText(r) }; toast(OWNER_PENDING.last.text, !OWNER_PENDING.last.ok); }
     catch (e) { pw = ''; toast('Ошибка: ' + e.message, true); }
     finally { pw = ''; if (done) await done(); }
   });
@@ -138,7 +142,7 @@ function ownerApprove(id, done) {
 async function loadAll() { const cols = C.COLLECTIONS; const res = await Promise.all([...cols.map(c => api('GET', '/api/' + c)), api('GET', '/api/system').catch(() => null)]); cols.forEach((c, i) => DB[c] = res[i]); SYS = res[cols.length]; }
 // Any owner-tier 403 needs_owner (e.g. POST /api/jobs {kind:'opencode_task'}) → show message and open the Approval Center (Очередь владельца).
 function ownerRedirect(e) { if (e && e.status === 403 && e.code === 'needs_owner' && e.approvalId) { OWNER_PENDING.id = e.approvalId; navTo('revenue'); return true; } return false; }
-const OWNER_PENDING = { id: null };
+const OWNER_PENDING = { id: null, last: null };
 async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); ownerRedirect(e); } }
 function toast(m, err) { const d = document.createElement('div'); d.textContent = i18n.tr(m); if (err) d.style.borderColor = '#ef4444'; $('#toast').append(d); setTimeout(() => d.remove(), 3500); }
 
@@ -391,7 +395,9 @@ async function nvLoad(full) {
 const nvFile = (d, k, dl) => `/api/newsvideo/drafts/${encodeURIComponent(d.id)}/file?kind=${k}${dl ? '&download=1' : ''}&r=${d.renders.length}`;
 function nvEnv() { const s = NV.st; if (!s) return '<span class="small mut">Проверка окружения…</span>';
   const b = (ok, t) => `<span class="badge ${ok ? 'b-ok' : 'b-err'} b-none">${esc(t)}</span>`;
-  return `<div class="row small">${b(s.tts.ok, s.tts.ok ? 'TTS: ' + s.tts.engine : 'TTS нет')}${b(s.ffmpeg, 'ffmpeg')}${b(s.rsvg, 'rsvg-convert')}${b(s.ollama.ok, s.ollama.ok ? 'Ollama: ' + s.ollama.model : 'Ollama нет → экстрактивный текст')}</div>${s.tts.ok ? '' : `<div class="small" style="color:#ef4444">${esc(s.tts.error)}</div>`}`; }
+  return `<div class="row small">${b(s.tts.ok, s.tts.ok ? 'TTS: ' + s.tts.engine : 'TTS нет')}${b(s.ffmpeg, 'ffmpeg')}${s.ffprobe != null ? b(s.ffprobe, 'ffprobe') : ''}${b(s.rsvg, 'rsvg-convert')}${b(s.ollama.ok, s.ollama.ok ? 'Ollama: ' + s.ollama.model : 'Ollama нет → экстрактивный текст')}${b(nvReady(), nvReady() ? 'Рендер: готово' : 'Рендер: не готово')}</div>${s.tts.ok ? '' : `<div class="small" style="color:#ef4444">${esc(s.tts.error)}</div>`}${s.videoDeps && !s.videoDeps.ok ? `<div class="small" style="color:#ef4444" data-nv-deps-missing>${esc(s.videoDeps.message)}</div><div class="small mut">Подсказка (ничего не устанавливается автоматически): <code>${esc(s.videoDeps.hint)}</code></div>` : ''}`; }
+// Video render is ready only when the server reports all deps (ffmpeg, ffprobe, rsvg-convert) and TTS present.
+function nvReady() { const s = NV.st; return !!(s && (s.renderReady != null ? s.renderReady : (s.ffmpeg && s.rsvg && s.tts.ok))); }
 // Fact-check aid: every sentence with the source items that support it; weak support / unknown names / numbers are flagged.
 function nvSentences(s) { const fc = s.factCheck; if (!fc) return `<div class="small" style="margin:4px 0">${esc(s.text)}</div>`;
   return `<ol class="small" style="margin:4px 0 4px 18px;padding:0" data-nv-sentences>${fc.sentences.map(x => `<li style="margin:2px 0"${x.flags.length ? ' data-nv-flag' : ''}>${esc(x.text)} ${x.sources.map((src, i) => `<a href="${safeUrl(src.url)}" target="_blank" rel="noopener noreferrer" title="${esc(src.name)} · совпадение ${Math.round(src.support * 100)}%">[${i + 1}]</a>`).join(' ')}${x.flags.length ? ` <span style="color:#f59e0b">⚠ ${esc(x.flags.join('; '))}</span>` : ''}</li>`).join('')}</ol>`; }
@@ -408,7 +414,7 @@ function nvDraftCard(d, compact) {
     <div class="row" style="margin-top:8px">${['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
       ${d.status === 'draft' && !compact ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-nv-fc="${esc(d.id)}" ${NV.fc.has(d.id) ? 'checked' : ''} style="width:auto">Факты проверены по источникам</label><button class="btn sm primary" data-nv-approve="${esc(d.id)}" ${NV.fc.has(d.id) ? '' : 'disabled title="Сначала отметьте проверку фактов"'}>Утвердить сценарий</button>` : ''}
       ${d.status === 'draft' && compact ? '<span class="small mut">Проверка фактов и утверждение — в разделе «Новости»</span>' : ''}
-      ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube">Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts">Рендер 9:16</button>` : ''}
+      ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>Рендер 9:16</button>` : ''}
       ${d.status === 'render_failed' && last ? `<button class="btn sm" data-nv-retry="${esc(last.jobId)}">Повторить</button>` : ''}
       ${ok ? `<a class="btn sm" data-nv-export href="${nvFile(d, 'mp4', 1)}">Экспорт MP4</a><a class="btn sm" href="${nvFile(d, 'srt', 1)}">SRT</a>` : ''}</div></div>`;
 }
@@ -424,11 +430,17 @@ function nvPanel() {
       <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button>${NV.busy === 'draft' ? '<button class="btn sm danger" id="nvCancel">Отменить</button>' : ''}</div>` : ''}
     <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
 }
+// S5-NV-02: the search toast reflects run.status (failed / partial / nothing fetched), not a blanket «Поиск завершён».
+function nvSearchMsg(run) { const r = run || {}, ne = (r.errors || []).length, f = r.fetched || 0;
+  if (r.status === 'failed') return { err: true, kind: 'failed', text: `Поиск не удался: источники недоступны (ошибок: ${ne}). Проверьте сеть.` };
+  if (r.status === 'partial') return { err: true, kind: 'partial', text: `Поиск выполнен частично: ошибок источников ${ne}; получено ${f}, новых ${r.new || 0}` };
+  if (!f) return { err: true, kind: 'empty', text: 'Поиск завершён, но источники ничего не вернули (0 материалов)' };
+  return { err: false, kind: 'ok', text: `Поиск завершён: получено ${f}, новых ${r.new || 0}` }; }
 async function nvDo(busy, fn, ok) { NV.busy = busy; render(); try { await fn(); if (ok) toast(ok); } catch (e) { toast('Ошибка: ' + e.message, true); } NV.busy = ''; await nvLoad(); render(); }
 function nvBind(v) {
   if (MODE === 'browser') return; if (!NV.loaded) { nvLoad(true).then(render); return; }
   const q = s => v.querySelectorAll(s);
-  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; }, 'Поиск завершён');
+  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; const m = nvSearchMsg(r.run); toast(m.text, m.err); });
   q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
   const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
   const cb = v.querySelector('#nvCancel'); if (cb) cb.onclick = () => api('POST', '/api/newsvideo/drafts/cancel').then(() => toast('Отмена отправлена'), e => toast('Ошибка: ' + e.message, true));
@@ -975,7 +987,7 @@ function revHtml(d) {
       <form id="savForm" class="row"><input name="target" type="number" min="0" step="1" placeholder="Сумма цели, USD" style="width:180px"><button class="btn sm">Запросить подтверждение</button></form></div></div>
   <div class="grid g2" style="margin-top:16px"><div class="card"><h3>История</h3>${hist}</div>
     <div class="card"><h3>Рекомендации Revenue Director</h3><ul>${rec}</ul></div></div>
-  <div class="grid g2" style="margin-top:16px"><div class="card"><h3>Очередь владельца</h3>${appr.length ? appr.map(a => `<div class="list-item"><span class="sp">${esc(a.action)}<div class="small mut">${esc(a.detail || '')}</div></span><button class="btn sm" data-ap="${esc(a.id)}" data-dec="approve">Подтвердить</button><button class="btn sm" data-ap="${esc(a.id)}" data-dec="reject">Отклонить</button></div>`).join('') : '<p class="small">Пусто</p>'}</div>
+  <div class="grid g2" style="margin-top:16px"><div class="card"><h3>Очередь владельца</h3>${OWNER_PENDING.last ? `<div class="small" data-ap-result style="color:${OWNER_PENDING.last.ok ? '#22c55e' : '#ef4444'}">${esc(OWNER_PENDING.last.text)} (запрос № ${esc(OWNER_PENDING.last.id)})</div>` : ''}${appr.length ? appr.map(a => `<div class="list-item"><span class="sp">${esc(a.action)}<div class="small mut">${esc(a.detail || '')}</div></span><button class="btn sm" data-ap="${esc(a.id)}" data-dec="approve">Подтвердить</button><button class="btn sm" data-ap="${esc(a.id)}" data-dec="reject">Отклонить</button></div>`).join('') : '<p class="small">Пусто</p>'}</div>
     <div class="card"><h3>Рост игры</h3>${['new_players', 'dau', 'mau', 'retention', 'stage_completion', 'referrals', 'iap', 'ad_clicks', 'marketing_efficiency'].map(k => `<div class="list-item small"><span class="sp">${k}</span><span>${g[k] == null || g[k] === nd ? nd : (d.growth.demo ? 'DEMO ' : '') + esc(String(g[k]))}</span></div>`).join('')}</div></div>
   <div class="card" style="margin-top:16px"><h3>План дня и импорт</h3>
     <form id="planForm" class="row"><input name="goal" class="sp" placeholder="Цель владельца"><button class="btn primary sm">План CEO</button></form>
@@ -990,10 +1002,8 @@ BIND.revenue = v => {
   const bind = root => {
     const plan = root.querySelector('#planForm'); if (plan) plan.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/plan', { goal: new FormData(plan).get('goal') }); WC.data = null; }, 'План записан'); };
     const imp = root.querySelector('#impForm'); if (imp) imp.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/import', { csv: new FormData(imp).get('csv') }); WC.data = null; }, 'Импорт записан'); };
-    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { const ap = WC.savAppr && WC.savAppr.target === n ? WC.savAppr.id : undefined;
-      try { await api('POST', '/api/world/savings', ap ? { target_usd: n, approvalId: ap } : { target_usd: n }); WC.savAppr = null; }
-      catch (e) { if (e.code === 'needs_owner' && e.approvalId) WC.savAppr = { id: e.approvalId, target: n }; else if (e.status === 409 || e.code === 'params_mismatch') WC.savAppr = null; throw e; }
-      finally { WC.data = null; } }, 'Цель сохранена'); };
+    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { // no approvalId retry: approving in «Очередь владельца» executes the change server-side (QA-DD-001)
+      try { await api('POST', '/api/world/savings', { target_usd: n }); } finally { WC.data = null; } }, 'Цель сохранена'); };
     root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => b.dataset.dec === 'approve'
       ? ownerApprove(b.dataset.ap, async () => { WC.data = null; await loadAll(); render(); })
       : act(async () => { await api('POST', '/api/world/approvals/' + encodeURIComponent(b.dataset.ap), { decision: 'reject' }); WC.data = null; }, 'Отклонено'));

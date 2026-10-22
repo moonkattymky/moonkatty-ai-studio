@@ -160,6 +160,9 @@ const splitSentences = t => (String(t).match(/[^.!?]+[.!?]+["')\]]*|[^.!?]+$/g) 
 const CAP_STYLE = { SERIOUS: 'Serious', EMPATHETIC: 'Serious', NEUTRAL: 'Default', CURIOUS: 'Curious', EXCITED: 'Bright', PLAYFUL: 'Bright', WITTY: 'Bright' };
 /** Caption chunks from word timestamps: <= maxChars, split at sentence ends, 2 lines max handled by ASS wrap. */
 function wordCaptions(words, maxChars, emotion) {
+  // S5-NV-01: a single word longer than a caption line is split into timed pieces (time shared by length)
+  words = words.flatMap(w => { const ps = require('./subtitles').hardSplit(w.w, maxChars); if (ps.length < 2) return [w]; const tot = ps.reduce((a, p) => a + p.length, 0); let t = w.start;
+    return ps.map(p => { const d = (w.end - w.start) * p.length / tot; const x = { ...w, w: p, start: t, end: t + d }; t += d; return x; }); });
   const out = []; let cur = []; const lines = ws => { const L = [[]]; for (const w of ws) { const l = L[L.length - 1]; if (l.length && [...l, w].map(x => x.w).join(' ').length > maxChars) L.push([w]); else l.push(w); } return L; };
   const flush = () => { if (!cur.length) return; const L = lines(cur); out.push({ start: cur[0].start, end: Math.max(cur[cur.length - 1].end, cur[0].start + 0.8), text: L.map(l => l.map(w => w.w).join(' ')).join('\n'), words: L, style: CAP_STYLE[emotion] || 'Default' }); cur = []; };
   for (const w of words) { if (cur.length && lines([...cur, w]).length > 2) flush(); cur.push(w); if (/[.!?]["')]?$/.test(w.w)) flush(); }

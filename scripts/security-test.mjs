@@ -1,10 +1,11 @@
 // Server security tests (fake credentials only). Usage: node scripts/security-test.mjs
 import os from 'os'; globalThis.__os = os;
-// Starts its own server on a temp data dir and port 8795.
-import { spawn } from 'child_process'; import fs from 'fs'; import http from 'http';
-const PORT = 8795, UD = '/tmp/mk-sec-test', B = `http://127.0.0.1:${PORT}`; fs.rmSync(UD, { recursive: true, force: true });
+// Starts its own server on a fresh mkdtemp data dir and a random free port (parallel-safe).
+import { spawn } from 'child_process'; import fs from 'fs'; import http from 'http'; import netMod from 'net'; import path from 'path';
+const PORT = await new Promise(r => { const sv = netMod.createServer().listen(0, '127.0.0.1', () => { const p = sv.address().port; sv.close(() => r(p)); }); });
+const UD = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-sec-test-')), B = `http://127.0.0.1:${PORT}`;
 const srv = spawn(process.execPath, ['server.js'], { env: { ...process.env, NODE_ENV: 'test', STUDIO_FLAVOR: process.env.STUDIO_FLAVOR || 'prod', STUDIO_DATA_DIR: UD, PORT: String(PORT) }, stdio: 'ignore' });
-const sleep = ms => new Promise(r => setTimeout(r, ms)); await sleep(2500);
+const sleep = ms => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 60; i++) { try { if ((await fetch(B + '/api/health')).ok) break; } catch {} await sleep(250); }
 const res = []; const ok = (n, c, x = '') => { res.push([n, !!c]); console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' — ' + x : '')); };
 const R = { 'x-studio-request': '1', 'content-type': 'application/json' };
 // raw request so we can forge the Host header (fetch forbids it)

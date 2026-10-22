@@ -6,7 +6,7 @@ const PALETTE = { deep: '#0b0b2a', navy: '#141a4a', purple: '#3b1f6e', violet: '
 const HEAD = "Oswald, 'Bebas Neue', 'Helvetica Neue', Arial, sans-serif"; const BODY = "Inter, 'Helvetica Neue', Arial, sans-serif";
 const X = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 function wrapWords(text, maxChars, maxLines = 3) { const out = []; let cur = '';
-  for (const w of String(text).split(/\s+/)) { if ((cur + ' ' + w).trim().length > maxChars && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }
+  for (const w of require('./subtitles').splitWords(text, maxChars)) { if ((cur + ' ' + w).trim().length > maxChars && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }
   if (cur) out.push(cur); if (out.length > maxLines) { out.length = maxLines; out[maxLines - 1] = out[maxLines - 1].replace(/\W*\S*$/, '') + '…'; } return out; }
 async function svgToPng(svg, outPng, runFn = run) { const f = outPng.replace(/\.png$/, '.svg'); fs.writeFileSync(f, svg); await runFn('rsvg-convert', ['-o', outPng, f]); return outPng; }
 
