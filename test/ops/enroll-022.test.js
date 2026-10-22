@@ -132,7 +132,7 @@ test('0.2.2 replay: same nonce twice → E_REPLAY (audited); fresh nonce ok; non
   const o3 = {}; assert.equal(m.authNode('Bearer ' + s.token, { ...sigFor(d), nonce: undefined }, o3), null); assert.equal(o3.code, 'E_AGENT_VERSION', '0.2.1 signature without nonce → upgrade');
 });
 test('0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment status replay → E_REPLAY, stale ts → E_BAD_SIGNATURE', () => {
-  clock = Date.now(); const m = mgr(); const { s, d } = enrollFully(m);
+  clock = Date.now() - 60e3; const m = mgr(); clock = Date.now(); const { s, d } = enrollFully(m); // manager started 60 s ago (QA-NODE-001 floor is tested separately)
   assert.equal(N.SIG_WINDOW_MS, 30e3); assert.ok(m.authNode('Bearer ' + s.token, sigFor(d, { ts: clock - 29e3 }))); assert.ok(m.authNode('Bearer ' + s.token, sigFor(d, { ts: clock + 29e3 })));
   assert.equal(m.authNode('Bearer ' + s.token, sigFor(d, { ts: clock - 31e3 })), null); assert.equal(m.authNode('Bearer ' + s.token, sigFor(d, { ts: clock + 31e3 })), null);
   const r = m.enrollment.create({ role: 'monitor' }); const d2 = devKeys(); const e = m.enrollment.enroll(enBody(r.code, d2), '100.70.0.8');
@@ -142,7 +142,7 @@ test('0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment s
 });
 test('0.2.2 lockouts per Tailscale device (whois), not per shared loopback; persisted across restart; X-Forwarded-For trusted only from loopback', async () => {
   clock = Date.now(); const dir = tmp('peer-'); const W = { '100.80.0.1': { id: 'nA', name: 'imac', login: 'igor@' }, '100.80.0.2': { id: 'nB', name: 'macbook', login: 'igor@' } };
-  const m = N.createNodeManager({ dir, now, idSuffix: '-test', whois: async ip => W[ip] || null }); const d = devKeys();
+  const m = N.createNodeManager({ dir, now, idSuffix: '-test', whois: async ip => W[ip] || null, trustServeHeaders: true }); const d = devKeys(); // Serve mode (opt-in)
   const req = (ra, h = {}) => ({ socket: { remoteAddress: ra }, headers: h });
   const pA = await m.peerOf(req('127.0.0.1', { 'x-forwarded-for': '100.80.0.1' })), pB = await m.peerOf(req('127.0.0.1', { 'x-forwarded-for': '100.80.0.2' }));
   assert.equal(pA.key, 'tsnode:nA'); assert.equal(pA.verified, true); assert.equal(pB.key, 'tsnode:nB');
@@ -154,7 +154,7 @@ test('0.2.2 lockouts per Tailscale device (whois), not per shared loopback; pers
   assert.equal(m.enrollment.enroll(enBody(ok.code, d), pB).status, 'pending', 'device B is not locked by device A');
   assert.ok(m.audit().some(x => x.type === 'ip_locked' && x.peer === 'tsnode:nA'));
   const disk = JSON.parse(fs.readFileSync(path.join(dir, 'nodes.json'), 'utf8')); assert.ok(disk.enrollLimits['tsnode:nA'].lockedUntil > clock, 'lock persisted');
-  const m2 = N.createNodeManager({ dir, now, idSuffix: '-test', whois: async ip => W[ip] || null }); const ok2 = m2.enrollment.create({ role: 'monitor' });
+  const m2 = N.createNodeManager({ dir, now, idSuffix: '-test', whois: async ip => W[ip] || null, trustServeHeaders: true }); const ok2 = m2.enrollment.create({ role: 'monitor' });
   assert.equal(errCode(() => m2.enrollment.enroll(enBody(ok2.code, d), pA)), 'E_IP_LOCKED', 'lock survives restart');
   assert.equal(m2.enrollment.list().find(q => q.requestId === ok.requestId).device.peerVerified, true);
 });
@@ -176,7 +176,7 @@ test('0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, node
 
 // ---------------- Studio 3 d38c682..fe8e4ab: Computers/Nodes fixes ----------------
 test('peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)', async () => {
-  clock = Date.now(); const W = { '100.80.0.1': { id: 'nA', name: 'imac', login: 'igor@' } }; const m = N.createNodeManager({ dir: tmp(), now, idSuffix: '-test', whois: async ip => W[ip] || null });
+  clock = Date.now(); const W = { '100.80.0.1': { id: 'nA', name: 'imac', login: 'igor@' } }; const m = N.createNodeManager({ dir: tmp(), now, idSuffix: '-test', whois: async ip => W[ip] || null, trustServeHeaders: true });
   const req = (ra, h = {}) => ({ socket: { remoteAddress: ra }, headers: h });
   const pv = await m.peerOf(req('127.0.0.1', { 'x-forwarded-for': '100.80.0.1' })); assert.equal(pv.verified, true); assert.equal(pv.ip, '100.80.0.1'); assert.equal(pv.name, 'imac');
   const lo = await m.peerOf(req('127.0.0.1')); assert.equal(lo.verified, false); assert.equal(lo.ip, null); assert.ok(!/127\.0\.0\.1/.test(lo.label));
