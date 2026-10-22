@@ -153,8 +153,11 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
 // Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
 { const { createVideoRenderExecutor } = require('./media-automation/src/jobs'); let vf = null;
   const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
-  const llm = null; /* no Ollama unload hook in this build */
-  services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm })); }
+  // Ollama unload before render (QA-NV-003): only the models the NEWS→VIDEO flow itself loaded (lib/news-video.js tracks them),
+  // loopback Ollama only — never other processes' models (on the Mac the Ollama daemon is shared with prod). Runs inside the
+  // video_render executor, i.e. already under withHeavy('video_render:<id>') (lib/services.js); failures are logged, never fatal.
+  const llm = { unload: () => app.locals.newsVideo ? app.locals.newsVideo.unloadOwnModels((get('integrations', 'ollama') || {}).url) : null };
+  services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm, log: (ev, m) => log(ev === 'ollama_unload_failed' ? 'warn' : 'info', 'video', ev + (m ? ': ' + m : '')) })); }
 const world = require('./lib/world')({ db, q, get, put, list, log, core, runner, services, CFG, sec });
 worldHooks.onAgentStart = world.onAgentStart; world.boot();
 require('./lib/world/wiring.js').wireWorld({ app, world, services, env: process.env, log, checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); }, sessionUser: req => getSession(req)?.user || null, sessionIssuedAt: req => { const s = getSession(req); return s ? s.exp - SESSION_TTL : null; } }); // QA-E2E step 2: Approval Center + MA_JOBS_BACKEND
@@ -502,6 +505,8 @@ app.post('/api/projects3d/:pid/:ver/rerender', (req, res) => { if (!projOk(req, 
 world.mount(app); // v1.3.0-test: mission, CEO, QC, revenue, growth. Social publisher is not mounted here.
 // Generic CRUD
 const okCol = (req, res, next) => core.COLLECTIONS.includes(req.params.col) ? next() : res.status(404).json({ error: 'unknown collection' });
+// NEWS → VIDEO end-to-end (auth + CSRF already applied by the /api middleware above). No publishing.
+app.locals.newsVideo = require('./lib/news-video.js')({ app, dataDir: DATA_DIR, services, log, runner });
 app.get('/api/:col', okCol, (req, res) => res.json(list(req.params.col)));
 app.get('/api/:col/:id', okCol, (req, res) => { const o = get(req.params.col, req.params.id); o ? res.json(o) : res.status(404).json({ error: 'not found' }); });
 // Server-managed fields that must never be set through generic CRUD (approval bypass / audit tampering).

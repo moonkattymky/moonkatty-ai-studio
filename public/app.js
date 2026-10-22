@@ -68,7 +68,7 @@ async function localRoute(method, path, body) {
     throw new Error('Требуется сервер на Mac: OAuth и токены Meta работают только на сервере'); }
   if (col === 'demo' && id === 'remove') { let n = 0; for (const c of C.COLLECTIONS) { const before = LD[c].length; LD[c] = LD[c].filter(o => !o.demo); n += before - LD[c].length; } llog('info', 'system', 'Демо-данные удалены: ' + n); return ok({ removed: n }); }
   if (col === 'queue' && act === 'publish') { const it = LD.queue.find(x => x.id === id); throw new Error(it?.demo ? 'Демо-данные не публикуются' : 'Требуется сервер на Mac и подключённый аккаунт'); }
-  if (col === 'comments' && act === 'reply') throw new Error('Требуется сервер на Mac и подключённый аккаунт');
+  if (col === 'comments' && act === 'reply') throw new Error('Ответы на комментарии не реализованы');
   if (col === 'queue' && method === 'PUT' && body.status === 'approved') { const cur = LD.queue.find(x => x.id === id); const cand = Object.assign({}, cur, body);
     const issues = [...MKSocial.guardrails(cand, LD), ...MKSocial.dailyCheck(cand, LD.queue, LD.workspaces)]; if (issues.length) { llog('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`); local.save(LD); throw new Error(issues.join('; ')); } }
   if (col === 'queue' && method === 'PUT' && body.status) { const cur = LD.queue.find(x => x.id === id); if (cur && body.status !== cur.status) body.history = [...(cur.history || []), { at: C.now(), event: body.status, user: USER }]; }
@@ -107,10 +107,39 @@ async function api(method, path, body) {
     headers: Object.assign({ 'x-studio-request': '1' }, isFile ? { 'content-type': body.type || 'application/octet-stream' } : body ? { 'content-type': 'application/json' } : {}), body: isFile ? body : body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && !path.startsWith('/api/auth')) { showAuth(); throw new Error('Требуется вход'); }
-  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j;
+  if (!r.ok) { const e = new Error(ownerErrText(r.status, j) || j.error || 'HTTP ' + r.status); e.status = r.status; e.code = j.code; e.approvalId = j.approvalId; throw e; } return j;
+}
+// ---- OWNER APPROVAL CONTRACT (Studio 2, feat/e2e-security-agents) ----
+// Owner actions never send confirm:true. Flow: action → 403 needs_owner + approvalId → owner approves
+// POST /api/world/approvals/:id {decision:'approve', password} from a password session → retry the action with {approvalId}.
+const OWNER_ERR = {
+  needs_owner: 'Нужно подтверждение владельца: запрос добавлен в «Очередь владельца». После подтверждения повторите действие.',
+  owner_reauth: 'Неверный пароль владельца — подтверждение не выполнено. Введите пароль ещё раз.',
+  self_approval: 'Нельзя подтвердить собственный запрос: запрос из этой сессии должен подтвердить владелец из другой сессии.',
+  owner_session_required: 'Подтверждать можно только из сессии владельца в браузере (вход по паролю), а не через токен приложения.',
+  expired: 'Срок подтверждения истёк. Создайте запрос заново.',
+  consumed: 'Одобрение уже использовано. Запросите новое.',
+  not_wired: 'Центр подтверждений на сервере не подключён — подтверждение пока невозможно.'
+};
+function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && (c === 'expired' || c === 'consumed')) return OWNER_ERR[c];
+  if (status === 403 && c && OWNER_ERR[c]) return OWNER_ERR[c] + (c === 'needs_owner' && j.approvalId ? ` (запрос № ${j.approvalId})` : '');
+  if (status === 409 && c === 'needs_owner') return 'Это подтверждение уже использовано. Запросите новое.';
+  if (status === 503 && c === 'not_wired') return OWNER_ERR.not_wired; return null; }
+// Password is read once from a type=password field, sent once, then the field is cleared. Never logged, stored or cached.
+function ownerApprove(id, done) {
+  const f = modal(`<h2>Подтверждение владельца</h2><p class="small">Введите пароль владельца, чтобы подтвердить запрос.</p><input type="password" name="password" autocomplete="current-password" required>`, async fd => {
+    let pw = fd.password; fd.password = ''; const inp = f.querySelector('input[name=password]'); if (inp) inp.value = '';
+    try { await api('POST', '/api/world/approvals/' + encodeURIComponent(id), { decision: 'approve', password: pw }); pw = ''; toast('Подтверждено'); }
+    catch (e) { pw = ''; toast('Ошибка: ' + e.message, true); }
+    finally { pw = ''; if (done) await done(); }
+  });
+  f.querySelector('.btn.primary').textContent = 'Подтвердить'; f.querySelector('input[name=password]').focus();
 }
 async function loadAll() { const cols = C.COLLECTIONS; const res = await Promise.all([...cols.map(c => api('GET', '/api/' + c)), api('GET', '/api/system').catch(() => null)]); cols.forEach((c, i) => DB[c] = res[i]); SYS = res[cols.length]; }
-async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); } }
+// Any owner-tier 403 needs_owner (e.g. POST /api/jobs {kind:'opencode_task'}) → show message and open the Approval Center (Очередь владельца).
+function ownerRedirect(e) { if (e && e.status === 403 && e.code === 'needs_owner' && e.approvalId) { OWNER_PENDING.id = e.approvalId; navTo('revenue'); return true; } return false; }
+const OWNER_PENDING = { id: null };
+async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); ownerRedirect(e); } }
 function toast(m, err) { const d = document.createElement('div'); d.textContent = i18n.tr(m); if (err) d.style.borderColor = '#ef4444'; $('#toast').append(d); setTimeout(() => d.remove(), 3500); }
 
 // ================= Helpers =================
@@ -148,11 +177,13 @@ const NAV = [
 let ROUTE = 'dashboard'; const SUB = {};
 function navTo(r) { location.hash = r; }
 window.addEventListener('hashchange', () => { ROUTE = location.hash.slice(1).split('?')[0] || 'dashboard'; $('#sidebar').classList.remove('open'); render(); });
+// Comment replies: server/meta.js still has templates only (see Studio 2 report) → honest «не реализовано», button disabled.
+function markNotImplemented(v) { v.querySelectorAll('[data-creply]').forEach(b => { b.disabled = true; b.onclick = null; b.textContent = 'Ответ — не реализовано'; b.title = 'Отправка ответов на комментарии не реализована'; const n = b.nextElementSibling; if (n && n.tagName === 'SPAN') n.textContent = 'не реализовано'; }); }
 function renderNav() { $('#nav').innerHTML = NAV.map(([k, i, l]) => `<a href="#${k}" class="${k === ROUTE ? 'active' : ''}"><i>${i}</i>${l}</a>`).join(''); }
 function render() {
   if (!DB.agents) return;
   const n = NAV.find(x => x[0] === ROUTE) || NAV[0]; ROUTE = n[0]; renderNav(); $('#pageTitle').textContent = n[2];
-  renderPills(); const v = $('#view'); v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); updateBell();
+  renderPills(); const v = $('#view'); v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); markNotImplemented(v); updateBell();
   if (!$('#chatDrawer').classList.contains('hidden')) renderChat();
 }
 function bindCommon(root) {
@@ -314,8 +345,8 @@ function mediaPlayer(f) { if (!f) return ''; const u = esc(f.url), k = f.mime + 
 VIEWS.news = () => {
   const eps = DB.episodes.filter(e => e.project === 'news').sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return `<div class="row" style="margin-bottom:14px"><button class="btn primary" id="newEp">+ Новый выпуск</button><button class="btn" data-task-new="news" data-project="news">+ Задача NEWS</button><span class="sp"></span>
-    <button class="btn" disabled>Автопоиск новостей</button>${DEV()}</div>
-  <div class="devbox" style="margin-bottom:14px">Этапы конвейера отмечаются вручную (нажмите на этап) или по итогам задач агентов. Автоматическое выполнение этапов (поиск, фактчек, перевод, TTS-озвучка, рендер, публикация) — <b>в разработке</b>. Плееры появляются, когда к версии прикреплён файл.</div>
+</div>${nvPanel()}
+  <div class="devbox" style="margin-bottom:14px">Ниже — ручной учёт выпусков (этапы отмечаются вручную). Автоматическая цепочка — в блоке NEWS → VIDEO выше (публикация отключена).</div>
   ${eps.length ? eps.map(e => `<div class="card" style="margin-bottom:14px"><h3><span>${esc(e.title)} <small>${e.durationMin ? e.durationMin + ' мин · ' : ''}${fmt(e.createdAt)}</small></span><span class="row"><button class="btn sm" data-ep-edit="${e.id}">Изм.</button><button class="btn sm danger" data-ep-del="${e.id}">✕</button></span></h3>
     ${e.sources?.length ? `<div class="small mut">Источники: ${e.sources.map(s => `<a href="${safeUrl(s)}" target="_blank" rel="noopener noreferrer">${esc(s.replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(', ')}</div>` : '<div class="small mut">Источники не указаны</div>'}
     ${C.LANGS.map(L => { const v = e.versions[L], m = (e.media || {})[L] || {}; const doneN = C.PIPELINE.filter(([k]) => v[k] === 'done').length;
@@ -333,7 +364,7 @@ function epForm(e) {
       return act(() => isNew ? api('POST', '/api/episodes', { ...e, ...body }) : api('PUT', '/api/episodes/' + e.id, body), 'Сохранено'); });
 }
 BIND.news = v => {
-  bindPlan(v); v.querySelector('#newEp').onclick = () => epForm();
+  bindPlan(v); nvBind(v); v.querySelector('#newEp').onclick = () => epForm();
   v.querySelectorAll('[data-ep-edit]').forEach(b => b.onclick = () => epForm(DB.episodes.find(e => e.id === b.dataset.epEdit)));
   v.querySelectorAll('[data-ep-del]').forEach(b => b.onclick = () => confirmDo('Удалить выпуск?', () => act(() => api('DELETE', '/api/episodes/' + b.dataset.epDel), 'Удалено')));
   v.querySelectorAll('[data-stage]').forEach(s => s.onclick = () => { const [id, L, k] = s.dataset.stage.split('|'); const e = DB.episodes.find(x => x.id === id);
@@ -346,6 +377,70 @@ BIND.news = v => {
       <label>Видео</label><select name="video">${fo(/video|mp4|mov|webm/i, m.video)}</select><label>Субтитры</label><select name="subs">${fo(/srt|vtt/i, m.subs)}</select>`,
       fd => act(() => api('PUT', '/api/episodes/' + id, { media: { ...(e.media || {}), [L]: fd } }), 'Файлы привязаны')); });
 };
+
+// ---- NEWS → VIDEO (e2e): автопоиск (публичные RSS) → проверка → сценарий → правка/утверждение владельцем → TTS+ffmpeg рендер → MP4 предпросмотр/экспорт. Без публикации.
+const NV = { st: null, cands: [], runs: [], drafts: [], sel: new Set(), busy: '', timer: null, loaded: false, err: '', fc: new Set() };
+const NVS = { draft: ['Черновик', ''], approved: ['Утверждён', 'b-ok'], rendering: ['Рендер…', 'b-pur'], rendered: ['MP4 готов', 'b-ok'], render_failed: ['Ошибка рендера', 'b-err'] };
+const CRED = { high: 'b-ok', medium: 'b-warn', low: 'b-err' };
+async function nvLoad(full) {
+  if (MODE === 'browser') return;
+  try { const [d, s, st] = await Promise.all([api('GET', '/api/newsvideo/drafts'), full || !NV.loaded ? api('GET', '/api/newsvideo/stories') : null, full || !NV.st ? api('GET', '/api/newsvideo/status') : null]);
+    NV.drafts = d; if (s) { NV.cands = s.candidates; NV.runs = s.runs; } if (st) NV.st = st; NV.loaded = true; NV.err = ''; } catch (e) { NV.err = e.message; }
+  clearTimeout(NV.timer); if (NV.drafts.some(x => x.status === 'rendering')) NV.timer = setTimeout(() => { if (['news', 'video'].includes(ROUTE)) nvLoad().then(render); }, 4000);
+}
+const nvFile = (d, k, dl) => `/api/newsvideo/drafts/${encodeURIComponent(d.id)}/file?kind=${k}${dl ? '&download=1' : ''}&r=${d.renders.length}`;
+function nvEnv() { const s = NV.st; if (!s) return '<span class="small mut">Проверка окружения…</span>';
+  const b = (ok, t) => `<span class="badge ${ok ? 'b-ok' : 'b-err'} b-none">${esc(t)}</span>`;
+  return `<div class="row small">${b(s.tts.ok, s.tts.ok ? 'TTS: ' + s.tts.engine : 'TTS нет')}${b(s.ffmpeg, 'ffmpeg')}${b(s.rsvg, 'rsvg-convert')}${b(s.ollama.ok, s.ollama.ok ? 'Ollama: ' + s.ollama.model : 'Ollama нет → экстрактивный текст')}</div>${s.tts.ok ? '' : `<div class="small" style="color:#ef4444">${esc(s.tts.error)}</div>`}`; }
+// Fact-check aid: every sentence with the source items that support it; weak support / unknown names / numbers are flagged.
+function nvSentences(s) { const fc = s.factCheck; if (!fc) return `<div class="small" style="margin:4px 0">${esc(s.text)}</div>`;
+  return `<ol class="small" style="margin:4px 0 4px 18px;padding:0" data-nv-sentences>${fc.sentences.map(x => `<li style="margin:2px 0"${x.flags.length ? ' data-nv-flag' : ''}>${esc(x.text)} ${x.sources.map((src, i) => `<a href="${safeUrl(src.url)}" target="_blank" rel="noopener noreferrer" title="${esc(src.name)} · совпадение ${Math.round(src.support * 100)}%">[${i + 1}]</a>`).join(' ')}${x.flags.length ? ` <span style="color:#f59e0b">⚠ ${esc(x.flags.join('; '))}</span>` : ''}</li>`).join('')}</ol>`; }
+function nvDraftCard(d, compact) {
+  const last = d.renders[d.renders.length - 1]; const ok = d.renders.some(r => r.status === 'succeeded');
+  const checked = d.factCheck && d.factCheck.checked; const flagged = d.stories.reduce((a, s) => a + ((s.factCheck && s.factCheck.flagged) || 0), 0);
+  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}"><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="row"><span class="badge ${checked ? 'b-ok' : 'b-warn'} b-none" data-nv-fcbadge>${checked ? 'факты проверены владельцем' : 'требует проверки фактов'}</span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></span></h3>
+    ${checked ? '' : `<div class="devbox small" style="margin-bottom:6px" data-nv-fcwarn>Текст написан автоматически (${esc([...new Set(d.stories.map(s => s.provider))].join(', '))}) и <b>может содержать выдуманные факты</b>. Сверьте каждое предложение с источниками [1], [2]…${flagged ? ` Подозрительных предложений: <b>${flagged}</b>.` : ''}</div>`}
+    ${d.staleRender ? '<div class="small" style="color:#f59e0b" data-nv-stale>Последнее видео сделано по старой версии текста — утвердите и отрендерите заново.</div>' : ''}
+    ${compact ? '' : d.stories.map(s => `<div class="list-item" style="display:block"><b>${esc(s.headline)}</b> <span class="badge b-none ${CRED[s.credibility.level]}">${esc(s.credibility.status)} · ${s.credibility.score}</span> <span class="small mut">${esc(s.provider)}${s.fallbackReason ? ' (' + esc(s.fallbackReason) + ')' : ''}${s.edited ? ' · правка владельца' : ''}</span>
+      ${nvSentences(s)}<div class="small mut">Источники: ${s.sources.map(x => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>${x.published ? ' ' + esc(String(x.published).slice(0, 16)) : ''}`).join(' · ')}</div></div>`).join('')}
+    ${last ? `<div class="small mut">Рендер ${esc(last.preset)} ${esc(last.runId)}: ${esc(last.status)}${last.attempt ? ' (попытка ' + last.attempt + ')' : ''}</div>${last.error ? `<div class="small" style="color:#ef4444" data-nv-error>${esc(last.error)}</div>` : ''}` : ''}
+    ${ok ? `<video controls preload="metadata" data-nv-video src="${nvFile(d, 'mp4')}" style="width:100%;max-height:340px;border-radius:8px;margin-top:6px"></video>` : ''}
+    <div class="row" style="margin-top:8px">${['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
+      ${d.status === 'draft' && !compact ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-nv-fc="${esc(d.id)}" ${NV.fc.has(d.id) ? 'checked' : ''} style="width:auto">Факты проверены по источникам</label><button class="btn sm primary" data-nv-approve="${esc(d.id)}" ${NV.fc.has(d.id) ? '' : 'disabled title="Сначала отметьте проверку фактов"'}>Утвердить сценарий</button>` : ''}
+      ${d.status === 'draft' && compact ? '<span class="small mut">Проверка фактов и утверждение — в разделе «Новости»</span>' : ''}
+      ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube">Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts">Рендер 9:16</button>` : ''}
+      ${d.status === 'render_failed' && last ? `<button class="btn sm" data-nv-retry="${esc(last.jobId)}">Повторить</button>` : ''}
+      ${ok ? `<a class="btn sm" data-nv-export href="${nvFile(d, 'mp4', 1)}">Экспорт MP4</a><a class="btn sm" href="${nvFile(d, 'srt', 1)}">SRT</a>` : ''}</div></div>`;
+}
+function nvPanel() {
+  if (MODE === 'browser') return '<div class="devbox" style="margin-bottom:14px">Автопоиск и рендер доступны только в серверном режиме.</div>';
+  const run = NV.runs[0];
+  return `<div class="card" style="margin-bottom:14px" id="nvPanel"><h3><span>NEWS → VIDEO</span><span class="row"><button class="btn primary" id="nvSearch" ${NV.busy ? 'disabled' : ''}>${NV.busy === 'search' ? 'Поиск…' : 'Автопоиск новостей'}</button></span></h3>
+    ${nvEnv()}${NV.err ? `<div class="small" style="color:#ef4444">${esc(NV.err)}</div>` : ''}
+    ${run ? `<div class="small mut" id="nvRun">Последний поиск ${fmt(run.at)}: ${esc(run.status)}, получено ${run.fetched || 0}, новых ${run.new || 0}${(run.errors || []).length ? ', ошибки: ' + run.errors.map(e => esc(e.source + ': ' + e.error)).join('; ') : ''}</div>` : '<div class="small mut">Поиск ещё не запускался. Источники: ' + (NV.st ? NV.st.sources.map(s => esc(s.name)).join(', ') : '') + '</div>'}
+    ${NV.cands.length ? `<div style="max-height:320px;overflow:auto;margin-top:8px" id="nvCands">${NV.cands.map(c => `<label class="list-item" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-nv-pick="${esc(c.id)}" ${NV.sel.has(c.id) ? 'checked' : ''} style="width:auto">
+      <span class="sp"><b>${esc(c.headline)}</b> <span class="badge b-none ${CRED[c.credibility.level]}" title="${esc(c.credibility.reasons.join(', '))}">${esc(c.credibility.status)} · ${c.credibility.score}</span>${c.credibility.dateIssues.length ? ` <span class="badge b-warn b-none">${esc(c.credibility.dateIssues.map(d => d.issue).join(','))}</span>` : ''}
+      <div class="small mut">${esc(String(c.published).slice(0, 16))} · ${c.sources.map(s => esc(s.name)).join(', ')} · ${esc(c.category || '')}</div></span></label>`).join('')}</div>
+      <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button>${NV.busy === 'draft' ? '<button class="btn sm danger" id="nvCancel">Отменить</button>' : ''}</div>` : ''}
+    <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
+}
+async function nvDo(busy, fn, ok) { NV.busy = busy; render(); try { await fn(); if (ok) toast(ok); } catch (e) { toast('Ошибка: ' + e.message, true); } NV.busy = ''; await nvLoad(); render(); }
+function nvBind(v) {
+  if (MODE === 'browser') return; if (!NV.loaded) { nvLoad(true).then(render); return; }
+  const q = s => v.querySelectorAll(s);
+  const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; }, 'Поиск завершён');
+  q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
+  const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
+  const cb = v.querySelector('#nvCancel'); if (cb) cb.onclick = () => api('POST', '/api/newsvideo/drafts/cancel').then(() => toast('Отмена отправлена'), e => toast('Ошибка: ' + e.message, true));
+  q('[data-nv-fc]').forEach(c => c.onchange = () => { c.checked ? NV.fc.add(c.dataset.nvFc) : NV.fc.delete(c.dataset.nvFc); render(); });
+  q('[data-nv-approve]').forEach(b => b.onclick = () => { const d = NV.drafts.find(x => x.id === b.dataset.nvApprove); if (!d || !NV.fc.has(d.id)) return toast('Сначала отметьте «Факты проверены по источникам»', true);
+    nvDo('approve', async () => { await api('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: d.contentHash }); NV.fc.delete(d.id); }, 'Утверждено → передано в VIDEO'); });
+  q('[data-nv-render]').forEach(b => b.onclick = () => { const [id, preset] = b.dataset.nvRender.split('|'); nvDo('render', () => api('POST', `/api/newsvideo/drafts/${id}/render`, { preset }), 'Рендер поставлен в очередь'); });
+  q('[data-nv-retry]').forEach(b => b.onclick = () => nvDo('retry', () => api('POST', `/api/jobs/${b.dataset.nvRetry}/retry`), 'Повтор запущен'));
+  q('[data-nv-edit]').forEach(b => b.onclick = () => { const d = NV.drafts.find(x => x.id === b.dataset.nvEdit);
+    modal(`<h2>Сценарий ${esc(d.ref)}</h2><p class="small mut">После правки нужно снова утвердить.</p><label>Название</label><input name="title" value="${esc(d.title)}">${d.stories.map((s, i) => `<label>Заголовок ${i + 1}</label><input name="h${i}" value="${esc(s.headline)}"><label>Текст диктора ${i + 1}</label><textarea name="t${i}" rows="4">${esc(s.text)}</textarea>`).join('')}`,
+      fd => nvDo('edit', () => (NV.fc.delete(d.id), api('PUT', '/api/newsvideo/drafts/' + d.id, { title: fd.title, stories: d.stories.map((s, i) => ({ id: s.id, headline: fd['h' + i], text: fd['t' + i] })) })), 'Сохранено')); });
+}
 
 // ---- PROJECT ----
 VIEWS.project = () => {
@@ -366,13 +461,14 @@ VIEWS.video = () => {
       <select id="vfmt" style="width:auto">${opts([['16:9', '16:9 YouTube'], ['9:16', '9:16 Shorts/TikTok']], fmtSel)}</select></span></h3>
     <div style="aspect-ratio:${fmtSel.replace(':', '/')};max-height:420px;margin:auto;background:#07080b;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;overflow:hidden">
       ${vf ? `<video controls src="${esc(vf.url)}" style="width:100%;height:100%;object-fit:contain"></video>` : '<span class="mut small" style="padding:10px;text-align:center">Нет видеофайла (прикрепите в MOONKATTY NEWS → Файлы, версия EN)</span>'}</div>
-    <div class="row" style="margin-top:10px"><button class="btn" disabled>Рендер</button><button class="btn" disabled>Экспорт</button>${DEV('рендер/экспорт — в разработке')}</div></div>
+    </div>
+  <div class="card"><h3>Рендер NEWS-выпусков (TTS + ffmpeg → MP4)</h3>${MODE === 'browser' ? '<div class="empty">Только в серверном режиме</div>' : `${nvEnv()}${NV.drafts.filter(d => d.status !== 'draft').length ? NV.drafts.filter(d => d.status !== 'draft').map(d => nvDraftCard(d, true)).join('') : '<div class="empty">Нет утверждённых сценариев — утвердите сценарий в MOONKATTY NEWS</div>'}`}</div>
   <div class="card"><h3>Очередь рендера <button class="btn sm" data-task-new="video">+ Задача VIDEO</button></h3>${taskTable(rq, 'Очередь пуста')}</div>
   <div class="card"><h3>Аудиодорожки</h3>${auds.length ? auds.map(f => `<div class="list-item"><span class="sp">${esc(f.name)}</span>${mediaPlayer(f)}</div>`).join('') : '<div class="empty">Нет аудиофайлов</div>'}</div>
   <div class="card"><h3>Субтитры и видео</h3>${[...subs, ...vids].length ? [...subs, ...vids].map(f => `<div class="list-item"><span class="sp">${esc(f.name)}</span><span class="small mut">${fmtSize(f.size)}</span><a class="btn sm" href="${esc(f.url)}" download="${esc(f.name)}">Скачать</a></div>`).join('') : '<div class="empty">Нет файлов</div>'}
-    <p class="small mut">Автогенерация субтитров — ${DEV()}</p></div></div>`;
+    <p class="small mut">Субтитры (SRT) создаются автоматически при рендере NEWS-выпуска.</p></div></div>`;
 };
-BIND.video = v => { const a = v.querySelector('#vep'), b = v.querySelector('#vfmt'); if (a) a.onchange = () => { SUB.vep = a.value; render(); }; b.onchange = () => { SUB.vfmt = b.value; render(); }; };
+BIND.video = v => { nvBind(v); const a = v.querySelector('#vep'), b = v.querySelector('#vfmt'); if (a) a.onchange = () => { SUB.vep = a.value; render(); }; b.onchange = () => { SUB.vfmt = b.value; render(); }; };
 
 // ---- 3D STUDIO (v1.2.1): task → Director → 3D DESIGN agent (OpenCode server) → Blender headless; review, versions, re-render ----
 const S3 = { jobs: [], job: null, status: null, timer: null, sel: null, proj: null, project: null, ver: null, tab: 'png', viewerKey: null };
@@ -893,8 +989,13 @@ BIND.revenue = v => {
   const bind = root => {
     const plan = root.querySelector('#planForm'); if (plan) plan.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/plan', { goal: new FormData(plan).get('goal') }); WC.data = null; }, 'План записан'); };
     const imp = root.querySelector('#impForm'); if (imp) imp.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/import', { csv: new FormData(imp).get('csv') }); WC.data = null; }, 'Импорт записан'); };
-    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { try { await api('POST', '/api/world/savings', { target_usd: n }); } finally { WC.data = null; } }, 'Запрос записан'); };
-    root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => act(async () => { await api('POST', '/api/world/approvals/' + b.dataset.ap, { decision: b.dataset.dec }); WC.data = null; }, 'Решение записано'));
+    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { const ap = WC.savAppr && WC.savAppr.target === n ? WC.savAppr.id : undefined;
+      try { await api('POST', '/api/world/savings', ap ? { target_usd: n, approvalId: ap } : { target_usd: n }); WC.savAppr = null; }
+      catch (e) { if (e.code === 'needs_owner' && e.approvalId) WC.savAppr = { id: e.approvalId, target: n }; else if (e.status === 409 || e.code === 'params_mismatch') WC.savAppr = null; throw e; }
+      finally { WC.data = null; } }, 'Цель сохранена'); };
+    root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => b.dataset.dec === 'approve'
+      ? ownerApprove(b.dataset.ap, async () => { WC.data = null; await loadAll(); render(); })
+      : act(async () => { await api('POST', '/api/world/approvals/' + encodeURIComponent(b.dataset.ap), { decision: 'reject' }); WC.data = null; }, 'Отклонено'));
   };
   if (WC.data) { bind(v); return; }
   api('GET', '/api/world/command-center').then(d => { WC.data = d; if (ROUTE !== 'revenue') return; const el = $('#view'); el.innerHTML = revHtml(d); bindCommon(el); bind(el); }).catch(e => { v.innerHTML = `<div class="card"><h3>Revenue Command Center</h3><p>${esc(e.message)}</p></div>`; });
