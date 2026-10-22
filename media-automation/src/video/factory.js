@@ -20,7 +20,7 @@ function validateScript(s) {
   s.scenes.forEach((sc, i) => { if (!sc.text || !String(sc.text).trim()) throw new Error(`scene ${i} has no text`); });
   return s;
 }
-const wrap = (text, n) => { const out = []; let cur = ''; for (const w of String(text).split(/\s+/)) { if ((cur + ' ' + w).trim().length > n && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); } if (cur) out.push(cur); return out.join('\n'); };
+const wrap = (text, n) => { const out = []; let cur = ''; for (const w of require('./subtitles').splitWords(text, n)) { if ((cur + ' ' + w).trim().length > n && cur) { out.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); } if (cur) out.push(cur); return out.join('\n'); };
 
 class VideoFactory {
   constructor({ tts, character3d = new StubCharacter3D(), runFn = run, font = defaultFont(), brand = {}, transitionSec = 0.5, transition = 'fade',
