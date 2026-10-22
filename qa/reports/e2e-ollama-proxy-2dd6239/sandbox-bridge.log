@@ -1,0 +1,22 @@
+PASS bridge run ok — timeout после 20 с
+PASS sandbox+bridge: TCP to 11434 (bridge) yes — TCP_BRIDGE:yes
+TCP_REAL_HOST_OLLAMA:TCP_FAKE:no
+TCP_1:no
+
+PASS sandbox+bridge: no TCP to fake upstream port
+PASS sandbox+bridge: no internet
+PASS sandbox+bridge: tags filtered ok — HTTP/1.1 200 OK
+content-type: application/json
+Date: Thu, 22 Oct 2026 19:45:44 GMT
+Connection: close
+Transfer-Encoding: chunked
+
+20
+{"models":[
+PASS sandbox+bridge: pull denied 403 — HTTP/1.1 403 Forbidden
+content-type: application/json
+connection: close
+Date: Thu, 22 Oct 2026 19:45:44 GMT
+Transfer
+FAIL sandbox+bridge: evil model denied 403
+SUMMARY {"pass":6,"fail":["sandbox+bridge: evil model denied 403"]}

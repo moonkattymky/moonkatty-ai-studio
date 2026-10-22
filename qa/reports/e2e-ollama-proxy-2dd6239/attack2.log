@@ -1,0 +1,22 @@
+PASS upstream 302 → 502 redirect refused — s=502 {"error":"upstream redirect refused"}
+PASS socket removed after close()
+PASS holder created socket
+PASS after kill -9 socket file still present (stale)
+PASS restart after kill -9 serves — s=200
+PASS close after restart removes socket
+PASS socket not group/other accessible — mode=600
+PASS same-uid can connect
+PASS UPSTREAM_HOST is 127.0.0.1
+PASS ROUTES exact 4
+PASS N3-1 sweep finds double-fork orphan — sweep=[1015048,1015050] byName=[1015050]
+PASS N3-1 run() abort kills double-fork orphan — left=[]
+PASS sandbox: no TCP to real 11434 — TCP_11434:no | TCP_FAKE:no | TCP_1:no
+PASS sandbox: no TCP to fake upstream
+PASS sandbox: no TCP to internet
+FAIL sandbox: tags via bound socket
+FAIL sandbox: pull via socket → 403
+PASS slowloris: legit request still served — s=200 ms=3
+PASS slowloris: after headersTimeout still serves — s=200
+FAIL MK_TEST_OLLAMA_PORT=1 → llmChannel null (Ollama on 11434 ignored) — {"kind":"ollama-proxy","port":11434}
+PASS without override, probe real 11434 (read-only) — {"kind":"ollama-proxy","port":11434}
+SUMMARY {"pass":18,"fail":["sandbox: tags via bound socket","sandbox: pull via socket → 403","MK_TEST_OLLAMA_PORT=1 → llmChannel null (Ollama on 11434 ignored)"]}

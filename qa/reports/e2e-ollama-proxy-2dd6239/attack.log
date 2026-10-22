@@ -1,0 +1,40 @@
+PASS socket mode 0600 — mode=600
+PASS socket dir 0700 — mode=700
+PASS deny /api/pull — s=403
+PASS deny /api/delete — s=403
+PASS deny /api/create — s=403
+PASS deny /api/push — s=403
+PASS deny /api/copy — s=403
+PASS deny /api/embed — s=403
+PASS deny /api/embeddings — s=403
+PASS deny /api/ps — s=403
+PASS deny /api/version — s=403
+PASS deny /api/show — s=403
+PASS deny / — s=403
+PASS allow /api/chat — s=200
+PASS allow /api/generate — s=200
+PASS allow /v1/chat/completions — s=200
+PASS GET /api/tags filters models — {"models":[{"name":"qwen3:8b"},{"name":"qwen2.5-coder:7b"}]}
+PASS deny encoded pull — code=403
+PASS deny path traversal — code=403
+PASS deny encoded traversal — code=403
+PASS deny absolute-URI to Studio — code=403
+PASS deny absolute-URI other host — code=403
+PASS deny CONNECT — code=0
+PASS deny null byte — code=403
+PASS deny case — code=403
+PASS deny double slash — code=403
+PASS deny matrix — code=403
+PASS deny model "evil:1b" — s=403
+PASS deny model "llama3:70b" — s=403
+PASS deny model "" — s=403
+PASS deny model "../x" — s=403
+PASS allow model qwen3:8b
+PASS allow model ollama/qwen3:8b
+PASS deny body > 1MB (CL) — s=413
+PASS deny chunked oversize — code=0
+PASS TE/CL: no client hop-by-hop to upstream — code=400 up={"host":"127.0.0.1:19134","accept":"application/json, text/event-stream","connection":"close","content-type":"application/json","content-length":"41"}
+PASS headers rebuilt (no Auth/Cookie/token/smuggle) — {"host":"127.0.0.1:19134","accept":"application/json, text/event-stream","connection":"close","content-type":"application/json","content-length":"41"}
+PASS client Host ignored; upstream Host fixed — 127.0.0.1:19134
+PASS concurrency: 429 among parallel — codes=200,200,429,429,429
+PASS rate limit 60/min — 200=45 429=25
