@@ -1,3 +1,16 @@
+# ⚠ ВЕРДИКТ STUDIO 4 ПО ДЕФЕКТУ STUDIO 2 (confirm:true обходит одобрение владельца) — QA-E2E-001: ПОДТВЕРЖДЁН, серьёзность HIGH (не Critical)
+Код (3b72817): `lib/world/permissions.js:16-18` — `gate()`: tier 'owner' → `needs_owner` только если `confirm !== true`; `confirm` приходит из тела запроса клиента в двух маршрутах:
+- `POST /api/world/action` — `lib/world/index.js:176` (`req.body?.confirm === true`) → `act()` `:197-204`. Для paid_ads/spending/editorial_publication/mass_mailing/outreach_new_clients/contracts/payment_settings ответ `executed:false` (внешнего вызова нет), но журнал пишет `owner … allow`; для `critical_settings` ответ `executed:true`.
+- `POST /api/world/savings` — `lib/world/index.js:190-195` — с `confirm:true` цель накоплений (critical_settings) **записывается сразу**, минуя Approval Center (`/api/world/approvals/:id`, `:177-186`).
+Остальные вызовы `gate()` (`index.js:73,115,118,126,131,144` и др.) передают `confirm:true` жёстко, но только для AUTO-действий (analysis/drafts/qc/internal_reports) — на них confirm не влияет; это не обход.
+Что выполняется ДО gate: сессия или app-token (`server.js:190`, без входа → 401), CSRF-проверка (без X-Studio-Request/Origin → 403). Approval Center НЕ вызывается — проверки, что есть одобренная запись world_approvals, нет.
+Доказательство (локальный TEST-сервер 127.0.0.1:8687, временный data dir, без внешних вызовов, 19:38 IDT):
+- без входа → 401; без CSRF-заголовка → 403;
+- `savings {target_usd:5}` → 403 needs_owner (создана заявка); `savings {target_usd:999999, confirm:true}` → 200 `{"item":"Mac Studio","target_usd":999999}` — применено без одобрения;
+- `action paid_ads` → 403 needs_owner; `action paid_ads, confirm:true` → 200 `executed:false`, журнал: `paid_ads owner allow`;
+- `action critical_settings, confirm:true` → 200 `executed:true`; `action fake_views, confirm:true` → 403 forbidden (запрещённые не обходятся).
+Почему HIGH, а не Critical: нужен авторизованный сеанс (приложение однопользовательское — сеанс принадлежит владельцу или держателю app-token), внешних действий (оплата/реклама/публикация) в коде нет (`executed:false`), UI `confirm:true` в эти маршруты не шлёт (grep public/*.js). Но инвариант «owner-действие только через Approval Center» нарушен, журнал аудита фальсифицирует «одобрено владельцем», а любой агент/скрипт/скомпрометированный app-token обходит двухшаговое одобрение. Как только owner-действия станут исполняться — станет Critical. Рекомендация: игнорировать `confirm` из тела, разрешать owner-tier только по id одобренной записи world_approvals (+ тест на обход). Статус world-модулей понижается до TESTED (не INTEGRATED) до исправления.
+
 # MOONKATTY AI STUDIO v1.3.1-test — независимый план QA (END-TO-END) и проверка отчётов Studio 2/3/5 и соцсетей
 
 Аудитор: Studio 4 (независимый QA, Grok Bot). Коммит: `3b72817d8c2a1af49d08c3f5d752f8e65dcaf0ef` (свежий клон без токена). Режим: только чтение, код продукта не менялся, публикаций нет.
