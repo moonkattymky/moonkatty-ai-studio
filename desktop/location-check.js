@@ -4,7 +4,7 @@
 // QA-131-001: never runs in prod; an existing app at the destination is replaced only after an explicit second
 // confirmation (default: cancel) and only if its Info.plist is readable and its bundle id is the TEST bundle id.
 const path = require('path'), os = require('os'), fs = require('fs');
-const TEST_BUNDLE_ID = 'com.moonkatty.aistudio.test';
+const TEST_BUNDLE_ID = require('../lib/studio-config.js').TEST.appId; // single source of truth (isolation test)
 function classify(exePath, { home = os.homedir(), inAppsApi = null } = {}) {
   const p = String(exePath || '');
   if (p.includes('/AppTranslocation/')) return { ok: false, reason: 'translocated' };
