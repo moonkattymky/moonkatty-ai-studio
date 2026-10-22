@@ -31,3 +31,13 @@ Not wired (no `lib/world/wiring.js`) → `503 not_wired`, nothing executed.
 * Atomic consume (`UPDATE … WHERE consumed_at IS NULL`): parallel approvals → one executes, the other `409`.
 * Executor re-checks `paramsHash(payload_json) === params_hash` before executing (tampered payload → not executed).
 * `GET /api/world/approvals/:id` → status, consumed, execStatus (`executed|external_disabled|not_wired|failed`).
+
+## Residuals after Studio 4 audit b1073fd
+* F1: if the stored payload does not match `params_hash` at execution, the approval is consumed and set to
+  `status:'invalidated'`; approve returns `409 {code:'payload_mismatch', status:'invalidated'}`; later use of the id
+  (`/savings`, `/action`, re-approve) → `409 consumed`. Nothing is executed.
+* F2: `world_auth_fails` GC — expired lockouts and counters idle > lockout window are purged on every access, at boot
+  and every 10 min; at most 20 rows per peer IP (oldest non-locked dropped first; active lockouts are never dropped).
+* F3 (info, by design, unchanged): `decision:'reject'` needs no password — any verified session may reject a pending
+  request. Rejecting can only prevent an action, never execute one; it is journaled.
+* F4 (info, by design): `Authorization`/Bearer clients are treated as app and cannot approve; approval needs the session cookie.
