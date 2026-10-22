@@ -68,7 +68,7 @@ async function localRoute(method, path, body) {
     throw new Error('Требуется сервер на Mac: OAuth и токены Meta работают только на сервере'); }
   if (col === 'demo' && id === 'remove') { let n = 0; for (const c of C.COLLECTIONS) { const before = LD[c].length; LD[c] = LD[c].filter(o => !o.demo); n += before - LD[c].length; } llog('info', 'system', 'Демо-данные удалены: ' + n); return ok({ removed: n }); }
   if (col === 'queue' && act === 'publish') { const it = LD.queue.find(x => x.id === id); throw new Error(it?.demo ? 'Демо-данные не публикуются' : 'Требуется сервер на Mac и подключённый аккаунт'); }
-  if (col === 'comments' && act === 'reply') throw new Error('Требуется сервер на Mac и подключённый аккаунт');
+  if (col === 'comments' && act === 'reply') throw new Error('Ответы на комментарии не реализованы');
   if (col === 'queue' && method === 'PUT' && body.status === 'approved') { const cur = LD.queue.find(x => x.id === id); const cand = Object.assign({}, cur, body);
     const issues = [...MKSocial.guardrails(cand, LD), ...MKSocial.dailyCheck(cand, LD.queue, LD.workspaces)]; if (issues.length) { llog('warn', 'publishing', `Утверждение заблокировано «${cur.title}»: ${issues.join('; ')}`); local.save(LD); throw new Error(issues.join('; ')); } }
   if (col === 'queue' && method === 'PUT' && body.status) { const cur = LD.queue.find(x => x.id === id); if (cur && body.status !== cur.status) body.history = [...(cur.history || []), { at: C.now(), event: body.status, user: USER }]; }
@@ -107,7 +107,32 @@ async function api(method, path, body) {
     headers: Object.assign({ 'x-studio-request': '1' }, isFile ? { 'content-type': body.type || 'application/octet-stream' } : body ? { 'content-type': 'application/json' } : {}), body: isFile ? body : body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && !path.startsWith('/api/auth')) { showAuth(); throw new Error('Требуется вход'); }
-  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status); return j;
+  if (!r.ok) { const e = new Error(ownerErrText(r.status, j) || j.error || 'HTTP ' + r.status); e.status = r.status; e.code = j.code; e.approvalId = j.approvalId; throw e; } return j;
+}
+// ---- OWNER APPROVAL CONTRACT (Studio 2, feat/e2e-security-agents) ----
+// Owner actions never send confirm:true. Flow: action → 403 needs_owner + approvalId → owner approves
+// POST /api/world/approvals/:id {decision:'approve', password} from a password session → retry the action with {approvalId}.
+const OWNER_ERR = {
+  needs_owner: 'Нужно подтверждение владельца: запрос добавлен в «Очередь владельца». После подтверждения повторите действие.',
+  owner_reauth: 'Неверный пароль владельца — подтверждение не выполнено. Введите пароль ещё раз.',
+  self_approval: 'Нельзя подтвердить собственный запрос: запрос из этой сессии должен подтвердить владелец из другой сессии.',
+  owner_session_required: 'Подтверждать можно только из сессии владельца в браузере (вход по паролю), а не через токен приложения.',
+  expired: 'Срок подтверждения истёк. Создайте запрос заново.',
+  not_wired: 'Центр подтверждений на сервере не подключён — подтверждение пока невозможно.'
+};
+function ownerErrText(status, j) { const c = j && j.code; if (status === 409 && c === 'expired') return OWNER_ERR.expired;
+  if (status === 403 && c && OWNER_ERR[c]) return OWNER_ERR[c] + (c === 'needs_owner' && j.approvalId ? ` (запрос № ${j.approvalId})` : '');
+  if (status === 409 && c === 'needs_owner') return 'Это подтверждение уже использовано. Запросите новое.';
+  if (status === 503 && c === 'not_wired') return OWNER_ERR.not_wired; return null; }
+// Password is read once from a type=password field, sent once, then the field is cleared. Never logged, stored or cached.
+function ownerApprove(id, done) {
+  const f = modal(`<h2>Подтверждение владельца</h2><p class="small">Введите пароль владельца, чтобы подтвердить запрос.</p><input type="password" name="password" autocomplete="current-password" required>`, async fd => {
+    let pw = fd.password; fd.password = ''; const inp = f.querySelector('input[name=password]'); if (inp) inp.value = '';
+    try { await api('POST', '/api/world/approvals/' + encodeURIComponent(id), { decision: 'approve', password: pw }); pw = ''; toast('Подтверждено'); }
+    catch (e) { pw = ''; toast('Ошибка: ' + e.message, true); }
+    finally { pw = ''; if (done) await done(); }
+  });
+  f.querySelector('.btn.primary').textContent = 'Подтвердить'; f.querySelector('input[name=password]').focus();
 }
 async function loadAll() { const cols = C.COLLECTIONS; const res = await Promise.all([...cols.map(c => api('GET', '/api/' + c)), api('GET', '/api/system').catch(() => null)]); cols.forEach((c, i) => DB[c] = res[i]); SYS = res[cols.length]; }
 async function act(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadAll(); render(); return r; } catch (e) { toast('Ошибка: ' + e.message, true); } }
@@ -148,11 +173,13 @@ const NAV = [
 let ROUTE = 'dashboard'; const SUB = {};
 function navTo(r) { location.hash = r; }
 window.addEventListener('hashchange', () => { ROUTE = location.hash.slice(1).split('?')[0] || 'dashboard'; $('#sidebar').classList.remove('open'); render(); });
+// Comment replies: server/meta.js still has templates only (see Studio 2 report) → honest «не реализовано», button disabled.
+function markNotImplemented(v) { v.querySelectorAll('[data-creply]').forEach(b => { b.disabled = true; b.onclick = null; b.textContent = 'Ответ — не реализовано'; b.title = 'Отправка ответов на комментарии не реализована'; const n = b.nextElementSibling; if (n && n.tagName === 'SPAN') n.textContent = 'не реализовано'; }); }
 function renderNav() { $('#nav').innerHTML = NAV.map(([k, i, l]) => `<a href="#${k}" class="${k === ROUTE ? 'active' : ''}"><i>${i}</i>${l}</a>`).join(''); }
 function render() {
   if (!DB.agents) return;
   const n = NAV.find(x => x[0] === ROUTE) || NAV[0]; ROUTE = n[0]; renderNav(); $('#pageTitle').textContent = n[2];
-  renderPills(); const v = $('#view'); v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); updateBell();
+  renderPills(); const v = $('#view'); v.innerHTML = VIEWS[ROUTE](); (BIND[ROUTE] || (() => {}))(v); bindCommon(v); markNotImplemented(v); updateBell();
   if (!$('#chatDrawer').classList.contains('hidden')) renderChat();
 }
 function bindCommon(root) {
@@ -948,8 +975,13 @@ BIND.revenue = v => {
   const bind = root => {
     const plan = root.querySelector('#planForm'); if (plan) plan.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/plan', { goal: new FormData(plan).get('goal') }); WC.data = null; }, 'План записан'); };
     const imp = root.querySelector('#impForm'); if (imp) imp.onsubmit = e => { e.preventDefault(); act(async () => { await api('POST', '/api/world/import', { csv: new FormData(imp).get('csv') }); WC.data = null; }, 'Импорт записан'); };
-    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { try { await api('POST', '/api/world/savings', { target_usd: n }); } finally { WC.data = null; } }, 'Запрос записан'); };
-    root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => act(async () => { await api('POST', '/api/world/approvals/' + b.dataset.ap, { decision: b.dataset.dec }); WC.data = null; }, 'Решение записано'));
+    const sav = root.querySelector('#savForm'); if (sav) sav.onsubmit = e => { e.preventDefault(); const n = Number(new FormData(sav).get('target')); act(async () => { const ap = WC.savAppr && WC.savAppr.target === n ? WC.savAppr.id : undefined;
+      try { await api('POST', '/api/world/savings', ap ? { target_usd: n, approvalId: ap } : { target_usd: n }); WC.savAppr = null; }
+      catch (e) { if (e.code === 'needs_owner' && e.approvalId) WC.savAppr = { id: e.approvalId, target: n }; else if (e.status === 409) WC.savAppr = null; throw e; }
+      finally { WC.data = null; } }, 'Цель сохранена'); };
+    root.querySelectorAll('[data-ap]').forEach(b => b.onclick = () => b.dataset.dec === 'approve'
+      ? ownerApprove(b.dataset.ap, async () => { WC.data = null; await loadAll(); render(); })
+      : act(async () => { await api('POST', '/api/world/approvals/' + encodeURIComponent(b.dataset.ap), { decision: 'reject' }); WC.data = null; }, 'Отклонено'));
   };
   if (WC.data) { bind(v); return; }
   api('GET', '/api/world/command-center').then(d => { WC.data = d; if (ROUTE !== 'revenue') return; const el = $('#view'); el.innerHTML = revHtml(d); bindCommon(el); bind(el); }).catch(e => { v.innerHTML = `<div class="card"><h3>Revenue Command Center</h3><p>${esc(e.message)}</p></div>`; });
