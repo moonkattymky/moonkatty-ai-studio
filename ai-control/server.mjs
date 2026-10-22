@@ -176,8 +176,14 @@ const server = http.createServer(async (req, res) => {
   res.on('finish', () => logLine(req.method, p, res.statusCode));
   try {
     if (!OK_HOSTS.has(String(req.headers.host || '').toLowerCase())) return send(res, 421, 'Misdirected Request', { 'Content-Type': 'text/plain' });
-    const url = new URL(req.url, `http://${HOST}`);
-    p = decodeURIComponent(url.pathname);
+    // Request-target hardening: origin-form only ("/x", never "//x", absolute-form or "*"), well-formed %-escapes, and
+    // case tricks on the API prefixes (/API/…, /Aic/…) are refused before routing — they never reach the Studio.
+    const raw = String(req.url || '');
+    if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return sendJson(res, 403, { error: 'bad_request_target' });
+    const url = new URL(raw, `http://${HOST}`);
+    if (raw.split(/[?#]/)[0] !== url.pathname) return sendJson(res, 403, { error: 'non_canonical_path' }); // dot-segments (/../, %2e%2e) never rewritten silently
+    try { p = decodeURIComponent(url.pathname); } catch { p = url.pathname; return sendJson(res, 400, { error: 'bad_encoding' }); }
+    if (/^\/(api|aic)(\/|$)/i.test(p) && (!/^\/(api|aic)(\/|$)/.test(p) || p !== url.pathname)) return sendJson(res, 403, { error: 'not_allowlisted' }); // no %-escapes in API paths
     if (p.startsWith('/aic/')) return await handleAic(req, res, p);
     if (p.startsWith('/api/') || p === '/api') return await handleApi(req, res, url, p);
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Method Not Allowed', { Allow: 'GET, HEAD', 'Content-Type': 'text/plain' });
