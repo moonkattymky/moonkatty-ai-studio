@@ -152,7 +152,7 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
 // Studio 2 media-automation: real video_render executor (lazy factory — TTS is detected on first render, not at boot).
 // Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
 { const { createVideoRenderExecutor } = require('./media-automation/src/jobs'); let vf = null;
-  const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
+  const factory = { async render(ep, o) { { const vd = require('./lib/video-deps').check(); if (!vd.ok) throw require('./lib/video-deps').depsError(vd); } if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
   // Ollama unload before render (QA-NV-003): only the models the NEWS→VIDEO flow itself loaded (lib/news-video.js tracks them),
   // loopback Ollama only — never other processes' models (on the Mac the Ollama daemon is shared with prod). Runs inside the
   // video_render executor, i.e. already under withHeavy('video_render:<id>') (lib/services.js); failures are logged, never fatal.

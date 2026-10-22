@@ -31,7 +31,8 @@
     "test:location": "node scripts/location-check-test.mjs",
     "test:newsvideo": "node scripts/newsvideo-test.mjs",
     "test:newsvideo-security": "node scripts/newsvideo-security-test.mjs",
-    "test:newsvideo-e2e": "node scripts/newsvideo-ui-e2e.mjs"
+    "test:newsvideo-e2e": "node scripts/newsvideo-ui-e2e.mjs",
+    "test:video-deps": "node scripts/video-deps-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
