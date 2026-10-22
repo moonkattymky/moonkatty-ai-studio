@@ -1,0 +1,257 @@
+# Subtest: code: 15 chars from 31-symbol alphabet, TTL 300 s, HMAC only (code never in state/list/logs), default node id carries -test
+ok 1 - code: 15 chars from 31-symbol alphabet, TTL 300 s, HMAC only (code never in state/list/logs), default node id carries -test
+# Subtest: lifecycle: expired after 5 min, single use, foreign/wrong code refused, 5 wrong → locked, IP lockout, rate limit
+ok 2 - lifecycle: expired after 5 min, single use, foreign/wrong code refused, 5 wrong → locked, IP lockout, rate limit
+# Subtest: owner confirmation required: pending/rejected get no token; wrong device key refused; confirm → token once
+ok 3 - owner confirmation required: pending/rejected get no token; wrong device key refused; confirm → token once
+# Subtest: signed requests: enrolled (0.2.1) token useless without a valid Ed25519 signature; 0.2.0 bearer tokens keep working
+ok 4 - signed requests: enrolled (0.2.1) token useless without a valid Ed25519 signature; 0.2.0 bearer tokens keep working
+# Subtest: rotation: owner requests → hello/pull rotate:true → node rotates, old token dead; revoke kills token + device key; re-enroll invalidates old token
+ok 5 - rotation: owner requests → hello/pull rotate:true → node rotates, old token dead; revoke kills token + device key; re-enroll invalidates old token
+# Subtest: addresses (38bce84 fix): strict octets, 100.64.0.0/10 and fd7a:115c:a1e0::/48 only for listeners
+ok 6 - addresses (38bce84 fix): strict octets, 100.64.0.0/10 and fd7a:115c:a1e0::/48 only for listeners
+# Subtest: protocol 2 / agentVersion range over HTTP: hello protocol:1 + range, 426 E_AGENT_VERSION outside, pull carries rotate
+ok 7 - protocol 2 / agentVersion range over HTTP: hello protocol:1 + range, 426 E_AGENT_VERSION outside, pull carries rotate
+# Subtest: end-to-end over real TLS (pinned): enroll → owner confirm → signed hello/pull → rotate:true → POST /rotate
+ok 8 - end-to-end over real TLS (pinned): enroll → owner confirm → signed hello/pull → rotate:true → POST /rotate
+# Subtest: 0.2.2 replay: same nonce twice → E_REPLAY (audited); fresh nonce ok; nonce scoped per node; bad nonce format refused
+ok 9 - 0.2.2 replay: same nonce twice → E_REPLAY (audited); fresh nonce ok; nonce scoped per node; bad nonce format refused
+# Subtest: 0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment status replay → E_REPLAY, stale ts → E_BAD_SIGNATURE
+ok 10 - 0.2.2 nonce window: ±30 s accepted, 31 s old/ahead rejected; enrollment status replay → E_REPLAY, stale ts → E_BAD_SIGNATURE
+# Subtest: 0.2.2 lockouts per Tailscale device (whois), not per shared loopback; persisted across restart; X-Forwarded-For trusted only from loopback
+ok 11 - 0.2.2 lockouts per Tailscale device (whois), not per shared loopback; persisted across restart; X-Forwarded-For trusted only from loopback
+# Subtest: 0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, nodes.lock: one coordinator per dir
+ok 12 - 0.2.2 owner-only rotation, protocol 2, enrolled 0.2.1 agents → 426, nodes.lock: one coordinator per dir
+# Subtest: peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)
+ok 13 - peer identity: whois device shown (never 127.0.0.1); unknown peer → E_PEER_UNVERIFIED until a second owner ack (audited)
+# Subtest: statuses: connection errors in memory (revoked / 426 / unauthorized), cleared on success; unauthenticated requests never write nodes.json; node goes down after nodeDownMs
+ok 14 - statuses: connection errors in memory (revoked / 426 / unauthorized), cleared on success; unauthenticated requests never write nodes.json; node goes down after nodeDownMs
+# Subtest: MacBook device profile = real hardware (Monterey 12.7.6, 2 cores, Node 22 not 24)
+ok 15 - MacBook device profile = real hardware (Monterey 12.7.6, 2 cores, Node 22 not 24)
+# Subtest: monitor profile: heavy AI/Blender refused; X GROWTH off by default, only analytics/drafts when enabled
+ok 16 - monitor profile: heavy AI/Blender refused; X GROWTH off by default, only analytics/drafts when enabled
+# Subtest: result.verify re-hashes artifacts from disk: tampering and wrong expected hash are detected
+ok 17 - result.verify re-hashes artifacts from disk: tampering and wrong expected hash are detected
+# Subtest: GET /api/nodes/ping is read-only and needs the node token
+ok 18 - GET /api/nodes/ping is read-only and needs the node token
+# Subtest: studio-connection-test: dry-run touches no network; real run over pinned TLS → all PASS, token masked
+ok 19 - studio-connection-test: dry-run touches no network; real run over pinned TLS → all PASS, token masked
+# Subtest: LaunchAgent for monitor: install.sh sets heap 128 MB and profile monitor on macOS < 13; no sudo
+ok 20 - LaunchAgent for monitor: install.sh sets heap 128 MB and profile monitor on macOS < 13; no sudo
+# Subtest: monitor RAM/CPU simulation: real agent on 2 cores, streamed SHA-256 verify, under soft limit
+ok 21 - monitor RAM/CPU simulation: real agent on 2 cores, streamed SHA-256 verify, under soft limit
+# Subtest: iMac device profile = real hardware (Ventura 13.7.1), the wrong 12.5.1 is gone from code and docs
+ok 22 - iMac device profile = real hardware (Ventura 13.7.1), the wrong 12.5.1 is gone from code and docs
+# Subtest: profile enforcement in the agent: no heavy AI / Blender / render / OpenCode for NEWS NODE, not even via env
+ok 23 - profile enforcement in the agent: no heavy AI / Blender / render / OpenCode for NEWS NODE, not even via env
+# Subtest: Tailscale TLS mode: only https://*.ts.net, normal CA verification; pinned mode still requires fingerprint
+ok 24 - Tailscale TLS mode: only https://*.ts.net, normal CA verification; pinned mode still requires fingerprint
+# Subtest: news.collect: streaming dedup across feeds, maxItemsPerJob and memory cap → partial result, never OOM
+ok 25 - news.collect: streaming dedup across feeds, maxItemsPerJob and memory cap → partial result, never OOM
+# Subtest: offline outbox: 0600 files, retried until delivered, blob uploaded first, stale (409) dropped, max age
+ok 26 - offline outbox: 0600 files, retried until delivered, blob uploaded first, stale (409) dropped, max age
+# Subtest: LaunchAgent plist: user agent (no root), KeepAlive, throttle, logs, heap cap
+ok 27 - LaunchAgent plist: user agent (no root), KeepAlive, throttle, logs, heap cap
+# Subtest: RAM simulation: real agent process, 50 feeds × 200 items, big result delivered as SHA-256 artifact, RSS under soft limit
+ok 28 - RAM simulation: real agent process, 50 feeds × 200 items, big result delivered as SHA-256 artifact, RSS under soft limit
+# Subtest: 3 processes: routing by capability, TLS pin, ffprobe file transfer, X drafts only
+ok 29 - 3 processes: routing by capability, TLS pin, ffprobe file transfer, X drafts only
+# 2026-10-22T17:56:21.490Z node-agent 0.2.2 imac → https://127.0.0.1:35325 (Node v22.23.4, linux/x64)
+# 2026-10-22T17:56:21.511Z задача nj_c8b3a37b597cd2d5 news.dedup попытка 1
+# 2026-10-22T17:56:24.015Z завершено nj_c8b3a37b597cd2d5 409 
+# 2026-10-22T17:56:24.020Z задача nj_c8b3a37b597cd2d5 news.dedup попытка 2
+# 2026-10-22T17:56:26.523Z завершено nj_c8b3a37b597cd2d5 200 
+# Subtest: faults: node drop (safeToRetry requeued / unsafe → needs_approval), duplicate delivery, bad checksum, network loss
+ok 30 - faults: node drop (safeToRetry requeued / unsafe → needs_approval), duplicate delivery, bad checksum, network loss
+# Subtest: QA-NODE-001 residual (r3): real coordinator process killed and restarted fast — captured signed requests (ts=now and ts=now+25 s) are refused, fresh ones pass
+ok 31 - QA-NODE-001 residual (r3): real coordinator process killed and restarted fast — captured signed requests (ts=now and ts=now+25 s) are refused, fresh ones pass # SKIP QA-NODE-005: node 0.2.2 durable replay floor (replay-floor.json, "floor persisted") is not in 1.3.x — test kept for when node 0.2.2 is ported
+# Subtest: r3: a running real agent survives a fast coordinator restart (E_REPLAY → fresh signature after 3 s, not a 60 s auth pause) and completes a job
+ok 32 - r3: a running real agent survives a fast coordinator restart (E_REPLAY → fresh signature after 3 s, not a 60 s auth pause) and completes a job # SKIP studio coordinator only (COORD_HELPER=studio)
+# Subtest: tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+ok 33 - tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+# Subtest: local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+ok 34 - local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+# Subtest: pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+ok 35 - pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+# Subtest: node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+ok 36 - node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+# Subtest: heartbeat extends lease; timeout → stuck handling; low resources alert
+ok 37 - heartbeat extends lease; timeout → stuck handling; low resources alert
+# Subtest: file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+ok 38 - file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+# Subtest: LAN listener refuses 0.0.0.0 / public IPs
+ok 39 - LAN listener refuses 0.0.0.0 / public IPs
+# Subtest: runner hook: runViaNode waits for node, stop() cancels the node job
+ok 40 - runner hook: runViaNode waits for node, stop() cancels the node job
+# Subtest: adapter maps resource classes and statuses both ways
+ok 41 - adapter maps resource classes and statuses both ways
+# Subtest: central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+ok 42 - central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+# Subtest: auto-update flags are OFF by default (all four unset) and auto-install refuses
+ok 43 - auto-update flags are OFF by default (all four unset) and auto-install refuses
+# Subtest: empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+ok 44 - empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+# Subtest: owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+ok 45 - owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+# Subtest: tampered package (modified bytes) is rejected and deleted
+ok 46 - tampered package (modified bytes) is rejected and deleted
+# Subtest: tampered manifest (bytes changed after signing) is rejected
+ok 47 - tampered manifest (bytes changed after signing) is rejected
+# Subtest: wrong keyId, unknown key and revoked key are rejected
+ok 48 - wrong keyId, unknown key and revoked key are rejected
+# Subtest: keyring refuses private key material (only public keys can be configured)
+ok 49 - keyring refuses private key material (only public keys can be configured)
+# Subtest: QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+ok 50 - QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+# Subtest: no private key material in git or in the packaged file list; ignore/exclude patterns present
+ok 51 - no private key material in git or in the packaged file list; ignore/exclude patterns present
+# Subtest: QA-UC-007: correct 0700 dir owned by current uid -> READY
+ok 52 - QA-UC-007: correct 0700 dir owned by current uid -> READY
+# Subtest: QA-UC-007: 0777 / 0750 dir -> BLOCKED
+ok 53 - QA-UC-007: 0777 / 0750 dir -> BLOCKED
+# Subtest: QA-UC-007: wrong owner (injected uid) -> BLOCKED
+ok 54 - QA-UC-007: wrong owner (injected uid) -> BLOCKED
+# Subtest: QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+ok 55 - QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+# Subtest: QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+ok 56 - QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+# Subtest: QA-UC-006: manifest without signed builtAt is not verified and download is refused
+ok 57 - QA-UC-006: manifest without signed builtAt is not verified and download is refused
+# Subtest: release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+ok 58 - release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+# Subtest: signed version: tampered version (manifest bytes changed after signing) is rejected
+ok 59 - signed version: tampered version (manifest bytes changed after signing) is rejected
+# Subtest: signed version must match tag and package name
+ok 60 - signed version must match tag and package name
+# Subtest: anti-rollback: downgrade and equal version vs current are rejected
+ok 61 - anti-rollback: downgrade and equal version vs current are rejected
+# Subtest: builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+ok 62 - builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+# Subtest: auto-download / auto-install stay off: check() never downloads, no timers
+ok 63 - auto-download / auto-install stay off: check() never downloads, no timers
+# Subtest: QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+ok 64 - QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+# Subtest: scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+ok 65 - scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+# Subtest: packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+ok 66 - packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+# Subtest: dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+ok 67 - dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+# Subtest: QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+ok 68 - QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+# Subtest: QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+ok 69 - QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+# Subtest: QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+ok 70 - QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+# Subtest: QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+ok 71 - QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+# Subtest: QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+ok 72 - QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+# Subtest: QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+ok 73 - QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+# QA-UC-010 before(path) {"loads":105600,"attackerKey":606,"ownerKey":699,"blocked":104295,"mixed":27}
+# QA-UC-010 after(fd-relative) {"loads":106600,"attackerKey":490,"ownerKey":726,"blocked":105384,"mixed":0}
+# Subtest: QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+ok 74 - QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+# Subtest: READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+ok 75 - READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+# Subtest: Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+ok 76 - Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+# Subtest: repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+ok 77 - repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+# Subtest: versions: compare, downgrade detection
+ok 78 - versions: compare, downgrade detection
+# Subtest: security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+ok 79 - security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+# Subtest: security: redirect to a foreign host is refused
+ok 80 - security: redirect to a foreign host is refused
+# Subtest: check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+not ok 81 - check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+# Subtest: security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+ok 82 - security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+# Subtest: security: tampered manifest (signature over other bytes) is rejected
+ok 83 - security: tampered manifest (signature over other bytes) is rejected
+# Subtest: security: downgrade attack (validly signed older version) is blocked
+ok 84 - security: downgrade attack (validly signed older version) is blocked
+# Subtest: download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+not ok 85 - download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+# Subtest: download: oversized body (more than signed size) is aborted
+not ok 86 - download: oversized body (more than signed size) is aborted
+# Subtest: download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+not ok 87 - download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+# Subtest: download: server ignores Range → restarts clean, still verified
+not ok 88 - download: server ignores Range → restarts clean, still verified
+# Subtest: crash during download: restart marks it interrupted; cleanTemp removes partial files
+not ok 89 - crash during download: restart marks it interrupted; cleanTemp removes partial files
+# Subtest: network error on check is reported, not thrown as crash
+ok 90 - network error on check is reported, not thrown as crash
+# Subtest: security: archive path traversal / absolute paths / truncated / garbage are rejected
+ok 91 - security: archive path traversal / absolute paths / truncated / garbage are rejected
+# Subtest: download: signed+hashed but traversal archive is rejected after hash check
+not ok 92 - download: signed+hashed but traversal archive is rejected after hash check
+# Subtest: rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+ok 93 - rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+# Subtest: rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+ok 94 - rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+# Subtest: compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+ok 95 - compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+# Subtest: manifest validation rejects path-like asset names and bad identity
+ok 96 - manifest validation rejects path-like asset names and bad identity
+# Subtest: pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+not ok 97 - pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+# Subtest: auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+not ok 98 - auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+# Subtest: rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+ok 99 - rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+# Subtest: MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+not ok 100 - MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+# Subtest: code never bypasses macOS security
+ok 101 - code never bypasses macOS security
+# Subtest: manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+ok 102 - manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+# Subtest: rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+ok 103 - rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+# Subtest: schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+ok 104 - schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+# Subtest: test-build archive: app name taken from manifest.appName
+ok 105 - test-build archive: app name taken from manifest.appName
+# Subtest: unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+ok 106 - unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+# Subtest: QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+ok 107 - QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+# Subtest: QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+not ok 108 - QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+# Subtest: QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+ok 109 - QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+# Subtest: QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+ok 110 - QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+# Subtest: QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+ok 111 - QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+# Subtest: QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+not ok 112 - QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+# Subtest: QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+not ok 113 - QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+# Subtest: QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+ok 114 - QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+# Subtest: QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+ok 115 - QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+# Subtest: lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+ok 116 - lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+# Subtest: auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+not ok 117 - auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+# Subtest: origin verification: remote, ref, on origin, clean tree
+ok 118 - origin verification: remote, ref, on origin, clean tree
+# Subtest: artifact SHA-256 required and must match (direct or SHA256SUMS)
+ok 119 - artifact SHA-256 required and must match (direct or SHA256SUMS)
+# Subtest: signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+ok 120 - signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 121 - schema compatibility + plan refuses on failed checks
+# tests 121
+# suites 0
+# pass 105
+# fail 14
+# cancelled 0
+# skipped 2
+# todo 0
+# duration_ms 32412.348656
