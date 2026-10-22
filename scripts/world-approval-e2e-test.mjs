@@ -12,8 +12,8 @@ const ok = (n, c, x = '') => { console.log((c ? 'PASS ' : 'FAIL ') + n + (x && !
 let up = false; for (let i = 0; i < 75 && !up; i++) { try { up = (await fetch(BASE + '/api/health')).ok; } catch {} if (!up) await sleep(200); }
 ok('server boots on ' + PORT, up, slog.slice(-600)); if (!up) { srv.kill(); process.exit(1); }
 const tok = fs.readFileSync(path.join(UD, 'app-token'), 'utf8').trim(); let cookie = '';
-const call = async (who, m, p, b) => { const h = { 'content-type': 'application/json', 'x-studio-request': '1' }; if (who === 'app') h['x-studio-app-token'] = tok; else h.cookie = cookie;
-  const r = await fetch(BASE + p, { method: m, headers: h, body: b == null ? undefined : JSON.stringify(b) }); const sc = r.headers.get('set-cookie'); if (sc && /mk_session=/.test(sc) && who !== 'app') cookie = sc.split(';')[0];
+const call = async (who, m, p, b) => { const h = { 'content-type': 'application/json', 'x-studio-request': '1' }; if (who === 'app') h['x-studio-app-token'] = tok; else if (who === 'forged') { h['x-studio-app-token'] = tok; h.cookie = 'mk_session=deadbeef'; } else if (who === 'both') { h['x-studio-app-token'] = tok; h.cookie = cookie; } else h.cookie = cookie;
+  const r = await fetch(BASE + p, { method: m, headers: h, body: b == null ? undefined : JSON.stringify(b) }); const sc = r.headers.get('set-cookie'); if (sc && /mk_session=/.test(sc) && who === 'sess') cookie = sc.split(';')[0];
   let j = null; try { j = await r.json(); } catch {} return { s: r.status, j }; };
 ok('setup owner', (await call('app', 'POST', '/api/auth/setup', { username: 'igor', password: PW })).s === 200);
 ok('owner session login', (await call('sess', 'POST', '/api/auth/login', { username: 'igor', password: PW })).s === 200 && !!cookie);
@@ -51,8 +51,24 @@ if (UNWIRED) {
   const pa = await call('app', 'POST', '/api/world/action', { action: 'paid_ads', detail: 'campaign x', confirm: true });
   const ap2 = await call('sess', 'POST', '/api/world/approvals/' + pa.j.approvalId, { decision: 'approve', password: PW });
   ok('paid_ads approved -> executed:false, external_disabled (no payment)', pa.s === 403 && ap2.s === 200 && ap2.j.executed === false && ap2.j.execStatus === 'external_disabled', JSON.stringify(ap2.j));
+  // N1: app token + forged cookie must stay app channel (cannot approve, nothing executed)
+  const n1 = (await call('app', 'POST', '/api/world/savings', { target_usd: 42 })).j.approvalId;
+  const n1a = await call('forged', 'POST', '/api/world/approvals/' + n1, { decision: 'approve', password: PW });
+  ok('N1 app token + forged mk_session=deadbeef -> 403 owner_session_required', n1a.s === 403 && n1a.j.code === 'owner_session_required' && n1a.j.executed !== true, JSON.stringify(n1a.j));
+  const n1b = await call('both', 'POST', '/api/world/approvals/' + n1, { decision: 'approve', password: PW });
+  ok('N1 app token + real session cookie -> still app channel, 403', n1b.s === 403 && n1b.j.code === 'owner_session_required', JSON.stringify(n1b.j));
+  const n1s = await call('sess', 'GET', '/api/world/approvals/' + n1); ok('N1 approval stays pending, not executed', n1s.j.status === 'pending' && !n1s.j.execStatus, JSON.stringify(n1s.j));
   const rj = await call('app', 'POST', '/api/world/savings', { target_usd: 3 }); const rr = await call('sess', 'POST', '/api/world/approvals/' + rj.j.approvalId, { decision: 'reject' });
   const re5 = await call('app', 'POST', '/api/world/savings', { target_usd: 3, approvalId: rj.j.approvalId }); ok('rejected id -> 403', rr.s === 200 && re5.s === 403);
+  // N2: lockout after 5 wrong approve passwords; correct password afterwards is still locked; channel checked before password
+  const n2 = (await call('app', 'POST', '/api/world/savings', { target_usd: 43 })).j.approvalId; const codes = [];
+  for (let i = 0; i < 5; i++) codes.push((await call('sess', 'POST', '/api/world/approvals/' + n2, { decision: 'approve', password: 'wrong-' + i })).j.code);
+  ok('N2 five wrong passwords -> owner_reauth', codes.every(c => c === 'owner_reauth'), codes.join(','));
+  const n2b = await call('sess', 'POST', '/api/world/approvals/' + n2, { decision: 'approve', password: PW });
+  ok('N2 correct password after lockout -> 429 locked, not executed', n2b.s === 429 && n2b.j.code === 'locked' && n2b.j.executed !== true, JSON.stringify(n2b.j));
+  const n2c = await call('app', 'POST', '/api/world/approvals/' + n2, { decision: 'approve', password: 'x' });
+  ok('N2 channel checked before password (app -> owner_session_required, not counted)', n2c.j.code === 'owner_session_required', JSON.stringify(n2c.j));
+  ok('N2 approval stays pending', (await call('sess', 'GET', '/api/world/approvals/' + n2)).j.status === 'pending');
 }
 srv.kill('SIGTERM'); await new Promise(r => srv.once('exit', r)); fs.rmSync(UD, { recursive: true, force: true });
 console.log(fail ? `FAILED ${fail}` : 'ALL PASS'); process.exit(fail ? 1 : 0);
