@@ -157,6 +157,7 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
   services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm })); }
 const world = require('./lib/world')({ db, q, get, put, list, log, core, runner, services, CFG, sec });
 worldHooks.onAgentStart = world.onAgentStart; world.boot();
+require('./lib/world/wiring.js').wireWorld({ app, world, services, env: process.env, log, checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } }); // QA-E2E step 2: Approval Center + MA_JOBS_BACKEND
 if (!q.meta.get('mig_120_design3d')) { const a = get('agents', 'design3d'); if (a) { Object.assign(a, { enabled: true, inDevelopment: false, status: a.status === 'dev' ? 'idle' : a.status, role: core.seed().agents.find(x => x.id === 'design3d').role }); put('agents', a); }
   q.setMeta.run('mig_120_design3d', core.now()); }
 q.setMeta.run('schemaVersion', String(DB_SCHEMA_VERSION)); // all migrations above are done
