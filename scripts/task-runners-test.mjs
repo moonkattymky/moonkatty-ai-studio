@@ -1,6 +1,6 @@
 // Real-command tests for opencode_task / render_segment runners (lib/task-runners.js via lib/services.js).
 // Uses the real job engine (node:sqlite) and real ffmpeg. Usage: node scripts/task-runners-test.mjs (Node >= 22.5)
-import { createRequire } from 'module'; import fs from 'fs'; import os from 'os'; import path from 'path'; import { spawnSync } from 'child_process';
+import { createRequire } from 'module'; import fs from 'fs'; import os from 'os'; import path from 'path'; import { spawnSync } from 'child_process'; import http from 'http';
 const require = createRequire(import.meta.url); process.env.STUDIO_SQLITE = 'node';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-tr-')); const db = require('../lib/db.js').open(path.join(TMP, 'db.sqlite'));
 const jobs = require('../lib/jobs.js')(db); const blender = require('../lib/blender.js')();
@@ -12,7 +12,9 @@ let fail = 0; const ok = (name, c, x = '') => { console.log((c ? 'PASS ' : 'FAIL
 const wait = async (id, ms = 60000) => { const t = Date.now(); for (;;) { const j = S.jobsApi.getJob(id); if (!['queued', 'running'].includes(j.internalStatus) || Date.now() - t > ms) return j; await new Promise(r => setTimeout(r, 100)); } };
 const OUT = fs.mkdtempSync(path.join(os.tmpdir(), 'mk-tr-out-')); // outside the data dir: shim + "attacker" targets
 const shim = path.join(OUT, 'bin'); fs.mkdirSync(shim); fs.writeFileSync(path.join(TMP, 'secret.txt'), 'TOPSECRET');
-fs.writeFileSync(path.join(shim, 'opencode'), `#!/bin/sh\necho "opencode shim $@"\necho "ENV:$(env | cut -d= -f1 | tr '\\n' ,)"\necho "SECRETVAL:$STUDIO_SECRET_KEY"\ncat ${TMP}/secret.txt 2>/dev/null && echo READ_HIDDEN\necho x > ${OUT}/escape.txt 2>/dev/null && echo WROTE_OUTSIDE\necho ok > ./inside.txt && echo WROTE_INSIDE\nsleep 30\n`, { mode: 0o755 });
+const PLANT = path.join(os.homedir(), '.mk-sbx-planted-' + process.pid); fs.writeFileSync(PLANT, 'PLANTED_HOME_SECRET');
+let hits = 0; const hs = http.createServer((q, r) => { hits++; r.end('STUDIO_API'); }); await new Promise(r => hs.listen(0, '127.0.0.1', r)); const HP = hs.address().port;
+fs.writeFileSync(path.join(shim, 'opencode'), `#!/bin/bash\ncat ${PLANT} 2>/dev/null; ls ${os.homedir()}/.config >/dev/null 2>&1 && echo SAW_REAL_HOME\n(exec 3<>/dev/tcp/127.0.0.1/${HP} && printf 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3) 2>/dev/null && echo NET_OK || echo NET_BLOCKED\n(while true; do date +%s%N >> ./grandchild.txt; sleep 0.2; done) &\necho "opencode shim $@"\necho "ENV:$(env | cut -d= -f1 | tr '\\n' ,)"\necho "SECRETVAL:$STUDIO_SECRET_KEY"\ncat ${TMP}/secret.txt 2>/dev/null && echo READ_HIDDEN\necho x > ${OUT}/escape.txt 2>/dev/null && echo WROTE_OUTSIDE\necho ok > ./inside.txt && echo WROTE_INSIDE\nsleep 30\n`, { mode: 0o755 });
 S.setApprovalCheck(id => id === 'appr-ok'); const OA = 'appr-ok';
 const ff = spawnSync('which', ['ffmpeg'], { encoding: 'utf8' }).stdout.trim();
 // 1 real ffmpeg render
@@ -42,7 +44,12 @@ const lg = fs.readFileSync(path.join(TMP, 'media', 'opencode-tasks', c, 'opencod
 ok('opencode shim really ran with "--" before prompt', lg.includes('opencode shim run -- x'), lg.slice(0, 200));
 ok('env allowlist: no STUDIO_SECRET_KEY / tokens in child env', !/STUDIO_SECRET_KEY|MK_FAKE_TOKEN/.test(lg.split('ENV:')[1] || 'X') && lg.includes('SECRETVAL:\n'), lg);
 ok('sandbox: data dir hidden (secret not readable)', !lg.includes('TOPSECRET') && !lg.includes('READ_HIDDEN'), lg);
-ok('sandbox: no writes outside workDir', !lg.includes('WROTE_OUTSIDE') && !fs.existsSync(path.join(OUT, 'escape.txt')), lg);
+ok('sandbox: no writes outside workDir reach the host', !fs.existsSync(path.join(OUT, 'escape.txt')), lg);
+ok('sandbox: planted file in real $HOME not readable', !lg.includes('PLANTED_HOME_SECRET') && !lg.includes('SAW_REAL_HOME'), lg);
+ok('sandbox: localhost HTTP (Studio API) unreachable, no network', lg.includes('NET_BLOCKED') && !lg.includes('STUDIO_API') && hits === 0, lg);
+{ const gf = path.join(TMP, 'media', 'opencode-tasks', c, 'grandchild.txt'); const a1 = fs.existsSync(gf) ? fs.readFileSync(gf).length : -1; await new Promise(x => setTimeout(x, 1200)); const a2 = fs.existsSync(gf) ? fs.readFileSync(gf).length : -1;
+  ok('cancel kills the whole process group: grandchild stopped', a1 > 0 && a1 === a2, JSON.stringify({ a1, a2 })); }
+hs.close(); fs.rmSync(PLANT, { force: true });
 ok('sandbox: workDir writable', lg.includes('WROTE_INSIDE'), lg);
 delete process.env.STUDIO_SECRET_KEY; delete process.env.MK_FAKE_TOKEN;
 process.env.PATH = P0; process.env.HOME = H0;
@@ -64,6 +71,24 @@ const ST = mk({ isTest: true }); ST.setApprovalCheck(() => true); delete process
 r = await wait(ST.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 }, approvalId: OA }).jobId); ok('TEST flavor: real runners disabled -> failed honestly', r.status === 'failed' && /TEST/.test(r.error), r.error);
 const ns = spawnSync(process.execPath, ['-e', "process.stdout.write(String(require('./lib/task-runners.js').sandboxed('/bin/true', [], { workDir: '/tmp' })))"], { cwd: path.join(path.dirname(new URL(import.meta.url).pathname), '..'), env: { PATH: '/nonexistent' }, encoding: 'utf8' });
 ok('no sandbox available -> sandboxed() null (opencode refused)', ns.stdout === 'null', ns.stdout + ns.stderr);
+// NEW-2 packaged detection: MK_TEST_REAL_RUNNERS ignored when running from resourcesPath / app.asar
+ok('isPackaged: dev tree -> false', TR.isPackaged() === false);
+ok('isPackaged: app.asar path -> true', TR.isPackaged('/Applications/X.app/Contents/Resources/app.asar/lib') === true);
+process.resourcesPath = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..'); const pk = TR.isPackaged(); 
+{ const SP2 = mk({ isTest: true }); SP2.setApprovalCheck(() => true); process.env.MK_TEST_REAL_RUNNERS = '1';
+  const rp2 = await wait(SP2.jobsApi.createJob({ type: 'render_segment', input: { durationSec: 1 }, approvalId: OA }).jobId);
+  ok('packaged build (resourcesPath) ignores MK_TEST_REAL_RUNNERS=1 -> disabled', pk === true && rp2.status === 'failed' && /TEST/.test(rp2.error), JSON.stringify({ pk, s: rp2.status, e: rp2.error })); }
+delete process.resourcesPath; delete process.env.MK_TEST_REAL_RUNNERS;
+// NEW-3 TOCTOU: swap the checked file between realpath check and open
+{ const mr = path.join(TMP, 'media'); fs.writeFileSync(path.join(mr, 'a.wav'), 'GOOD'); fs.writeFileSync(path.join(mr, 'other.wav'), 'OTHER'); const d1 = fs.mkdtempSync(path.join(TMP, 'cp-'));
+  const okc = TR.copyConfined('a.wav', mr, d1); ok('copyConfined: private copy in workDir with same bytes', fs.readFileSync(okc, 'utf8') === 'GOOD' && okc.startsWith(d1));
+  const t1 = (() => { try { TR.copyConfined('a.wav', mr, fs.mkdtempSync(path.join(TMP, 'cp-')), { _afterCheck: rp => { fs.rmSync(rp); fs.symlinkSync('/etc/passwd', rp); } }); return 'no error'; } catch (e) { return e.message; } })();
+  ok('race: file swapped to symlink after check -> rejected (O_NOFOLLOW)', t1 === TR.AUDIO_ERR, t1);
+  fs.rmSync(path.join(mr, 'a.wav')); fs.writeFileSync(path.join(mr, 'a.wav'), 'GOOD');
+  const t2 = (() => { try { TR.copyConfined('a.wav', mr, fs.mkdtempSync(path.join(TMP, 'cp-')), { _afterCheck: rp => { fs.renameSync(path.join(mr, 'other.wav'), rp); } }); return 'no error'; } catch (e) { return e.message; } })();
+  ok('race: file replaced by another inode after check -> rejected (fstat dev/ino)', t2 === TR.AUDIO_ERR, t2); }
+if (ff) { const rq = await S.host3d.renderSegment({ script: 'x', durationSec: 1, outPath: path.join(TMP, 'media', 'segments', 'sb.mp4'), mediaRoot: path.join(TMP, 'media') });
+  ok('render_segment: ffmpeg runs inside the sandbox', rq.sandbox === 'bwrap' && fs.statSync(rq.videoPath).size > 0, JSON.stringify(rq)); }
 // 6 resume after restart: queued render_segment re-runs (safeToRetry), opencode_task (safeToRetry=false) fails
 const rs = jobs.create('t-r', 'render_segment', 'render_segment'); jobs.update(rs.id, { status: 'queued', safeToRetry: true, input: { script: '', durationSec: 1, aspect: '1:1', engine: 'ffmpeg' } });
 const ro = jobs.create('t-o', 'opencode_task', 'opencode_task'); jobs.update(ro.id, { status: 'queued', safeToRetry: false, input: { prompt: 'x' } });

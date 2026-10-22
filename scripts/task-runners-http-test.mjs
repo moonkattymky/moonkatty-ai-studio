@@ -29,6 +29,8 @@ const cn = await call('sess', 'POST', '/api/jobs/' + JID + '/cancel');
 await sleep(1500); const n1 = fs.readFileSync(alive, 'utf8').length; await sleep(1500); const n2 = fs.readFileSync(alive, 'utf8').length;
 ok('HTTP cancel -> cancelled and child process stopped', cn.s === 200 && n1 === n2, JSON.stringify({ s: cn.s, n1, n2 }));
 ok('job status cancelled', ['cancelled'].includes((await call('sess', 'GET', '/api/jobs/' + JID)).j?.status), '');
+{ const rt = await call('sess', 'POST', '/api/jobs/' + JID + '/retry'); const after = (await call('sess', 'GET', '/api/jobs/' + JID)).j;
+  ok('retry of opencode_task -> 403 needs_owner (new approval), job not re-queued', rt.s === 403 && rt.j.code === 'needs_owner' && !!rt.j.approvalId && after?.status === 'cancelled', JSON.stringify([rt.s, rt.j, after?.status])); }
 const r1 = await call('app', 'POST', '/api/jobs', { type: 'render_segment', input: { durationSec: 1, aspect: '1:1' } });
 ok('POST /api/jobs render_segment -> 403 needs_owner + approvalId', r1.s === 403 && r1.j.code === 'needs_owner' && !!r1.j.approvalId, JSON.stringify(r1.j));
 ok('no render_segment job before approval', !((await call('sess', 'GET', '/api/jobs')).j || []).some(j => j.type === 'render_segment' || j.kind === 'render_segment'));
@@ -46,5 +48,9 @@ const c2 = await call('app', 'POST', '/api/jobs', { type: 'opencode_task', input
 const ap2 = await call('sess', 'POST', '/api/world/approvals/' + c2.j.approvalId, { decision: 'approve', password: PW }); let st = null;
 for (let i = 0; i < 30; i++) { await sleep(200); st = (await call('sess', 'GET', '/api/jobs/' + ap2.j.result?.jobId)).j; if (st && !['queued', 'running'].includes(st.status)) break; }
 ok('TEST flavor without MK_TEST_REAL_RUNNERS -> job failed, nothing spawned', st?.status === 'failed' && /TEST/.test(st.error || ''), JSON.stringify(st && { s: st.status, e: st.error }));
+{ const r3 = await call('app', 'POST', '/api/jobs', { type: 'render_segment', input: { durationSec: 1 } }); const a3 = await call('sess', 'POST', '/api/world/approvals/' + r3.j.approvalId, { decision: 'approve', password: PW }); let s3 = null;
+  for (let i = 0; i < 30; i++) { await sleep(200); s3 = (await call('sess', 'GET', '/api/jobs/' + a3.j.result?.jobId)).j; if (s3 && !['queued', 'running'].includes(s3.status)) break; }
+  const rt = await call('app', 'POST', '/api/jobs/' + a3.j.result?.jobId + '/retry'); const after = (await call('sess', 'GET', '/api/jobs/' + a3.j.result?.jobId)).j;
+  ok('retry of render_segment -> 403 needs_owner, not re-queued to generic runner', s3?.status === 'failed' && rt.s === 403 && rt.j.code === 'needs_owner' && after?.status === 'failed', JSON.stringify([s3?.status, rt.s, rt.j, after?.status])); }
 await stop(); fs.rmSync(UD, { recursive: true, force: true }); fs.rmSync(SH, { recursive: true, force: true });
 console.log(fail ? `FAILED ${fail}` : 'ALL PASS'); process.exit(fail ? 1 : 0);
