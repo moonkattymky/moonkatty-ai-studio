@@ -32,7 +32,8 @@
     "test:newsvideo": "node scripts/newsvideo-test.mjs",
     "test:newsvideo-security": "node scripts/newsvideo-security-test.mjs",
     "test:newsvideo-e2e": "node scripts/newsvideo-ui-e2e.mjs",
-    "test:opencode-task-disabled": "node scripts/opencode-task-disabled-test.mjs"
+    "test:opencode-task-disabled": "node scripts/opencode-task-disabled-test.mjs",
+    "test:design3d-disabled": "node scripts/design3d-disabled-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
