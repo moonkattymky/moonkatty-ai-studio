@@ -86,6 +86,7 @@ class NewsVideoFactory {
       else if (s.kind === 'story') { const srt = buildSrt([{ text: stripMarkup(s.story.text), start: s.start + 0.25, duration: s.speech - 0.6 }], { maxChars: V ? 28 : 46 }); cues.push(...parseSrt(srt).map(c => ({ start: c.start, end: c.end, text: c.lines.join('\n') }))); }
     }
     const total = t; const lufs = P.targetLufs ?? this.targetLufs; if (P.maxDurationSec && total > P.maxDurationSec) throw new Error(`duration ${total.toFixed(1)}s exceeds ${P.name} limit`);
+    { const fixed = require('./subtitles').normalizeCues(cues, { minDur: 0.8, maxChars: V ? 28 : 46, totalEnd: total }); cues.length = 0; cues.push(...fixed); } // F-1: no cue < min duration (long-word pieces)
     const srtText = cues.map((c, i) => `${i + 1}\n${fmt(c.start)} --> ${fmt(c.end)}\n${c.text}\n`).join('\n');
     const check = validateSrt(srtText, { maxChars: V ? 28 : 46, totalSec: total }); if (!check.ok) throw new Error('subtitle validation failed: ' + check.errors.join('; '));
     const srt = path.join(outDir, `${basename}.srt`); fs.writeFileSync(srt, srtText);
