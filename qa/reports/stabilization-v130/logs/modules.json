@@ -1,0 +1,111 @@
+{
+  "health": {
+    "ok": true,
+    "app": "moonkatty-ai-studio",
+    "flavor": "test",
+    "product": "MOONKATTY AI STUDIO TEST",
+    "schemaVersion": 6,
+    "mode": "server",
+    "version": "1.3.0-test",
+    "pid": 106674,
+    "uptimeSec": 0,
+    "db": "ok",
+    "dbDriver": "node:sqlite",
+    "keySource": "file (Keychain недоступна)",
+    "startedAt": "2026-10-22T06:29:34.935Z",
+    "lastTick": "2026-10-22T06:29:35.090Z"
+  },
+  "mod": {
+    "Dashboard": {
+      "status": "PASS",
+      "evidence": "source=meminfo label=доступно: MemAvailable available%=59 os.freemem%=59 cpu=null disk=true. macOS vm_stat на живом Mac не измерялся."
+    },
+    "AI Agents": {
+      "status": "PASS",
+      "evidence": "агенты в базе: director,news,video,social,pr,games,mkty,analytics,marketing,content,publishing,community,design3d,ceo,creative,revenue,growth"
+    },
+    "AI Agents execution": {
+      "status": "PASS",
+      "evidence": "analytics=done community=done publishing=done marketing=done ceo=done news=waiting_approval video=waiting_approval growth=done creative=waiting_approval director=waiting_approval. news/video/director — заглушка, не Ollama. marketing/ceo — штатные обработчики."
+    },
+    "task queue": {
+      "status": "PASS",
+      "evidence": "задач 10, статусы done,waiting_approval"
+    },
+    "WORLD CLASS MODE": {
+      "status": "PASS",
+      "evidence": "mission=WORLD CLASS MODE 1.3.0-test planTasks=4 qc=200 0"
+    },
+    "AI CEO": {
+      "status": "PASS",
+      "evidence": "plan created=4 summary=План 2026-10-22. Задачи у существующих агентов. NEWS не смешивается с основным каналом. Публикация и соцсети этим планом не вызываются. agent=Незавершено 0, просрочено 0. Площадок в чтении: 8. CEO не утверждает публикацию и не ставит статус published."
+    },
+    "Marketing Director": {
+      "status": "PASS",
+      "evidence": "result=Только чтение (studio2-read-api). Каналов аудитории 7. YouTube не складывается. Публикации нет. publishes=false"
+    },
+    "MILLION AUDIENCE MISSION": {
+      "status": "PASS",
+      "evidence": "audience={\"goal\":1000000,\"mergeYoutube\":false,\"youtubeMerged\":false,\"youtube\":[{\"id\":\"youtube-news\",\"name\":\"YouTube MOONKATTY NEWS\",\"subscribers\":{\"demo\":true,\"real\":false,\"value\":null,\"label\":\"DEMO 100\"}},{\"id\":\"youtube-project\",\"name\":\"YouTube MOO memory.audience=[{\"id\":\"f03fdb33807235521bec59e2\",\"kind\":\"goal\",\"version\":1,\"goal\":1000000}]"
+    },
+    "Studio 5 memory": {
+      "status": "PASS",
+      "evidence": "si document-rows mission-kind=0 task-rows=4 path=studio-intelligence commandMission=1 audience=[{\"id\":\"f03fdb33807235521bec59e2\",\"kind\":\"goal\",\"version\":1,\"goal\":1000000}]. Миссия в si_records хранится как document с recordKind."
+    },
+    "Revenue Director": {
+      "status": "PASS",
+      "evidence": "import=201 views=403 month=$12.34 agent=Выручка месяца (кэш): $12.34. Начислено: НЕТ ДАННЫХ. Не подтверждено: НЕТ ДАННЫХ. Просмотры не входят.. Сумма $12.34 — фикстура аудита, не выплата."
+    },
+    "Revenue Command Center": {
+      "status": "PASS",
+      "evidence": "day=$12.34 month=$12.34 demo=\"НЕТ ДАННЫХ\""
+    },
+    "Studio 2 video and news": {
+      "status": "PASS",
+      "evidence": "news=waiting_approval factcheck=true video_render=failed error=video_render: episode not found: audit/missing. Новостной текст — заглушка. TTS на этой ВМ не подменялся успешным файлом."
+    },
+    "Update Center": {
+      "status": "PASS",
+      "evidence": "без флага 404; со флагом 200 keys=current,identity,repos,keyring,signature,mechanism,buildAge,keysLoaded; автоустановка не выполнена (400). каталог состояния создан. Установка пакета на Mac — BLOCKED."
+    },
+    "Nodes and Computers": {
+      "status": "BLOCKED",
+      "evidence": "панель отвечает 200, enabled=false, nodes=0, enroll=409 Node Manager выключен (включите в «Узлы» и перезапустите сервер). Живой tailnet и Mac-узел на этой ВМ отсутствуют, поэтому модуль не PASS."
+    },
+    "Approval Center": {
+      "status": "PASS",
+      "evidence": "savings=403 needs_owner approve executed=false status=approved note=Публикация, оплата и рассылка не выполнялись. pending=0"
+    },
+    "Settings and Logs": {
+      "status": "PASS",
+      "evidence": "logs=68 opencode=http://127.0.0.1:4097 hasPassword=false keychain=true. Пароль в журнале и интеграциях не найден. Keychain на Linux недоступен — BLOCKED для живого macOS."
+    },
+    "3D Studio": {
+      "status": "PASS",
+      "evidence": "settings=200 task=waiting_approval paramsBy=llm:qwen3:8b+fallback scene=true blend=true png=true error= OpenCode на этом прогоне не запущен, параметры — заглушка JSON, Blender настоящий. Окно .app на Mac — BLOCKED."
+    },
+    "Dashboard UI": {
+      "status": "PASS",
+      "evidence": "RAM «RAM 59% доступно: MemAvailable»; revenue view has no fixture amount"
+    }
+  },
+  "notes": [
+    "health {\"flavor\":\"test\",\"product\":\"MOONKATTY AI STUDIO TEST\",\"version\":\"1.3.0-test\"}",
+    "security probes: noauth 401 nocsrf 403 csrf-noauth 401 evil-origin 403",
+    "ollama integration stub url status 200 http://127.0.0.1:11640",
+    "queue published demoted to pending_approval put 403 publish route 403 publishing_disabled",
+    "update center on=200 auto=400 AUTO_INSTALL_DISABLED rollback=200 {\"dryRun\":true,\"commands\":[\"/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.test.server\",\"/bin/mv /Applications/MOONKATTY AI STUDIO TEST.app /Application",
+    "preview GET 200 bytes json",
+    "preview http 200 image/png 9942",
+    "ui RAM «RAM 59% доступно: MemAvailable»; revenue view has no fixture amount"
+  ],
+  "security": {
+    "noAuth": 401,
+    "noCsrf": 403,
+    "csrfOnly": 401,
+    "evil": 403,
+    "queue": "pending_approval",
+    "qPut": 403,
+    "qRoute": 403
+  }
+}
