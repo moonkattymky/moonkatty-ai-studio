@@ -157,3 +157,36 @@
 | Тесты 45/45 и 8/8 на стабах; design3d-test SKIP | не перезапускалось Studio 4 | UNVERIFIABLE (согласуется с r1: 3D-тесты требуют Blender/OpenCode) |
 | asar совпадает побайтно по 9 файлам | Studio 4 независимо: asar 919 записей из того же zip | CONFIRMED частично (побайтное сравнение 9 файлов не повторялось) |
 Расхождений нет. VERIFIED ON DEVICE явно указан как «нет» для всех функций — корректно. Поправка в плане Studio 4 (раздел 2.4) внесена по этому отчёту.
+
+### 5.3 `/workspace/out/v1.3.1-test/AUDIT_GOTOVNOSTI_RU.md` (аудит готовности Studio) — вердикт: **PASS** с 1 расхождением в статусе (NEWS)
+| Утверждение | Проверка по 3b72817 | Итог |
+|---|---|---|
+| Вход/сессии `server.js:170-197` | `server.js:170-172` auth/status, auth/setup | CONFIRMED |
+| AI CEO: 3 задачи, без внешних действий | `lib/world/ceo.js:4-6` build(), задачи source=ceo | CONFIRMED |
+| Creative Director (QC) | `lib/world/index.js:77` register('creative') → qc.score | CONFIRMED |
+| Утверждение очереди с guardrails | `server.js:543-547` | CONFIRMED |
+| Publish 403 в TEST | `server.js:200` | CONFIRMED |
+| NEWS UI `app.js:314-349`, ручные стадии | `public/app.js:314-316,317` | CONFIRMED (код); статус UI-ONLY — DISCREPANCY, см. §6 |
+| NEWS-агент `runner.js:85` | `runner.js:85,89-91` | CONFIRMED |
+| VIDEO: исполнитель подключён `server.js:153-157`, кнопки disabled `app.js:369` | там же | CONFIRMED |
+| 3D полный цикл `server.js:435-499`, design3d.js | `server.js:435-447` маршруты studio3d | CONFIRMED |
+| Update Center выключен без STUDIO_OPS_UPDATE=1 | `lib/ops/update-center-mount.js:8` | CONFIRMED |
+| Integrations test `server.js:376`, rulePlan `core.js:140` | там же | CONFIRMED |
+| Итого INTEGRATED 0 / VERIFIED ON DEVICE 0 / PRODUCTION READY 0; на Mac не проверялось | соответствует отсутствию доказательств | CONFIRMED (честно, без завышения) |
+| Числа pass тестов (security, memory, nodes) | совпадают с прогонами Studio 4 r1/r2 (security 52/0, nodes 52/0) | CONFIRMED |
+
+### 5.4 `/workspace/out/v1.3.1-test/ui-route-crosscheck.txt` (кнопки UI → маршруты) — вердикт: **PASS**
+- GENERIC-маршруты: `server.js:504` GET /api/:col, `:505` GET /api/:col/:id, `:536` POST, `:542` PUT, `:557` DELETE — CONFIRMED.
+- studio3d: POST run `app.js:565`→`server.js:435`, GET status →`:445`, PUT settings →`:447` — CONFIRMED.
+- 7 MISSING (все в `public/social-ui.js`: /api/meta/ws/*, /api/queue/X/publish, /api/comments/X/reply) — CONFIRMED как ожидаемое поведение TEST: meta.js не монтируется (`server.js:136-140`), а publish/reply явно отвечают 403 (`server.js:200`). Уточнение: последние два не «отсутствуют», а перехватываются 403-гардом в TEST — в отчёте стоит пометить это, иначе выглядит как битая кнопка (незначительно).
+- `GET /api/meta/config` помечен GENERIC → `:505` — CONFIRMED (обслуживается общим маршрутом коллекций, а не meta.js).
+
+## 6. Решение Studio 4 по спорным статусам (Studio vs Studio 3), по определениям раздела 0
+**NEWS — решение: IMPLEMENTED (частично); не UI-ONLY и не TESTED.**
+- Против UI-ONLY: выпуски сохраняются на сервере через общий CRUD — POST/PUT/DELETE /api/episodes `public/app.js:333,338,340,342,347` → `server.js:536,542,557`; NEWS-агент реально вызывает Ollama и создаёт черновик со статусом waiting_approval (`runner.js:85,89-91`). Это реальный код с серверной стороной.
+- Против более высокого: автоматизация (поиск/фактчек/перевод/orchestrator) к серверу не подключена (grep orchestrator/src/news в server.js, lib/ → пусто), кнопка «Автопоиск» disabled (`public/app.js:317`), выделенных тестов NEWS в Studio нет → TESTED не достигнут. Studio 3 прав (его итог: «IMPLEMENTED (частично), не INTEGRATED»); формулировка Studio «UI-ONLY» занижает статус ручного CRUD, но верно указывает, что конвейер новостей в сборку не входит.
+
+**3D — решение: TESTED (частично); не INTEGRATED.**
+- TESTED: компоненты покрыты проходящими тестами — test:opencode-json 22/22 (разбор scene_params/запасной путь design3d), test:opencode-serve 21/21 (прогоны Studio 4 r1/r2). Полный e2e `scripts/design3d-test.mjs` (`package.json:18` test:3d) на Linux SKIP без opencode/Blender.
+- Не INTEGRATED: по определению раздела 0 (и Studio) INTEGRATED требует прогнанного в собранном приложении цикла UI→сервер→исполнитель→реальный Blender. Проводка есть (`public/app.js:565` → `server.js:435` → runner → `lib/executors/design3d.js` → `lib/blender.js`), но ни разу не исполнена с реальным Blender — нет .blend/PNG/GLB-доказательств. Studio прав; «INTEGRATED» у Studio 3 — завышение (Studio 3 сам указывает, что тест SKIP).
+- Чтобы перейти в INTEGRATED: прогнать test:3d с Blender ≥4.2 + opencode serve (Linux CI или Mac) и приложить файлы; для VERIFIED ON DEVICE — тот же прогон на Mac mini M5 Pro с Blender 5.2.2 (BLOCKED).
