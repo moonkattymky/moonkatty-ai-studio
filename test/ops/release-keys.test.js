@@ -6,6 +6,9 @@
 const test = require('node:test'); const assert = require('node:assert/strict');
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto'); const { execFileSync } = require('child_process');
 const UC = require('../../lib/ops/update-center.js'); const AI = require('../../lib/ops/app-identity.js');
+// hermetic: a stale desktop/build-info.json in the working copy (left by a local build) must not change these tests — the build age is
+// injected explicitly (currentBuiltAt) where a test needs it; default here = no build-info (dev run). Packaged-layout tests load their own copy.
+{ const real = UC.createUpdateCenter; UC.createUpdateCenter = (o = {}) => real({ currentBuiltAt: null, ...o }); }
 const ROOT = path.join(__dirname, '../..'); const REPO = 'moonkattymky/moonkatty-ai-studio', APP = 'MOONKATTY AI STUDIO';
 const sha = b => crypto.createHash('sha256').update(b).digest('hex'); const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'rk-'));
 const PASS = crypto.randomBytes(18).toString('base64'); // runtime-only test passphrase

@@ -3,6 +3,9 @@
 const test = require('node:test'); const assert = require('node:assert/strict');
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto');
 const UC = require('../../lib/ops/update-center.js'); const AI = require('../../lib/ops/app-identity.js');
+// hermetic: a stale desktop/build-info.json in the working copy (left by a local build) must not change these tests — the build age is
+// injected explicitly (currentBuiltAt) where a test needs it; default here = no build-info (dev run). Packaged-layout tests load their own copy.
+{ const real = UC.createUpdateCenter; UC.createUpdateCenter = (o = {}) => real({ currentBuiltAt: null, ...o }); }
 const { open } = require('../../lib/db.js'); const { createUpdateBackups } = require('../../lib/ops/update-backup.js'); /* v1.3.0-test adapter (no ops backup.js) */ const { createUpdateManager } = require('../../lib/ops/update.js');
 const REPO = 'moonkattymky/moonkatty-ai-studio', APP = 'MOONKATTY AI STUDIO';
 const sha = b => crypto.createHash('sha256').update(b).digest('hex');
