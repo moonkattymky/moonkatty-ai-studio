@@ -41,10 +41,16 @@ try {
   t('render before approval refused', (await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'youtube' })).s === 409);
   const e = await call('PUT', `/api/newsvideo/drafts/${d.id}`, { title: 'Edited', stories: [{ id: rs.id, text: 'Owner edited text for the anchor.' }] }); t('owner edit saved', e.j.title === 'Edited' && e.j.stories[0].text.startsWith('Owner') && e.j.stories[0].edited);
   t('edit with foreign story refused', (await call('PUT', `/api/newsvideo/drafts/${d.id}`, { stories: [{ id: 'x' }] })).s === 400);
-  const a = await call('POST', `/api/newsvideo/drafts/${d.id}/approve`); t('approve writes episode JSON', a.j.status === 'approved' && fs.existsSync(path.join(dir, a.j.episodeFile)), a.j.error || a.j.episodeFile);
+  const cur = (await call('GET', `/api/newsvideo/drafts/${d.id}`)).j;
+  t('draft flagged: fact-check required, not checked', cur.factCheck.required && !cur.factCheck.checked);
+  t('per-sentence source links present', cur.stories[0].factCheck.sentences.length > 0 && cur.stories[0].factCheck.sentences.every(x => Array.isArray(x.sources) && x.sources.length));
+  t('sourceItems (raw source text) not leaked to API', !('sourceItems' in cur.stories[0]));
+  const nf = await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { contentHash: cur.contentHash }); t('approve WITHOUT fact-check tick refused (422)', nf.s === 422 && nf.j.code === 'fact_check_required');
+  const nh = await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: 'stale' }); t('approve with stale content hash refused (409)', nh.s === 409 && nh.j.code === 'content_changed');
+  const a = await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: cur.contentHash }); t('approve writes episode JSON', a.j.status === 'approved' && fs.existsSync(path.join(dir, a.j.episodeFile)), a.j.error || a.j.episodeFile);
   const ep = JSON.parse(fs.readFileSync(path.join(dir, a.j.episodeFile))); t('episode schema for factory', ep.stories[0].text.startsWith('Owner') && fs.existsSync(ep.stories[0].asset.localPath) && ep.sources.length === 2);
   t('edit after approval resets to draft', (await call('PUT', `/api/newsvideo/drafts/${d.id}`, { title: 'Edited2' })).j.status === 'draft');
-  await call('POST', `/api/newsvideo/drafts/${d.id}/approve`);
+  { const c2 = (await call('GET', `/api/newsvideo/drafts/${d.id}`)).j; await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: c2.contentHash }); }
   t('bad preset refused', (await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: '../x' })).s === 400);
   const r = await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'youtube' }); t('render creates video_render job', r.j.status === 'rendering' && jobs.j0.input.episodeRef === d.ref && jobs.j0.input.runId === d.ref + '-r1');
   t('edit while rendering refused', (await call('PUT', `/api/newsvideo/drafts/${d.id}`, { title: 'x' })).s === 409);
@@ -55,6 +61,51 @@ try {
   t('file bad kind refused', (await fetch(`${B}/api/newsvideo/drafts/${d.id}/file?kind=../../etc/passwd`)).status === 400);
   t('traversal id refused', [400, 404].includes((await fetch(`${B}/api/newsvideo/drafts/..%2F..%2Fetc/file?kind=mp4`)).status));
   const out = path.join(dir, 'outside.mp4'); fs.writeFileSync(out, 'x'); jobs.j0.artifacts = [{ kind: 'mp4', path: out }]; t('artifact outside media root refused', (await fetch(`${B}/api/newsvideo/drafts/${d.id}/file?kind=mp4`)).status === 403);
+  // QA-NV-002: edit after render must stay «draft» (sync must not flip back), render must require re-approval of the CURRENT content.
+  jobs.j0.artifacts = [{ kind: 'mp4', name: 'x.mp4', path: mp4, size: 7 }];
+  let e2 = await call('PUT', `/api/newsvideo/drafts/${d.id}`, { stories: [{ id: rs.id, text: 'A newer owner text for the anchor.' }] }); t('edit after render → draft', e2.j.status === 'draft');
+  g = (await call('GET', `/api/newsvideo/drafts/${d.id}`)).j; t('QA-NV-002: GET after edit stays draft (sync does not flip to rendered)', g.status === 'draft', g.status);
+  t('old render marked stale', g.staleRender === true && g.factCheck.checked === false);
+  const rr = await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'youtube' }); t('QA-NV-002: render without re-approval refused', rr.s === 409, rr.s + ' ' + rr.j.error);
+  t('no job created for refused render', Object.keys(jobs).length === 1);
+  const epFile = path.join(dir, g.episodeFile || `media/episodes/${d.ref}.json`); const ep1 = JSON.parse(fs.readFileSync(epFile));
+  t('episode file still holds OLD approved text until re-approval', ep1.stories[0].text.startsWith('Owner'));
+  const ap2 = await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: g.contentHash }); t('re-approve current content', ap2.j.status === 'approved' && JSON.parse(fs.readFileSync(epFile)).stories[0].text.startsWith('A newer'));
+  t('after re-approval status is approved (not stale rendered)', (await call('GET', `/api/newsvideo/drafts/${d.id}`)).j.status === 'approved');
+  // tamper: episode file content differs from approved hash → render refused
+  const epj = JSON.parse(fs.readFileSync(epFile)); epj.contentHash = 'x'; fs.writeFileSync(epFile, JSON.stringify(epj));
+  t('render refused when episode file hash mismatches', (await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'youtube' })).s === 409);
+  epj.contentHash = g.contentHash; fs.writeFileSync(epFile, JSON.stringify(epj));
+  const r2 = await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'shorts' }); t('render after re-approval creates job bound to hash', r2.j.status === 'rendering' && r2.j.renders.at(-1).contentHash === g.contentHash);
+  // fact-check flags
+  const fc = NVmod.factCheck({ text: 'NASA tested the RS-25 engine at Stennis. Elon Musk attended the test with 40 guests.', sourceItems: [{ name: 'NASA', url: 'https://www.nasa.gov/a1', text: 'NASA tested the RS-25 engine at Stennis Space Center for 500 seconds.' }] });
+  t('fact-check: supported sentence linked, no flags', fc.sentences[0].flags.length === 0 && fc.sentences[0].sources[0].url === 'https://www.nasa.gov/a1');
+  t('fact-check: invented name + number flagged', fc.sentences[1].flags.some(f => /Elon Musk/.test(f)) && fc.sentences[1].flags.some(f => /40/.test(f)), JSON.stringify(fc.sentences[1].flags));
+  // QA-NV-003: unload only own models
+  const calls = []; const realFetch = globalThis.fetch;
+  globalThis.fetch = async (u, o) => { calls.push([String(u), o && o.body]); return { json: async () => ({ models: [{ name: 'fake' }, { name: 'prod-model:8b' }] }) }; };
+  try { const u0 = await nv.unloadOwnModels('http://127.0.0.1:11434'); t('QA-NV-003: unloads only the model this flow used', JSON.stringify(u0.unloaded) === '["fake"]' && !calls.some(c => String(c[1]).includes('prod-model')), JSON.stringify(calls));
+    calls.length = 0; const u1 = await nv.unloadOwnModels('http://127.0.0.1:11434'); t('QA-NV-003: nothing used since → no unload calls', u1.unloaded.length === 0 && calls.length === 0);
+    let le = null; nv.usedModels.add('fake'); try { await nv.unloadOwnModels('http://10.0.0.5:11434'); } catch (x) { le = x; } t('QA-NV-003: non-loopback Ollama refused', le && /loopback/.test(le.message)); nv.usedModels.clear(); }
+  finally { globalThis.fetch = realFetch; }
+  // QA-NV-004: one generation at a time, cancel, quota
+  let release; ollama = { ok: true }; const slow = runner.ollamaJson; runner.ollamaJson = (p, signal) => new Promise((res, rej) => { release = () => res({ json: { text: 'NASA tested the RS-25 engine for 500 seconds.' }, model: 'fake' }); signal && signal.addEventListener('abort', () => rej(signal.reason)); });
+  const p1 = call('POST', '/api/newsvideo/drafts', { storyIds: [rs.id] }); await new Promise(z => setTimeout(z, 100));
+  t('QA-NV-004: second concurrent draft refused (409)', (await call('POST', '/api/newsvideo/drafts', { storyIds: [rs.id] })).s === 409);
+  const cx = await call('POST', '/api/newsvideo/drafts/cancel'); const r1 = await p1; t('QA-NV-004: cancel aborts generation', cx.j.cancelled && r1.s === 409 && /прервано/.test(r1.j.error), r1.s + ' ' + (r1.j && r1.j.error));
+  const before = Object.keys((await call('GET', '/api/newsvideo/drafts')).j).length; runner.ollamaJson = slow;
+  t('QA-NV-004: no draft saved after cancel', (await call('GET', '/api/newsvideo/drafts')).j.length === before);
+  t('QA-NV-004: draft/render limits defined', NVmod.LIMITS.maxDrafts > 0 && NVmod.LIMITS.maxRendersPerDraft > 0 && NVmod.LIMITS.draftTimeoutMs > 0);
+  // QA-NV-005: cap enforced while streaming without content-length
+  let pulled = 0; const big = new ReadableStream({ pull(c) { pulled++; c.enqueue(new Uint8Array(1024 * 1024)); if (pulled > 50) c.close(); } });
+  let ce = null; try { await NVmod.readCapped(new Response(big), 3 * 1024 * 1024); } catch (x) { ce = x; } t('QA-NV-005: streaming cap without content-length', ce && /too large/.test(ce.message) && pulled <= 5, 'chunks read ' + pulled);
+  t('QA-NV-005: small body read fully', (await NVmod.readCapped(new Response('hello'), 100)) === 'hello');
+  // QA-NV-009: counters on a FRESH data dir
+  const dir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'nvtest2-')); const nv3 = NVmod({ app: express(), dataDir: dir2, services, runner, log() {}, fetchFn, now: () => now });
+  const run1 = await nv3.search('igor'); const run2 = await nv3.search('igor');
+  t('QA-NV-009: fresh dir → new = stories created, 0 duplicates', run1.new === nv3.engine.stories().length && run1.new > 0 && run1.duplicates === 0, JSON.stringify({ new: run1.new, merged: run1.merged, dup: run1.duplicates }));
+  t('QA-NV-009: second run → 0 new, all duplicates', run2.new === 0 && run2.duplicates === run2.fetched, JSON.stringify({ new: run2.new, dup: run2.duplicates, fetched: run2.fetched }));
+  fs.rmSync(dir2, { recursive: true, force: true });
   const nv2 = NVmod({ app: express(), dataDir: dir, services, runner, log() {}, fetchFn, now: () => now }); t('drafts persisted across restart', !!nv2.getDraft(d.id) && nv2.getDraft(d.id).history.length >= 5);
 } catch (e) { fail++; console.error(e); } finally { srv.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

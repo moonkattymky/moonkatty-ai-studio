@@ -153,12 +153,10 @@ const services = require('./lib/services.js')({ jobs, design3d, runner, blender,
 // Jobs backend adapter (MA_JOBS_BACKEND=jobsapi) is NOT wired here and stays off.
 { const { createVideoRenderExecutor } = require('./media-automation/src/jobs'); let vf = null;
   const factory = { async render(ep, o) { if (!vf) { const MV = require('./media-automation/src/video'); vf = new MV.NewsVideoFactory({ tts: await MV.detectTTS() }); } return vf.render(ep, o); } };
-  // Ollama unload before render (frees RAM/VRAM): loopback Ollama only, keep_alive=0 for every loaded model; failures are logged, never fatal.
-  const llm = { async unload() { const it = get('integrations', 'ollama') || {}; const url = (it.url || 'http://127.0.0.1:11434').replace(/\/$/, '').replace('localhost', '127.0.0.1');
-    if (!/^http:\/\/(127\.0\.0\.1|\[::1\]):11434$/.test(url)) throw new Error('Ollama unload: только loopback');
-    const ps = await (await fetch(url + '/api/ps', { signal: AbortSignal.timeout(3000) })).json();
-    // keep_alive=0 unload is not a generation; it is invoked by the video_render executor, which already runs inside withHeavy('video_render:<id>') (lib/services.js) — nesting withHeavy here would deadlock.
-    for (const m of ps.models || []) await fetch(url + '/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: m.name, keep_alive: 0 }), signal: AbortSignal.timeout(10000) }); } };
+  // Ollama unload before render (QA-NV-003): only the models the NEWS→VIDEO flow itself loaded (lib/news-video.js tracks them),
+  // loopback Ollama only — never other processes' models (on the Mac the Ollama daemon is shared with prod). Runs inside the
+  // video_render executor, i.e. already under withHeavy('video_render:<id>') (lib/services.js); failures are logged, never fatal.
+  const llm = { unload: () => app.locals.newsVideo ? app.locals.newsVideo.unloadOwnModels((get('integrations', 'ollama') || {}).url) : null };
   services.videoRender.setExecutor(createVideoRenderExecutor({ dataDir: DATA_DIR, factory, llm, log: (ev, m) => log(ev === 'ollama_unload_failed' ? 'warn' : 'info', 'video', ev + (m ? ': ' + m : '')) })); }
 const world = require('./lib/world')({ db, q, get, put, list, log, core, runner, services, CFG, sec });
 worldHooks.onAgentStart = world.onAgentStart; world.boot();
