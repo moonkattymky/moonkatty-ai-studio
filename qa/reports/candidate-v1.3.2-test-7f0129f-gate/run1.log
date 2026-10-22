@@ -1,0 +1,49 @@
+LOGIN 200 mk_session=e
+DBG {"error":"design3d недоступен в этой тестовой сборке (3D-студия не одобрена)","code":"feature_disabled","feature":"design3d","where":"POST /api/jobs design3d"}
+PASS sess POST /api/jobs {"type":"design3d"} => 403 feature_disabled POST /api/jobs design3d
+PASS sess POST /api/jobs {"kind":"design3d"} => 403 feature_disabled POST /api/jobs design3d
+PASS sess POST /api/jobs {"type":"blender_template"} => 403 feature_disabled POST /api/jobs blender_template
+PASS sess POST /api/jobs {"kind":"blender_template"} => 403 feature_disabled POST /api/jobs blender_template
+PASS sess POST /api/jobs {"type":"3d"} => 403 feature_disabled POST /api/jobs 3d
+PASS sess POST /api/studio3d/run {"text":"кот"} => 403 feature_disabled /api/studio3d/run
+PASS sess POST /api/studio3d/run/ {"text":"кот"} => 403 feature_disabled /api/studio3d/run/
+PASS sess POST /API/Studio3d/run {"text":"кот"} => 403 feature_disabled /api/studio3d/run
+PASS sess PUT /api/studio3d/settings {"blenderPath":"/bin/true"} => 403 feature_disabled /api/studio3d/settings
+PASS sess POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} => 403 feature_disabled /api/projects3d/*/
+PASS sess POST /api/projects3d/p_mvjvwp4mibtxfm/v1/run {} => 403 feature_disabled /api/projects3d/*/
+MISS sess POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender/ {} => 404  
+MISS sess POST /API/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} => 404  
+PASS sess POST /api/jobs/x/confirm {"approve":true} => 403 feature_disabled POST /api/jobs/:id/confirm
+PASS sess POST /api/jobs/x/review {"action":"rework"} => 403 feature_disabled POST /api/jobs/:id/review
+MISS sess POST /api/jobs/x/confirm/ {"approve":true} => 500  
+MISS sess POST /API/jobs/x/confirm {"approve":true} => 500  
+MISS sess POST /api/jobs/x/Review {"action":"rework"} => 404  
+PASS sess POST /api/director/chat {"text":"сделай 3d модель кота в blender"} => 403 feature_disabled 
+PASS app POST /api/jobs {"type":"design3d"} => 403 feature_disabled POST /api/jobs design3d
+PASS app POST /api/jobs {"kind":"design3d"} => 403 feature_disabled POST /api/jobs design3d
+PASS app POST /api/jobs {"type":"blender_template"} => 403 feature_disabled POST /api/jobs blender_template
+PASS app POST /api/jobs {"kind":"blender_template"} => 403 feature_disabled POST /api/jobs blender_template
+PASS app POST /api/jobs {"type":"3d"} => 403 feature_disabled POST /api/jobs 3d
+PASS app POST /api/studio3d/run {"text":"кот"} => 403 feature_disabled /api/studio3d/run
+PASS app POST /api/studio3d/run/ {"text":"кот"} => 403 feature_disabled /api/studio3d/run/
+PASS app POST /API/Studio3d/run {"text":"кот"} => 403 feature_disabled /api/studio3d/run
+PASS app PUT /api/studio3d/settings {"blenderPath":"/bin/true"} => 403 feature_disabled /api/studio3d/settings
+PASS app POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} => 403 feature_disabled /api/projects3d/*/
+PASS app POST /api/projects3d/p_mvjvwp4mibtxfm/v1/run {} => 403 feature_disabled /api/projects3d/*/
+MISS app POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender/ {} => 404  
+MISS app POST /API/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} => 404  
+PASS app POST /api/jobs/x/confirm {"approve":true} => 403 feature_disabled POST /api/jobs/:id/confirm
+PASS app POST /api/jobs/x/review {"action":"rework"} => 403 feature_disabled POST /api/jobs/:id/review
+MISS app POST /api/jobs/x/confirm/ {"approve":true} => 500  
+MISS app POST /API/jobs/x/confirm {"approve":true} => 500  
+MISS app POST /api/jobs/x/Review {"action":"rework"} => 404  
+PASS app POST /api/director/chat {"text":"сделай 3d модель кота в blender"} => 403 feature_disabled 
+MISS POST /api/tasks agentId=design3d => 201  
+MISS POST /api/world/plan goal=3d => 200   design3d tasks created: 1
+MISS POST /api/agents/design3d/start => 200  
+INFO design3d tasks after runner: [{"s":"failed","code":"feature_disabled","src":"api"},{"s":"queued","src":"ceo"}]
+INFO 3D jobs in DB: 0
+INFO studio3d status design3d: {"feature":"design3d","enabled":false,"message":"design3d недоступен в этой тестовой сборке (3D-студия не одобрена)","hits":{"POST /api/jobs design3d":5,"POST /api/jobs blender_template":4,"POST /api/jobs 3d":2,"/api/studio3d/run":4,"/api/studio3d/run/":2,"/api/studio3d/settings":2,"/api/projects3d/*/":4,"POST /api/jobs/:id/confirm":2,"POST /api/jobs/:id/review":2,"executor:design3d.confirm":4,"director/chat":2,"runner:design3d":1}} blender: {"ok":false,"disabled":true,"code":"feature_disabled","error":"design3d недоступен в этой тестовой сборке (3D-студия не одобрена)"}
+INFO runtime blender: {"ok":false,"disabled":true,"code":"feature_disabled","error":"design3d недоступен в этой тестовой сборке (3D-студия не одобрена)"}
+INFO health version 1.3.2-test blender procs: 
+SUMMARY {"total":41,"pass":28,"miss":["sess POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender/ {} 404","sess POST /API/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} 404","sess POST /api/jobs/x/confirm/ {\"approve\":true} 500","sess POST /API/jobs/x/confirm {\"approve\":true} 500","sess POST /api/jobs/x/Review {\"action\":\"rework\"} 404","app POST /api/projects3d/p_mvjvwp4mibtxfm/v1/rerender/ {} 404","app POST /API/projects3d/p_mvjvwp4mibtxfm/v1/rerender {} 404","app POST /api/jobs/x/confirm/ {\"approve\":true} 500","app POST /API/jobs/x/confirm {\"approve\":true} 500","app POST /api/jobs/x/Review {\"action\":\"rework\"} 404","POST /api/tasks agentId=design3d 201","POST /api/world/plan goal=3d 200","POST /api/agents/design3d/start 200"]}
