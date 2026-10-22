@@ -98,7 +98,10 @@ if (UNWIRED) {
   const af = sdb.prepare('SELECT user, fails, locked_until FROM world_auth_fails WHERE user LIKE ?').get('igor|%');
   ok('limiter is persisted in SQLite world_auth_fails keyed by user', af && af.fails >= 5 && af.locked_until > Date.now(), JSON.stringify(af));
   const tp = (await call('app', 'POST', '/api/world/savings', { target_usd: 45 })).j.approvalId;
-  sdb.prepare('UPDATE world_approvals SET payload_json = ? WHERE id = ?').run(JSON.stringify({ kind: 'savings', target_usd: 999999 }), tp); sdb.close();
+  sdb.prepare('UPDATE world_approvals SET payload_json = ? WHERE id = ?').run(JSON.stringify({ kind: 'savings', target_usd: 999999 }), tp);
+  // F2: stale rows (expired lockout, idle counter) must be purged at boot
+  const ins = sdb.prepare('INSERT INTO world_auth_fails (user, fails, locked_until, next_at, updated_at) VALUES (?, ?, ?, ?, ?)');
+  ins.run('ghost|10.9.9.9', 5, Date.now() - 1000, 0, '2026-01-01'); ins.run('idle|10.9.9.9', 2, 0, Date.now() - 3600e3, '2026-01-01'); sdb.close();
   // lockout is active; tampered approval is checked after restart+expiry below
   // Restart mid-test: lockout + consumed state must persist; short self-approval window to test expiry
   const os3 = (await call('sess', 'POST', '/api/world/savings', { target_usd: 6200 })).j.approvalId;
@@ -109,7 +112,8 @@ if (UNWIRED) {
   ok('restart: consumed id still 409 consumed', (await call('app', 'POST', '/api/world/savings', { target_usd: 5000, approvalId: A })).j?.code === 'consumed');
   // Re-login (main login with password) after lockout = safe reset; a session-only request cannot do it
   const tp2 = (await call('app', 'POST', '/api/world/savings', { target_usd: 46 })).j.approvalId;
-  for (let i = 0; i < 5; i++) { await sleep(100 * 2 ** i + 50); await call('sess', 'POST', '/api/world/approvals/' + tp2, { decision: 'approve', password: 'bad-' + i }); }
+  await sleep(LOCK_MS + 300); // let the persisted lockout expire first, so the DoS lockout below is deterministic
+  for (let i = 0; i < 5; i++) { await sleep(100 * 2 ** i + 50); (await call('sess', 'POST', '/api/world/approvals/' + tp2, { decision: 'approve', password: 'bad-' + i })); }
   ok('lockout again (DoS attempt from session)', (await call('sess', 'POST', '/api/world/approvals/' + tp2, { decision: 'approve', password: PW })).j?.code === 'locked');
   await sleep(1100); cookie = ''; ok('owner main login', (await call('sess', 'POST', '/api/auth/login', { username: 'igor', password: PW })).s === 200);
   const rs = await call('sess', 'POST', '/api/world/approvals/' + tp2, { decision: 'approve', password: PW });
@@ -122,6 +126,19 @@ if (UNWIRED) {
   const tpa = await call('sess', 'POST', '/api/world/approvals/' + tp, { decision: 'approve', password: PW });
   const cc3 = await call('sess', 'GET', '/api/world/command-center');
   ok('payload tampered in DB -> hash mismatch at execution, not executed', tpa.j?.executed !== true && !JSON.stringify(cc3.j.savings || {}).includes('999999'), JSON.stringify(tpa.j));
+  ok('F1 tampered approve -> 409 payload_mismatch, status invalidated, consumed', tpa.s === 409 && tpa.j.code === 'payload_mismatch' && tpa.j.approval?.status === 'invalidated' && tpa.j.approval?.consumed === true, JSON.stringify(tpa.j));
+  const f1b = await call('app', 'POST', '/api/world/savings', { target_usd: 45, approvalId: tp });
+  ok('F1 /savings with ORIGINAL params + invalidated id -> 409 consumed, not applied', f1b.s === 409 && f1b.j.code === 'consumed' && !JSON.stringify((await call('sess', 'GET', '/api/world/command-center')).j.savings || {}).includes('"target_usd":45'), JSON.stringify(f1b.j));
+  ok('F1 re-approve invalidated id -> 409', (await call('sess', 'POST', '/api/world/approvals/' + tp, { decision: 'approve', password: PW })).s === 409);
+  { const { DatabaseSync: D2 } = await import('node:sqlite'); const d2 = new D2(path.join(UD, fs.readdirSync(UD).find(f => f.endsWith('.db'))));
+    ok('F2 boot/access purge removed expired lockout + idle counter rows', d2.prepare("SELECT COUNT(*) n FROM world_auth_fails WHERE user LIKE '%|10.9.9.9'").get().n === 0);
+    const ins2 = d2.prepare('INSERT INTO world_auth_fails (user, fails, locked_until, next_at, updated_at) VALUES (?, 1, 0, ?, ?)');
+    for (let i = 0; i < 25; i++) ins2.run('u' + i + '|127.0.0.1', Date.now() + 3600e3, '2026-01-01T00:00:' + String(i).padStart(2, '0'));
+    d2.close(); }
+  await call('sess', 'POST', '/api/world/approvals/' + (await call('app', 'POST', '/api/world/savings', { target_usd: 47 })).j.approvalId, { decision: 'approve', password: 'wrong-cap' });
+  { const { DatabaseSync: D3 } = await import('node:sqlite'); const d3 = new D3(path.join(UD, fs.readdirSync(UD).find(f => f.endsWith('.db'))));
+    const n = d3.prepare("SELECT COUNT(*) n FROM world_auth_fails WHERE user LIKE '%|127.0.0.1'").get().n; const me = d3.prepare("SELECT fails FROM world_auth_fails WHERE user = 'igor|127.0.0.1'").get(); d3.close();
+    ok('F2 per-IP cap: <= 20 rows for 127.0.0.1, new failure still recorded', n <= 20 && me && me.fails === 1, JSON.stringify({ n, me })); }
   const ex = await call('sess', 'POST', '/api/world/approvals/' + os3, { decision: 'approve', password: PW });
   ok('owner self-approval outside window -> 403 self_approval, not executed', ex.s === 403 && ex.j.code === 'self_approval' && ex.j.executed !== true, JSON.stringify(ex.j));
 }
