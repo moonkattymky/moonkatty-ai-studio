@@ -117,7 +117,7 @@ function makeHandlers(cfg, ctx) {
       ctx.stats.collected += items.length; return { items, bySource, errors, truncated, rssMB: rssMB() }; },
     'news.dedup': async i => ({ items: dedup(i.items) }),
     'schedule.tick': async () => ({ at: new Date().toISOString() }),
-    'stats.compute': async i => { const v = (i.values || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b); const s = v.reduce((a, b) => a + b, 0);
+    'stats.compute': async i => { const v = (Array.isArray(i.values) ? i.values : []).slice(0, 1e6).filter(x => (typeof x === 'number' || (typeof x === 'string' && x.trim() !== ''))).map(Number).filter(Number.isFinite).sort((a, b) => a - b); /* null/''/bool are not 0 */ const s = v.reduce((a, b) => a + b, 0);
       return { n: v.length, sum: s, mean: v.length ? s / v.length : null, min: v[0] ?? null, max: v[v.length - 1] ?? null, median: v.length ? v[Math.floor(v.length / 2)] : null }; },
     'monitor.check': async i => { const out = []; for (const u of (i.urls || []).slice(0, 20)) { const t = Date.now(); try { await getUrl(u, 1e5); out.push({ url: u, ok: true, ms: Date.now() - t }); } catch (e) { out.push({ url: u, ok: false, error: e.message }); } } return { checks: out }; },
     'queue.inspect': async () => ({ node: cfg.nodeId, running: ctx.running.size, info: await sysInfo(cfg) }),
