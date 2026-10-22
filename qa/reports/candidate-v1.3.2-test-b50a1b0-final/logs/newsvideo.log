@@ -1,0 +1,64 @@
+PASS safeFetch rejects http://www.nasa.gov/news-release/feed/
+PASS safeFetch rejects https://evil.example.com/rss
+PASS safeFetch rejects https://127.0.0.1/x
+PASS safeFetch rejects https://user:pw@www.nasa.gov/
+PASS safeFetch rejects https://www.nasa.gov:8443/
+PASS search ok/partial — partial
+PASS search records per-source error
+PASS search persisted in history
+PASS dedup merged NASA+BBC into one story — 2
+PASS verification confirmed (primary + independent) — confirmed
+PASS credibility high — 0.98
+PASS future date flagged
+PASS draft refused for invalid date
+PASS draft refused empty
+PASS draft refused unknown story
+PASS draft created, extractive fallback without Ollama
+PASS LLM text with invented number rejected → extractive
+PASS LLM text accepted when numbers match sources
+PASS render before approval refused
+PASS owner edit saved
+PASS edit with foreign story refused
+PASS draft flagged: fact-check required, not checked
+PASS per-sentence source links present
+PASS sourceItems (raw source text) not leaked to API
+PASS approve WITHOUT fact-check tick refused (422)
+PASS approve with stale content hash refused (409)
+PASS approve writes episode JSON — media/episodes/nv-c58d56736dee7a28.json
+PASS episode schema for factory
+PASS edit after approval resets to draft
+PASS bad preset refused
+PASS render creates video_render job
+PASS edit while rendering refused
+PASS job failure reflected + error persisted
+PASS job success → rendered
+PASS file served
+PASS file bad kind refused
+PASS traversal id refused
+PASS artifact outside media root refused
+PASS edit after render → draft
+PASS QA-NV-002: GET after edit stays draft (sync does not flip to rendered) — draft
+PASS old render marked stale
+PASS QA-NV-002: render without re-approval refused — 409 Сначала утвердите сценарий
+PASS no job created for refused render
+PASS episode file still holds OLD approved text until re-approval
+PASS re-approve current content
+PASS after re-approval status is approved (not stale rendered)
+PASS render refused when episode file hash mismatches
+PASS render after re-approval creates job bound to hash
+PASS fact-check: supported sentence linked, no flags
+PASS fact-check: invented name + number flagged — ["слабая опора в источниках","имена не найдены в источниках: Elon Musk","числа не найдены в источниках: 40"]
+PASS QA-NV-003: unloads only the model this flow used — [["http://127.0.0.1:11434/api/ps",null],["http://127.0.0.1:11434/api/generate","{\"model\":\"fake\",\"keep_alive\":0}"]]
+PASS QA-NV-003: nothing used since → no unload calls
+PASS QA-NV-003: non-loopback Ollama refused
+PASS QA-NV-004: second concurrent draft refused (409)
+PASS QA-NV-004: cancel aborts generation — 409 Создание черновика прервано: cancelled by igor
+PASS QA-NV-004: no draft saved after cancel
+PASS QA-NV-004: draft/render limits defined
+PASS QA-NV-005: streaming cap without content-length — chunks read 4
+PASS QA-NV-005: small body read fully
+PASS QA-NV-009: fresh dir → new = stories created, 0 duplicates — {"new":2,"merged":1,"dup":0}
+PASS QA-NV-009: second run → 0 new, all duplicates — {"new":0,"dup":3,"fetched":3}
+PASS drafts persisted across restart
+
+62 passed, 0 failed

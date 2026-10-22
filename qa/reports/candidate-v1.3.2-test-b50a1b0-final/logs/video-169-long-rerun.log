@@ -1,0 +1,25 @@
+PASS hardSplit: every piece <= 26 chars
+PASS chunk(26): no line over limit
+PASS buildSrt+validateSrt(26) ok
+PASS wrapWords(26) on-screen lines within limit
+PASS hardSplit: every piece <= 28 chars
+PASS chunk(28): no line over limit
+PASS buildSrt+validateSrt(28) ok
+PASS wrapWords(28) on-screen lines within limit
+PASS hardSplit: every piece <= 42 chars
+PASS chunk(42): no line over limit
+PASS buildSrt+validateSrt(42) ok
+PASS wrapWords(42) on-screen lines within limit
+PASS hardSplit: every piece <= 46 chars
+PASS chunk(46): no line over limit
+PASS buildSrt+validateSrt(46) ok
+PASS wrapWords(46) on-screen lines within limit
+PASS hardSplit keeps all characters (rejoin minus added hyphens)
+PASS URL split at natural break points (no added hyphen mid-token)
+PASS short words untouched
+PASS real: draft created
+PASS real: approved
+PASS real: 9:16 render started
+FAIL real: 9:16 render with 64-char word succeeded — render_failed subtitle validation failed: cue 7: too short 0.48s
+
+22 passed, 1 failed

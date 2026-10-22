@@ -1,0 +1,486 @@
+TAP version 13
+# Subtest: auto-update flags are OFF by default (all four unset) and auto-install refuses
+ok 1 - auto-update flags are OFF by default (all four unset) and auto-install refuses
+  ---
+  duration_ms: 10.095979
+  type: 'test'
+  ...
+# Subtest: empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+ok 2 - empty prod keyring => BLOCKED: нет публичного ключа владельца (fail-closed), status/page still work
+  ---
+  duration_ms: 70.64409
+  type: 'test'
+  ...
+# Subtest: owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+ok 3 - owner public key via OPS_UPDATE_KEYRING_DIR: valid signature accepted, download verified, still manual install only
+  ---
+  duration_ms: 74.03963
+  type: 'test'
+  ...
+# Subtest: tampered package (modified bytes) is rejected and deleted
+ok 4 - tampered package (modified bytes) is rejected and deleted
+  ---
+  duration_ms: 67.712037
+  type: 'test'
+  ...
+# Subtest: tampered manifest (bytes changed after signing) is rejected
+ok 5 - tampered manifest (bytes changed after signing) is rejected
+  ---
+  duration_ms: 62.048776
+  type: 'test'
+  ...
+# Subtest: wrong keyId, unknown key and revoked key are rejected
+ok 6 - wrong keyId, unknown key and revoked key are rejected
+  ---
+  duration_ms: 125.942845
+  type: 'test'
+  ...
+# Subtest: keyring refuses private key material (only public keys can be configured)
+ok 7 - keyring refuses private key material (only public keys can be configured)
+  ---
+  duration_ms: 29.876833
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+ok 8 - QA-UC-006: signed builtAt is used for the max-age check (republished old bytes stay blocked)
+  ---
+  duration_ms: 0.257416
+  type: 'test'
+  ...
+# Subtest: no private key material in git or in the packaged file list; ignore/exclude patterns present
+ok 9 - no private key material in git or in the packaged file list; ignore/exclude patterns present
+  ---
+  duration_ms: 110.241849
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: correct 0700 dir owned by current uid -> READY
+ok 10 - QA-UC-007: correct 0700 dir owned by current uid -> READY
+  ---
+  duration_ms: 35.91168
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: 0777 / 0750 dir -> BLOCKED
+ok 11 - QA-UC-007: 0777 / 0750 dir -> BLOCKED
+  ---
+  duration_ms: 35.136102
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: wrong owner (injected uid) -> BLOCKED
+ok 12 - QA-UC-007: wrong owner (injected uid) -> BLOCKED
+  ---
+  duration_ms: 30.759567
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+ok 13 - QA-UC-007: symlinked pub key pointing outside the dir -> BLOCKED; symlinked keyring.json -> BLOCKED
+  ---
+  duration_ms: 75.467977
+  type: 'test'
+  ...
+# Subtest: QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+ok 14 - QA-UC-007: symlinked dir -> BLOCKED, and a BLOCKED keyring rejects even a valid signature
+  ---
+  duration_ms: 67.340203
+  type: 'test'
+  ...
+# Subtest: QA-UC-006: manifest without signed builtAt is not verified and download is refused
+ok 15 - QA-UC-006: manifest without signed builtAt is not verified and download is refused
+  ---
+  duration_ms: 68.862423
+  type: 'test'
+  ...
+# Subtest: release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+ok 16 - release-sign.mjs writes builtAt into the manifest before signing (signature covers it)
+  ---
+  duration_ms: 59.560043
+  type: 'test'
+  ...
+# Subtest: signed version: tampered version (manifest bytes changed after signing) is rejected
+ok 17 - signed version: tampered version (manifest bytes changed after signing) is rejected
+  ---
+  duration_ms: 60.232129
+  type: 'test'
+  ...
+# Subtest: signed version must match tag and package name
+ok 18 - signed version must match tag and package name
+  ---
+  duration_ms: 88.880584
+  type: 'test'
+  ...
+# Subtest: anti-rollback: downgrade and equal version vs current are rejected
+ok 19 - anti-rollback: downgrade and equal version vs current are rejected
+  ---
+  duration_ms: 122.506964
+  type: 'test'
+  ...
+# Subtest: builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+ok 20 - builtAt: future beyond skew rejected; older than current build rejected; missing rejected
+  ---
+  duration_ms: 151.209664
+  type: 'test'
+  ...
+# Subtest: auto-download / auto-install stay off: check() never downloads, no timers
+ok 21 - auto-download / auto-install stay off: check() never downloads, no timers
+  ---
+  duration_ms: 59.848075
+  type: 'test'
+  ...
+# Subtest: QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+ok 22 - QA-UC-007 macOS: keyring dir reached through a symlinked PARENT (like /var -> /private/var) is READY; dir symlink still BLOCKED
+  ---
+  duration_ms: 31.466861
+  type: 'test'
+  ...
+# Subtest: scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+ok 23 - scripts/mac-keyring-check.sh: all cases PASS (temp dir under TMPDIR only)
+  ---
+  duration_ms: 488.633297
+  type: 'test'
+  ...
+# Subtest: packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+ok 24 - packaged layout: write-build-info → app.asar contains desktop/build-info.json; update-center reads it and rejects older builtAt / equal version
+  ---
+  duration_ms: 266.359589
+  type: 'test'
+  ...
+# Subtest: dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+ok 25 - dev run without build-info: status says "проверка возраста сборки недоступна" (not silently skipped)
+  ---
+  duration_ms: 63.345825
+  type: 'test'
+  ...
+# Subtest: QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+ok 26 - QA-UC-008: app.asar.unpacked layout reads unpacked build-info and rejects an older signed builtAt
+  ---
+  duration_ms: 100.952835
+  type: 'test'
+  ...
+# Subtest: QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+ok 27 - QA-UC-008: packaged (app.asar.unpacked) WITHOUT build-info => fail-closed, old signed release NOT verified
+  ---
+  duration_ms: 73.778917
+  type: 'test'
+  ...
+# Subtest: QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+ok 28 - QA-UC-009 race: .pub.pem swapped between symlink-to-valid-key and a garbage regular file → 0 READY
+  ---
+  duration_ms: 146.942206
+  type: 'test'
+  ...
+# Subtest: QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+ok 29 - QA-UC-009 race: keyring dir swapped between symlink-to-good-dir and a real 0755 dir → 0 READY
+  ---
+  duration_ms: 153.153814
+  type: 'test'
+  ...
+# Subtest: QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+ok 30 - QA-UC-009: parent writable by others without sticky bit → BLOCKED; sticky (like /tmp) is fine
+  ---
+  duration_ms: 35.060969
+  type: 'test'
+  ...
+# Subtest: QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+ok 31 - QA-UC-010 stress: same-user rename race — path mode (before) vs fd-relative mode (after: 0 mixed loads)
+  ---
+  duration_ms: 12158.626346
+  type: 'test'
+  ...
+# QA-UC-010 before(path) {"loads":102800,"attackerKey":454,"ownerKey":747,"blocked":101599,"mixed":53}
+# QA-UC-010 after(fd-relative) {"loads":103000,"attackerKey":600,"ownerKey":690,"blocked":101710,"mixed":0}
+# Subtest: QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+ok 32 - QA-UC-010: keyring read mode is reported (fd-relative where supported, else path)
+  ---
+  duration_ms: 34.0366
+  type: 'test'
+  ...
+# Subtest: READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+ok 33 - READY key alone does not enable download/install; OPS_UPDATE_DOWNLOAD_ENABLED=1 still blocked by the QA-UC-010 hard gate
+  ---
+  duration_ms: 65.089706
+  type: 'test'
+  ...
+# Subtest: Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+ok 34 - Update Center API (v1.3.0-test): off by default, auth+CSRF, BLOCKED without owner key, password step-up, verified backup
+  ---
+  duration_ms: 741.790123
+  type: 'test'
+  ...
+# Subtest: repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+ok 35 - repo keyring: only the flagged stub key, in the TEST set; prod set empty; stub refused for prod (QA-UC-001)
+  ---
+  duration_ms: 3.034405
+  type: 'test'
+  ...
+# Subtest: versions: compare, downgrade detection
+ok 36 - versions: compare, downgrade detection
+  ---
+  duration_ms: 0.444086
+  type: 'test'
+  ...
+# Subtest: security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+ok 37 - security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+  ---
+  duration_ms: 0.876132
+  type: 'test'
+  ...
+# Subtest: security: redirect to a foreign host is refused
+ok 38 - security: redirect to a foreign host is refused
+  ---
+  duration_ms: 2.160112
+  type: 'test'
+  ...
+# Subtest: check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+ok 39 - check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+  ---
+  duration_ms: 4.157591
+  type: 'test'
+  ...
+# Subtest: security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+ok 40 - security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+  ---
+  duration_ms: 6.506975
+  type: 'test'
+  ...
+# Subtest: security: tampered manifest (signature over other bytes) is rejected
+ok 41 - security: tampered manifest (signature over other bytes) is rejected
+  ---
+  duration_ms: 0.62728
+  type: 'test'
+  ...
+# Subtest: security: downgrade attack (validly signed older version) is blocked
+ok 42 - security: downgrade attack (validly signed older version) is blocked
+  ---
+  duration_ms: 3.150807
+  type: 'test'
+  ...
+# Subtest: download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+ok 43 - download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+  ---
+  duration_ms: 12.200835
+  type: 'test'
+  ...
+# Subtest: download: oversized body (more than signed size) is aborted
+ok 44 - download: oversized body (more than signed size) is aborted
+  ---
+  duration_ms: 2.825606
+  type: 'test'
+  ...
+# Subtest: download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+ok 45 - download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+  ---
+  duration_ms: 10.505796
+  type: 'test'
+  ...
+# Subtest: download: server ignores Range → restarts clean, still verified
+ok 46 - download: server ignores Range → restarts clean, still verified
+  ---
+  duration_ms: 4.050339
+  type: 'test'
+  ...
+# Subtest: crash during download: restart marks it interrupted; cleanTemp removes partial files
+ok 47 - crash during download: restart marks it interrupted; cleanTemp removes partial files
+  ---
+  duration_ms: 3.735297
+  type: 'test'
+  ...
+# Subtest: network error on check is reported, not thrown as crash
+ok 48 - network error on check is reported, not thrown as crash
+  ---
+  duration_ms: 1.04288
+  type: 'test'
+  ...
+# Subtest: security: archive path traversal / absolute paths / truncated / garbage are rejected
+ok 49 - security: archive path traversal / absolute paths / truncated / garbage are rejected
+  ---
+  duration_ms: 1.211906
+  type: 'test'
+  ...
+# Subtest: download: signed+hashed but traversal archive is rejected after hash check
+ok 50 - download: signed+hashed but traversal archive is rejected after hash check
+  ---
+  duration_ms: 2.627891
+  type: 'test'
+  ...
+# Subtest: rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+ok 51 - rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+  ---
+  duration_ms: 0.283322
+  type: 'test'
+  ...
+# Subtest: rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+ok 52 - rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+  ---
+  duration_ms: 0.282121
+  type: 'test'
+  ...
+# Subtest: compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+ok 53 - compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+  ---
+  duration_ms: 0.094719
+  type: 'test'
+  ...
+# Subtest: manifest validation rejects path-like asset names and bad identity
+ok 54 - manifest validation rejects path-like asset names and bad identity
+  ---
+  duration_ms: 0.144047
+  type: 'test'
+  ...
+# Subtest: pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+ok 55 - pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+  ---
+  duration_ms: 15.285276
+  type: 'test'
+  ...
+# Subtest: auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+ok 56 - auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+  ---
+  duration_ms: 2.540567
+  type: 'test'
+  ...
+# Subtest: rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+ok 57 - rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+  ---
+  duration_ms: 0.687849
+  type: 'test'
+  ...
+# Subtest: MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+ok 58 - MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+  ---
+  duration_ms: 2.973814
+  type: 'test'
+  ...
+# Subtest: code never bypasses macOS security
+ok 59 - code never bypasses macOS security
+  ---
+  duration_ms: 0.928366
+  type: 'test'
+  ...
+# Subtest: manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+ok 60 - manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+  ---
+  duration_ms: 0.476737
+  type: 'test'
+  ...
+# Subtest: rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+ok 61 - rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+  ---
+  duration_ms: 0.356035
+  type: 'test'
+  ...
+# Subtest: schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+ok 62 - schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+  ---
+  duration_ms: 11.756257
+  type: 'test'
+  ...
+# Subtest: test-build archive: app name taken from manifest.appName
+ok 63 - test-build archive: app name taken from manifest.appName
+  ---
+  duration_ms: 0.285135
+  type: 'test'
+  ...
+# Subtest: unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+ok 64 - unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+  ---
+  duration_ms: 1.927864
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+ok 65 - QA-UC-001: running identity is read at runtime (Info.plist → env → package.json); unknown/contradicting → blocked
+  ---
+  duration_ms: 1.263142
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+ok 66 - QA-UC-001: report scenario — test-channel manifest with PROD ids (v1.3.3, signed, backup, approval) is blocked; prod .app never in plan
+  ---
+  duration_ms: 4.634374
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+ok 67 - QA-UC-001: cross-channel blocked both ways; test app updates only its own path
+  ---
+  duration_ms: 0.511799
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+ok 68 - QA-UC-001: keyring — per-channel sets, keyId required, wrong set, revoked, retired, rotation (next), keyId/file mismatch
+  ---
+  duration_ms: 2.058032
+  type: 'test'
+  ...
+# Subtest: QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+ok 69 - QA-UC-001: offline keygen + sign scripts (temp dir, test channel) produce a signature the keyring accepts; refuse output inside repo
+  ---
+  duration_ms: 97.655074
+  type: 'test'
+  ...
+# Subtest: QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+ok 70 - QA-UC-002: symlinks — internal relative OK; absolute, escaping, or into another top dir rejected; download refuses
+  ---
+  duration_ms: 5.300232
+  type: 'test'
+  ...
+# Subtest: QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+ok 71 - QA-UC-003: archive re-hashed at plan time (tamper after verify → blocked); approval bound to manifest bytes; old release; tag/channel suffix
+  ---
+  duration_ms: 7.125932
+  type: 'test'
+  ...
+# Subtest: QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+ok 72 - QA-UC-004 (v1.3.0-test): TEST shell never checks GitHub; shell never downloads/installs
+  ---
+  duration_ms: 1.811201
+  type: 'test'
+  ...
+# Subtest: QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+ok 73 - QA-UC-005: DB the running code calls unsupported stays blocked; unknown target schema blocked
+  ---
+  duration_ms: 9.820153
+  type: 'test'
+  ...
+# Subtest: lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+ok 74 - lows: no rm -rf in legacy plan; health URL loopback only; codesign not "ok" off-Mac; Gatekeeper rejection fails; unknown tag download refused synchronously
+  ---
+  duration_ms: 0.918922
+  type: 'test'
+  ...
+# Subtest: auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+ok 75 - auto-install hardening: needs Developer ID + notarized manifest; spctl on a STAGED copy before touching /Applications; never xattr
+  ---
+  duration_ms: 10.91261
+  type: 'test'
+  ...
+# Subtest: origin verification: remote, ref, on origin, clean tree
+ok 76 - origin verification: remote, ref, on origin, clean tree
+  ---
+  duration_ms: 1.848419
+  type: 'test'
+  ...
+# Subtest: artifact SHA-256 required and must match (direct or SHA256SUMS)
+ok 77 - artifact SHA-256 required and must match (direct or SHA256SUMS)
+  ---
+  duration_ms: 6.774572
+  type: 'test'
+  ...
+# Subtest: signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+ok 78 - signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+  ---
+  duration_ms: 0.571509
+  type: 'test'
+  ...
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 79 - schema compatibility + plan refuses on failed checks
+  ---
+  duration_ms: 4.653423
+  type: 'test'
+  ...
+1..79
+# tests 79
+# suites 0
+# pass 79
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16193.555127
