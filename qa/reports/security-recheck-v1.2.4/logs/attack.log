@@ -1,0 +1,95 @@
+CONTROL PASS rebuilt zip SHA-256 equals claimed d32f3366…e554 — d32f33667b51aa2a290c5ce5f5260843efa96d80036b2400eb45331ae7a6e554
+CONTROL PASS source checkout STUDIO_FLAVOR=test ignores NODE_ENV=production — test|env(source-checkout)|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS bundle id com.moonkatty.aistudio.test — com.moonkatty.aistudio.test
+CONTROL PASS port 8687 — 8687
+CONTROL PASS Keychain service MOONKATTY AI STUDIO.test — MOONKATTY AI STUDIO.test
+CONTROL PASS launchd com.moonkatty.aistudio.test.server — com.moonkatty.aistudio.test.server
+CONTROL PASS OpenCode 4097 — http://127.0.0.1:4097
+CONTROL PASS data product MOONKATTY AI STUDIO TEST — MOONKATTY AI STUDIO TEST
+CONTROL PASS autoStartServer false and checkUpdates false — false|false
+CONTROL PASS node listener port 8690 and id suffix -test — 8690|-test
+CONTROL PASS no default flavor when STUDIO_FLAVOR is unset — |none|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS server with no flavor exits 78 — status=78 ОТКАЗ: сборка не определена (flavor отсутствует, источник: none). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod
+CONTROL PASS package.json has no electron-updater — express,electron,electron-builder,playwright-core,better-sqlite3
+CONTROL PASS package-lock has no electron-updater
+CONTROL PASS desktop/main.js has no autoUpdater or setFeedURL
+CONTROL PASS automatic check returns immediately unless checkUpdates is on
+CONTROL PASS manual check fetches the pinned GitHub releases URL and does not install
+CONTROL PASS TEST flavor returns before any GitHub fetch
+CONTROL PASS TEST menu omits the update item
+CONTROL PASS node-agent/enroll.js is not in this tree
+CONTROL PASS security-center.js is not in this tree
+CONTROL PASS TEST egress blocks three social hosts before DNS — {"dns":0,"pub":["api.github.com","ollama.com","registry.ollama.ai"],"out":["blocked_url:Хост graph.facebook.com не входит в список известных интеграций","blocked_url:Хост graph.instagram.com не входит в список известных интеграций","blocked_url:Хост api.telegram.org не входит в список известных интеграций"]}
+CONTROL PASS api.github.com remains on the public allowlist — api.github.com,ollama.com,registry.ollama.ai
+CONTROL PASS meta.js refuses to load when flavor is test — /tmp/mk-v124/meta.js:10
+{ const C = require('./lib/studio-config.js'); if (C.FLAVOR !== 'prod') throw new Error('meta.js: publisher disabled (flavor ' + C.FLAVOR + ')'); }
+                            
+(node:33896) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+CONTROL PASS server with fake Keychain starts — {"flavor":"test","product":"MOONKATTY AI STUDIO TEST","version":"1.2.4-test","keySource":"keychain"}
+CONTROL PASS HTTP cannot replace a sealed externalId — HTTP 403
+CONTROL PASS legacy publishSealKey moved to Keychain account publish-seal-key — present
+CONTROL PASS studio.db does not contain the seal key
+CONTROL PASS WAL does not contain the seal key
+CONTROL PASS server stdout/stderr does not contain the seal key
+CONTROL PASS GET /api/backup does not contain the seal key
+CONTROL PASS security argv never contains the seal key — lines=7
+CONTROL PASS Keychain writes are argv ["-i"] only — [["-i"],["-i"]]
+CONTROL PASS valid seal survives migration and a title edit stays published — {"get":"published","put":200}
+CONTROL PASS meta.publishSealKey row is gone after migration
+CONTROL PASS second start does not write the seal key back into studio.db
+CONTROL PASS TEST /publish is 403 without relying on Keychain — HTTP 403
+CONTROL PASS without Keychain the DB key is still deleted
+CONTROL PASS without Keychain a previously valid seal is demoted to pending_approval — {"status":"pending_approval","historical_externalId":"1234567890"}
+CONTROL PASS v1 old-pub is pending_approval with historical_externalId — {"status":"pending_approval","historical_externalId":"5555566666"}
+CONTROL PASS v1 title edit stays pending_approval and does not restore published — HTTP 200 status=pending_approval
+CONTROL PASS pre-migration backup exists and matches its sha256 sidecar — pre-migration-v1-to-v4-2026-10-21T12-05-05-266Z.db,pre-migration-v1-to-v4-2026-10-21T12-05-05-266Z.db.sha256
+CONTROL PASS v1 task QA-MIG-KEEP survived — QA-MIG-KEEP
+CONTROL PASS POST cannot store published — {"http":201,"status":"pending_approval"}
+CONTROL PASS PUT published/externalId is 403 — HTTP 403
+CONTROL PASS wrong-case Published is not the published state — {"http":200,"status":"Published"}
+FINDING info PUT status "Published" is stored as that string — It is not status published and has no externalId. The test build still will not call the publisher.
+CONTROL PASS live SQL published row: HTTP title edit is 403 — {"get":200,"getStatus":"published","put":403,"code":"published_internal_only"}
+FINDING low a published row inserted into the live database stays visible as published until the next start — HTTP cannot edit it (403). demoteUnsealed runs at startup only. No publisher call.
+CONTROL PASS POST /api/comments with status approved is stored as new — {"http":201,"status":"new"}
+CONTROL PASS POST /api/comments status drafted stays drafted — {"http":201,"status":"drafted"}
+CONTROL PASS POST /api/comments status replied is stored as new — {"http":201,"status":"new"}
+CONTROL PASS comment reply is 403 publishing_disabled and status stays new — {"reply":403,"code":"publishing_disabled","status":"new"}
+CONTROL PASS PUT /api/comments stores approved as a separate owner action — {"http":200,"status":"approved"}
+CONTROL PASS HTTP integration test blocks facebook/instagram/telegram — ["400:blocked_url","400:blocked_url","400:blocked_url"]
+CONTROL PASS POST queue approved is forced to pending_approval — pending_approval
+CONTROL PASS no publisher log lines after startup tick — n=0
+CONTROL PASS after restart the SQL-inserted published row is pending_approval — {"status":"pending_approval","historical_externalId":"5555566666"}
+CONTROL PASS after demotion a title edit stays pending_approval — HTTP 200
+CONTROL PASS TEST server refuses the v1.1.2 data directory (exit 78) — status=78 [MOONKATTY AI STUDIO TEST] ОТКАЗ: STUDIO_DATA_DIR «/tmp/mk-v124-qH6BoQ/home/Library/Application Support/MOONKATTY AI STUDIO» находится в данных production-версии (MOONKATTY AI STUDIO). Тестовая сборка не открывает produc
+CONTROL PASS markers inside .app ignore STUDIO_FLAVOR and NODE_ENV — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS rewriting only flavor.baked.js exits 78 — status=78 ОТКАЗ: сборка не определена (flavor отсутствует, источник: markers-disagree). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_
+CONTROL PASS deleted markers + STUDIO_FLAVOR=prod NODE_ENV=production exits 78 — status=78 src=|none|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS deleted markers + STUDIO_FLAVOR=prod NODE_ENV=test exits 78 — status=78 src=|none|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS all markers rewritten to prod without meta.js exits 78 — status=78 ОТКАЗ: модуль публикации недоступен для prod-сборки (Cannot find module './meta.js'
+Require stack:
+- /tmp/mk-v124-qH6BoQ/FakeProd.app/Contents/Resources/app.asar.unpacked/server.js)
+
+CONTROL PASS residual recorded: direct server.js with prod markers and meta.js — reproduced flavor=prod
+FINDING low local rewrite of every marker plus a planted meta.js, then node server.js, loads the publisher — Electron is not in this path. A packaged app whose asar lock still says test is refused by desktop/flavor-guard.js. Reproduced on a fake .app tree, not via HTTP. Ad-hoc signature does not stop a local file replace.
+CONTROL PASS built TEST app does not contain meta.js — asar entries 741
+CONTROL PASS built app contains the coordinator modules — all five
+CONTROL PASS built app does not contain node-agent/enroll.js
+CONTROL PASS Squirrel.framework is inside the .app
+CONTROL PASS built markers agree on test and the baked SHA-256 — b0bf653f637435963c67bbb7bd323ed3877ff7389589c11bb9e66defced9472f
+CONTROL PASS flavor-guard accepts the unpacked tree against the asar lock — {"ok":true,"flavor":"test"}
+CONTROL PASS Info.plist bundle id is the test id — com.moonkatty.aistudio.test
+CONTROL PASS ElectronAsarIntegrity matches the asar header hash — 22c24ab235472bb316d6249c0761e8d65fe89e32836e115694ac7b55a5e320f8
+CONTROL PASS built-tree: only baked file rewritten exits 78 — status=78
+CONTROL PASS built-tree: flavor-guard refuses that rewrite — {"ok":false,"reason":"unpacked markers do not match asar lock"}
+CONTROL PASS built-tree: all markers prod and no meta.js exits 78 — status=78 ОТКАЗ: модуль публикации недоступен для prod-сборки (Cannot find module './meta.js'
+Require stack:
+- /tmp/mk-v124-qH6BoQ/unpacked-all/server.js)
+
+CONTROL PASS built-tree: flavor-guard still refuses (asar lock is test) — {"ok":false,"reason":"unpacked markers do not match asar lock"}
+CONTROL PASS built-tree: deleted markers + STUDIO_FLAVOR=prod NODE_ENV=test exits 78 — status=78 |none|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|http://127.0.0.1:4097|MOONKATTY AI STUDIO TEST|false|false|8690|-test
+CONTROL PASS built-tree residual: markers prod + planted meta.js starts as prod — {"flavor":"prod","product":"MOONKATTY AI STUDIO"}
+CONTROL PASS built-tree residual: flavor-guard refuses because asar lock is unchanged — {"ok":false,"reason":"unpacked markers do not match asar lock"}
+FINDING low shipped unpacked server.js plus a planted meta.js and rewritten markers runs the publisher — desktop/flavor-guard.js returns not ok against the original asar lock, so the Electron shell should exit 78. Direct node does not consult that lock. Severity low for the Mac mini test if the .app files are not replaced.
+{"controls":79,"failed":0,"findings":4,"root":"/tmp/mk-v124-qH6BoQ"}
+EXIT:0

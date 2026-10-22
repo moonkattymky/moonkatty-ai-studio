@@ -1,0 +1,15 @@
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 121 - schema compatibility + plan refuses on failed checks
+  ---
+  duration_ms: 4.753459
+  type: 'test'
+  ...
+1..121
+# tests 121
+# suites 0
+# pass 119
+# fail 0
+# cancelled 0
+# skipped 2
+# todo 0
+# duration_ms 31821.500646

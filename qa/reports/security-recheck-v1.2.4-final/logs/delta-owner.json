@@ -1,0 +1,57 @@
+{
+  "rows": [
+    {
+      "name": "no-session",
+      "status": 401
+    },
+    {
+      "name": "no-header",
+      "status": 403
+    },
+    {
+      "name": "evil-origin",
+      "status": 403
+    },
+    {
+      "name": "cross-site",
+      "status": 403
+    }
+  ],
+  "noAck": {
+    "error": "устройство Tailscale не определено — нужно отдельное подтверждение владельца (acknowledgeUnverifiedPeer)",
+    "code": "E_PEER_UNVERIFIED"
+  },
+  "ack": 200,
+  "rej": {
+    "requestId": "9WQ5M",
+    "state": "rejected",
+    "role": "monitor",
+    "name": "MacBook",
+    "nodeId": "macbook-test",
+    "reenroll": false,
+    "attempts": 0,
+    "createdAt": "2026-10-21T13:33:28.896Z",
+    "expiresAt": "2026-10-21T13:38:28.896Z",
+    "device": {
+      "deviceId": "dev_ad822bd78ef2fcc7b6e1f47fd218a0c5",
+      "pubKeyFingerprint": "c6b5e99a1e6512652e3f7a48aef0d89fce860b6e0dff265987f7c996c872283b",
+      "pubKeyShort": "C6B5-E99A-1E65-1265",
+      "hostname": "mb",
+      "model": "",
+      "os": "",
+      "arch": "",
+      "agentVersion": "0.2.2",
+      "ip": "адрес Tailscale не определён (запрос через локальный прокси)",
+      "peer": "адрес Tailscale не определён (запрос через локальный прокси)",
+      "peerVerified": false,
+      "peerInfo": {
+        "ip": null,
+        "name": null,
+        "login": null,
+        "via": "loopback"
+      },
+      "deviceFieldsUnverified": true
+    }
+  },
+  "nodeDownMs": 2000
+}

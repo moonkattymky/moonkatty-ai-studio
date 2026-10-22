@@ -1,0 +1,8 @@
+{
+  "driver_note": "Read-only sqlite3 open of /tmp/mk-mig-node/data/studio.db after two STUDIO_SQLITE=node boots of tagged server.js against a copy of the v1.1.2 backup. Health on the first boot: version 1.2.1, dbDriver node:sqlite, keySource file. Login HTTP 200 user igor. Second boot returned the same job and existing:true for idempotency key qa-node-sqlite-1.",
+  "job": ["job_8998188c239c67c7", "opencode_task", "failed", "qa-node-sqlite-1"],
+  "task_title": "QA-MIG-TASK-keep",
+  "ollama_model": "qa-sentinel-model",
+  "users_sha256": "bd75fc5afe57218b53fe3f3e106474d9bfed66ce71cc224e1d6da8cbe17e1e90",
+  "tables": ["items", "job_events", "jobs", "meta", "sqlite_sequence"]
+}

@@ -1,0 +1,94 @@
+ROOT /tmp/mk-final-Y5WoDH
+(node:18315) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+CONTROL PASS source-test health — {"flavor":"test","product":"MOONKATTY AI STUDIO TEST","version":"1.2.2-test","schemaVersion":4,"keySource":"file"}
+CONTROL PASS source-test unauthenticated POST rejected — HTTP 401
+CONTROL PASS source-test POST {"status":"published","externalId":"1234567890","publication cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-test POST {"status":"approved","externalId":"1234567890"} cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-test POST {"status":"retry","nextRetryAt":"2099-01-01T00:00:00.000Z"} cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-test PUT {"status":"published"} → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-test PUT {"externalId":"123456789012"} → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-test PUT {"publication":{"platform":"facebook","responseId":"123456789012","cal → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-test a non-exact status string is not stored as published — Published
+CONTROL PASS source-test PATCH does not publish — HTTP 404
+CONTROL PASS source-test /publish disabled — HTTP 403
+CONTROL PASS source-test /reply disabled — HTTP 403
+FINDING source-test POST /api/comments stores status approved — approved
+CONTROL PASS source-test one-step restore rejected — HTTP 400
+CONTROL PASS source-test wrong confirm rejected — HTTP 400
+CONTROL PASS source-test two-step restore ok — HTTP 200
+CONTROL PASS source-test restore forces pending_approval and drops seal fields — {"status":"pending_approval","historical_status":"published"}
+CONTROL PASS source-test rejected without externalId stays rejected — rejected
+CONTROL PASS source-test pre-set historical_* is kept and does not publish — {"status":"pending_approval","historical_status":"draft","historical_externalId":"should-stay"}
+CONTROL PASS source-test restore id ../outside creates no file outside the data dir — outside=false
+CONTROL PASS source-test historical_* not writable and not a publish grant — {"http":200,"status":"pending_approval","historical_status":"draft","historical_externalId":"should-stay"}
+CONTROL PASS source-test restore token single use — HTTP 403
+CONTROL PASS source-test pre-restore sqlite backup matches its sha256 — pre-restore-2026-10-21T10-00-42-339Z.db
+CONTROL PASS source-test graph.facebook.com blocked before connect — {"error":"Хост graph.facebook.com не входит в список известных интеграций","code":"blocked_url"}
+CONTROL PASS source-test instagram and telegram hosts blocked — {"ig":201,"igt":"blocked_url","tg":201,"tgt":"blocked_url"}
+CONTROL PASS source-test rejected HTTP publish does not create publishSealKey — absent
+CONTROL PASS source-prod health — {"flavor":"prod","product":"MOONKATTY AI STUDIO","version":"1.2.2-test","schemaVersion":4,"keySource":"file"}
+CONTROL PASS source-prod unauthenticated POST rejected — HTTP 401
+CONTROL PASS source-prod POST {"status":"published","externalId":"1234567890","publication cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-prod POST {"status":"approved","externalId":"1234567890"} cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-prod POST {"status":"retry","nextRetryAt":"2099-01-01T00:00:00.000Z"} cannot store published/externalId — {"http":201,"status":"pending_approval"}
+CONTROL PASS source-prod PUT {"status":"published"} → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-prod PUT {"externalId":"123456789012"} → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-prod PUT {"publication":{"platform":"facebook","responseId":"123456789012","cal → 403 — HTTP 403 published_internal_only
+CONTROL PASS source-prod a non-exact status string is not stored as published — Published
+CONTROL PASS source-prod PATCH does not publish — HTTP 404
+CONTROL PASS source-prod prod /publish does not mark the row published — HTTP 400 Нужно утверждение
+CONTROL PASS source-prod row still not published after /publish — Published
+FINDING source-prod POST /api/comments stores status approved — approved
+CONTROL PASS source-prod one-step restore rejected — HTTP 400
+CONTROL PASS source-prod wrong confirm rejected — HTTP 400
+CONTROL PASS source-prod two-step restore ok — HTTP 200
+CONTROL PASS source-prod restore forces pending_approval and drops seal fields — {"status":"pending_approval","historical_status":"published"}
+CONTROL PASS source-prod rejected without externalId stays rejected — rejected
+CONTROL PASS source-prod pre-set historical_* is kept and does not publish — {"status":"pending_approval","historical_status":"draft","historical_externalId":"should-stay"}
+CONTROL PASS source-prod restore id ../outside creates no file outside the data dir — outside=false
+CONTROL PASS source-prod historical_* not writable and not a publish grant — {"http":200,"status":"pending_approval","historical_status":"draft","historical_externalId":"should-stay"}
+CONTROL PASS source-prod restore token single use — HTTP 403
+CONTROL PASS source-prod pre-restore sqlite backup matches its sha256 — pre-restore-2026-10-21T10-00-42-446Z.db
+CONTROL PASS source-prod prod integration row can be created (host was not contacted) — HTTP 201 test-not-called
+CONTROL PASS source-prod rejected HTTP publish does not create publishSealKey — absent
+CONTROL PASS packaged server ignores STUDIO_FLAVOR=prod and --flavor=prod — {"flavor":"test","product":"MOONKATTY AI STUDIO TEST","version":"1.2.2-test"}
+CONTROL PASS packaged POST cannot store published — {"http":201,"status":"pending_approval"}
+CONTROL PASS packaged PUT published → 403 — HTTP 403
+CONTROL PASS packaged /publish → 403 publishing_disabled — HTTP 403
+CONTROL PASS packaged graph.facebook.com blocked — create 201 {"error":"Хост graph.facebook.com не входит в список известных интеграций","code":"blocked_url"}
+CONTROL PASS source-test GET returns a published row written straight into SQLite — {"http":200,"status":"published"}
+FINDING source-test legacyPublished accepts an unsealed published row written into SQLite; a later HTTP title edit keeps it published — {"http":200,"status":"published","externalId":"123456789012"}
+CONTROL PASS source-test put() rejects a published row whose seal does not match — HTTP 403 published_internal_only
+CONTROL PASS source-test checking a bad seal creates publishSealKey in the same database — hex length 64
+CONTROL PASS source-test publishSealKey is absent from /api/backup — backup bytes 13414
+CONTROL PASS source-test HTTP still rejects a seal computed from the database key — HTTP 403
+CONTROL PASS source-test put() accepts the HMAC once the same-database key is written beside the row — {"http":200,"status":"published","title":"renamed-by-http"}
+FINDING source-test HMAC key is meta.publishSealKey inside studio.db. A local reader can forge a seal that put() accepts. No HTTP route accepts that seal. — key hex length 64
+CONTROL PASS packaged flavor.baked.js exports test — 'use strict';
+// GENERATED by scripts/package-mac-on-linux.sh — build-time constant, not configurable at runtime.
+module.exports = 'test';
+CONTROL PASS packaged package.json studioFlavor is test — {"studioFlavor":"test","productName":"MOONKATTY AI STUDIO TEST"}
+CONTROL PASS packaged flavor stays test against STUDIO_FLAVOR=prod NODE_ENV=production — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS packaged flavor stays test against STUDIO_FLAVOR=prod NODE_ENV=test — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS packaged flavor stays test against MK_FLAVOR and FLAVOR — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS packaged flavor stays test against argv present inside the process — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS desktop.json flavor:prod does not switch the packaged build — test|baked|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS missing flavor.baked.js still uses package.json studioFlavor=test — test|package.json|com.moonkatty.aistudio.test|8687|MOONKATTY AI STUDIO.test|com.moonkatty.aistudio.test.server|MOONKATTY AI STUDIO TEST
+CONTROL PASS missing baked file and studioFlavor with NODE_ENV=production → exit 78 — exit 78 signal null ОТКАЗ: сборка не определена (flavor отсутствует, источник: none). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod
+FINDING deleting flavor.baked.js and studioFlavor lets NODE_ENV=test STUDIO_FLAVOR=prod select prod — prod|env(dev)
+CONTROL PASS invalid baked flavor → exit 78, env cannot rescue — exit 78 ОТКАЗ: сборка не определена (flavor отсутствует, источник: baked-invalid). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV
+FINDING editing unpacked lib/flavor.baked.js to prod makes this tree load meta.js — exit 0 loads="./meta.js"
+CONTROL PASS packaged test flavor does not require meta.js — signal/exit 0 null loads=""
+CONTROL PASS source tree without a baked flavor ignores STUDIO_FLAVOR unless NODE_ENV=test (exit 78) — exit 78
+CONTROL PASS packaged test build refuses a data dir inside the production Application Support folder (exit 78) — exit 78 [MOONKATTY AI STUDIO TEST] ОТКАЗ: STUDIO_DATA_DIR «/tmp/mk-final-Y5WoDH/home2/Library/Application Support/MOONKATTY AI STUDIO/studio-data» находится в данных production-версии (MOO
+CONTROL PASS seatbelt allow list has no /private/tmp or /private/var/folders — (allow file-write* (subpath ${sbq(fs.realpathSync(dir))}) (subpath ${sbq(fs.realpathSync(tmpDir(dir)))}) (literal "/dev/null") (literal "/dev/tty")`, 
+CONTROL PASS keystore and OpenCode password use security -i stdin — static
+CONTROL PASS blender spawn is shell:false with a minimal env — static
+CONTROL PASS fake security argv is only -i or find-generic-password flags — exit 0 err  argv ["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"] ["-i"] ["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"] 
+CONTROL PASS pre-migration backup exists and matches sha256 — pre-migration-v1-to-v4-2026-10-21T10-00-49-798Z.db
+CONTROL PASS migrated db still has the seeded task — HTTP 200 QA-MIG-KEEP
+FINDING a v1 database row already stored as published has no seal after migration, and HTTP can keep editing it — {"before":"published","after":"published","externalId":"5555566666"}
+RESULTS_FILE /tmp/mk-final-Y5WoDH/results.json
+{"root":"/tmp/mk-final-Y5WoDH","controlsPassed":79,"controlsFailed":[],"findings":["source-test POST /api/comments stores status approved","source-prod POST /api/comments stores status approved","source-test legacyPublished accepts an unsealed published row written into SQLite; a later HTTP title edit keeps it published","source-test HMAC key is meta.publishSealKey inside studio.db. A local reader can forge a seal that put() accepts. No HTTP route accepts that seal.","deleting flavor.baked.js and studioFlavor lets NODE_ENV=test STUDIO_FLAVOR=prod select prod","editing unpacked lib/flavor.baked.js to prod makes this tree load meta.js","a v1 database row already stored as published has no seal after migration, and HTTP can keep editing it"]}
+EXIT:0

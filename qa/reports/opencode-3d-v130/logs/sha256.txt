@@ -1,0 +1,1 @@
+72c5440dd0a993610323c204a1ae5cdac13b5ada3026133dbcac17cfe045be7e  /tmp/mk-oc3d-build/dist/MOONKATTY-AI-STUDIO-TEST-1.3.0-test-arm64-mac.zip

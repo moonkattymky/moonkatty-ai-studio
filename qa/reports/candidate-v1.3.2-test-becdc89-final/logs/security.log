@@ -1,0 +1,53 @@
+PASS setup works (fake creds)
+PASS session cookie HttpOnly + SameSite=Strict
+PASS 401 without auth: /api/tasks
+PASS 401 without auth: /api/agents
+PASS 401 without auth: /api/meta/config
+PASS 401 without auth: /api/backup
+PASS 401 without auth: /api/runtime
+PASS 401 without auth: /api/system
+PASS 401 without auth: /files/x.txt
+PASS 401 POST without auth
+PASS Host header rebinding rejected (421)
+PASS Host header rebinding rejected on login
+PASS cross-origin POST rejected (Origin http://127.0.0.1:3000)
+PASS Sec-Fetch-Site: cross-site rejected
+PASS CSRF: cookie-auth POST without X-Studio-Request rejected
+PASS CSRF: logout without header rejected
+PASS CSP header present and strict script-src
+PASS X-Frame-Options DENY, nosniff
+PASS path traversal blocked: /files/../studio.db — HTTP 404
+PASS path traversal blocked: /files/..%2fstudio.db — HTTP 404
+PASS path traversal blocked: /files/%2e%2e/secret.key — HTTP 404
+PASS path traversal blocked: /files/..%2f..%2fetc%2fpasswd — HTTP 404
+PASS path traversal blocked: /../data/studio.db — HTTP 404
+PASS path traversal blocked: /%2e%2e/server.js — HTTP 404
+PASS path traversal blocked: /files/.hidden — HTTP 404
+PASS upload name sanitized (no traversal) — /files/mvjyxfn4wqkwp7-_._evil.html
+PASS uploaded HTML served as attachment + CSP sandbox
+PASS SQLi id rejected safely: x' OR '1'='1
+PASS SQLi id rejected safely: tasks'; DROP TABLE items; --
+PASS SQLi id rejected safely: 1; DELETE FROM meta
+PASS SQLi collection name rejected
+PASS SQLi payload stored as data, table intact
+PASS codeApproved cannot be set via generic API
+PASS codeApproved cannot be set via PUT
+PASS OpenCode disabled by default → blocked, no shell executed — blocked OpenCode отключён (по умолчанию). Включение — только вручную: STUDIO_OPENCODE=1, см. docs/SECURITY_AUDIT.md
+PASS agent start with unknown id → 400
+PASS integration test refuses non-http URL
+PASS meta secret never returned by API
+PASS meta secret not stored in plaintext
+PASS session token not stored in plaintext
+PASS logs redact tokens/secrets
+PASS backup export has no secrets / plaintext passwords / sessions
+PASS backup export: users = password hashes only, jobs tables included
+PASS app-token file is 0600
+PASS app token accepted from loopback without Origin
+PASS app token rejected with foreign Origin
+PASS wrong app token rejected
+PASS no CORS granted (no Access-Control-Allow-Origin)
+PASS «Выйти» disables app auto-login (no immediate re-login)
+PASS password login re-enables app auto-login
+PASS login rate limited after repeated failures (429)
+PASS server bound to 127.0.0.1 only
+{"passed":52,"failed":[]}

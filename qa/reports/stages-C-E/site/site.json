@@ -1,0 +1,285 @@
+{
+  "contract": "moonkatty.qa.site/1",
+  "at": "2026-10-21T11:27:40.971Z",
+  "origin": "https://moonkatty.com",
+  "mode": "read-only",
+  "note": "GET requests only. Counts are check results, not a score.",
+  "pass": 40,
+  "fail": 0,
+  "not_tested": 1,
+  "checks": [
+    {
+      "id": "home.status",
+      "result": "pass",
+      "summary": "GET / returned 200"
+    },
+    {
+      "id": "hreflang",
+      "result": "pass",
+      "summary": "Found 13 language alternates",
+      "found": [
+        "en",
+        "ru",
+        "uk",
+        "es",
+        "pt",
+        "de",
+        "fr",
+        "it",
+        "tr",
+        "he",
+        "ar",
+        "ko",
+        "zh",
+        "x-default"
+      ]
+    },
+    {
+      "id": "link /MoonkattyHorizonsBot/Play",
+      "result": "pass",
+      "summary": "200 https://t.me/MoonkattyHorizonsBot/Play",
+      "status": 200
+    },
+    {
+      "id": "link /@moonkattymky",
+      "result": "pass",
+      "summary": "200 https://youtube.com/@moonkattymky",
+      "status": 200
+    },
+    {
+      "id": "link /@moonkattymkty",
+      "result": "pass",
+      "summary": "200 https://www.tiktok.com/@moonkattymkty",
+      "status": 200
+    },
+    {
+      "id": "link /exchange/",
+      "result": "pass",
+      "summary": "200 https://moonkatty.com/exchange/",
+      "status": 200
+    },
+    {
+      "id": "link /terms",
+      "result": "pass",
+      "summary": "200 https://moonkatty.com/terms",
+      "status": 200
+    },
+    {
+      "id": "link /moonkattymkty",
+      "result": "pass",
+      "summary": "200 https://t.me/moonkattymkty",
+      "status": 200
+    },
+    {
+      "id": "link /moonkattymkty_chat",
+      "result": "pass",
+      "summary": "200 https://t.me/moonkattymkty_chat",
+      "status": 200
+    },
+    {
+      "id": "link x.com/moonkattymky",
+      "result": "not_tested",
+      "summary": "403 from an external host, left ungraded",
+      "status": 403
+    },
+    {
+      "id": "link /",
+      "result": "pass",
+      "summary": "200 https://moonkatty.com/",
+      "status": 200
+    },
+    {
+      "id": "link /privacy",
+      "result": "pass",
+      "summary": "200 https://moonkatty.com/privacy",
+      "status": 200
+    },
+    {
+      "id": "lang.en",
+      "result": "pass",
+      "summary": "en nv_about is About, lang en, dir ltr",
+      "lang": "en",
+      "dir": "ltr",
+      "text": "About"
+    },
+    {
+      "id": "console.en",
+      "result": "pass",
+      "summary": "en console quiet"
+    },
+    {
+      "id": "lang.ru",
+      "result": "pass",
+      "summary": "ru nv_about is О нас, lang ru, dir ltr",
+      "lang": "ru",
+      "dir": "ltr",
+      "text": "О нас"
+    },
+    {
+      "id": "console.ru",
+      "result": "pass",
+      "summary": "ru console quiet"
+    },
+    {
+      "id": "lang.uk",
+      "result": "pass",
+      "summary": "uk nv_about is Про нас, lang uk, dir ltr",
+      "lang": "uk",
+      "dir": "ltr",
+      "text": "Про нас"
+    },
+    {
+      "id": "console.uk",
+      "result": "pass",
+      "summary": "uk console quiet"
+    },
+    {
+      "id": "lang.es",
+      "result": "pass",
+      "summary": "es nv_about is Nosotros, lang es, dir ltr",
+      "lang": "es",
+      "dir": "ltr",
+      "text": "Nosotros"
+    },
+    {
+      "id": "console.es",
+      "result": "pass",
+      "summary": "es console quiet"
+    },
+    {
+      "id": "lang.pt",
+      "result": "pass",
+      "summary": "pt nv_about is Sobre nós, lang pt, dir ltr",
+      "lang": "pt",
+      "dir": "ltr",
+      "text": "Sobre nós"
+    },
+    {
+      "id": "console.pt",
+      "result": "pass",
+      "summary": "pt console quiet"
+    },
+    {
+      "id": "lang.de",
+      "result": "pass",
+      "summary": "de nv_about is Über uns, lang de, dir ltr",
+      "lang": "de",
+      "dir": "ltr",
+      "text": "Über uns"
+    },
+    {
+      "id": "console.de",
+      "result": "pass",
+      "summary": "de console quiet"
+    },
+    {
+      "id": "lang.fr",
+      "result": "pass",
+      "summary": "fr nv_about is À propos, lang fr, dir ltr",
+      "lang": "fr",
+      "dir": "ltr",
+      "text": "À propos"
+    },
+    {
+      "id": "console.fr",
+      "result": "pass",
+      "summary": "fr console quiet"
+    },
+    {
+      "id": "lang.it",
+      "result": "pass",
+      "summary": "it nv_about is Chi siamo, lang it, dir ltr",
+      "lang": "it",
+      "dir": "ltr",
+      "text": "Chi siamo"
+    },
+    {
+      "id": "console.it",
+      "result": "pass",
+      "summary": "it console quiet"
+    },
+    {
+      "id": "lang.tr",
+      "result": "pass",
+      "summary": "tr nv_about is Hakkımızda, lang tr, dir ltr",
+      "lang": "tr",
+      "dir": "ltr",
+      "text": "Hakkımızda"
+    },
+    {
+      "id": "console.tr",
+      "result": "pass",
+      "summary": "tr console quiet"
+    },
+    {
+      "id": "lang.he",
+      "result": "pass",
+      "summary": "he nv_about is עלינו, lang he, dir rtl",
+      "lang": "he",
+      "dir": "rtl",
+      "text": "עלינו"
+    },
+    {
+      "id": "console.he",
+      "result": "pass",
+      "summary": "he console quiet"
+    },
+    {
+      "id": "lang.ar",
+      "result": "pass",
+      "summary": "ar nv_about is من نحن, lang ar, dir rtl",
+      "lang": "ar",
+      "dir": "rtl",
+      "text": "من نحن"
+    },
+    {
+      "id": "console.ar",
+      "result": "pass",
+      "summary": "ar console quiet"
+    },
+    {
+      "id": "lang.ko",
+      "result": "pass",
+      "summary": "ko nv_about is 소개, lang ko, dir ltr",
+      "lang": "ko",
+      "dir": "ltr",
+      "text": "소개"
+    },
+    {
+      "id": "console.ko",
+      "result": "pass",
+      "summary": "ko console quiet"
+    },
+    {
+      "id": "lang.zh",
+      "result": "pass",
+      "summary": "zh nv_about is 关于, lang zh, dir ltr",
+      "lang": "zh",
+      "dir": "ltr",
+      "text": "关于"
+    },
+    {
+      "id": "console.zh",
+      "result": "pass",
+      "summary": "zh console quiet"
+    },
+    {
+      "id": "console.home",
+      "result": "pass",
+      "summary": "home console quiet"
+    },
+    {
+      "id": "mobile.viewport",
+      "result": "pass",
+      "summary": "390x844 scrollWidth 390 clientWidth 390",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "innerWidth": 390
+    },
+    {
+      "id": "console.mobile",
+      "result": "pass",
+      "summary": "mobile console quiet"
+    }
+  ]
+}

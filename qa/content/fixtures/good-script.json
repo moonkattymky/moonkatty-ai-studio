@@ -1,0 +1,29 @@
+{
+  "id": "script-landing",
+  "title": "Crew lands",
+  "body": "On 12 March 2026 the mission cost $2.4 billion. NASA said: \"the crew is safe on the surface\".",
+  "claims": [
+    { "id": "c1", "text": "The lander reached the south pole of the Moon." }
+  ],
+  "images": [
+    {
+      "id": "img1",
+      "caption": "Moon lander on 12 March 2026",
+      "sourceId": "nasa",
+      "credit": "NASA",
+      "takenAt": "2026-03-12"
+    }
+  ],
+  "citations": ["nasa"],
+  "sources": [
+    {
+      "id": "nasa",
+      "name": "NASA",
+      "url": "https://www.nasa.gov/example-landing",
+      "status": 200,
+      "publishedAt": "2026-03-12",
+      "title": "Lander on the Moon",
+      "text": "On 12 March 2026 the mission cost $2.4 billion. NASA said: \"the crew is safe on the surface\". The lander reached the south pole of the Moon."
+    }
+  ]
+}

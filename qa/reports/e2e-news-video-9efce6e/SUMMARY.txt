@@ -1,0 +1,4 @@
+VERDICT: PASS @9efce6e (F-1 FIXED)
+zip sha256 b2aeabcbf79f379d0ee0e3cea1290116b907f4aed800b29bc800c96e50a23049
+subtitle-mindur 58/58 live; longword 19; newsvideo 62; video 8/8; video-deps 33; nv-security 23; security 52x2; isolation 65; owner-approval-real 7/7 x3 fresh
+Findings: Low float 0.800 boundary in validateSrt@0.8; Info sub-2s audio infeasible; Info 7.501 unreachable by default; Mac BLOCKED

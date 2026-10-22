@@ -1,0 +1,623 @@
+{
+  "summary": {
+    "commit": "596cb576c9203a2b26fde62980a52426e25275be",
+    "src": "/tmp/mk-node-021",
+    "controls": 19,
+    "controlsFailed": [],
+    "probes": 11,
+    "node": "v22.23.3"
+  },
+  "rows": [
+    {
+      "id": "request-lock-survives-restart",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "wrongs": [
+          "E_CODE_INVALID",
+          "E_CODE_INVALID",
+          "E_CODE_INVALID",
+          "E_CODE_INVALID",
+          "E_REQUEST_LOCKED"
+        ],
+        "after": "E_REQUEST_LOCKED",
+        "codeInState": false
+      }
+    },
+    {
+      "id": "ip-lock-resets-on-new-process",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "locked": "E_IP_LOCKED",
+        "afterRestart": "E_CODE_INVALID",
+        "lockedUntil": 0,
+        "fails": 1
+      }
+    },
+    {
+      "id": "request-binding-and-bad-proof",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "swap": "E_CODE_INVALID",
+        "unicodeDash": "E_CODE_INVALID",
+        "lower": "pending",
+        "badProof": "E_BAD_SIGNATURE",
+        "retryAfterBadProof": "pending"
+      }
+    },
+    {
+      "id": "ttl-boundary",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "atExpiry": "pending",
+        "oneMsLate": "E_CODE_EXPIRED",
+        "expiresAt": 1700000300000
+      }
+    },
+    {
+      "id": "single-use-in-process",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "first": "enrolled",
+        "second": "E_NOT_FOUND",
+        "reuseCode": "E_CODE_USED"
+      }
+    },
+    {
+      "id": "two-managers-same-file",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "t1": "enrolled",
+        "t2": "enrolled",
+        "storedIsT1": false,
+        "storedIsT2": true,
+        "tokensDiffer": true
+      }
+    },
+    {
+      "id": "xff-does-not-select-bucket",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "tenth": "E_CODE_INVALID",
+        "eleventh": "E_IP_LOCKED",
+        "directSpoofedIp": "E_CODE_INVALID",
+        "bucketsBeforeDirect": [
+          "127.0.0.1"
+        ]
+      }
+    },
+    {
+      "id": "parallel-enroll-single-winner",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "codes": [
+          "E_CODE_USED",
+          "pending"
+        ],
+        "http": [
+          200,
+          409
+        ]
+      }
+    },
+    {
+      "id": "parallel-status-one-token",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "results": [
+          "enrolled",
+          "E_NOT_FOUND"
+        ],
+        "tokenCount": 1
+      }
+    },
+    {
+      "id": "secrets-absent-from-state-and-audit",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "mode": "600",
+        "tokenInFile": false,
+        "secretInFile": false,
+        "hashPresent": true
+      }
+    },
+    {
+      "id": "signed-pull-replay-window",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "first": "nj_f93fe58219f34e59",
+        "replay": "nj_f514c36f8547ebd6",
+        "sameJob": false,
+        "replayStatus": 200,
+        "future": 401,
+        "past": 401,
+        "futureCode": "E_UNAUTHORIZED",
+        "pastCode": "E_UNAUTHORIZED"
+      }
+    },
+    {
+      "id": "signature-canonicalisation",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "good": 200,
+        "lowerMethod": 401,
+        "pathSpace": 401,
+        "crlf": 401,
+        "noSig": 401,
+        "otherKey": 401,
+        "dotPathname": "/api/nodes/ping",
+        "dotStatus": 200,
+        "encodedPathname": "/api/ping",
+        "querySignedWithoutQuery": 200,
+        "queryBody": true
+      }
+    },
+    {
+      "id": "self-rotate-and-revoke",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "rotateStatus": 200,
+        "rotateHadPending": false,
+        "oldAfterRotate": 401,
+        "newToken": 200,
+        "afterRevoke": 401,
+        "tokenInState": false
+      }
+    },
+    {
+      "id": "api-view-has-full-fingerprint",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "sample": {
+          "pubKeyShort": "B8E4-E59B-92C9-11A2",
+          "pubKeyFingerprint": "b8e4e59b92c911a24450a3386cc0632be8ae9a8adaf3cd13df8b6bf35f65894d",
+          "hostname": "<img src=x onerror=alert(1)>"
+        }
+      }
+    },
+    {
+      "id": "plaintext-enroll-426",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "error": "enrollment requires TLS",
+        "code": "E_TLS_REQUIRED"
+      }
+    },
+    {
+      "id": "wrong-pin-sends-no-enrollment",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "pinErr": {
+          "code": "E_PIN",
+          "message": "отпечаток сертификата не совпадает: получен 0471-159E-D75F-40C6, ожидался ABAB-ABAB-ABAB-ABAB — подключение прервано"
+        },
+        "accepted": false,
+        "deviceFile": false
+      }
+    },
+    {
+      "id": "tailscale-mode-on-self-signed-ip",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "error": {
+          "code": "DEPTH_ZERO_SELF_SIGNED_CERT",
+          "message": "self-signed certificate"
+        },
+        "newAudit": 0
+      }
+    },
+    {
+      "id": "client-tailscale-requires-ts-net",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "message": "NODE_TLS_MODE=tailscale: COORDINATOR_URL должен быть https://<mac-mini>.<tailnet>.ts.net (tailscale serve, без funnel)"
+      }
+    },
+    {
+      "id": "http-url-never-connects",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "code": "E_TLS_REQUIRED",
+        "hits": 0
+      }
+    },
+    {
+      "id": "pin-skip-with-locally-trusted-cert",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "port": 43953,
+        "forced": {
+          "ok": false,
+          "code": null,
+          "message": "HTTP 403: stop"
+        },
+        "pinned": {
+          "ok": false,
+          "code": "E_PIN",
+          "message": "отпечаток сертификата не совпадает: получен AF07-17E8-6274-9D8E, ожидался ABAB-ABAB-ABAB-ABAB — подключение прервано"
+        },
+        "insecure": {
+          "code": null,
+          "message": "HTTP 403: stop"
+        },
+        "insecurePinned": {
+          "code": "E_PIN",
+          "message": "отпечаток сертификата не совпадает: получен AF07-17E8-6274-9D8E, ожидался CDCD-CDCD-CDCD-CDCD — подключение прервано"
+        },
+        "hits": [
+          {
+            "url": "/api/nodes/enroll",
+            "body": "{\"code\":\"23456-789GH-JKMNP\",\"deviceId\":\"dev_83a867a26f8d2e82805ad8c981fed307\",\"devicePubKey\":\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEA30LdRg/TtO7+p6Jq8x7QCAYm3h3ZcJ9sStiPlKt0xq0=\\n-----END PUBLIC "
+          },
+          {
+            "url": "/api/nodes/enroll",
+            "body": "{\"code\":\"23456-789GH-JKMNP\",\"deviceId\":\"dev_885ba73067726527584943f6b4b6d59e\",\"devicePubKey\":\"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEANC0T7yh0wXUHVj4jqR/fETWkm5o/+3v8Wr+Xk2Z1dms=\\n-----END PUBLIC "
+          }
+        ],
+        "hitsAfterForced": 1,
+        "hitsAfterPinned": 1,
+        "hitsAfterInsecure": 2,
+        "hitsAfterInsecurePinned": 2
+      }
+    },
+    {
+      "id": "address-matrix",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "table": [
+          {
+            "h": "127.0.0.1",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "10.0.0.1",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "192.168.0.1",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "172.16.0.1",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "172.31.255.255",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "100.64.0.1",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "100.127.255.255",
+            "priv": true,
+            "ip": 4
+          },
+          {
+            "h": "fd7a:115c:a1e0::1",
+            "priv": true,
+            "ip": 6
+          },
+          {
+            "h": "fd7a:115c:a1e0:abcd::2",
+            "priv": true,
+            "ip": 6
+          },
+          {
+            "h": "FD7A:115C:A1E0::1",
+            "priv": true,
+            "ip": 6
+          },
+          {
+            "h": "0.0.0.0",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "8.8.8.8",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "100.63.255.255",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "100.128.0.1",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "172.15.255.255",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "172.32.0.1",
+            "priv": false,
+            "ip": 4
+          },
+          {
+            "h": "192.168.1.256",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "100.64.999.1",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "1.2.3",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "127.1",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "127.0.0.01",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "0177.0.0.1",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "0x7f.0.0.1",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "2130706433",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "127.0.0.1.",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "::ffff:127.0.0.1",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "::ffff:100.64.0.1",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "::ffff:8.8.8.8",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "::1",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "fd00::1",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "fe80::1",
+            "priv": false,
+            "ip": 6
+          },
+          {
+            "h": "localhost",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "imac.tailnet.ts.net",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "127.0.0.1.attacker.test",
+            "priv": false,
+            "ip": 0
+          },
+          {
+            "h": "[fd7a:115c:a1e0::1]",
+            "priv": false,
+            "ip": 0
+          }
+        ],
+        "rejected": [
+          {
+            "h": "0.0.0.0",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "8.8.8.8",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "::ffff:8.8.8.8",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "::ffff:100.64.0.1",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "0177.0.0.1",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "2130706433",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "localhost",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "imac.tailnet.ts.net",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          },
+          {
+            "h": "127.0.0.1.attacker.test",
+            "msg": "Node API слушает только 127.0.0.1 или частный LAN-адрес (10/8, 172.16/12, 192.16"
+          }
+        ]
+      }
+    },
+    {
+      "id": "approval-ui-escapes-and-fingerprint",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "escaped": true,
+        "templateUsesEsc": true,
+        "templateShowsShortOnly": true,
+        "confirmText": "v.querySelectorAll('[data-enc]').forEach(b => b.onclick = () => confirm('Подтвердить устройство ' + b.dataset.enc + '? Сверьте имя, deviceId и ключ.') && act(() => api('POST', `/api/ops/nodes/enroll/${encodeURIComponent(b.dataset.enc)}/confirm`, {})));",
+        "confirmInterpolatesFingerprint": false,
+        "enrollHtmlUsesTextContent": true,
+        "enrollHtmlShowsDeviceId": true,
+        "enrollHtmlShowsDeviceKey": false,
+        "enrollHtmlCertField": true
+      }
+    },
+    {
+      "id": "enroll-ui-host-and-local-token",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "badHost": 421,
+        "rebind": 421,
+        "local": 200,
+        "missingHeader": 403,
+        "withHeader": 202
+      }
+    },
+    {
+      "id": "admin-auth-csrf",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "postWithoutSession": 403,
+        "note": "csrfCheck is mounted before session auth, so a POST with no X-Studio-Request is 403 before 401",
+        "noCsrf": 403,
+        "evilOrigin": 403,
+        "nullOrigin": 403,
+        "secFetch": 403,
+        "nodeBearerOnAdmin": 401,
+        "owner": 200,
+        "confirm": 200,
+        "getUnauth": 401,
+        "foreignHost": 421
+      }
+    },
+    {
+      "id": "no-password-stepup-and-funnel-stub-and-legacy-token",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "classifyConfirm": null,
+        "classifyRevoke": null,
+        "confirmSucceededWithoutConfirmHeader": true,
+        "funnel": {
+          "id": "funnel-not-used",
+          "ok": true,
+          "severity": "info",
+          "detail": "Проверьте вручную: tailscale funnel status → off",
+          "fix": ""
+        },
+        "legacyBearerAcceptedWithoutSignature": true,
+        "legacyHasDeviceKey": false
+      }
+    },
+    {
+      "id": "admin-create-does-not-log-code",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "logged": false
+      }
+    },
+    {
+      "id": "keychain-set-argv-is-dash-i",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "argvLog": "[\"-i\"]\n",
+        "threwOnSpace": true
+      }
+    },
+    {
+      "id": "cli-code-in-argv",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "cmdlineHasCode": true,
+        "cmdline": "/exec-daemon/node /tmp/mk-node-021/node-agent/agent.js --enroll --url https://127.0.0.1:1 --fingerprint abababababababababababababababababababababababababababababababab --code 23456-789GH-JKMNP ",
+        "outputHasCode": false,
+        "outputTail": "enroll: Keychain недоступен (только macOS)\n"
+      }
+    },
+    {
+      "id": "timing-comparisons",
+      "kind": "probe",
+      "ok": true,
+      "detail": {
+        "samples": 800,
+        "timingSafeEqual8k_differByte0_ns": 5403,
+        "timingSafeEqual8k_differLastByte_ns": 5417,
+        "earlyExit8k_differByte0_ns": 122,
+        "earlyExit8k_differLastByte_ns": 6925,
+        "authWrongToken_ns": 3214,
+        "authRightTokenBadSig_ns": 113623,
+        "hmacHashCompareDiffer_ns": 865,
+        "hmacHashCompareEqual_ns": 555
+      }
+    },
+    {
+      "id": "rate-limit-31st",
+      "kind": "control",
+      "ok": true,
+      "detail": {
+        "failingCallsEnd": "E_IP_LOCKED",
+        "prefilled30": "E_RATE_LIMIT"
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+  "signing": "adhoc",
+  "notarized": false,
+  "assets": [
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.1-test-arm64-mac.zip",
+      "size": 170062865,
+      "sha256": "cb96e39e76d56d741d775dbba17c116c64f85156debc55bfb6202f63c39d0806"
+    },
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.1-test-arm64-mac.zip.sha256",
+      "size": 116,
+      "sha256": "3a2478d3e58f0bb99a286ea0876e5d2ba1e801b789675707cc0217f04b4a829d"
+    },
+    {
+      "name": "MANIFEST.sha256",
+      "size": 177702,
+      "sha256": "47cd2ed295097ae13d0e291263287b2b65f1365f8d45062390b76e6eec7cc300"
+    },
+    {
+      "name": "sbom.cdx.json",
+      "size": 201413,
+      "sha256": "a1fd5b0497d7d8dde3fbd034e7ac94d5e78c24f40ce82ee0f097458743ef86a7"
+    },
+    {
+      "name": "BUILD-INFO.txt",
+      "size": 785,
+      "sha256": "b65b3803b86cb5bb1aba46ab8c941363d17e63e4a109b683b3ea2ff8e6fa7822"
+    }
+  ]
+}

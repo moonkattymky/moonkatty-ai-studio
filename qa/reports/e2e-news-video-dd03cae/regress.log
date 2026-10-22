@@ -1,0 +1,11 @@
+== scripts/build-files-test.mjs: 93/93 reachable modules shipped  rc=0
+== scripts/subtitle-split-test.mjs: 6 passed, 0 failed  rc=0
+== scripts/newsvideo-test.mjs: 62 passed, 0 failed  rc=0
+== scripts/owner-approval-ui-test.mjs:  rc=0
+== scripts/policy-test.mjs: 46/46 passed  rc=0
+== scripts/publish-guard-test.mjs: {"passed":59,"failed":[]}  rc=0
+== scripts/nodes-test.mjs: PASS isPrivateIPv4 (Studio 3, informational): RFC1918 + loopback + 100.64/10 are "private" {"passed":52,"failed":[]}  rc=0
+== scripts/video-render-test.mjs: PASS executor returning out-of-workspace artifact → job failed, artifacts not stored 45/45 passed  rc=0
+== scripts/video-render-wiring-test.mjs: PASS cancel during render ends as cancelled (not failed) — {"jobId":"job_92c7eab0517ecc6d","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_1:youtube rc=0
+== scripts/opencode-json-test.mjs: PASS file created by agent → job failed, no Blender run — Агент OpenCode создал файлы, хотя запись запрещена: evil.py — задание остановлено 2 rc=0
+== scripts/isolation-test.mjs: {"passed":65,"failed":[]}  rc=0

@@ -1,0 +1,42 @@
+PASS setup leased news.collect to imac {"status":200}
+PASS unauth foreign token left node records unchanged {"calls":[{"kind":"none","statuses":[401],"diskWrote":false,"nodeChanged":false},{"kind":"foreign-shape","statuses":[401],"diskWrote":false,"nodeChanged":false},{"kind":"wrong-secret","statuses":[401],"diskWrote":false,"nodeChanged":false},{"kind":"unknown-id","statuses":[401],"diskWrote":false,"nodeChanged":false},{"kind":"empty-bearer","statuses":[401],"diskWrote":false,"nodeChanged":false},{"kind":"basic","statuses":[401],"diskWrote":false,"nodeChanged":false}]}
+PASS unauth foreign token left jobs unchanged
+PASS unauth foreign token did not change nodes.json {"diskWrote":false,"diskConn":false}
+PASS wrong secret is remembered only in memory {"code":"E_UNAUTHORIZED","at":"2026-10-21T13:33:27.979Z"}
+PASS unauth PUT did not create a file
+PASS enroll and status without a real code left node records and jobs unchanged {"rows":[{"path":"/api/nodes/enroll","auth":"none","status":403,"code":"E_CODE_INVALID"},{"path":"/api/nodes/enroll","auth":"bearer","status":403,"code":"E_CODE_INVALID"},{"path":"/api/nodes/enroll","auth":"bearer","status":403,"code":"E_CODE_INVALID"},{"path":"/api/nodes/enroll/status","auth":"none","status":404,"code":"E_NOT_FOUND"},{"path":"/api/nodes/enroll/status","auth":"bearer","status":404,"code":"E_NOT_FOUND"},{"path":"/api/nodes/enroll/status","auth":"bearer","status":404,"code":"E_NOT_FOUND"}],"diskChanged":true}
+PASS other node token left the victim node and its job unchanged {"cross":[{"method":"POST","path":"/api/nodes/rotate","status":409,"code":"E_NOT_ENROLLED"},{"method":"POST","path":"/api/nodes/jobs/nj_0b91be77d9b5e0fa/heartbeat","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_0b91be77d9b5e0fa/complete","status":409,"code":409},{"method":"POST","path":"/api/nodes/jobs/nj_0b91be77d9b5e0fa/fail","status":409,"code":409},{"method":"GET","path":"/api/nodes/files/cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","status":403,"code":null},{"method":"PUT","path":"/api/nodes/files/cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd","status":422,"code":422}]}
+PASS status audit and nodes.json omit bearer secrets
+PASS a new manager does not see the memory connection error
+PASS loopback peer is unverified and hides 127.0.0.1 {"key":"loopback","label":"адрес Tailscale не определён (запрос через локальный прокси)","ip":null,"name":null,"login":null,"via":"loopback","verified":false}
+PASS stub whois names the tailnet peer {"key":"tsnode:nMB","label":"macbook · 100.101.1.2 · igor@x","ip":"100.101.1.2","name":"macbook","login":"igor@x","via":"tailscale serve","verified":true}
+PASS whois miss stays unverified {"key":"ip:100.101.1.9","label":"100.101.1.9 (устройство Tailscale не определено: whois недоступен)","ip":"100.101.1.9","name":null,"login":null,"via":"direct","verified":false}
+PASS defaultWhois on this host returns null
+PASS unknown peer confirm is 409 E_PEER_UNVERIFIED until the second ack {"code":"E_PEER_UNVERIFIED","state":"confirmed"}
+PASS the second ack is one audit row
+PASS pending view keeps the unverified peer text {"peer":"адрес Tailscale не определён (запрос через локальный прокси)"}
+PASS loopback XFF plus stub whois still confirms without the second ack {"skipped":"confirmed"}
+PASS code and request secret stay out of list audit and nodes.json
+PASS status poll returns the enrolled token once {"status":"enrolled"}
+PASS signed 0.2.0 and 0.2.1 pass the version gate {"v020":200,"v021":200}
+PASS signed 0.2.2 is online and 0.3.0 is 426 {"v022":200,"v030":426}
+PASS a missing agentVersion is accepted {"status":200}
+PASS an enrolled token without a signature is 401 {"status":401}
+PASS a signature without a nonce is 426 {"status":426,"code":"E_AGENT_VERSION"}
+PASS a second process cannot open the same nodes directory {"out":"ERR каталог узлов /tmp/qa-dlt-lock-9j789Z уже используется процессом 50100 (второй координатор запрещён)\n","err":"","holder":50100}
+PASS an unreaped SIGKILL pid still counts as alive {"out":"ERR каталог узлов /tmp/qa-dlt-lock-9j789Z уже используется процессом 50100 (второй координатор запрещён)"}
+PASS a dead lock pid is taken over {"out":"PID 50122","thirdPid":50122,"holder":50100,"status":0}
+PASS OPS_NODES_DOWN_MS 500 is raised to 2000 {"nodeDownMs":2000,"enabled":true}
+PASS enroll without a session is 401 [{"name":"no-session","status":401},{"name":"no-header","status":403},{"name":"evil-origin","status":403},{"name":"cross-site","status":403}]
+PASS enroll without X-Studio-Request is 403 [{"name":"no-session","status":401},{"name":"no-header","status":403},{"name":"evil-origin","status":403},{"name":"cross-site","status":403}]
+PASS evil origin and cross-site are 403 [{"name":"no-session","status":401},{"name":"no-header","status":403},{"name":"evil-origin","status":403},{"name":"cross-site","status":403}]
+PASS confirm word and password are both required {"missing":400,"bad":403,"ok":200}
+PASS device enroll over TLS reaches pending {"status":200,"enrollStatus":"pending"}
+PASS HTTP confirm of a loopback peer is 409 until boolean true {"noAck":409,"strAck":409,"ack":200,"code":"E_PEER_UNVERIFIED"}
+PASS peer_unverified_acknowledged is in the owner audit {"types":["confirmed","peer_unverified_acknowledged","code_accepted","request_created"]}
+PASS reject of a pending request still skips the password {"enroll":200,"status":200,"body":{"requestId":"9WQ5M","state":"rejected","role":"monitor","name":"MacBook","nodeId":"macbook-test","reenroll":false,"attempts":0,"createdAt":"2026-10-21T13:33:28.896Z","expiresAt":"2026-10-21T13:38:28.896Z","device":{"deviceId":"dev_ad822bd78ef2fcc7b6e1f47fd218a0c5","pubKeyFingerprint":"c6b5e99a1e6512652e3f7a48aef0d89fce860b6e0dff265987f7c996c872283b","pubKeyShort":"C6B5-E99A-1E65-1265","hostname":"mb","model":"","os":"","arch":"","agentVersion":"0.2.2","ip":"адрес Tailscale не определён (запрос через локальный прокси)","peer":"адрес Tailscale не определён (запрос через локальный прокси)","peerVerified":false,"peerInfo":{"ip":null,"name":null,"login":null,"via":"loopback"},"deviceFieldsUnverified":true}}}
+PASS the owner password is absent from stdout, logs, and data files {"logChars":409333}
+PASS the one-time code is absent from the log store
+PASS studio helper register is refused as a legacy token {"body":"{\"error\":\"Прямые токены 0.2.0 отключены. Подключайте компьютеры по коду («Подключить компьютер»). Для совместимости: STUDIO_NODES_LEGACY_TOKENS=1\"}"}
+{"commit":"322023fd6f8e98dbddd38341e07227ded149c1fb","controls":40,"failed":[]}
+EXIT:0

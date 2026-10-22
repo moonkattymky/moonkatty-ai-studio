@@ -1,0 +1,4 @@
+(node:513047) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO TEST: http://127.0.0.1:8841 (pid 513047, db node:sqlite)
+Остановка по SIGTERM

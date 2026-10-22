@@ -1,0 +1,48 @@
+{
+  "commit": "51005681b646f18093aa9f88668dd691f283105d",
+  "results": 63,
+  "failed": 0,
+  "failedRows": [],
+  "findings": [
+    {
+      "name": "retargeting a parent symlink after the mode check and before the second read loads the attacker key",
+      "detail": {
+        "state": "READY",
+        "blocked": null,
+        "attacker": true
+      }
+    },
+    {
+      "name": "zip filename 11.3.0 satisfies version 1.3.0 because the check is a substring",
+      "detail": {
+        "asset": "MOONKATTY-AI-STUDIO-11.3.0-arm64-mac.zip"
+      }
+    },
+    {
+      "name": "without build-info an older signed release stays verified and download is allowed",
+      "detail": {
+        "warnings": [
+          "проверка возраста сборки недоступна"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "name": "the unpacked server does not see build-info.json inside app.asar, so an older signed release stays verified",
+      "detail": {
+        "seen": null,
+        "download": "allowed",
+        "message": "проверка возраста сборки недоступна (нет desktop/build-info.json — dev-запуск); версия и будущий builtAt проверяются"
+      }
+    },
+    {
+      "name": "a packaged layout with build-info.json removed does not fail closed",
+      "detail": "проверка возраста сборки недоступна (нет desktop/build-info.json — dev-запуск); версия и будущий builtAt проверяются"
+    }
+  ],
+  "race": {
+    "loads": 32815,
+    "hits": 0,
+    "blocked": 32534
+  }
+}

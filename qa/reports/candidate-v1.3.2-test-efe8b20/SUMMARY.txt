@@ -1,0 +1,9 @@
+VERDICT: FAIL
+HEAD: efe8b204895a3d882c9a640cf85a0650f7c1e9b5
+MERGE: PASS (3b72817 + b1073fd + dd03cae + efe8b20; no task-runners; no MK_TEST_REAL_RUNNERS)
+ZIP_SHA256: 6144e735304cf00350e6141f4b9d42f2ba0517ac55a5de754148d98ee87238b4 (match Studio; rebuild byte-identical)
+BOOT: PASS 127.0.0.1:19010 from asar.unpacked
+LIVE: approval/login/confirm-exploit/self-approval/throttle/opencode_task-403/NEWS-16:9 PASS; Shorts S5-NV-01 FAIL
+COUNTS: security 52x3; e2e-approvals 45; world-approval 18; newsvideo 62; isolation 65; publish-guard 73; ops 119; update-center 79; policy 46; nodes 52; build-files 94/94; opencode-task-disabled 4
+FINDINGS: S5-NV-01 High (reproduced); S5-NV-02 Medium (code); design3d-no-approval Info (OC unreachable)
+BUILD-INFO: packaged OK for Update Center; stray working-tree copy must be deleted after build — acceptable

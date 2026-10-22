@@ -1,0 +1,28 @@
+import http from 'node:http'; import { spawn } from 'node:child_process'; import { createRequire } from 'node:module'; import fs from 'node:fs';
+const require = createRequire(import.meta.url); const svc = require('/workspace/qa133/ax/desktop/service.js');
+const R = []; const ok=(n,c,d)=>{R.push([n,c?'PASS':'FAIL',d]);console.log(c?'PASS':'FAIL',n,JSON.stringify(d))};
+const fake = (port, body) => new Promise(r => { const s = http.createServer((q, s2) => { s2.setHeader('content-type','application/json'); s2.end(JSON.stringify(body)); }).listen(port, '127.0.0.1', () => r(s)); });
+console.log('EXPECT', svc.EXPECT);
+const base = { app: 'moonkatty-ai-studio', flavor: 'test', pid: 4242, ok: true };
+let s = await fake(18731, { ...base, version: '1.3.0-test' }); let h = await svc.health(18731);
+ok('old 1.3.0-test → stale', h && h.stale && h.version==='1.3.0-test' && h.pid===4242, h);
+ok('waitHealthy rejects stale', (await svc.waitHealthy(18731, 1500)) === null, null); s.close();
+s = await fake(18732, { ...base }); h = await svc.health(18732); ok('no version → stale (?)', h && h.stale && h.version==='?', h); s.close();
+s = await fake(18733, { ...base, version: '1.3.3-test' }); h = await svc.health(18733); ok('same version, no commit → reuse', h && !h.stale && !h.foreign, h);
+ok('waitHealthy accepts same', !!(await svc.waitHealthy(18733, 1500)), null); s.close();
+s = await fake(18734, { ...base, version: '1.3.3-test', commit: svc.EXPECT.commit }); h = await svc.health(18734); ok('same version+commit → reuse', h && !h.stale && !h.foreign, h); s.close();
+s = await fake(18735, { ...base, version: '1.3.3-test', commit: 'deadbeef' }); h = await svc.health(18735); ok('same version, other commit → stale', h && h.stale, h); s.close();
+s = await fake(18736, { ...base, flavor: 'prod', version: '1.3.3-test' }); h = await svc.health(18736); ok('prod flavor → foreign', h && h.foreign, h); s.close();
+s = await fake(18737, { app: 'other', version: '1.3.3-test' }); h = await svc.health(18737); ok('other app → foreign', h && h.foreign, h); s.close();
+h = await svc.health(18738); ok('nothing listening → null', h === null, h);
+// real packaged server.js
+const SJ = '/workspace/qa133/res/app.asar.unpacked/server.js';
+const runSrv = (port, dir) => new Promise(r => { fs.mkdirSync(dir,{recursive:true}); const p = spawn(process.execPath, [SJ], { env: { ...process.env, STUDIO_DATA_DIR: dir, PORT: String(port), HOST: '127.0.0.1', NODE_ENV: 'production' } }); let out=''; p.stdout.on('data',d=>out+=d); p.stderr.on('data',d=>out+=d); p.on('exit', c => r({ code: c, out, p })); setTimeout(()=>r({running:true,out,p}), 12000); });
+const D='/tmp/mk-test-qa133'; let a = await runSrv(18741, D+'/a-test'); console.log('A', a.running, a.out.slice(-300));
+const hj = await (await fetch('http://127.0.0.1:18741/api/health')).json(); ok('packaged /api/health version+commit', hj.version==='1.3.3-test' && hj.commit===svc.EXPECT.commit, {v:hj.version,c:hj.commit,flavor:hj.flavor});
+h = await svc.health(18741); ok('service.health real same build → reuse', h && !h.stale && !h.foreign, {v:h&&h.version});
+let b = await runSrv(18741, D+'/b-test'); ok('2nd same-version server → exit 0 + message', b.code===0 && /уже запущен/.test(b.out), b.out.trim());
+a.p.kill('SIGTERM');
+s = await fake(18742, { ...base, version: '1.3.0-test' }); let c = await runSrv(18742, D+'/c-test'); ok('server on port held by 1.3.0-test → exit 3 + message', c.code===3 && /другой версией/.test(c.out), c.out.trim()); s.close();
+s = await fake(18743, { ...base }); c = await runSrv(18743, D+'/d-test'); ok('server on port held by no-version → exit 3', c.code===3, c.out.trim()); s.close();
+fs.writeFileSync('/workspace/qa133/scen-result.json', JSON.stringify(R,null,1)); process.exit(0);

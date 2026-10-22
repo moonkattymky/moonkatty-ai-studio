@@ -1,0 +1,37 @@
+PASS schema: extra key rejected
+PASS schema: path-like title rejected
+PASS schema: enum/range/type violations rejected
+PASS extractJson: fenced, bare, none, broken
+PASS safe writer: symlinked scene_params.json refused, symlink target untouched — Путь scene_params.json вне рабочей папки проекта — запись запрещена
+PASS safe writer: symlinked project folder refused — Рабочая папка проекта — символическая ссылка; запись запрещена
+PASS safe writer: invalid params never written
+PASS safe writer: valid params written inside folder (0600)
+PASS no-tool-call agent: job reaches waiting_approval (full pipeline) — waiting_approval 
+[preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_JSON фиолетовый 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабоч
+PASS scene_params.json written by the studio from the agent JSON text
+PASS real Blender PNG rendered (320×240 from agent params) — 122752 bytes
+PASS session created with directory = job version folder; tools disabled in prompt
+PASS fenced ```json answer accepted
+PASS permission ask (edit in-folder) REJECTED by studio, job still succeeds via studio write — [preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_ASK 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабочая папка: projects3d/p_mvi40m0
+PASS out-of-folder write ask REJECTED (fs.outside), no file outside — [preflight] Director назначил задачу агенту 3D DESIGN: Кот FAKE_OUTSIDE 
+[preflight] ▶ Проверка Blender и OpenCode 
+[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да 
+[preflight] OpenCode server http://127.0.0.1:14296 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain) 
+[preflight] Рабочая папка: projects3d/p_mvi
+PASS file created by agent → job failed, no Blender run — Агент OpenCode создал файлы, хотя запись запрещена: evil.py — задание остановлено
+PASS invalid JSON → 1 retry → success
+PASS malformed JSON twice → failed with Russian message (OLLAMA_CONTEXT_LENGTH hint), exactly 2 prompts — Агент OpenCode не вернул корректный JSON параметров сцены после повторной попытки: в ответе нет JSON-объекта. Возможная причина — маленький контекст Ollama (по умолчанию 4096): задайте OLLAMA_CONTEXT_LENGTH=32768 и перезапустите Ollama. prompts=2
+PASS model error → failed «Ошибка модели в OpenCode» — Ошибка модели в OpenCode: "model \"qwen-missing\" not found"
+PASS no answer → timeout error in Russian — Агент OpenCode не ответил за 6 с — превышено время ожидания. Проверьте, что Ollama запущена и модель загружена.
+PASS no password in studio output
+
+21/21 passed
+EXIT:0

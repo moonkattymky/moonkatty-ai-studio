@@ -1,0 +1,210 @@
+TAP version 13
+# Subtest: code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+ok 1 - code: high entropy, 31-symbol alphabet without 0/O/1/I/L, bound to request, stored only as HMAC
+  ---
+  duration_ms: 25.468608
+  type: 'test'
+  ...
+# Subtest: expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+ok 2 - expired code → E_CODE_EXPIRED; reuse → E_CODE_USED; wrong code → E_CODE_INVALID
+  ---
+  duration_ms: 7.040372
+  type: 'test'
+  ...
+# Subtest: code of another request does not work (code bound to its requestId)
+ok 3 - code of another request does not work (code bound to its requestId)
+  ---
+  duration_ms: 1.750279
+  type: 'test'
+  ...
+# Subtest: brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+ok 4 - brute force: 5 wrong codes lock the request (even the right code then fails); IP lockout after 10 failures; rate limit 30/min
+  ---
+  duration_ms: 9.614737
+  type: 'test'
+  ...
+# Subtest: unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+ok 5 - unconfirmed request gets no token; rejected request gets no token; bad device signature refused
+  ---
+  duration_ms: 5.681296
+  type: 'test'
+  ...
+# Subtest: end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+ok 6 - end-to-end over real TLS: agent enrolls with pinned cert, owner confirms, token only in Keychain (never files/logs/argv), signed requests
+  ---
+  duration_ms: 648.30464
+  type: 'test'
+  ...
+# (node:35422) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: plaintext refused (client and server), wrong fingerprint refused before any data is sent
+ok 7 - plaintext refused (client and server), wrong fingerprint refused before any data is sent
+  ---
+  duration_ms: 20.579269
+  type: 'test'
+  ...
+# Subtest: 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+ok 8 - 0.2.0 compatibility: direct-token node (no device key, no agentVersion or 0.2.0) keeps working; contract versions
+  ---
+  duration_ms: 17.411824
+  type: 'test'
+  ...
+# Subtest: CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+ok 9 - CGNAT / private address check: Tailscale 100.64/10 ok, strict octets, no public/0.0.0.0
+  ---
+  duration_ms: 0.581698
+  type: 'test'
+  ...
+# Subtest: anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426
+ok 10 - anti-replay: same signed pull twice → 2nd is 401 E_REPLAY (no second job); 30 s window; status poll replay refused; 0.2.1 (no nonce) → 426
+  ---
+  duration_ms: 273.349315
+  type: 'test'
+  ...
+# Subtest: auth timing: wrong token and right token + bad signature do the same work (dummy verify)
+ok 11 - auth timing: wrong token and right token + bad signature do the same work (dummy verify)
+  ---
+  duration_ms: 30.209615
+  type: 'test'
+  ...
+# Subtest: peer buckets behind tailscale serve: per tailnet device (whois, mocked) / per Tailscale user; headers trusted only from loopback; persisted locks; single coordinator per dir
+ok 12 - peer buckets behind tailscale serve: per tailnet device (whois, mocked) / per Tailscale user; headers trusted only from loopback; persisted locks; single coordinator per dir
+  ---
+  duration_ms: 17.884551
+  type: 'test'
+  ...
+# Subtest: confirmation screens: node shows device-key fingerprint equal to panel; panel shows full+short key, labels device-reported fields unverified; CLI code not via argv; tailscale mode needs *.ts.net
+ok 13 - confirmation screens: node shows device-key fingerprint equal to panel; panel shows full+short key, labels device-reported fields unverified; CLI code not via argv; tailscale mode needs *.ts.net
+  ---
+  duration_ms: 254.791523
+  type: 'test'
+  ...
+# Subtest: nodes flag: admin API + separate TLS node listener + runner dispatch
+ok 14 - nodes flag: admin API + separate TLS node listener + runner dispatch
+  ---
+  duration_ms: 513.492671
+  type: 'test'
+  ...
+# Subtest: nodes defaults: legacy bearer-only tokens off; device confirm / revoke / rotate need owner password step-up
+ok 15 - nodes defaults: legacy bearer-only tokens off; device confirm / revoke / rotate need owner password step-up
+  ---
+  duration_ms: 422.825075
+  type: 'test'
+  ...
+# Subtest: tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+ok 16 - tokens: hashed at rest, scoped, revocable; caps allowlist per role; forbidden caps refused
+  ---
+  duration_ms: 6.422334
+  type: 'test'
+  ...
+# Subtest: local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+ok 17 - local-only jobs (OpenCode/Blender/render, heavy) never go to nodes; secrets never leave
+  ---
+  duration_ms: 1.992296
+  type: 'test'
+  ...
+# Subtest: pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+ok 18 - pull: capability routing, resource fit, idempotency dedup, ack + duplicate ack
+  ---
+  duration_ms: 5.529361
+  type: 'test'
+  ...
+# Subtest: node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+ok 19 - node loss: requeue ONLY safeToRetry jobs; others → needs_approval + alert; node down alert
+  ---
+  duration_ms: 3.044354
+  type: 'test'
+  ...
+# Subtest: heartbeat extends lease; timeout → stuck handling; low resources alert
+ok 20 - heartbeat extends lease; timeout → stuck handling; low resources alert
+  ---
+  duration_ms: 3.083154
+  type: 'test'
+  ...
+# Subtest: file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+ok 21 - file transfer: SHA-256 verified upload, bad checksum rejected, artifacts verified, downloads scoped to leased jobs
+  ---
+  duration_ms: 2.309092
+  type: 'test'
+  ...
+# Subtest: LAN listener refuses 0.0.0.0 / public IPs
+ok 22 - LAN listener refuses 0.0.0.0 / public IPs
+  ---
+  duration_ms: 1.546649
+  type: 'test'
+  ...
+# Subtest: runner hook: runViaNode waits for node, stop() cancels the node job
+ok 23 - runner hook: runViaNode waits for node, stop() cancels the node job
+  ---
+  duration_ms: 2.838163
+  type: 'test'
+  ...
+# Subtest: adapter maps resource classes and statuses both ways
+ok 24 - adapter maps resource classes and statuses both ways
+  ---
+  duration_ms: 0.298343
+  type: 'test'
+  ...
+# Subtest: central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+ok 25 - central commands: pause/drain stop handing out jobs, stop is delivered, run resumes; profiles news/monitor
+  ---
+  duration_ms: 3.547182
+  type: 'test'
+  ...
+# Subtest: integration URL allowlist (SSRF) + Docker API block
+ok 26 - integration URL allowlist (SSRF) + Docker API block
+  ---
+  duration_ms: 2.018587
+  type: 'test'
+  ...
+# Subtest: agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+ok 27 - agent capabilities: defaults deny shell, validate input, fs prefix + network host:port
+  ---
+  duration_ms: 7.990108
+  type: 'test'
+  ...
+# Subtest: second-step confirmation: single use, bound to user + action, expires
+ok 28 - second-step confirmation: single use, bound to user + action, expires
+  ---
+  duration_ms: 1.45035
+  type: 'test'
+  ...
+# Subtest: dangerous operation classifier
+ok 29 - dangerous operation classifier
+  ---
+  duration_ms: 0.594946
+  type: 'test'
+  ...
+# Subtest: audit log hash chain detects tampering; file is 0600
+ok 30 - audit log hash chain detects tampering; file is 0600
+  ---
+  duration_ms: 3.509656
+  type: 'test'
+  ...
+# Subtest: prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+ok 31 - prompt-injection guard: LLM plans need approval, external text wrapped and markers neutralised
+  ---
+  duration_ms: 0.393141
+  type: 'test'
+  ...
+# Subtest: security audit flags Docker integration and loose file permissions
+ok 32 - security audit flags Docker integration and loose file permissions
+  ---
+  duration_ms: 7.017913
+  type: 'test'
+  ...
+# Subtest: Funnel check is real: parses serve/funnel status JSON; on → critical fail; unknown → warn (never ok by default)
+ok 33 - Funnel check is real: parses serve/funnel status JSON; on → critical fail; unknown → warn (never ok by default)
+  ---
+  duration_ms: 1.371008
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1402.119967

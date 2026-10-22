@@ -1,0 +1,26 @@
+OK	commit	db4720bee599f42a815c6876eb1446317f7d5258
+OK	worktree-clean-before	clean
+OK	nonce-in-signature-replay-401	{"job":"nj_abe28ca73c5c7883","replay":"E_REPLAY","late":"E_UNAUTHORIZED","noNonce":"E_AGENT_VERSION","protocolField":1}
+OK	nonce-store-is-memory-only	second manager accepted the captured request
+OK	rotate-requires-owner-flag	{"status":409,"body":{"error":"ротацию запускает только владелец (кнопка «Ротация»)","code":"E_ROTATE_NOT_REQUESTED"}}
+OK	rotate-after-owner-flag	{"status":200,"hasToken":true}
+OK	xff-trusted-on-loopback	{"loopXff":"tsnode:nIMAC","loopEvil":"tsnode:nEVIL"}
+OK	xff-ignored-off-loopback	{"nonLoop":"tsnode:nEVIL","lan":"ip:10.9.9.9","login":"tsuser:igor@x"}
+OK	unknown-bucket-dos-is-shared	{"unknown":"loopback","other":"loopback","locked":"E_IP_LOCKED","identified":"pending"}
+OK	loopback-xff-can-lock-named-peer	{"victim":"E_IP_LOCKED","other":"pending"}
+OK	ip-lock-persists-across-manager	E_IP_LOCKED
+OK	nodes-lock-blocks-second-process	{"second":"каталог узлов /tmp/held-cwxXxO уже используется процессом 35362 (второй координатор запрещён)","stale":"opened"}
+OK	panel-shows-fingerprint-and-unverified	ops-ui.js
+OK	node-screen-shows-key	enroll.html
+OK	code-rejected-on-argv	status=2 enroll: не передавайте код в командной строке (виден в ps) — введите его по запросу или через stdin
+
+OK	code-accepted-on-stdin	status=2 enroll: только https:// — подключение по открытому HTTP запрещено
+
+OK	tailscale-mode-requires-ts-net	{"enroll":"E_TLS_MODE","client":"NODE_TLS_MODE=tailscale: COORDINATOR_URL должен быть https://<mac-mini>.<tailnet>.ts.net (tailscale serve, без funnel)"}
+OK	funnel-off-is-ok	Funnel выключен (tailscale serve/funnel status --json)
+OK	funnel-on-is-not-ok	Tailscale Funnel ВКЛЮЧЁН (публичный интернет): mac-mini.tailnet.ts.net:443
+OK	funnel-unknown-is-not-ok	{"direct":"не удалось прочитать `tailscale serve/funnel status --json` — состояние Funnel неизвестно, проверьте вручную","audit":"не удалось прочитать `tailscale serve/funnel status --json` — состояние Funnel неизвестно, проверьте вручную"}
+OK	token-check-same-work	{"wrongNs":33961,"rightNs":37796,"ratio":1.11}
+OK	legacy-tokens-off-by-default	{"first":428,"afterPassword":403,"code":"E_LEGACY_DISABLED"}
+OK	confirm-revoke-rotate-need-password	{"confirm":428,"badPw":403,"afterPassword":400,"revoke":428,"rotate":428}
+OK	worktree-clean-after	clean

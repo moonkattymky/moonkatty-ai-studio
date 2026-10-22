@@ -1,0 +1,220 @@
+TAP version 13
+# Subtest: free-tier thresholds match the published 0.5 million character quota
+ok 1 - free-tier thresholds match the published 0.5 million character quota
+  ---
+  duration_ms: 1.129984
+  type: 'test'
+  ...
+# Subtest: counter reserves before the request, rolls over on the UTC month, and blocks above the cap
+ok 2 - counter reserves before the request, rolls over on the UTC month, and blocks above the cap
+  ---
+  duration_ms: 5.353528
+  type: 'test'
+  ...
+# Subtest: a new UTC month resets the counter, and one request can cross both warnings
+ok 3 - a new UTC month resets the counter, and one request can cross both warnings
+  ---
+  duration_ms: 2.898304
+  type: 'test'
+  ...
+# Subtest: unknown tier, S0 without the owner flag, F0 HD, and a missing paid cap refuse before HTTP
+ok 4 - unknown tier, S0 without the owner flag, F0 HD, and a missing paid cap refuse before HTTP
+  ---
+  duration_ms: 1.665821
+  type: 'test'
+  ...
+# Subtest: S0 dollar budget warns at 70 and 90 percent and blocks above one dollar
+ok 5 - S0 dollar budget warns at 70 and 90 percent and blocks above one dollar
+  ---
+  duration_ms: 5.937153
+  type: 'test'
+  ...
+# Subtest: the character count is committed before HTTP and is kept when HTTP fails
+ok 6 - the character count is committed before HTTP and is kept when HTTP fails
+  ---
+  duration_ms: 4.488961
+  type: 'test'
+  ...
+# Subtest: HTTP error bodies and corrupt usage files cannot echo the key
+ok 7 - HTTP error bodies and corrupt usage files cannot echo the key
+  ---
+  duration_ms: 4.231072
+  type: 'test'
+  ...
+# Subtest: SSML aliases MOONKATTY, wraps prosody and breaks, and can carry a phoneme
+ok 8 - SSML aliases MOONKATTY, wraps prosody and breaks, and can carry a phoneme
+  ---
+  duration_ms: 0.488003
+  type: 'test'
+  ...
+# Subtest: synthesize posts SSML to the regional endpoint and stays inside the mocked fetch
+ok 9 - synthesize posts SSML to the regional endpoint and stays inside the mocked fetch
+  ---
+  duration_ms: 5.117655
+  type: 'test'
+  ...
+# Subtest: SpeechComposer lexicon output is aliased as moon-KAT-ee
+ok 10 - SpeechComposer lexicon output is aliased as moon-KAT-ee
+  ---
+  duration_ms: 4.153776
+  type: 'test'
+  ...
+# Subtest: Keychain read and write keep the secret out of argv and out of errors
+ok 11 - Keychain read and write keep the secret out of argv and out of errors
+  ---
+  duration_ms: 1.695617
+  type: 'test'
+  ...
+# Subtest: Linux without an injected Keychain does not spawn or fetch
+ok 12 - Linux without an injected Keychain does not spawn or fetch
+  ---
+  duration_ms: 0.717217
+  type: 'test'
+  ...
+# Subtest: a disabled provider is not a MasterVoice swap, and the repo candidate stays Kokoro
+ok 13 - a disabled provider is not a MasterVoice swap, and the repo candidate stays Kokoro
+  ---
+  duration_ms: 1.758534
+  type: 'test'
+  ...
+# Subtest: the provider is disabled by default and an empty script does not reserve quota
+ok 14 - the provider is disabled by default and an empty script does not reserve quota
+  ---
+  duration_ms: 0.562822
+  type: 'test'
+  ...
+# Subtest: neural and HD prices default from the 21 October 2026 retail meters and stay editable
+ok 15 - neural and HD prices default from the 21 October 2026 retail meters and stay editable
+  ---
+  duration_ms: 0.496075
+  type: 'test'
+  ...
+# Subtest: reconciliation raises the guard to a higher owner figure and does not lower it
+ok 16 - reconciliation raises the guard to a higher owner figure and does not lower it
+  ---
+  duration_ms: 2.851357
+  type: 'test'
+  ...
+# Subtest: the budget lock blocks a fresh lock, breaks a stale one, and keeps both processes
+ok 17 - the budget lock blocks a fresh lock, breaks a stale one, and keeps both processes
+  ---
+  duration_ms: 2087.777171
+  type: 'test'
+  ...
+# Subtest: every S0 attempt is billed, including a timeout, and the ledger stores no script and no key
+ok 18 - every S0 attempt is billed, including a timeout, and the ledger stores no script and no key
+  ---
+  duration_ms: 5.340476
+  type: 'test'
+  ...
+# Subtest: an identical re-render is cached at zero dollars and does not call the network
+ok 19 - an identical re-render is cached at zero dollars and does not call the network
+  ---
+  duration_ms: 6.339506
+  type: 'test'
+  ...
+# Subtest: a live in-flight hash does not send or charge, and a dead pid does not block
+ok 20 - a live in-flight hash does not send or charge, and a dead pid does not block
+  ---
+  duration_ms: 4.336503
+  type: 'test'
+  ...
+# Subtest: S0 hard-blocks before HTTP when the next attempt would pass the dollar budget
+ok 21 - S0 hard-blocks before HTTP when the next attempt would pass the dollar budget
+  ---
+  duration_ms: 3.891356
+  type: 'test'
+  ...
+# Subtest: an HD voice on S0 uses 22 dollars per million unless the owner overrides it
+ok 22 - an HD voice on S0 uses 22 dollars per million unless the owner overrides it
+  ---
+  duration_ms: 2.649467
+  type: 'test'
+  ...
+# Subtest: the YouTube dry-run payload carries the synthetic voice disclosure
+ok 23 - the YouTube dry-run payload carries the synthetic voice disclosure
+  ---
+  duration_ms: 11.563071
+  type: 'test'
+  ...
+# Subtest: Azure failure falls back to the local engine and a final render is marked for review
+ok 24 - Azure failure falls back to the local engine and a final render is marked for review
+  ---
+  duration_ms: 9.577759
+  type: 'test'
+  ...
+# Subtest: S0 makes no network call unless paidEnabled and an owner approval are both set
+ok 25 - S0 makes no network call unless paidEnabled and an owner approval are both set
+  ---
+  duration_ms: 2.491538
+  type: 'test'
+  ...
+# Subtest: QA-AZR-001 config tier F0 is budgeted in USD and the sku read is not a TTS call
+ok 26 - QA-AZR-001 config tier F0 is budgeted in USD and the sku read is not a TTS call
+  ---
+  duration_ms: 5.926275
+  type: 'test'
+  ...
+# Subtest: QA-AZR-002 agents cannot flip paid switches and an unsigned approval does not lock S0
+ok 27 - QA-AZR-002 agents cannot flip paid switches and an unsigned approval does not lock S0
+  ---
+  duration_ms: 4.030392
+  type: 'test'
+  ...
+# Subtest: QA-AZR-003 a near-zero price is refused and the price file must be owner-only
+ok 28 - QA-AZR-003 a near-zero price is refused and the price file must be owner-only
+  ---
+  duration_ms: 3.000166
+  type: 'test'
+  ...
+# Subtest: QA-AZR-004 a planted cache file is not returned as the Azure render
+ok 29 - QA-AZR-004 a planted cache file is not returned as the Azure render
+  ---
+  duration_ms: 11.613055
+  type: 'test'
+  ...
+# Subtest: QA-AZR-005 a long description keeps the disclosure after truncation
+ok 30 - QA-AZR-005 a long description keeps the disclosure after truncation
+  ---
+  duration_ms: 3.611761
+  type: 'test'
+  ...
+# Subtest: deleting usage.json fails closed when the ledger remains, and a broken chain is refused
+ok 31 - deleting usage.json fails closed when the ledger remains, and a broken chain is refused
+  ---
+  duration_ms: 3.593296
+  type: 'test'
+  ...
+# Subtest: QA-AZR-007 the dollar ceiling stays at one unless an owner grant says otherwise
+ok 32 - QA-AZR-007 the dollar ceiling stays at one unless an owner grant says otherwise
+  ---
+  duration_ms: 2.926162
+  type: 'test'
+  ...
+# Subtest: QA-AZR-008 approval expires, serials move forward, and the owner key is not readable
+ok 33 - QA-AZR-008 approval expires, serials move forward, and the owner key is not readable
+  ---
+  duration_ms: 6.065889
+  type: 'test'
+  ...
+# Subtest: cache hits use a separate HMAC key and are not final without the ledger request id
+ok 34 - cache hits use a separate HMAC key and are not final without the ledger request id
+  ---
+  duration_ms: 6.313952
+  type: 'test'
+  ...
+# Subtest: QA-AZR-006 reconcile drops a pasted key and a preview without a local engine is not final
+ok 35 - QA-AZR-006 reconcile drops a pasted key and a preview without a local engine is not final
+  ---
+  duration_ms: 1.227844
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2393.685166

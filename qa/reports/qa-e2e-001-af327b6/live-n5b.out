@@ -1,0 +1,39 @@
+child logs: [ 'fake-opencode-474645.txt' ]
+ps before cancel:
+box       474645  0.0  0.0   2676  1788 ?        S    20:14   0:00 /bin/sh /workspace/fakebin/opencode run stay-alive
+
+ps after cancel:
+box       474645  0.0  0.0   2676  1788 ?        S    20:14   0:00 /bin/sh /workspace/fakebin/opencode run stay-alive
+
+status cancelled error null
+ARGV:
+[run]
+[stay-alive]
+CWD: /tmp/mk-qa-n5b/media/opencode-tasks/job_5926182eeb238f60
+ENVNAMES:
+AGENT_TRANSCRIPTS BROWSER CLOUDFLARE_API_TOKEN CLOUD_AGENT_INJECTED_SECRET_NAMES COREPACK_HOME CURSOR_AGENT CURSOR_AGENT_SOCKET CURSOR_CONVERSATION_ID CURSOR_REQUEST_ID CURSOR_RIPGREP_PATH DEBIAN_FRONTEND DISPLAY EXEC_DAEMON_CWD FORCE_COLOR GH_WORKFLOW_TOKEN GITHUB_TOKEN_MOONKATTY GOOGLE_CLIENT_ID GOOG
+render cancel status failed
+ffmpeg after cancel:
+
+flavor gate for services/task runners: false CFG.IS_TEST around services: services = require('./lib/services.js')({ jobs, design3d, runner, blender, ws: ws3d, get, put, core,
+IS_TEST gates opencode_task? false
+node:internal/errors:983
+  const err = new Error(message);
+              ^
+
+Error: Command failed: pkill -f fakebin/opencode || true
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at execSync (node:child_process:988:15)
+    at file:///workspace/live-n5b.mjs:39:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+  status: null,
+  signal: 'SIGTERM',
+  output: [ null, Buffer(0) [Uint8Array] [], Buffer(0) [Uint8Array] [] ],
+  pid: 474712,
+  stdout: Buffer(0) [Uint8Array] [],
+  stderr: Buffer(0) [Uint8Array] []
+}
+
+Node.js v22.23.4

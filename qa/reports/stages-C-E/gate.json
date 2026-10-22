@@ -1,0 +1,41 @@
+{
+  "contract": "moonkatty.qa.release-gate/1",
+  "at": "2026-10-21T11:28:19.503Z",
+  "decision": "NO-GO",
+  "criteria": [
+    {
+      "id": "security",
+      "required": "PASS",
+      "actual": "PASS",
+      "pass": true
+    },
+    {
+      "id": "tests",
+      "required": "green",
+      "actual": "green",
+      "pass": true
+    },
+    {
+      "id": "factCheck",
+      "required": true,
+      "actual": false,
+      "pass": false
+    },
+    {
+      "id": "ownerApproval",
+      "required": true,
+      "actual": false,
+      "pass": false
+    }
+  ],
+  "reasons": [
+    "fact-check is not done",
+    "owner approval flag is not set"
+  ],
+  "securityScope": "v1.2.3-test prerelease security recheck",
+  "securityReport": "qa/reports/security-recheck-v1.2.3/REPORT.md",
+  "securityCommit": "10a5fb8ef0a7f65f9264d7d1a51b44c9d244a722",
+  "securityNote": "PASS covers publishing the v1.2.3-test prerelease. A full production launch was not given PASS.",
+  "regression": "qa/reports/stages-C-E/regression.json",
+  "note": "GO needs every criterion. Counts elsewhere are check results, not a score."
+}

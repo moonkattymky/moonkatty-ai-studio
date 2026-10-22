@@ -1,0 +1,40 @@
+{
+  "contract": "moonkatty.qa.api-smoke/1",
+  "at": "2026-10-21T11:27:31.407Z",
+  "note": "Scratch database. Fake password. No publish call. Counts are check results, not a score.",
+  "pass": 6,
+  "fail": 0,
+  "not_tested": 0,
+  "checks": [
+    {
+      "id": "health",
+      "result": "pass",
+      "summary": "health 200 version 1.0.0"
+    },
+    {
+      "id": "needsSetup",
+      "result": "pass",
+      "summary": "auth status needsSetup true"
+    },
+    {
+      "id": "setup",
+      "result": "pass",
+      "summary": "setup 200 session cookie present"
+    },
+    {
+      "id": "tasks",
+      "result": "pass",
+      "summary": "GET /api/tasks 200 array true"
+    },
+    {
+      "id": "anon-post",
+      "result": "pass",
+      "summary": "unauthenticated POST /api/tasks 401"
+    },
+    {
+      "id": "no-graph",
+      "result": "pass",
+      "summary": "server log did not name a social host"
+    }
+  ]
+}

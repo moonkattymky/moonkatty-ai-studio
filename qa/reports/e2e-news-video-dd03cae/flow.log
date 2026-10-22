@@ -1,0 +1,27 @@
+ollama 200
+search 200 {"id":"ebbfc4e7ecda","at":"2026-10-22T17:34:45.747Z","by":"qa","status":"ok","fetched":156,"new":142,"newItems":149,"merged":7,"duplicates":7,"errors":0,"finishedAt":"2026-10-22T17:34:47.398Z","candidates":142} cands 40
+draft 200 f794ee98fb4ae8e2 [ 'ollama:qwen2.5:1.5b|null', 'ollama:qwen2.5:1.5b|null' ] 5.166s
+fc sentences [ 1, 2 ] flagged [ 1, 0 ] links 3 badlinks [] hasSourceItems false
+fc example {"text":"NASA's Hubble has captured a gravitational lensing image, which is part of its preparations for science with the new Roman Space Telescope.","support":0.67,"sources":[{"name":"NASA News Releases","url":"https://science.nasa.gov/missions/hubble/nasas-hubble-charts-path-for-roman-with-gravitational-lenses/","support":0.67}],"flags":["имена не найдены в источниках: NASA's Hubble"]}
+approve no box 422
+approve box="true" 422
+approve wrong hash 409
+approve confirm:true 422
+render before approve 409
+approve ok 200
+render 200 rendering
+edit during render 409
+final rendered renders [ 'succeeded:' ]
+export mp4 200 12549320 attachment; filename="nv-f794ee98fb4ae8e2-r1-youtube.mp4"
+export srt 200 740 attachment; filename="nv-f794ee98fb4ae8e2-r1-youtube.srt"
+export jpg 200 239504 attachment; filename="nv-f794ee98fb4ae8e2-r1-youtube.jpg"
+edit after render 200 draft stale true
+after edit GET draft list draft checked false
+rerender w/o reapprove [ 409, { error: 'Сначала утвердите сценарий' } ]
+file still served (old render) 200
+cancel idle {"cancelled":false}
+parallel create 409
+cancel {"cancelled":true}
+cancelled create 409 Создание черновика прервано: cancelled by qa
+7 ids 400
+DRAFT f794ee98fb4ae8e2

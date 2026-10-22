@@ -1,0 +1,35 @@
+PASS unit: all missing (non-executable file ignored)
+PASS unit: hint dedups packages — brew install ffmpeg librsvg
+PASS unit: Russian message names what and why
+PASS unit: partial → only librsvg — brew install librsvg
+PASS unit: Homebrew fallback dir resolves (GUI minimal PATH)
+PASS unit: default fallback dirs are /opt/homebrew/bin, /usr/local/bin
+PASS unit: module never spawns/executes or installs
+PASS setup: draft approved — approved
+PASS status (missing): ffmpeg/ffprobe/rsvg false, renderReady false
+PASS status (missing): message + hint
+PASS render (missing): 424 video_deps_missing — 424 video_deps_missing
+PASS render (missing): details list + hint
+PASS render (missing): Russian error text
+PASS render (missing): no job created
+PASS render (missing): draft not marked rendering/rendered — approved
+PASS render (rsvg missing only): 424, lists rsvg-convert
+PASS server still alive after refusals
+PASS render (only in Homebrew dir): accepted — 200
+PASS Homebrew dir appended to PATH for execFile
+PASS status (present): ffprobe true, deps ok
+PASS executor guard present before factory render
+PASS UI missing news: badge «Рендер: не готово»
+PASS UI missing news: missing-deps message shown with hint
+PASS UI missing video: badge «Рендер: не готово»
+PASS UI missing video: missing-deps message shown with hint
+PASS UI missing: render buttons disabled — [true,true]
+PASS UI missing: no JS errors
+PASS UI present news: badge «Рендер: готово»
+PASS UI present news: missing-deps message absent
+PASS UI present video: badge «Рендер: готово»
+PASS UI present video: missing-deps message absent
+PASS UI present: render buttons enabled — [false,false]
+PASS UI present: no JS errors
+
+33 passed, 0 failed

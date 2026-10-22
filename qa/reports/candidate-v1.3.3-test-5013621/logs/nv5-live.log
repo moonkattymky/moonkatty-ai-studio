@@ -1,0 +1,5 @@
+login 200
+status 200 {"ok":false,"missing":[{"bin":"ffmpeg","pkg":"ffmpeg","why":"сборка видео и звука (MP4)"},{"bin":"ffprobe","pkg":"ffmpeg","why":"проверка длительности и размеров видео (входит в пакет ffmpeg)"},{"bin":"rsvg-convert","pkg":"librsvg","why":"отрисовка титров и графики (SVG → PNG)"}],"hint":"brew install ffmpeg librsvg","message":"Рендер видео не готов: не найдено ffmpeg (сборка видео и звука (MP4)); ffprobe (проверка длительности и размеров видео (входит в пакет ffmpeg)); rsvg-convert (отрисовка титров и графики (SVG → PNG)). Установите вручную (по согласованию с командой): brew install ffmpeg librsvg"}
+draft ec95f07346e09433 draft
+APPROVE 500 {"error":"ffmpeg: spawn ffmpeg ENOENT"}
+RENDER 409 {"error":"Сначала утвердите сценарий"}

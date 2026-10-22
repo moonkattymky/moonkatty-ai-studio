@@ -1,0 +1,46 @@
+=== stat ===
+ .gitignore                                    |  12 +
+ docs/ops/RELEASE_KEY_SETUP_MAC_MINI.md        | 151 ++++++++
+ docs/ops/UPDATE_CENTER.md                     | 146 ++++++++
+ docs/ops/UPDATE_CENTER_MAC_TEST.md            |  66 ++++
+ lib/ops/app-identity.js                       |  34 ++
+ lib/ops/update-backup.js                      |  21 ++
+ lib/ops/update-center-mount.js                |  34 ++
+ lib/ops/update-center.js                      | 500 ++++++++++++++++++++++++++
+ lib/ops/update-keys/README.md                 |  13 +
+ lib/ops/update-keys/keyring.json              |   8 +
+ lib/ops/update-keys/stub-test-ed25519.pub.pem |   3 +
+ lib/ops/update.js                             |  69 ++++
+ package.json                                  |  13 +-
+ public/index.html                             |   1 +
+ public/update-ui.js                           |  76 ++++
+ scripts/build-mac.sh                          |   2 +-
+ scripts/mac-keyring-check.sh                  |  41 +++
+ scripts/package-mac-on-linux.sh               |   2 +-
+ scripts/release-keygen.mjs                    |  31 ++
+ scripts/release-sign.mjs                      |  19 +
+ scripts/write-build-info.mjs                  |  12 +
+ server.js                                     |   3 +
+ test/helpers/uc-server.js                     |  22 ++
+ test/ops/release-keys.test.js                 | 320 +++++++++++++++++
+ test/ops/update-center.integration.test.js    |  26 ++
+ test/ops/update-center.test.js                | 390 ++++++++++++++++++++
+ test/ops/update.test.js                       |  37 ++
+ 27 files changed, 2048 insertions(+), 4 deletions(-)
+=== untouched paths (empty means identical) ===
+exit:0
+=== server.js ===
+diff --git a/server.js b/server.js
+index 878db32..4e98341 100644
+--- a/server.js
++++ b/server.js
+@@ -201,6 +201,9 @@ meta.mountProtected();
+ // v1.2.4: distributed nodes (Studio 3 Node Manager) — admin API here (owner session), node API on its own TLS listener.
+ { const nodes = require('./lib/ops/nodes-server.js').mountNodes(app, { CFG, dataDir: path.dirname(DB_PATH), log, q, heavy, checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
+   nodeHooks.runViaNode = nodes.runViaNode; }
++// v1.3.0-test: Update Center (download + verify + manual install plan; auto-install off) — only with STUDIO_OPS_UPDATE=1.
++require('./lib/ops/update-center-mount.js').mountUpdateCenter(app, { CFG, dataDir: path.dirname(DB_PATH), db, openDb, log, version: require('./package.json').version, env: process.env, dbSchemaVersion: DB_SCHEMA_VERSION, port: PORT,
++  checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
+ 
+ // ---- Backup / restore ----
+ // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).

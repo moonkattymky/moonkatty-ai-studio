@@ -1,0 +1,40 @@
+  ],
+  "defaultPort": 8687,
+  "opencodeUrl": "http://127.0.0.1:4097",
+  "dbSchemaVersion": 6,
+  "minUpgradeFrom": null,
+  "isolated": true,
+  "isolatedFrom": [
+    "com.moonkatty.aistudio"
+  ],
+  "electron": "44.9.1",
+  "signing": "adhoc",
+  "notarized": false,
+  "assets": [
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.1-test-arm64-mac.zip",
+      "size": 170061184,
+      "sha256": "436fa1978dae6cc551806d22fb35ebe5f88e029e8b30ea17fa5398b4f2d0b9aa"
+    },
+    {
+      "name": "MOONKATTY-AI-STUDIO-TEST-1.3.1-test-arm64-mac.zip.sha256",
+      "size": 116,
+      "sha256": "f80aa95384af8932e6dbe8eda20037c2bb6f31d375daf7842141564bb5d6e934"
+    },
+    {
+      "name": "MANIFEST.sha256",
+      "size": 177702,
+      "sha256": "b6f7ba18f5e4617e1a2ff7ab71ec8f28e565de15ab22b77198c2593391e12337"
+    },
+    {
+      "name": "sbom.cdx.json",
+      "size": 201413,
+      "sha256": "830860de70e5c4b995fc97f1f8fd6e550bb9413259767a7fd53b873683856161"
+    },
+    {
+      "name": "BUILD-INFO.txt",
+      "size": 785,
+      "sha256": "49f99bc94ba291d81fc6f35911dd8b0e77a5316d795d0fa680d8a625de2a3458"
+    }
+  ]
+}

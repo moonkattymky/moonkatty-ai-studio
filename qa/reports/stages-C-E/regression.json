@@ -1,0 +1,122 @@
+{
+  "contract": "moonkatty.qa.regression/1",
+  "startedAt": "2026-10-21T11:27:25.264Z",
+  "finishedAt": "2026-10-21T11:27:40.983Z",
+  "note": "Counts are check results, not a score. Horizons was not re-run.",
+  "pass": 71,
+  "fail": 0,
+  "not_tested": 3,
+  "testsGreen": true,
+  "suites": [
+    {
+      "name": "bug-registry",
+      "ran": true,
+      "command": "/exec-daemon/node qa/bugs/registry.mjs validate",
+      "exitCode": 0,
+      "ms": 37,
+      "pass": 1,
+      "fail": 0,
+      "not_tested": 0,
+      "note": "10 registry entries"
+    },
+    {
+      "name": "bug-registry-tests",
+      "ran": true,
+      "command": "/exec-daemon/node --test qa/bugs/test/registry.test.mjs",
+      "exitCode": 0,
+      "ms": 221,
+      "pass": 2,
+      "fail": 0,
+      "not_tested": 0,
+      "note": ""
+    },
+    {
+      "name": "content",
+      "ran": true,
+      "command": "/exec-daemon/node --test qa/content/test/content.test.mjs",
+      "exitCode": 0,
+      "ms": 920,
+      "pass": 13,
+      "fail": 0,
+      "not_tested": 0,
+      "note": ""
+    },
+    {
+      "name": "interfaces",
+      "ran": true,
+      "command": "/exec-daemon/node qa/interfaces/self-check.mjs",
+      "exitCode": 0,
+      "ms": 27,
+      "pass": 1,
+      "fail": 0,
+      "not_tested": 0,
+      "note": "exit 0"
+    },
+    {
+      "name": "release-gate-tests",
+      "ran": true,
+      "command": "/exec-daemon/node --test qa/release/test/gate.test.mjs",
+      "exitCode": 0,
+      "ms": 115,
+      "pass": 2,
+      "fail": 0,
+      "not_tested": 0,
+      "note": ""
+    },
+    {
+      "name": "video-self-test",
+      "ran": true,
+      "command": "/exec-daemon/node qa/content/video-qc.mjs --self-test --out qa/reports/stages-C-E/video/self-test.json",
+      "exitCode": 0,
+      "ms": 4215,
+      "pass": 6,
+      "fail": 0,
+      "not_tested": 0,
+      "note": "self-test"
+    },
+    {
+      "name": "video-news-launch",
+      "ran": true,
+      "command": "/exec-daemon/node qa/content/video-qc.mjs --out qa/reports/stages-C-E/video/news-launch.json",
+      "exitCode": 0,
+      "ms": 44,
+      "pass": 0,
+      "fail": 0,
+      "not_tested": 1,
+      "note": "no-artifacts"
+    },
+    {
+      "name": "api-smoke",
+      "ran": true,
+      "command": "/exec-daemon/node qa/smoke/api.mjs --out qa/reports/stages-C-E/api/smoke.json",
+      "exitCode": 0,
+      "ms": 569,
+      "pass": 6,
+      "fail": 0,
+      "not_tested": 0,
+      "note": "Scratch database. Fake password. No publish call. Counts are check results, not a score."
+    },
+    {
+      "name": "site",
+      "ran": true,
+      "command": "/exec-daemon/node qa/site/moonkatty.mjs --out qa/reports/stages-C-E/site/site.json",
+      "exitCode": 0,
+      "ms": 9569,
+      "pass": 40,
+      "fail": 0,
+      "not_tested": 1,
+      "note": "read-only"
+    },
+    {
+      "name": "horizons",
+      "ran": false,
+      "command": "npm run qa:horizons",
+      "exitCode": null,
+      "ms": 0,
+      "pass": 0,
+      "fail": 0,
+      "not_tested": 1,
+      "note": "Not re-run. moonkattymky/moonkatty-horizons is not cloneable here. Evidence remains qa/reports/2026-10-20/report.md. Blocked on horizons source access."
+    }
+  ]
+}

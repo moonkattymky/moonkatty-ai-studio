@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moonkatty.local/qa/bug-report.schema.json",
+  "title": "MOONKATTY QA bug report",
+  "description": "Proposed bug record for Stage C. Stage A/B only produces this document; it does not write the studio database.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "severity", "status", "repo", "summary", "repro", "foundAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^QA-[A-Z0-9][A-Z0-9-]{2,40}$" },
+    "title": { "type": "string", "minLength": 8, "maxLength": 180 },
+    "severity": { "enum": ["blocker", "major", "minor", "trivial"] },
+    "status": { "enum": ["open", "confirmed", "in_progress", "fixed", "wontfix", "duplicate"] },
+    "repo": { "type": "string", "description": "github owner/name of the game repo under test" },
+    "commit": { "type": "string", "description": "git SHA of the build that failed" },
+    "viewport": { "type": "string" },
+    "checkId": { "type": "string" },
+    "summary": { "type": "string", "minLength": 8 },
+    "expected": { "type": "string" },
+    "actual": { "type": "string" },
+    "repro": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string", "description": "repo-relative path to a screenshot, video, or log" }
+    },
+    "console": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["pageerror", "console", "requestfailed"] },
+          "text": { "type": "string" }
+        }
+      }
+    },
+    "metrics": { "type": "object" },
+    "foundAt": { "type": "string", "format": "date-time" },
+    "seed": { "type": "integer" },
+    "source": { "const": "qa" }
+  }
+}

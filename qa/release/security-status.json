@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "scope": "v1.2.3-test prerelease security recheck",
+  "report": "qa/reports/security-recheck-v1.2.3/REPORT.md",
+  "commit": "10a5fb8ef0a7f65f9264d7d1a51b44c9d244a722",
+  "note": "PASS covers publishing the v1.2.3-test prerelease. A full production launch was not given PASS."
+}

@@ -1,0 +1,76 @@
+# Horizons browser QA. Runs on feat/quality-automation pushes and when started by hand.
+# It does not deploy, publish, or touch any other branch's workflow.
+name: QA Horizons
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/quality-automation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-horizons-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  content:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/feat/quality-automation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Content QC tests
+        run: npm run qa:content
+
+  horizons:
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/feat/quality-automation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Google Chrome
+        run: |
+          if ! command -v google-chrome-stable >/dev/null 2>&1; then
+            wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            sudo apt-get update
+            sudo apt-get install -y /tmp/chrome.deb
+          fi
+          google-chrome-stable --version
+
+      - run: npm ci
+
+      - name: Install Playwright ffmpeg (video only; Chrome is the system build)
+        run: node node_modules/playwright-core/cli.js install ffmpeg
+
+      - name: Run Horizons QA
+        run: npm run qa:horizons
+        env:
+          CHROME_PATH: /usr/bin/google-chrome-stable
+
+      - name: Upload QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-horizons-report
+          path: qa/reports
+          if-no-files-found: warn

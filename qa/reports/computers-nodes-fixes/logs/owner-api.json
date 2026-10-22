@@ -1,0 +1,72 @@
+{
+  "rows": [
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/enroll",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/imac/revoke",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/imac/command",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/jobs",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/ops/nodes",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/enroll/R7K2Q/confirm",
+      "status": 403
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/imac/revoke",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/imac/rotate",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/ops/nodes/enroll/R7K2Q/reject",
+      "status": 401
+    }
+  ],
+  "bare": {
+    "error": "Требуется подтверждение паролем",
+    "confirmRequired": true,
+    "action": "node-confirm"
+  },
+  "withTok": {
+    "status": 400,
+    "body": {
+      "error": "подтверждать можно только pending (сейчас awaiting_code)",
+      "code": "E_BAD_REQUEST"
+    },
+    "headers": {}
+  },
+  "rev": 428,
+  "rot": 428,
+  "leg2": {
+    "error": "Прямые токены 0.2.0 отключены. Подключайте компьютеры по коду («Подключить компьютер»). Для совместимости: STUDIO_NODES_LEGACY_TOKENS=1",
+    "code": "E_LEGACY_DISABLED"
+  },
+  "rej": {
+    "error": "подтверждать можно только pending (сейчас awaiting_code)",
+    "code": "E_BAD_REQUEST"
+  }
+}

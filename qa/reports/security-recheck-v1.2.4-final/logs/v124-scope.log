@@ -1,0 +1,37 @@
+PASS repo node-agent VERSION is 0.2.0
+PASS repo node-agent sends bearer only (no x-node-nonce)
+PASS coordinator PROTOCOL constant is 2
+PASS panel escapes the coordinator fingerprint
+PASS esc() neutralizes a fingerprint-shaped payload — <code>&lt;img src=x onerror=alert(1)&gt;&amp;&quot;&#39;</code>
+PASS Update Center modules are absent
+PASS Studio 2/5 modules are absent
+PASS package.json does not depend on electron-updater
+PASS extractJson rejects text over 20000 chars — ответ слишком длинный (более 20000 символов)
+PASS prompt-injected extra fields are rejected by the schema — ["неизвестные поля: path, cmd"]
+PASS subject import os is rejected
+PASS malformed JSON is not parsed
+FAIL symlink scene_params.json is refused and the target stays ORIG — Путь scene_params.json вне рабочей папки проекта — запись запрещена
+PASS symlink version directory is refused — Рабочая папка проекта — символическая ссылка; запись запрещена
+PASS policy.inside rejects a traversal path
+PASS valid params land only as scene_params.json inside the version dir
+PASS nodes.json stores codeHash and not the plaintext code or enrollKey — keys nodes,jobs,idem,alerts,audit,enroll,enrollLimits
+PASS pending code fails after a new manager (HMAC key was not on disk) — E_CODE_INVALID неверный код
+PASS awaiting_code row is still on disk after the failed check
+PASS enroll status returns protocol 2 and a token — {"status":"enrolled","protocol":2}
+PASS device hostname is stored as text (panel must escape it) — <img src=x onerror=alert(1)>&"'
+PASS 0.2.1-style signature without nonce is HTTP 426 E_AGENT_VERSION — {"s":426,"j":{"error":"обновите агент до 0.2.2 (protocol 2: x-node-nonce)","code":"E_AGENT_VERSION","protocol":2,"agentVersionRange":">=0.2.0 <0.3.0"},"t":"{\"error\":\"обновите агент до 0.2.2 (protocol 2: x-node-nonce)\",\"code\":\"E_AGENT_VERSION\",\"protocol\":2,\"agentVersionRange\":\">=0.2.0 <0.3.0\"}"}
+PASS protocol 2 hello with nonce returns protocol 2 — {"protocol":2,"ok":true}
+PASS bundled 0.2.0 bearer-only call on an enrolled node is 401 — {"error":"unauthorized","code":"E_UNAUTHORIZED"}
+PASS nodes-enabled test server starts — {"flavor":"test","version":"1.2.4-test"}
+PASS enroll POST without X-Studio-Request is 403 — CSRF check failed (missing X-Studio-Request header)
+PASS enroll POST from another origin is 403 — Cross-origin request rejected
+PASS enroll POST with Sec-Fetch-Site cross-site is 403 — Cross-site request rejected
+PASS enroll without password is 403 password_required (not 428) — {"s":403,"j":{"error":"Неверный пароль владельца","code":"password_required"},"t":"{\"error\":\"Неверный пароль владельца\",\"code\":\"password_required\"}"}
+PASS eight wrong owner passwords stay 403 with no lockout — 403,403,403,403,403,403,403,403
+PASS correct password plus confirm word returns a one-time code and fingerprint — {"s":200,"nodeId":"macbook-test","fp":"8cafbb0d81ca581f"}
+PASS reject does not require the owner password — HTTP undefined {"error":"подтверждать можно только pending (сейчас awaiting_code)"}
+PASS owner password is absent from logs, stdout, studio.db, and nodes.json
+PASS nodes.js documents the RAM-only HMAC key
+{"controls":34,"failed":1,"root":"/tmp/mk-v124-scope-zo8C9l"}
+FAILED symlink scene_params.json is refused and the target stays ORIG
+EXIT:1

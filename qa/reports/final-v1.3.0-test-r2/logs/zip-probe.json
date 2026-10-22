@@ -1,0 +1,148 @@
+{
+  "failed": 0,
+  "zipHash": "d512263ef450bf9ca82297108d4b61c84c779f777665707559f32b52af603b5e",
+  "out": [
+    {
+      "name": "zip sha256 matches the claim",
+      "ok": true,
+      "extra": "d512263ef450bf9ca82297108d4b61c84c779f777665707559f32b52af603b5e"
+    },
+    {
+      "name": "build-info is unpacked and names this commit and the test flavor",
+      "ok": true,
+      "extra": {
+        "commit": "c24f7569301dbc5fe3cfe2a58143890c9ef74133",
+        "builtAt": "2026-10-21T18:42:21.000Z",
+        "electron": "44.9.1",
+        "node": "v24.22.0",
+        "builder": "linux",
+        "flavor": "test",
+        "appId": "com.moonkatty.aistudio.test"
+      }
+    },
+    {
+      "name": "packaged node-agent is 0.2.2 and matches the source bytes",
+      "ok": true,
+      "extra": {
+        "version": "0.2.2",
+        "sha": "3fcaea09b821575edded1948892203e2bab22cd4dd9e909b454a774fec3e0ff0"
+      }
+    },
+    {
+      "name": "unpacked config is baked test",
+      "ok": true,
+      "extra": {
+        "source": "baked",
+        "flavor": "test",
+        "appId": "com.moonkatty.aistudio.test"
+      }
+    },
+    {
+      "name": "the four new files are unpacked",
+      "ok": true,
+      "extra": []
+    },
+    {
+      "name": "zip resources contain no meta.js, adapters, ledger, or promotion module",
+      "ok": true,
+      "extra": []
+    },
+    {
+      "name": "the only ledger paths are the unchanged Studio 5 files",
+      "ok": true,
+      "extra": [
+        "app.asar.unpacked/studio-intelligence/contracts/studio3-ledger-entry.schema.json",
+        "app.asar.unpacked/studio-intelligence/src/ledger-adapter.js",
+        "app.asar.unpacked/studio-intelligence/src/ledger-stub.js"
+      ]
+    },
+    {
+      "name": "packaged adapter is studio2-read-api and fixture money is DEMO",
+      "ok": true,
+      "extra": {
+        "path": "studio2-read-api",
+        "bad": [],
+        "yn": {
+          "id": "youtube-news",
+          "label": "YouTube — MOONKATTY NEWS",
+          "dataMode": "mock",
+          "confirmed": {
+            "label": "DEMO USD 12.50",
+            "excludedFromActual": true,
+            "demo": true,
+            "count": 1,
+            "payoutId": "MOCK-PAYOUT-0001"
+          },
+          "estimate": {
+            "label": "DEMO не подтверждено",
+            "excludedFromActual": true,
+            "demo": true,
+            "count": 1,
+            "payoutId": null
+          },
+          "viewsAreRevenue": false,
+          "note": "DEMO"
+        }
+      }
+    },
+    {
+      "name": "packaged server boots",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "packaged health stays test when STUDIO_FLAVOR=prod",
+      "ok": true,
+      "extra": {
+        "ok": true,
+        "app": "moonkatty-ai-studio",
+        "flavor": "test",
+        "product": "MOONKATTY AI STUDIO TEST",
+        "schemaVersion": 6,
+        "mode": "server",
+        "version": "1.3.0-test",
+        "pid": 80554,
+        "uptimeSec": 0,
+        "db": "ok",
+        "dbDriver": "node:sqlite",
+        "keySource": "file",
+        "startedAt": "2026-10-21T19:20:19.877Z",
+        "lastTick": "2026-10-21T19:20:19.949Z"
+      }
+    },
+    {
+      "name": "packaged command-center source is studio2-read-api and publish is false",
+      "ok": true,
+      "extra": {
+        "source": "studio2-read-api",
+        "version": "1.0.0",
+        "demo": true,
+        "publish": false,
+        "viewsAreRevenue": false
+      }
+    },
+    {
+      "name": "packaged HTTP fixture money is DEMO and excluded from the real total",
+      "ok": true,
+      "extra": {
+        "label": {
+          "label": "DEMO USD 12.50",
+          "excludedFromActual": true,
+          "demo": true,
+          "count": 1,
+          "payoutId": "MOCK-PAYOUT-0001"
+        },
+        "bad": []
+      }
+    },
+    {
+      "name": "packaged TEST publish stays 403",
+      "ok": true,
+      "extra": {
+        "stored": "pending_approval",
+        "publish": 403,
+        "code": "publishing_disabled"
+      }
+    }
+  ]
+}

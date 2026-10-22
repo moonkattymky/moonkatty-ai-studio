@@ -1,0 +1,435 @@
+{
+  "head": "8b0fbc60d8fdb59555feb95701396e7d715db13c",
+  "results": [
+    {
+      "kind": "hold",
+      "name": "audited commit is 8b0fbc6",
+      "ok": true,
+      "detail": "8b0fbc60d8fdb59555feb95701396e7d715db13c"
+    },
+    {
+      "kind": "hold",
+      "name": "asarUnpack lists desktop/build-info.json and the package version is still 1.1.2",
+      "ok": true,
+      "detail": [
+        "server.js",
+        "meta.js",
+        "runner.js",
+        "package.json",
+        "lib/**",
+        "public/**",
+        "node_modules/**",
+        "desktop/build-info.json"
+      ]
+    },
+    {
+      "kind": "hold",
+      "name": "lib/ops/index.js does not pass packaged and does not read an env flag for it",
+      "ok": true,
+      "detail": "createUpdateCenter({ dir: path.join(opsDir, 'update-center'), current: ctx.version, identity, update, backups, db: ctx.db, nodes, env, exec: probes.run,"
+    },
+    {
+      "kind": "hold",
+      "name": "O_NOFOLLOW is present on this platform",
+      "ok": true,
+      "detail": 131072
+    },
+    {
+      "kind": "hold",
+      "name": "SUPPORTED_SCHEMA is 1",
+      "ok": true,
+      "detail": 1
+    },
+    {
+      "kind": "hold",
+      "name": "an empty prod ring is BLOCKED",
+      "ok": true,
+      "detail": "BLOCKED: нет публичного ключа владельца"
+    },
+    {
+      "kind": "hold",
+      "name": "the four auto-install flags and node updates stay off",
+      "ok": true,
+      "detail": {
+        "autoInstall": false,
+        "signatureReady": false,
+        "backupReady": false,
+        "rollbackTestedOnRealMac": false,
+        "nodeUpdates": false
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a module path inside app.asar.unpacked is packaged",
+      "ok": true,
+      "detail": {
+        "packed": "/tmp/qa-uc5-DfqvhA/MOONKATTY AI STUDIO.app/Contents/Resources/app.asar.unpacked/lib/ops/update-center.js",
+        "dev": "/workspace/qa/reports/update-center-v5"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "env cannot force dev mode: a packaged path with no build-info fails closed",
+      "ok": true,
+      "detail": {
+        "buildAge": {
+          "available": false,
+          "packaged": true,
+          "failClosed": true,
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        "verified": false,
+        "download": "UNVERIFIED",
+        "signature": "READY",
+        "problems": [
+          "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        ]
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a build-info that exists only inside app.asar is invisible to the unpacked server and is BLOCKED",
+      "ok": true,
+      "detail": {
+        "available": false,
+        "packaged": true,
+        "failClosed": true,
+        "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a corrupted or partial build-info is BLOCKED on a packaged path",
+      "ok": true,
+      "detail": [
+        {
+          "name": "empty",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "whitespace",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "truncated brace",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "truncated object",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "null builtAt",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "empty builtAt",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "unparsed builtAt",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "commit only",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "numeric builtAt",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        },
+        {
+          "name": "boolean builtAt",
+          "ok": true,
+          "verified": false,
+          "download": "UNVERIFIED",
+          "message": "BLOCKED: собранное приложение без читаемого desktop/build-info.json — проверка возраста сборки невозможна, релиз отклонён"
+        }
+      ]
+    },
+    {
+      "kind": "measured",
+      "name": "a date-only builtAt parses, so a packaged app with that file is not fail-closed",
+      "ok": true,
+      "detail": {
+        "buildAge": {
+          "available": true,
+          "packaged": true,
+          "builtAt": "2026-06-01"
+        },
+        "verified": true,
+        "download": "allowed"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a readable unpacked build-info rejects an older signed builtAt and accepts a newer one",
+      "ok": true,
+      "detail": {
+        "older": [
+          "подписанный builtAt 2026-01-01T00:00:00.000Z старше сборки текущего приложения (2026-06-01T00:00:00.000Z) — отклонено"
+        ],
+        "newer": {
+          "verified": true,
+          "download": "allowed"
+        }
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "the same env on a dev path stays a warning and the release stays verified",
+      "ok": true,
+      "detail": {
+        "buildAge": {
+          "available": false,
+          "packaged": false,
+          "message": "проверка возраста сборки недоступна (нет desktop/build-info.json — dev-запуск); версия и будущий builtAt проверяются"
+        },
+        "verified": true,
+        "warnings": [
+          "проверка возраста сборки недоступна"
+        ]
+      }
+    },
+    {
+      "kind": "measured",
+      "name": "createUpdateCenter({ packaged: false }) overrides the path check; index.js does not pass it",
+      "ok": true,
+      "detail": {
+        "buildAge": {
+          "available": false,
+          "packaged": false,
+          "message": "проверка возраста сборки недоступна (нет desktop/build-info.json — dev-запуск); версия и будущий builtAt проверяются"
+        },
+        "verified": true
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a mode 0700 directory owned by this uid is READY",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a world-writable parent without the sticky bit is BLOCKED",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — родительская папка /tmp/qa-uc5-7C4xcu доступна на запись всем без sticky-бита"
+    },
+    {
+      "kind": "hold",
+      "name": "a sticky 1777 parent and a 0755 parent stay READY",
+      "ok": true,
+      "detail": {
+        "sticky": "READY",
+        "ownerOnly": "READY"
+      }
+    },
+    {
+      "kind": "measured",
+      "name": "a group-writable 0770 parent is not covered by the other-write check and stays READY",
+      "ok": true,
+      "detail": "ключей: 1"
+    },
+    {
+      "kind": "measured",
+      "name": "nobody in the group can rename a keyring out of a 0770 parent, and a nobody-owned ring is BLOCKED",
+      "ok": true,
+      "detail": {
+        "mv": 0,
+        "stderr": "",
+        "nobodyBlocked": {
+          "state": "BLOCKED",
+          "attacker": false,
+          "message": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — папка не открыта: EACCES"
+        }
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a symlinked parent in the /var shape is READY",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "kind": "hold",
+      "name": "a resolved parent that is 0777 without sticky is BLOCKED even when the logical parent looks private",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — родительская папка /tmp/qa-uc5-7cxMgG доступна на запись всем без sticky-бита"
+    },
+    {
+      "kind": "hold",
+      "name": "the keyring directory itself as a symlink is BLOCKED",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — папка — символическая ссылка (запрещено)"
+    },
+    {
+      "kind": "hold",
+      "name": "a symlinked .pub.pem is BLOCKED and the outside key is not loaded",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — ключ 1fe635efce2c2e22: k.pub.pem: символическая ссылка (запрещено)"
+    },
+    {
+      "kind": "hold",
+      "name": "a revocation in the external keyring removes the base key and the signature fails",
+      "ok": true,
+      "detail": {
+        "revoked": [
+          "1fe635efce2c2e22"
+        ],
+        "reason": "ключ 1fe635efce2c2e22 отозван",
+        "state": "READY"
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "an external ring that revokes its own key does not load that key",
+      "ok": true,
+      "detail": {
+        "state": "READY",
+        "revoked": [
+          "3e608120a05f45f2"
+        ]
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "a rejected external directory does not apply its revocations",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — права папки 777 — нужны 700 (chmod 700)"
+    },
+    {
+      "kind": "hold",
+      "name": "a bad external entry is merged as a problem, its revocation still applies, and the valid key loads",
+      "ok": true,
+      "detail": [
+        "OPS_UPDATE_KEYRING_DIR: ключ 0123456789abcdef: это ПРИВАТНЫЙ ключ — в keyring допускается только публичный; запись отклонена"
+      ]
+    },
+    {
+      "kind": "residual",
+      "name": "no openat: swapping the real directory after the directory fd and restoring it before the final lstat loads the attacker key",
+      "ok": true,
+      "detail": {
+        "state": "READY",
+        "swapped": true,
+        "restored": true,
+        "blocked": null
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "leaving the swapped directory in place fails the dev/ino recheck and does not merge the attacker key",
+      "ok": true,
+      "detail": "BLOCKED: внешний keyring (OPS_UPDATE_KEYRING_DIR) отклонён — папка была подменена во время проверки"
+    },
+    {
+      "kind": "measured",
+      "name": "higher-volume race: nobody retargets a parent symlink in a non-sticky 0777 directory",
+      "ok": true,
+      "detail": {
+        "loads": 341623,
+        "hits": 0,
+        "blocked": 340899,
+        "readyOwner": 724,
+        "ms": 20000
+      }
+    },
+    {
+      "kind": "hold",
+      "name": "the parent-symlink race loaded no attacker key",
+      "ok": true,
+      "detail": {
+        "loads": 341623,
+        "hits": 0,
+        "blocked": 340899,
+        "readyOwner": 724,
+        "ms": 20000
+      }
+    },
+    {
+      "kind": "measured",
+      "name": "higher-volume race: same-user rename of the real directory during loads",
+      "ok": true,
+      "detail": {
+        "loads": 185057,
+        "hits": 488,
+        "blocked": 183814,
+        "readyOwner": 730,
+        "errors": 0,
+        "ms": 12000
+      }
+    },
+    {
+      "kind": "residual",
+      "name": "the live same-user rename race loaded the attacker key",
+      "ok": true,
+      "detail": {
+        "loads": 185057,
+        "hits": 488,
+        "blocked": 183814,
+        "readyOwner": 730,
+        "errors": 0,
+        "ms": 12000
+      }
+    },
+    {
+      "kind": "measured",
+      "name": "a same-user hardlink is a regular file and is loaded",
+      "ok": true,
+      "detail": {
+        "nlink": 2
+      }
+    }
+  ],
+  "failed": 0,
+  "findings": [
+    {
+      "name": "no openat: swapping the real directory after the directory fd and restoring it before the final lstat loads the attacker key",
+      "detail": {
+        "state": "READY",
+        "swapped": true,
+        "restored": true,
+        "blocked": null
+      }
+    },
+    {
+      "name": "the live same-user rename race loaded the attacker key",
+      "detail": {
+        "loads": 185057,
+        "hits": 488,
+        "blocked": 183814,
+        "readyOwner": 730,
+        "errors": 0,
+        "ms": 12000
+      }
+    }
+  ]
+}

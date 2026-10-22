@@ -1,0 +1,77 @@
+STEP v112.health {"ok":true,"app":"moonkatty-ai-studio","mode":"server","version":"1.1.2","pid":13508,"uptimeSec":0,"db":"ok","dbDriver":"better-sqlite3","keySource":"file","startedAt":"2026-10-21T07:29:45.615Z","lastTick":"2026-10-21T07:29:45.626Z"}
+STEP v112.login {"status":200,"user":"igor"}
+STEP v112.task {"status":201,"id":"mvhskrp7830a6p","title":"QA-MIG-TASK-keep"}
+STEP v112.queue {"status":201,"id":"mvhskrpadkj3yj","st":"pending_approval"}
+STEP v112.ollama {"status":200,"model":"qa-sentinel-model"}
+STEP before {"users":"bd75fc5afe57218b53fe3f3e106474d9bfed66ce71cc224e1d6da8cbe17e1e90","task":"QA-MIG-TASK-keep","model":"qa-sentinel-model","queue":"pending_approval","tables":["items","meta"],"jobs":"absent:no such table: jobs"}
+STEP v121.login {"status":200,"user":"igor"}
+STEP v121.task {"status":200,"title":"QA-MIG-TASK-keep","st":"queued"}
+STEP v121.ollama {"model":"qa-sentinel-model"}
+STEP v121.queue {"title":"QA-MIG-QUEUE","st":"pending_approval"}
+STEP v121.job {"jobId":"job_a7ed916edd7985cb"}
+STEP v121.job.idempotent {"jobId":"job_a7ed916edd7985cb","existing":true}
+STEP v121.second {"login":200,"jobCount":1,"found":{"id":"job_a7ed916edd7985cb","taskId":"mvhskrzo25dw7b","kind":"opencode_task","status":"failed","stage":"opencode_task","attempt":0,"maxAttempts":2,"retries":0,"maxRetries":3,"checkpoint":{},"artifacts":[],"error":"opencode_task: зарезервировано (отдельные задачи OpenCode вне 3D-конвейера), не реализовано в 1.2.0","pending":null,"resourceClass":"llm","requiresNode":"mac-mini","idempotencyKey":"qa-mig-job-1","safeToRetry":false,"input":{"text":"qa-mig-job-history
+STEP v112.onUpgraded {"login":"igor","title":"QA-MIG-TASK-keep","st":"queued"}
+STEP v112.restored {"login":"igor","title":"QA-MIG-TASK-keep","model":"qa-sentinel-model"}
+RESULT {
+  "lost": [],
+  "schemaIdempotent": false,
+  "restoredOk": true,
+  "oldKeepsJob": true,
+  "jobsCols": [
+    "ERR The database connection is not open"
+  ],
+  "beforeTables": [
+    {
+      "name": "items",
+      "type": "table"
+    },
+    {
+      "name": "meta",
+      "type": "table"
+    }
+  ],
+  "afterTables": [
+    {
+      "name": "job_events_job",
+      "type": "index"
+    },
+    {
+      "name": "jobs_idem",
+      "type": "index"
+    },
+    {
+      "name": "jobs_task",
+      "type": "index"
+    },
+    {
+      "name": "items",
+      "type": "table"
+    },
+    {
+      "name": "job_events",
+      "type": "table"
+    },
+    {
+      "name": "jobs",
+      "type": "table"
+    },
+    {
+      "name": "meta",
+      "type": "table"
+    }
+  ],
+  "designBefore": {
+    "enabled": false,
+    "inDevelopment": true,
+    "status": "dev",
+    "role": "3D-модели и сцены MOONKATTY"
+  },
+  "designAfter": {
+    "enabled": true,
+    "inDevelopment": false,
+    "status": "idle",
+    "role": "3D-модели и сцены MOONKATTY: OpenCode-агент + Blender (headless)"
+  }
+}
+EXIT:1

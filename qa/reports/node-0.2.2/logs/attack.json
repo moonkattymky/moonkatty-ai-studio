@@ -1,0 +1,180 @@
+{
+  "commit": "db4720bee599f42a815c6876eb1446317f7d5258",
+  "controls": 24,
+  "failed": [],
+  "rows": [
+    {
+      "id": "commit",
+      "ok": true,
+      "detail": "db4720bee599f42a815c6876eb1446317f7d5258"
+    },
+    {
+      "id": "worktree-clean-before",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "id": "nonce-in-signature-replay-401",
+      "ok": true,
+      "detail": {
+        "job": "nj_abe28ca73c5c7883",
+        "replay": "E_REPLAY",
+        "late": "E_UNAUTHORIZED",
+        "noNonce": "E_AGENT_VERSION",
+        "protocolField": 1
+      }
+    },
+    {
+      "id": "nonce-store-is-memory-only",
+      "ok": true,
+      "detail": "second manager accepted the captured request"
+    },
+    {
+      "id": "rotate-requires-owner-flag",
+      "ok": true,
+      "detail": {
+        "status": 409,
+        "body": {
+          "error": "ротацию запускает только владелец (кнопка «Ротация»)",
+          "code": "E_ROTATE_NOT_REQUESTED"
+        }
+      }
+    },
+    {
+      "id": "rotate-after-owner-flag",
+      "ok": true,
+      "detail": {
+        "status": 200,
+        "hasToken": true
+      }
+    },
+    {
+      "id": "xff-trusted-on-loopback",
+      "ok": true,
+      "detail": {
+        "loopXff": "tsnode:nIMAC",
+        "loopEvil": "tsnode:nEVIL"
+      }
+    },
+    {
+      "id": "xff-ignored-off-loopback",
+      "ok": true,
+      "detail": {
+        "nonLoop": "tsnode:nEVIL",
+        "lan": "ip:10.9.9.9",
+        "login": "tsuser:igor@x"
+      }
+    },
+    {
+      "id": "unknown-bucket-dos-is-shared",
+      "ok": true,
+      "detail": {
+        "unknown": "loopback",
+        "other": "loopback",
+        "locked": "E_IP_LOCKED",
+        "identified": "pending"
+      }
+    },
+    {
+      "id": "loopback-xff-can-lock-named-peer",
+      "ok": true,
+      "detail": {
+        "victim": "E_IP_LOCKED",
+        "other": "pending"
+      }
+    },
+    {
+      "id": "ip-lock-persists-across-manager",
+      "ok": true,
+      "detail": "E_IP_LOCKED"
+    },
+    {
+      "id": "nodes-lock-blocks-second-process",
+      "ok": true,
+      "detail": {
+        "second": "каталог узлов /tmp/held-cwxXxO уже используется процессом 35362 (второй координатор запрещён)",
+        "stale": "opened"
+      }
+    },
+    {
+      "id": "panel-shows-fingerprint-and-unverified",
+      "ok": true,
+      "detail": "ops-ui.js"
+    },
+    {
+      "id": "node-screen-shows-key",
+      "ok": true,
+      "detail": "enroll.html"
+    },
+    {
+      "id": "code-rejected-on-argv",
+      "ok": true,
+      "detail": "status=2 enroll: не передавайте код в командной строке (виден в ps) — введите его по запросу или через stdin\n"
+    },
+    {
+      "id": "code-accepted-on-stdin",
+      "ok": true,
+      "detail": "status=2 enroll: только https:// — подключение по открытому HTTP запрещено\n"
+    },
+    {
+      "id": "tailscale-mode-requires-ts-net",
+      "ok": true,
+      "detail": {
+        "enroll": "E_TLS_MODE",
+        "client": "NODE_TLS_MODE=tailscale: COORDINATOR_URL должен быть https://<mac-mini>.<tailnet>.ts.net (tailscale serve, без funnel)"
+      }
+    },
+    {
+      "id": "funnel-off-is-ok",
+      "ok": true,
+      "detail": "Funnel выключен (tailscale serve/funnel status --json)"
+    },
+    {
+      "id": "funnel-on-is-not-ok",
+      "ok": true,
+      "detail": "Tailscale Funnel ВКЛЮЧЁН (публичный интернет): mac-mini.tailnet.ts.net:443"
+    },
+    {
+      "id": "funnel-unknown-is-not-ok",
+      "ok": true,
+      "detail": {
+        "direct": "не удалось прочитать `tailscale serve/funnel status --json` — состояние Funnel неизвестно, проверьте вручную",
+        "audit": "не удалось прочитать `tailscale serve/funnel status --json` — состояние Funnel неизвестно, проверьте вручную"
+      }
+    },
+    {
+      "id": "token-check-same-work",
+      "ok": true,
+      "detail": {
+        "wrongNs": 33961,
+        "rightNs": 37796,
+        "ratio": 1.11
+      }
+    },
+    {
+      "id": "legacy-tokens-off-by-default",
+      "ok": true,
+      "detail": {
+        "first": 428,
+        "afterPassword": 403,
+        "code": "E_LEGACY_DISABLED"
+      }
+    },
+    {
+      "id": "confirm-revoke-rotate-need-password",
+      "ok": true,
+      "detail": {
+        "confirm": 428,
+        "badPw": 403,
+        "afterPassword": 400,
+        "revoke": 428,
+        "rotate": 428
+      }
+    },
+    {
+      "id": "worktree-clean-after",
+      "ok": true,
+      "detail": "clean"
+    }
+  ]
+}

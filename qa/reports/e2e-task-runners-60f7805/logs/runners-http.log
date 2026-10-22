@@ -1,0 +1,21 @@
+PASS server boots
+PASS POST /api/jobs opencode_task -> 403 needs_owner, no job created
+PASS no opencode job exists before approval
+PASS prompt with leading "-" rejected at HTTP
+PASS app token cannot approve agent code execution
+PASS owner approval -> executor creates opencode_task job
+PASS sandboxed child really running
+PASS HTTP cancel -> cancelled and child process stopped
+PASS job status cancelled
+PASS retry of opencode_task -> 403 needs_owner (new approval), job not re-queued
+PASS POST /api/jobs render_segment -> 403 needs_owner + approvalId
+PASS no render_segment job before approval
+PASS render_segment audioPath outside media -> 400, uniform error, no approval created
+PASS app token cannot approve render_segment
+PASS owner approval -> executor creates render_segment job
+PASS approved render_segment runs (ffmpeg) -> done
+PASS replay of render approval -> 409 consumed
+PASS server boots
+PASS TEST flavor without MK_TEST_REAL_RUNNERS -> job failed, nothing spawned
+PASS retry of render_segment -> 403 needs_owner, not re-queued to generic runner
+ALL PASS

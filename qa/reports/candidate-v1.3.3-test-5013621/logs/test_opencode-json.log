@@ -1,0 +1,9 @@
+PASS schema: extra key rejected
+PASS schema: path-like title rejected
+PASS schema: enum/range/type violations rejected
+PASS extractJson: fenced, bare, none, broken
+PASS safe writer: symlinked scene_params.json refused, symlink target untouched — Путь scene_params.json вне рабочей папки проекта — запись запрещена
+PASS safe writer: symlinked project folder refused — Рабочая папка проекта — символическая ссылка; запись запрещена
+PASS safe writer: invalid params never written
+PASS safe writer: valid params written inside folder (0600)
+SKIP: design3d disabled in this build (DESIGN3D_ENABLED=false, feature_disabled) — 3D pipeline checks not run

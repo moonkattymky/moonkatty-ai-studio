@@ -1,0 +1,92 @@
+OK	worktree-commit	aef14c465322e3c969b41d4866c3557b7b555367
+OK	worktree-clean-before	clean
+OK	url-policy-blocks-ssrf	http:NOT_HTTPS metadata-ip:URL_NOT_ALLOWED localhost:URL_NOT_ALLOWED userinfo:BAD_URL foreign-repo:REPO_NOT_ALLOWED port:BAD_URL
+OK	redirect-to-metadata-blocked	NOT_HTTPS
+OK	sig-prod-key-accepts-stable	{"ok":true,"keyId":"952447f1ce41a7a8","set":"prod","stub":false}
+OK	sig-raw-base64-rejected	подпись не в формате {v,alg,keyId,sig} — подпись без keyId не принимается
+OK	sig-flipped-rejected	подпись не прошла проверку ключом 952447f1ce41a7a8
+OK	sig-tampered-manifest-rejected	подпись не прошла проверку ключом 952447f1ce41a7a8
+OK	sig-unknown-key-rejected	ключ 6efd187217e6de3a не входит в доверенный набор «prod» (канал stable)
+OK	sig-test-key-rejected-for-stable	ключ 6ba9622e82c4432b не входит в доверенный набор «prod» (канал stable)
+OK	sig-prod-key-rejected-for-test	ключ 952447f1ce41a7a8 не входит в доверенный набор «test» (канал test)
+OK	sig-revoked-key-rejected	ключ b76aeb11911b3e29 отозван
+OK	sig-retired-key-rejected	ключ df8edf4d2206dd41 не входит в доверенный набор «prod» (канал stable)
+OK	sig-next-test-key-accepts	{"ok":true,"keyId":"2474e39866296d7d","set":"test","stub":false}
+OK	stub-prod-key-dropped	ключ-заглушка 5a5a32c4ded25789 отклонён для prod
+OK	revoked-and-retired-not-loaded	prod=952447f1ce41a7a8 revoked=b76aeb11911b3e29
+OK	committed-ring-prod-empty	{"prod":0,"test":1,"stubOnly":{"prod":true,"test":true},"problems":[],"files":["README.md","keyring.json","stub-test-ed25519.pub.pem"]}
+OK	no-private-key-in-tree	README.md,keyring.json,stub-test-ed25519.pub.pem
+OK	fresh-release-verified	нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	downgrade-blocked	версия 1.1.9 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	same-version-blocked	версия 1.2.0 не новее текущей 1.2.0 — откат/downgrade через Update Center запрещён | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	older-than-365-days-blocked	релиз опубликован 2334 дн. назад (> 365) — возможен replay старой подписи | нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	same-bytes-second-check-still-verified	second check of the same bytes still verified
+OK	missing-publishedAt-skips-age	tag=v1.3.0 publishedAt=null reasons=нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	republish-resets-age	publishedAt=2026-10-01T00:00:00Z reasons=нет проверенного бэкапа (checksum + тест-восстановление) | поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	strict-tag-rejects-suffix	тег v1.3.0-test не соответствует версии/каналу manifest 1.3.0/stable
+OK	preview-tag-allowed	verified
+OK	preview-tag-rejected-on-stable	тег v1.3.1-mac-preview не соответствует версии/каналу manifest 1.3.1/stable
+OK	version-without-test-prerelease-blocked	идентичность в manifest не соответствует профилю канала «test» (расходятся: bundleId, appName, dataDirName, launchdLabel, keychainServicePrefix, isolated) — например test-manifest с prod-идентификаторами | версия 1.3.0 не соответствует каналу test | другой канал/сборка (test, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio) запрещена; рядом можно только полностью изолированную сборку | 
+OK	test-manifest-prod-ids-blocked	идентичность в manifest не соответствует профилю канала «test» (расходятся: bundleId, appName, dataDirName, launchdLabel, keychainServicePrefix) — например test-manifest с prod-идентификаторами | другой канал/сборка (test, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio) запрещена; рядом можно только полностью изолированную сборку auto=BLOCKED
+OK	channel-switch-is-side-by-side	mode=side-by-side target=/Applications/MOONKATTY AI STUDIO TEST.app reasons=
+OK	prod-manifest-cannot-replace-test-app	другой канал/сборка (stable, com.moonkatty.aistudio) — замена запущенной (com.moonkatty.aistudio.test) запрещена; рядом можно только полностью изолированную сборку
+OK	test-profile-replaces-test-app-only	mode=replace target=/Applications/MOONKATTY AI STUDIO TEST.app reasons=
+OK	runtime-identity-prod-and-test	{"prod":"prod","test":"test","testPath":"/Applications/MOONKATTY AI STUDIO TEST.app"}
+OK	flavor-contradiction-blocks	STUDIO_FLAVOR=prod противоречит bundle id com.moonkatty.aistudio.test || неизвестный bundle id: com.evil.app
+OK	unknown-identity-blocks-install	идентичность запущенного приложения не определена: неизвестный bundle id: com.evil.app
+OK	toctou-replaced-zip-blocks-plan	plan=SHA-256 архива изменился после загрузки — установка запрещена auto=BLOCKED status=tampered
+OK	consent-cleared-when-manifest-changes	manifest изменился — прежнее согласие владельца аннулировано
+OK	consent-bound-to-manifest-sha256	поверх рабочей сборки с тем же bundleId (com.moonkatty.aistudio) — только с явного согласия владельца на ЭТОТ подписанный manifest
+OK	zip-slip-rejected	опасный путь в архиве: "../outside.txt"
+OK	absolute-path-rejected	опасный путь в архиве: "/tmp/abs.txt"
+OK	backslash-rejected	опасный путь в архиве: "..\\outside.txt"
+OK	symlink-absolute-rejected	симлинк ведёт за пределы приложения: MOONKATTY AI STUDIO.app/Contents/MacOS/escape -> /etc/passwd
+OK	symlink-escape-rejected	симлинк ведёт за пределы приложения: MOONKATTY AI STUDIO.app/Contents/MacOS/escape -> ../../../../../../etc/passwd
+OK	symlink-inside-app-allowed	ok=true problems=
+OK	zip-slip-download-deleted	BAD_ARCHIVE leftover=false
+OK	symlink-download-refused	BAD_ARCHIVE
+OK	autoinstall-off-without-flags	AUTO_INSTALL_DISABLED
+OK	autoinstall-dry-run-spctl-on-staging	/usr/bin/ditto -x -k /tmp/mk-uc2-jMB1ep/downloads/v1.3.0/MOONKATTY-AI-STUDIO-1.3.0-arm64-mac.zip /tmp/mk-uc2-jMB1ep/staging/v1.3.0
+/usr/bin/codesign --verify --deep --strict /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app
+/usr/sbin/spctl --assess --type execute /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app
+/usr/bin/codesign -dv --verbose=4 /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app
+/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server
+/bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-previous.app
+/bin/mv /tmp/mk-uc2-jMB1ep/staging/v1.3.0/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO.app
+/bin/launchctl bootstrap gui/1000 /home/ubuntu/Library/LaunchAgents/com.moonkatty.aistudio.server.plist
+OK	autoinstall-requires-developer-id	NOT_NOTARIZED
+OK	autoinstall-refuses-non-mac	linux=NOT_MAC armedDarwinAttempt=undefined
+OK	rollback-is-mv-and-http-dry	NOT_MAC /bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server || /bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-failed-1792584000000.app || /bin/mv /Applications/MOONKATTY AI STUDIO-previous.app /Applications/MOONKATTY AI STUDIO.app || /bin/launchctl bootstrap gui/1000 /home/ubuntu/Library/LaunchAgents/com.moonkatty.aistudio.server.plist
+OK	legacy-plan-has-no-rm-rf	["Закройте приложение","mv \"/Applications/MOONKATTY AI STUDIO.app\" \"/Applications/MOONKATTY AI STUDIO-failed.app\" && mv \"/Applications/MOONKATTY AI STUDIO-previous.app\" \"/Applications/MOONKATTY AI STUDIO.app\" (неудачную версию не удалять)","Если менялась схема данных — восстановите бэкап в пустую папку: node ops/backup.js restore <id> --to <папка> и замените папку данных"]
+OK	schema-3-blocks-gate	schema=false/3 compat=текущая БД (схема 3) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено gate=проверка совместимости БД/миграций не пройдена: текущая БД (схема 3) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено
+OK	schema-99-blocks-gate	неизвестная версия схемы 99 (известны 1, 2, 3, 4)
+OK	schema-4-fail-closed	v1=true v4=false supported=1 текущая БД (схема 4) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено
+OK	schema-99-db-fail-closed	текущая БД (схема 99) не поддерживается запущенным кодом (поддерживается ≤ 1) — обновление поверх неё запрещено
+OK	non-darwin-codesign-not-ok	codesign:false
+OK	gatekeeper-rejection-not-ok	codesign:true,gatekeeper:false
+OK	health-url-loopback-only	BAD_HEALTH_URL BAD_HEALTH_URL BAD_HEALTH_URL http://127.0.0.1:8787/api/health ctor=BAD_HEALTH_URL
+OK	update-center-has-no-interval	no setInterval in update-center.js
+OK	index-health-is-loopback	index builds 127.0.0.1 health URL
+OK	ops-sources-have-no-rm-rf	lib/ops has no rm -rf
+OK	ui-check-is-a-button	POST /check is the button handler
+OK	electron-autocheck-off	DEF.checkUpdates false; manual only
+OK	electron-check-does-not-install	no electron-updater
+OK	builder-still-adhoc	{"target":[{"target":"dir","arch":["arm64"]}],"category":"public.app-category.productivity","icon":"build/icon.png","identity":null,"hardenedRuntime":false,"gatekeeperAssess":false,"minimumSystemVersion":"12.0","extendInfo":{"LSApplicationCategoryType":"public.app-category.productivity","CFBundleDevelopmentRegion":"ru","NSHumanReadableCopyright":"MOONKATTY"}}
+OK	servers-started	off=true on=true ge at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO: http://127.0.0.1:18961 (pid 45085, db node:sqlite)
+(node:45086) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO: http://127.0.0.1:18962 (pid 45086, db node:sqlite)
+
+OK	flag-off-is-404	404
+OK	unauthenticated-is-401	401
+OK	csrf-missing-header-403	CSRF check failed (missing X-Studio-Request header)
+OK	csrf-evil-origin-403	Cross-origin request rejected
+OK	csrf-cross-site-403	Cross-site request rejected
+OK	autoinstall-http-disabled	{"error":"автоустановка выключена: не заданы OPS_UPDATE_AUTO_INSTALL, OPS_UPDATE_SIGNATURE_READY, OPS_UPDATE_BACKUP_VERIFIED_READY, OPS_UPDATE_ROLLBACK_TESTED_ON_MAC","code":"AUTO_INSTALL_DISABLED"}
+OK	rollback-http-stays-dry-run	{"dryRun":true,"commands":["/bin/launchctl bootout gui/1000/com.moonkatty.aistudio.server","/bin/mv /Applications/MOONKATTY AI STUDIO.app /Applications/MOONKATTY AI STUDIO-failed-1792587923208.app","/bin/mv /Applications/MOONKATTY AI STUDIO-previous.app /Applications/MOONKATTY AI STUDIO.app","/bin/l
+OK	approve-wrong-password-403	Неверный пароль владельца
+OK	check-does-not-touch-applications	status=200 applicationsApp=false bind=http://127.0.0.1:18962
+OK	server-bind-is-loopback	http://127.0.0.1:18962
+OK	worktree-clean-after	clean

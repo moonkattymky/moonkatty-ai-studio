@@ -1,0 +1,10 @@
+PASS real: savings → 403 needs_owner (approval created) — {"s":403,"body":{"target_usd":2185},"j":{"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjxct1ks4rxv2"}}
+PASS real: approve 200, server executed the action — {"s":200,"st":"executed","executed":true}
+PASS real: UI shows execution result — Подтверждено и выполнено (запрос № mvjxct1ks4rxv2)
+PASS real: savings NOT re-sent after approval (no retry path) — savings POSTs: 1
+PASS real: no «одобрение уже использовано» / 409 shown — Ошибка: Нужно подтверждение владельца: запрос добавлен в «Очередь владельца». После подтверждения действие выполнится автоматически — повторять не нужно. (запрос № mvjxct1ks4rxv2) | Подтверждено и выполнено
+PASS real: refreshed state has the new target — {"item":"Mac Studio","target":{"usd":2185,"label":"$2185.00"},"progress":"НЕТ ДАННЫХ"} VIEW:Mac Studio
+
+PASS no JS errors
+
+7 passed, 0 failed

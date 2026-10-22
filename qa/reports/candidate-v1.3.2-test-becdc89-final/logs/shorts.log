@@ -1,0 +1,7 @@
+PASS draft
+PASS render started
+PASS shorts long-word render — rendered 
+PASS MP4 1080x1920 — 1080,1920
+PASS SRT >=0.6s — min=0.800
+PASS no overlaps
+6p 0f

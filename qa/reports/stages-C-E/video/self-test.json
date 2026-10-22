@@ -1,0 +1,150 @@
+{
+  "contract": "moonkatty.qa.video.self-test/1",
+  "mode": "self-test",
+  "note": "Synthetic files. News-launch renders were not in this run. Counts are checks, not a score.",
+  "newsLaunchFiles": 0,
+  "pass": 6,
+  "fail": 0,
+  "not_tested": 0,
+  "cases": [
+    {
+      "name": "1920x1080 moving picture is an allowed raster and the SRT fits",
+      "file": "moving.mp4",
+      "pass": true,
+      "expectedPass": true,
+      "ok": true,
+      "findings": [],
+      "metrics": {
+        "width": 1920,
+        "height": 1080,
+        "durationSec": 2,
+        "integratedLUFS": -21.8,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": -16.1,
+        "blackPct": 0,
+        "freezeSec": 0,
+        "subtitleCues": 1
+      }
+    },
+    {
+      "name": "static picture is frozen",
+      "file": "still.mp4",
+      "pass": false,
+      "expectedPass": false,
+      "ok": true,
+      "findings": [
+        {
+          "kind": "frozen_frames",
+          "summary": "Frozen picture lasts 2s; limit is 0.2s"
+        }
+      ],
+      "metrics": {
+        "width": 1920,
+        "height": 1080,
+        "durationSec": 2,
+        "integratedLUFS": -21.8,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": -16.1,
+        "blackPct": 0,
+        "freezeSec": 2,
+        "subtitleCues": null
+      }
+    },
+    {
+      "name": "black 1080x1920 fails the black-frame limit",
+      "file": "black.mp4",
+      "pass": false,
+      "expectedPass": false,
+      "ok": true,
+      "findings": [
+        {
+          "kind": "black_frames",
+          "summary": "Black picture is 96.0% of the duration; limit is 0.0%"
+        }
+      ],
+      "metrics": {
+        "width": 1080,
+        "height": 1920,
+        "durationSec": 1,
+        "integratedLUFS": -70,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": null,
+        "blackPct": 0.96,
+        "freezeSec": 0,
+        "subtitleCues": null
+      }
+    },
+    {
+      "name": "320x240 is not a news raster",
+      "file": "small.mp4",
+      "pass": false,
+      "expectedPass": false,
+      "ok": true,
+      "findings": [
+        {
+          "kind": "video_resolution",
+          "summary": "Raster is 320x240; allowed 1080x1920 or 1920x1080"
+        }
+      ],
+      "metrics": {
+        "width": 320,
+        "height": 240,
+        "durationSec": 1,
+        "integratedLUFS": -21.8,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": -16.1,
+        "blackPct": 0,
+        "freezeSec": 0,
+        "subtitleCues": null
+      }
+    },
+    {
+      "name": "SRT cue past the end fails sync",
+      "file": "moving.mp4",
+      "pass": false,
+      "expectedPass": false,
+      "ok": true,
+      "findings": [
+        {
+          "kind": "subtitle_sync",
+          "summary": "Cue 1 (9.000–10.000s) falls outside the media duration 2s"
+        }
+      ],
+      "metrics": {
+        "width": 1920,
+        "height": 1080,
+        "durationSec": 2,
+        "integratedLUFS": -21.8,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": -16.1,
+        "blackPct": 0,
+        "freezeSec": 0,
+        "subtitleCues": 1
+      }
+    },
+    {
+      "name": "loudness outside the measured window fails",
+      "file": "moving.mp4",
+      "pass": false,
+      "expectedPass": false,
+      "ok": true,
+      "findings": [
+        {
+          "kind": "loudness",
+          "summary": "Integrated loudness is -21.8 LUFS; expected -70 to -60 LUFS"
+        }
+      ],
+      "metrics": {
+        "width": 1920,
+        "height": 1080,
+        "durationSec": 2,
+        "integratedLUFS": -21.8,
+        "loudnessRangeLU": 0,
+        "truePeakDBFS": -16.1,
+        "blackPct": 0,
+        "freezeSec": 0,
+        "subtitleCues": null
+      }
+    }
+  ]
+}

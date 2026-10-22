@@ -1,0 +1,1435 @@
+{
+  "contract": "moonkatty.qa.bugs/1",
+  "updatedAt": "2026-10-21T20:20:58.603Z",
+  "bugs": [
+    {
+      "id": "QA-HZ-001",
+      "title": "window.MoonBuild does not match the asset build id",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "horizons",
+      "summary": "The play build label window.MoonBuild is v44 while MoonReliability.BUILD is 20261017-98a.",
+      "expected": "The label in window.MoonBuild matches MoonReliability.BUILD.",
+      "actual": "MoonBuild=v44 reliability=20261017-98a",
+      "repro": [
+        "Open the horizons play build",
+        "Read window.MoonBuild",
+        "Read window.MoonReliability.BUILD",
+        "Compare with the ?v= query on game.js"
+      ],
+      "evidence": [
+        "qa/reports/2026-10-20/report.md"
+      ],
+      "foundAt": "2026-10-20T22:35:46.218Z",
+      "foundIn": "moonkatty-horizons-play 2df1c76, qa/reports/2026-10-20/report.md",
+      "verifiedIn": null,
+      "blockedOn": "horizons source repo access (owner)",
+      "history": [
+        {
+          "at": "2026-10-20T22:51:18.995Z",
+          "status": "open",
+          "note": "Recorded on the play build. moonkattymky/moonkatty-horizons was not cloneable."
+        }
+      ]
+    },
+    {
+      "id": "QA-APR-001",
+      "title": "Social queue can skip approval guardrails",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "On v1.2.1, POST /api/queue stored status approved or retry without guardrails. On v1.2.3-test that POST is stored as pending_approval.",
+      "expected": "A client cannot store an approved or retry queue row that the publisher will send.",
+      "actual": "v1.2.3-test POST with status approved or retry is stored as pending_approval.",
+      "repro": [
+        "Authenticate to the studio",
+        "POST /api/queue with status approved",
+        "Read the stored status"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 audit: POST stored approved or retry and skipped guardrails."
+        },
+        {
+          "at": "2026-10-21T09:23:02.000Z",
+          "status": "qa_verified",
+          "note": "f2440e1 test flavor stores POST approved or retry as pending_approval."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test recheck: POST still forces pending_approval. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-APR-002",
+      "title": "Queue row can be marked published with no external post",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 accepted PUT status published with a null externalId. The prod flavor of f2440e1 still stored a client externalId. 7327a1e and v1.2.3-test return HTTP 403.",
+      "expected": "HTTP cannot mark a row published, and a client externalId is not stored as a platform post.",
+      "actual": "v1.2.3-test PUT of status published plus externalId is HTTP 403. The prod flavor of f2440e1 stored the client id.",
+      "repro": [
+        "Authenticate to the studio",
+        "PUT /api/queue/:id with status published and an externalId",
+        "Read the HTTP status and the stored row"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 PUT status published returned 200 with externalId still null."
+        },
+        {
+          "at": "2026-10-21T09:23:02.000Z",
+          "status": "open",
+          "note": "f2440e1 prod flavor stored a client externalId as published. Test flavor returned 403."
+        },
+        {
+          "at": "2026-10-21T10:03:20.000Z",
+          "status": "qa_verified",
+          "note": "7327a1e HTTP publish path is 403."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test HTTP 403 stands. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-DB-001",
+      "title": "Upgrade does not snapshot the database",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 altered the database on startup with no copy. Later builds write a pre-migration VACUUM INTO backup and a sha256 sidecar.",
+      "expected": "Opening a v1-shaped database writes a restorable snapshot before migration.",
+      "actual": "v1.2.3-test wrote pre-migration-v1-to-v4-*.db and a matching .sha256. The seeded task survived.",
+      "repro": [
+        "Place a v1-shaped studio.db with tables items and meta",
+        "Start the server",
+        "Compare the pre-migration backup to its sha256 sidecar"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "v1.2.1 startup ALTER had no snapshot. Rollback was a copy made beforehand."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test pre-migration backup plus sha256 sidecar matched. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-OC-001",
+      "title": "OpenCode seatbelt allows writes under /private/tmp",
+      "severity": "medium",
+      "status": "blocked",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.1 allowed file-write under /private/tmp. Later source removes that allow. Runtime sandbox-exec was not run.",
+      "expected": "A task write outside the sandbox directory is denied by sandbox-exec.",
+      "actual": "Source no longer allows /private/tmp. sandbox-exec was not executed on this host.",
+      "repro": [
+        "Enable OpenCode on macOS",
+        "Confirm sandbox-exec is the parent",
+        "Attempt a write under /private/tmp"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.2/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 tag 42d3fd5, runner.js file-write* under /private/tmp",
+      "verifiedIn": null,
+      "blockedOn": "Mac sandbox-exec (owner machine)",
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "Seatbelt profile allows /private/tmp and /private/var/folders. Not executed."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "blocked",
+          "note": "Source change is present. Runtime stays unverified until sandbox-exec runs on a Mac."
+        }
+      ]
+    },
+    {
+      "id": "QA-INFO-001",
+      "title": "BUILD-INFO names fuse index 8 undefined",
+      "severity": "low",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "The v1.2.1 packager printed fuse index 8 as undefined. The v1.2.3-test BUILD-INFO names that byte WasmTrapHandlers Enabled.",
+      "expected": "BUILD-INFO names fuse index 8 instead of printing undefined.",
+      "actual": "v1.2.3-test BUILD-INFO prints WasmTrapHandlers enabled via @electron/fuses 2.1.3.",
+      "repro": [
+        "Package the mac zip",
+        "Read BUILD-INFO fuse index 8"
+      ],
+      "evidence": [
+        "qa/reports/final-audit-v1.2.1/REPORT.md",
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T07:34:14.000Z",
+      "foundIn": "v1.2.1 mac preview packager, qa/reports/final-audit-v1.2.1/REPORT.md",
+      "verifiedIn": "v1.2.3-test a2a35c8 BUILD-INFO, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T07:34:14.000Z",
+          "status": "open",
+          "note": "Fuse byte was ENABLE. The packager enum had no name, so the text said undefined is Enabled."
+        },
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "qa_verified",
+          "note": "v1.2.3-test BUILD-INFO names WasmTrapHandlers. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-CMT-001",
+      "title": "Comment POST stores status approved",
+      "severity": "low",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "v1.2.3-test generic POST /api/comments stores status approved. The test /reply route returns HTTP 403 and does not send.",
+      "expected": "A client POST cannot store a comment as approved when reply is disabled.",
+      "actual": "On b7101c4 a POST with status approved is stored as new. The reply route returns 403 publishing_disabled.",
+      "repro": [
+        "Authenticate to the v1.2.3-test server",
+        "POST /api/comments with status approved",
+        "Read the stored status",
+        "POST /api/comments/:id/reply and expect HTTP 403"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": "feat/v1.2.4-test-nodes b7101c4, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Left for v1.2.4 by the product doc. Reply does not send. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T12:54:00.746Z",
+          "status": "qa_verified",
+          "note": "b7101c4: POST /api/comments with status approved is stored as new. POST /reply is 403 publishing_disabled and does not set replyId. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-001",
+      "title": "Live SQL published row stays published until restart",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "A row inserted with SQL into the live studio.db stays published on GET until the next start. HTTP PUT of that row is 403.",
+      "expected": "A published row that fails the seal is not served as published.",
+      "actual": "GET stays published until restart. PUT is HTTP 403 published_internal_only. The next start demotes the row and keeps historical fields.",
+      "repro": [
+        "Start the v1.2.3-test server",
+        "Insert a queue row with SQL status published and an externalId",
+        "GET the row before and after a restart",
+        "PUT a title change and expect HTTP 403"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "demoteUnsealed runs at startup. HTTP cannot create the row. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-002",
+      "title": "Local flavor rewrite plus planted meta.js loads the publisher",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "Rewriting every flavor marker so they agree, planting meta.js, and starting node server.js loads the publisher. The Electron flavor guard still exits 78.",
+      "expected": "A local rewrite of the unpacked tree cannot load the publisher.",
+      "actual": "node server.js on the rewritten tree reports flavor prod. desktop/flavor-guard.js still fails closed for the Electron app.",
+      "repro": [
+        "Rewrite lib/flavor.baked.js, lib/flavor.lock.json, and package.json studioFlavor hashes so they agree on prod",
+        "Add meta.js",
+        "Run node server.js and read /api/health",
+        "Run desktop/flavor-guard.js against the original asar lock"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test built tree, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": "Developer ID and notarization (owner, Apple)",
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Requires a local write and skipping Electron. Full close is blocked on Developer ID and notarization."
+        }
+      ]
+    },
+    {
+      "id": "QA-SEC-003",
+      "title": "PUT status Published is stored as that string",
+      "severity": "info",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "studio",
+      "summary": "PUT {status: Published} is stored as that string. It is not status published and it has no externalId.",
+      "expected": "A status outside the known set is rejected.",
+      "actual": "The string Published is stored. It does not match the published state.",
+      "repro": [
+        "Authenticate to the v1.2.3-test server",
+        "PUT /api/queue/:id with status Published",
+        "Read the stored status"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T10:55:33.000Z",
+      "foundIn": "v1.2.3-test a2a35c8, qa/reports/security-recheck-v1.2.3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T10:55:33.000Z",
+          "status": "open",
+          "note": "Informational. The stored string is not the published state. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-001",
+      "title": "Update Center has one identity and one signing key",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "On feat/update-center at 9ffad98 the running app is always the production identity, and every channel is checked with the one public key. A test-channel manifest that copies the production bundleId, data directory, launchd label, and Keychain prefix is a replace of /Applications/MOONKATTY AI STUDIO.app.",
+      "expected": "Test and production update independently, with different bundle ids, data directories, launchd labels, Keychain prefixes, channels, and signing keys.",
+      "actual": "On aef14c4 a signed test-channel manifest with production ids is blocked. installPlan mode is blocked. autoInstall returns BLOCKED. The committed prod key set is empty.",
+      "repro": [
+        "Load lib/ops/update-center.js from 9ffad98",
+        "Sign a manifest with channel test and the production bundleId, dataDirName, launchdLabel, and keychainServicePrefix",
+        "Call check, download, preBackup, approve, and installPlan",
+        "Read mode and the planned path /Applications/MOONKATTY AI STUDIO.app"
+      ],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T12:20:00.000Z",
+      "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:20:00.000Z",
+          "status": "open",
+          "note": "The committed public key is a placeholder, so a real release does not verify yet. The gate still treats a test channel with production ids as a replace once a real key is installed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.157Z",
+          "status": "qa_verified",
+          "note": "aef14c4: a test-channel manifest with production ids is blocked after signature, backup, and approval. installPlan mode is blocked. autoInstall returns BLOCKED. The prod key set is empty. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-002",
+      "title": "Update zip symlink entries are accepted",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "inspectZip counts symlink entries and still returns ok. Download marks that archive verified. The auto-install dry-run extracts it with ditto -x -k into /Applications.",
+      "expected": "A symlink whose target leaves the archive is rejected, or extraction creates the link without following it and the install refuses it.",
+      "actual": "On aef14c4 a symlink to /etc/passwd and a symlink that leaves the app fail inspectZip. Download returns BAD_ARCHIVE and deletes the file. An in-app relative symlink stays allowed.",
+      "repro": [
+        "Build a stored zip with a normal app entry and a Unix symlink entry aimed at /etc/passwd",
+        "Sign the manifest and call download",
+        "Read zip.symlinks and installPlan",
+        "Call autoInstall with the four readiness flags, platform darwin, and dryRun true"
+      ],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T12:20:00.000Z",
+      "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:20:00.000Z",
+          "status": "open",
+          "note": "Path traversal, absolute paths, and backslashes are rejected. Symlinks are not. ditto was not executed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.185Z",
+          "status": "qa_verified",
+          "note": "aef14c4: a symlink to /etc/passwd and a symlink that leaves the app fail inspectZip. Download returns BAD_ARCHIVE. An in-app relative symlink stays allowed. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-003",
+      "title": "Verified update bytes are not hashed again at install",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "After download status is verified, replacing the zip on disk leaves installPlan allowed and points ditto at the new bytes. Owner approval is stored by tag, so a later signed manifest for the same tag stays approved.",
+      "expected": "install and autoInstall recompute SHA-256 and require it to match the signed manifest. Approval is bound to that digest.",
+      "actual": "On aef14c4 replacing the verified zip makes installPlan refuse and sets status tampered. A second signed manifest for the same tag clears the stored approval.",
+      "repro": [
+        "Download a signed zip until status is verified",
+        "Overwrite the file with different zip bytes",
+        "Call installPlan and autoInstall dryRun",
+        "Publish a second signed manifest under the same tag and call check again"
+      ],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T12:20:00.000Z",
+      "foundIn": "feat/update-center 9ffad98, qa/reports/update-center/REPORT.md",
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:20:00.000Z",
+          "status": "open",
+          "note": "Requires a local write to the update data directory, or a replaced GitHub release that is signed with a loaded key. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.225Z",
+          "status": "qa_verified",
+          "note": "aef14c4: replacing the verified zip makes installPlan refuse and sets status tampered. A later manifest for the same tag clears the stored approval. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-004",
+      "title": "Electron checks GitHub releases five seconds after launch",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "desktop/main.js defaults checkUpdates to true and calls checkUpdates(false) five seconds after the app is ready. That path fetches the pinned GitHub releases API and can open the release page. It does not download the zip or replace the app.",
+      "expected": "An update check runs only after the owner presses Check for updates. There is no automatic check.",
+      "actual": "On aef14c4 desktop/main.js defaults checkUpdates to false. checkUpdates returns immediately unless the menu passes manual. The five-second timer is gone.",
+      "repro": [
+        "Read desktop/main.js DEF.checkUpdates and the ready handler",
+        "Confirm setTimeout calls checkUpdates(false) at 5000 ms",
+        "Confirm the function returns before any install when the zip or checksum is missing"
+      ],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T12:20:00.000Z",
+      "foundIn": "feat/update-center 9ffad98, desktop/main.js",
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:20:00.000Z",
+          "status": "open",
+          "note": "Update Center itself has no timer. This is the Electron shell on the same branch. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.264Z",
+          "status": "qa_verified",
+          "note": "aef14c4: desktop/main.js defaults checkUpdates to false and returns immediately unless the menu passes manual. The five-second timer is gone. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-005",
+      "title": "Schema support cap does not block the install gate",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "schemaCheck treats only schema version 1 as supported. A database detected as version 3 returns ok false. compatCheck ignores that flag and allows a manifest whose dbSchemaVersion is greater than or equal to the detected version, including a jump to 99.",
+      "expected": "A release whose schema the running code marks unsupported stays blocked.",
+      "actual": "On aef14c4 schema 3, 4, and 99 make schemaCheck.ok false and the gate blocks. Manifest dbSchemaVersion 99 is blocked as an unknown schema.",
+      "repro": [
+        "Build a fake db whose jobs table has an input column and no meta.schemaVersion",
+        "Call schemaCheck and read ok false, schemaVersion 3, supported 1",
+        "Call compatCheck with dbSchemaVersion 3 and gate with backup and owner approval"
+      ],
+      "evidence": [
+        "qa/reports/update-center/REPORT.md",
+        "qa/reports/update-center/logs/attack.json",
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T12:20:00.000Z",
+      "foundIn": "feat/update-center 9ffad98, lib/ops/update.js and lib/ops/update-center.js",
+      "verifiedIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:20:00.000Z",
+          "status": "open",
+          "note": "A manifest schema older than the database stays blocked. Their unit tests stub schemaCheck to ok true. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:06:41.293Z",
+          "status": "qa_verified",
+          "note": "aef14c4: schema 3, 4, and 99 make schemaCheck.ok false and the gate blocks. Manifest schema 99 is blocked as unknown. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-001",
+      "title": "Node nonce cache is cleared when the process restarts",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "Protocol 2 rejects a repeated signed request with 401 E_REPLAY inside one process. The used-nonce map is memory only. A new manager on the same nodes.json accepts that captured request while the timestamp is still inside 30 seconds.",
+      "expected": "A signed request is accepted once until its timestamp leaves the window, including across a coordinator restart.",
+      "actual": "The second authNode in the same process returns E_REPLAY. A second createNodeManager on the same directory accepts the same signature.",
+      "repro": [
+        "Enroll a node and sign POST /api/nodes/pull with x-node-nonce",
+        "Call authNode twice in the first process",
+        "Open a second createNodeManager on the same directory and call authNode with the captured signature"
+      ],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/attack.json",
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "The in-process replay fix holds. The cache does not survive a restart. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.002Z",
+          "status": "open",
+          "note": "fe8e4ab still keeps the used-nonce map in memory (lib/ops/nodes.js). This re-audit did not repeat the restart capture. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.042Z",
+          "status": "open",
+          "note": "322023f still keeps the used-nonce map in memory (lib/ops/nodes.js). This delta did not repeat the restart capture. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-002",
+      "title": "Unknown loopback peers share one enrollment lock bucket",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "When the socket is loopback and the request has no tailnet X-Forwarded-For and no Tailscale-User-Login, the bucket is loopback. Ten failures lock every other unidentified loopback client. A loopback client can also set X-Forwarded-For to another peer's tailnet address and lock that peer when whois names it. Headers from a non-loopback socket are ignored.",
+      "expected": "An unidentified client cannot lock an identified tailnet peer, and identified peers do not share the fallback bucket.",
+      "actual": "Identified peers stay unlocked when the fallback bucket locks. A loopback spoofed X-Forwarded-For locked tsnode:nIMAC while tsnode:nEVIL still enrolled. A non-loopback X-Forwarded-For was ignored.",
+      "repro": [
+        "Create a node manager with a fake whois",
+        "Send ten bad enrollments from 127.0.0.1 with no Tailscale headers",
+        "Repeat from ::1 and expect E_IP_LOCKED",
+        "Enroll from 127.0.0.1 with X-Forwarded-For of a known tailnet address and expect pending",
+        "From loopback, set X-Forwarded-For to a victim tailnet address and send ten failures"
+      ],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/attack.json",
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, qa/reports/node-0.2.2/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "whois was injected. The real tailscale binary was not run. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.037Z",
+          "status": "open",
+          "note": "fe8e4ab: loopback plus X-Forwarded-For 100.101.1.2 and a stub whois still confirms without acknowledgeUnverifiedPeer. defaultWhois on this host returned null. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.079Z",
+          "status": "open",
+          "note": "322023f still confirms a loopback request whose X-Forwarded-For whois names a peer, without acknowledgeUnverifiedPeer. Measured in the delta exploit. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-003",
+      "title": "Rejecting a node enrollment does not ask for the password",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "Confirm, revoke, and rotate return 428 until the owner password is entered again. Reject is not in that set. A studio session can reject a pending device with the CSRF header and no second password.",
+      "expected": "Reject asks for the owner password the same way confirm does.",
+      "actual": "POST /api/ops/nodes/enroll/:id/reject is not classified. Their integration test expects a status other than 428. Confirm without the confirm token was 428.",
+      "repro": [
+        "Start the server with STUDIO_OPS_NODES=1 and without STUDIO_NODES_LEGACY_TOKENS",
+        "Create an enrollment",
+        "POST confirm and expect 428",
+        "POST reject with the session and X-Studio-Request and expect a status other than 428"
+      ],
+      "evidence": [
+        "qa/reports/node-0.2.2/REPORT.md",
+        "qa/reports/node-0.2.2/logs/their-tests.log",
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T12:45:00.000Z",
+      "foundIn": "feat/studio-operations db4720b, lib/ops/security-center.js classify",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:45:00.000Z",
+          "status": "open",
+          "note": "Their integration test asserts reject is not 428. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:22:52.065Z",
+          "status": "open",
+          "note": "fe8e4ab: reject stays outside classify. A session reached the handler (400 E_BAD_REQUEST on an awaiting_code request). Confirm without the password token was 428. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T13:33:55.117Z",
+          "status": "open",
+          "note": "322023f has no Security Center. Confirm requires the password field and the word. Reject of a pending device with an empty body returned 200 state rejected and did not return password_required. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-3D-001",
+      "title": "OpenCode chat reply does not write scene_params.json",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "3d",
+      "summary": "The 3D job already has schema-valid params before the OpenCode step. If the model finishes without a write tool call, the job fails with 'Агент OpenCode не записал scene_params.json' and Blender never runs. No commit on feat/v1.2.0, feat/v1.2.2-test-isolated, or feat/v1.2.4-test-nodes writes those params when the agent skips the file. The checklist still says a real qwen model was checked only with a mock LLM.",
+      "expected": "A model that does not call write still leaves a schema-valid scene_params.json from the studio params, or the job says the model must call write before the Mac test is treated as done.",
+      "actual": "On 6cf7c08 a chat-only mock finished with tools none. The job status was failed at stage agent. scene.blend and preview.png were absent. The same server, with the product mock that does call write, produced a 913264-byte BLENDER file and a 640x480 PNG.",
+      "repro": [
+        "Start opencode 1.19.3 against a chat-only model and Blender 4.2+",
+        "POST /api/studio3d/run with a 3D scene request",
+        "Read the job error and the version directory"
+      ],
+      "evidence": [
+        "qa/reports/opencode-scene-params/REPORT.md",
+        "qa/reports/opencode-scene-params/logs/result.json",
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T12:50:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 6cf7c08, lib/executors/design3d.js agent()",
+      "verifiedIn": "feat/v1.2.4-test-nodes b7101c4, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T12:50:00.000Z",
+          "status": "open",
+          "note": "Introduced in 00b63fc. The only later edit to design3d.js is the OpenCode URL default in f2440e1. A real Ollama model was not run. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T12:54:00.709Z",
+          "status": "qa_verified",
+          "note": "b7101c4 (36fc193 merged in 5b7e000): a chat-only OpenCode reply is JSON text with no tools. The studio writes scene_params.json. Blender 4.2.9 LTS wrote scene.blend (913192 bytes, magic BLENDER) and a 320x240 PNG. Malformed JSON stops after one retry. Symlink and traversal writes are refused. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-006",
+      "title": "Release age uses the unsigned GitHub date",
+      "severity": "low",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "The 365-day refusal reads GitHub release published_at. That field is outside the signed manifest. A missing date skips the check. Republishing the same signed bytes with a fresh published_at is not refused for age.",
+      "expected": "The age the gate enforces is covered by the manifest signature, so republishing an old manifest cannot reset it.",
+      "actual": "A release dated 2020-06-01 is blocked at 2334 days. The same signed version with published_at 2026-10-01 is not age-blocked. published_at null skips the age check. A lower version stays blocked by the version compare. A revoked key stays rejected.",
+      "repro": [
+        "Sign a stable manifest whose version is newer than the running app",
+        "Serve it once with published_at 2020-06-01 and read the 365-day gate reason",
+        "Serve the same bytes with published_at 2026-10-01 and read the gate reasons",
+        "Serve the same bytes with published_at null and confirm the age reason is absent"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v2/REPORT.md",
+        "qa/reports/update-center-v2/logs/attack.json",
+        "qa/reports/update-center-v3/REPORT.md",
+        "qa/reports/update-center-v4/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:10:00.000Z",
+      "foundIn": "feat/update-center aef14c4, qa/reports/update-center-v2/REPORT.md",
+      "verifiedIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:10:00.000Z",
+          "status": "open",
+          "note": "Downgrade by version still blocks. Revocation still blocks. The date itself is GitHub metadata. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:23:44.341Z",
+          "status": "open",
+          "note": "At 3fc9573 a signed builtAt of 2020-01-01 blocks a republished published_at of 2026-10-21, and the older of the two dates wins. Still open: a manifest with no builtAt follows the unsigned GitHub date, and both dates absent skips the age check. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:49:54.581Z",
+          "status": "qa_verified",
+          "note": "At 5100568 builtAt is required. A manifest without it is unverified and prepareDownload throws UNVERIFIED. A signed builtAt of 2020-01-01 still fails the 365-day gate when published_at is 2026-10-21. release-sign.mjs writes builtAt before signing. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-004",
+      "title": "Computers UI e2e reads the enrollment code already on screen",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "test/ops/ui-computers.e2e.test.js waits for #enOut .enroll-code and then reads it. After the first computer that element is already present, so the second click returns the first code. Both agents post that code. The second POST /enroll returns E_CODE_USED. The same script, waiting until the code text changes and polling every 3 seconds, passed the Computers UI path including the secret scan.",
+      "expected": "The Computers UI e2e reads the code from the enrollment it just created.",
+      "actual": "The committed test at fe8e4ab failed with E_CODE_USED. A rerun that waited for a new code string passed in 83835 ms.",
+      "repro": [
+        "On fe8e4ab run node --test test/ops/ui-computers.e2e.test.js",
+        "Create a news code and then a monitor code",
+        "The second enrollment posts the first code and the run ends with E_CODE_USED"
+      ],
+      "evidence": [
+        "qa/reports/computers-nodes-fixes/REPORT.md",
+        "qa/reports/computers-nodes-fixes/logs/their-tests.log",
+        "qa/reports/computers-nodes-fixes/logs/ui-rerun.log",
+        "qa/reports/update-center-v3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:25:00.000Z",
+      "foundIn": "feat/studio-operations fe8e4ab, test/ops/ui-computers.e2e.test.js",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:25:00.000Z",
+          "status": "open",
+          "note": "The panel issued a new code. The test read the previous one. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T17:23:44.369Z",
+          "status": "open",
+          "note": "Still open. feat/update-center 3fc9573 does not contain test/ops/ui-computers.e2e.test.js. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-005",
+      "title": "Studio multiprocess test fails before a second nodes.lock",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "On 322023f, npm run test:ops:studio is 0/2 with STUDIO_FLAVOR unset. The studio helper registers a node through POST /api/ops/nodes while STUDIO_NODES_LEGACY_TOKENS is unset, so the register body is E_LEGACY_DISABLED. The test reads that body as a token. An empty node list makes every() true, then n.info throws. The second test times out waiting for a job. A separate probe refuses a second live process on the same directory and takes the lock after the killed holder is reaped.",
+      "expected": "The studio helper enrolls a protocol-2 node, or the test stops on the legacy-disabled error before it reads node info.",
+      "actual": "0 pass, 2 fail. The first error is TypeError reading info at nodes.multiprocess.test.js:24. Register returns the legacy-disabled message. nodes.lock still rejects a live second pid.",
+      "repro": [
+        "From a clean environment at 322023f run npm run test:ops:studio",
+        "POST the studio helper /register and read the E_LEGACY_DISABLED body",
+        "Hold nodes.lock in one process, open it from a second process, kill the holder, reap it, and open it again"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/logs/ops-studio.log",
+        "qa/reports/security-recheck-v1.2.4-final/logs/delta-attack.json",
+        "qa/reports/final-v1.3.0-test/REPORT.md",
+        "qa/reports/final-v1.3.0-test-r2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:32:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 322023f, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:33:55.158Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T18:28:05.233Z",
+          "status": "open",
+          "note": "Reproduced on integ/v1.3.0-test b813ac4. First test is the same TypeError on n.info. Second test is cancelled at 90s because node-agent 0.2.2 enters enrollUi when the token is missing. Register is still E_LEGACY_DISABLED. Does not block the TEST install."
+        },
+        {
+          "at": "2026-10-21T19:20:36.561Z",
+          "status": "open",
+          "note": "c24f756 rerun matches b813ac4: TypeError reading info at nodes.multiprocess.test.js:24, then the runner cancels the second test at 90000ms. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-NODE-006",
+      "title": "Signed 0.2.0 and 0.2.1 hellos pass the version gate",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "nodes",
+      "summary": "ENROLLED_MIN is absent from 322023f and from fe8e4ab. agentOk accepts any 0.2.x and a missing version. A signed hello that claimed 0.2.0 or 0.2.1 and sent x-node-nonce returned 200. A missing agentVersion returned 200. 0.3.0 returned 426 E_AGENT_VERSION. A signature without a nonce returned 426. The bundled node-agent is still 0.2.0 and sends only a bearer token, so that agent cannot pass. The version string is chosen by the client. The device key is the gate.",
+      "expected": "An enrolled node below a stated minimum is rejected even when the request carries a valid nonce.",
+      "actual": "0.2.0 and 0.2.1 with a nonce are online. A missing version is accepted. 0.3.0 and a signature without a nonce are 426.",
+      "repro": [
+        "Enroll a device key on 322023f and poll the one-time status for the token",
+        "POST /api/nodes/hello with agentVersion 0.2.0 and 0.2.1 plus x-node-nonce",
+        "Repeat with 0.3.0 and with a signature that omits the nonce"
+      ],
+      "evidence": [
+        "qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+        "qa/reports/security-recheck-v1.2.4-final/logs/delta-attack.json"
+      ],
+      "foundAt": "2026-10-21T13:32:00.000Z",
+      "foundIn": "feat/v1.2.4-test-nodes 322023f, qa/reports/security-recheck-v1.2.4-final/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:33:55.190Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-001",
+      "title": "Azure usage file resets the dollar cap when it is removed or incomplete",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The $1 S0 guard is news-launch/azure-tts state usage.json with no signature. Deleting the file, omitting spentMicro, or writing a different YYYY-MM starts the current month at the new charge and the next reserve succeeds. Moving the clock to another month and back does the same, because a month mismatch replaces the file. Truncated JSON, a negative spentMicro, and a fractional spentMicro are refused.",
+      "expected": "A missing, deleted, or incomplete usage file fails closed and sends nothing.",
+      "actual": "Deletion, a missing spentMicro, a swapped month, and a clock return each reserved a new charge. Eight processes sharing the lock stayed at or under $1 (800010 micro-dollars).",
+      "repro": [
+        "Point UsdBudget at a temp usage.json with monthlyBudgetUsd 1 and price 15",
+        "Reserve January, move now() to February, then move now() back to January",
+        "Delete the file, write a file with no spentMicro, and write month 2026-12 while now() is January"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.236Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.390Z",
+          "status": "qa_verified",
+          "note": "At 148ff2b every synthesize, including tier F0, reserves the USD guard. A sku probe of S0 or B0 refuses before the key and the mock. Deleting usage.json while the ledger remains, a broken ledger link, a low spentMicro, and a clock return fail closed or restore history. Eight processes stayed at 800010 micro-dollars. Deleting both files still resets; that residual is QA-AZR-007."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-002",
+      "title": "Azure paid approval is a voice-config field with no owner session",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "S0 calls require paidEnabled true and paidApproval.at plus paidApproval.by. Those fields are read from the voice JSON or the provider constructor. There is no password, signature, or studio login. MasterVoice.setCandidate followed by lock('agent') wrote paidEnabled true and paidApproval.by agent, then synthesize called the mock. The shipped master-voice.json stays on Kokoro and does not set these fields.",
+      "expected": "An owner approval record is bound to an owner authentication step that the episode agent cannot write.",
+      "actual": "Any writer of the voice file can set paidEnabled and { at, by }. The shape check accepts any ISO-like timestamp and any non-empty by.",
+      "repro": [
+        "Copy a candidate master-voice file to a temp path",
+        "Call setCandidate with engine azure, paidEnabled true, and paidApproval by agent, then lock('agent')",
+        "Call synthesize with a mock fetch and observe one HTTP call"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.277Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.419Z",
+          "status": "qa_verified",
+          "note": "S0 requires an Ed25519 signature over at, by, voice, and region. setCandidate cannot set the paid flags. An unsigned record and a foreign key send nothing. A swapped voice or region fails closed. provider.js does not name the owner service. Replay and same-user readKey of that service are QA-AZR-008."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-003",
+      "title": "Azure tier and price in the config are not the Azure bill",
+      "severity": "high",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The REST call sends the key and SSML. It does not send a tier or SKU. tier F0 with paidEnabled false still called the mock. A Standard resource behind that key would be billed while the dollar cap does not run. pricePerMillionChars 0.0000004 rounds to zero micro-dollars, so two half-million character reserves left spentMicro at 0 and a later synthesize still called the mock.",
+      "expected": "F0 is used only against a Free resource, and a price that rounds to zero is refused. The $1 cap applies to every call the key can bill.",
+      "actual": "F0 sends the same request shape as S0. A dust price is a positive number, costs 0, and does not trip the cap.",
+      "repro": [
+        "Build AzureSpeechProvider with tier F0 and paidEnabled false and count mock fetches",
+        "Inspect the request headers for a tier field",
+        "Call UsdBudget.begin twice with pricePerMillionChars 0.0000004 and read spentMicro"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.321Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.449Z",
+          "status": "qa_verified",
+          "note": "Prices below 15 neural or 22 HD are refused, including 0.0000004. Mode 0644 sends nothing. writeOwnerPrice creates mode 0600. The voice JSON price and budget are ignored. A 0600 price file can still set monthlyBudgetUsd to 1000; that is QA-AZR-007."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-004",
+      "title": "A prewritten Azure speech cache is returned as the Azure voice",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "The cache file is the sha256 of voice, rate, SSML, and text, with no signature. Writing those bytes before synthesize returned cached true, made no mock call, and left the episode record on the Azure voice with final true and review null.",
+      "expected": "A cache hit is audio this process received from Azure, or a substituted file is marked fallback.",
+      "actual": "Any bytes at the cache path are converted and stored as a successful Azure render.",
+      "repro": [
+        "Compute requestHash for a line and write bytes at cacheDir/hash",
+        "Call synthesize and VoiceSession.render with final true",
+        "Observe cached true, zero fetches, and voice set to the Azure voice id"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.363Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.477Z",
+          "status": "qa_verified",
+          "note": "A planted file and a valid MAC with no ledger ok line are misses. The MAC is HMAC-SHA256 under the speech key from Keychain service MOONKATTY AI STUDIO.azure-speech, account azure-speech. The cache file does not contain the key. A process that has that key can still seal an ok line and a hit."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-005",
+      "title": "A long YouTube dry-run description drops the synthetic voice line",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "dryRunAzureEpisode appends Voice: AI-generated (Microsoft Azure) and then slices the description to 5000 characters. A 5000 character summary produced a dry-run payload of 5000 characters with the disclosure sentence absent. A short summary kept the sentence in the description. showCaption false leaves caption unset, which is fine when the description still has the line.",
+      "expected": "The dry-run publish payload contains the synthetic voice disclosure after truncation.",
+      "actual": "The slice keeps the front of the summary and can remove the sentence that was appended.",
+      "repro": [
+        "Call dryRunAzureEpisode with a 5000 character summary and showCaption false",
+        "Read posts[0].payload.description",
+        "Repeat with summary Markets moved"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts-v2/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.408Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.509Z",
+          "status": "qa_verified",
+          "note": "A 5000-character dry-run description ends with Voice: AI-generated (Microsoft Azure) and the payload length is 5000. global fetch was not called."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-006",
+      "title": "Azure fallback preview is stored final, and reconcile keeps a pasted key",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "VoiceSession with no local engine stores the episode as voice fallback, review owner-review, and final true even when the caller passed final false. UsdBudget.reconcile writes the note into usage.json with no redaction, so a pasted key stays in that file. A budget lock older than 30 seconds can be taken while the holder is still inside the critical section. Reserve itself is short, and eight live processes still stayed inside $1. Han characters are one UTF-16 unit in ssml.length. The Speech pricing note counts each Han character as two billable characters.",
+      "expected": "A failed preview is not marked final. A reconciliation note cannot contain the key. The lock stays exclusive while its holder is inside it. Han characters are counted the way the pricing note counts them.",
+      "actual": "The no-local preview file had final true. The reconcile note contained the fake key. A holder sleeping 32 seconds lost the lock to a second process at 31 seconds. The sample 你好 is two UTF-16 units inside an SSML document of 175 units.",
+      "repro": [
+        "Render with a disabled provider, no local engine, and final false",
+        "Reconcile with the key in note and read usage.json",
+        "Hold withFileLock for 32 seconds and enter from a second process after 31 seconds"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts/REPORT.md",
+        "qa/reports/azure-tts/logs/attack.json",
+        "qa/reports/azure-tts/logs/lengths.json",
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T13:40:00.000Z",
+      "foundIn": "feat/news-launch-integration baf8cff, qa/reports/azure-tts/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T13:45:18.443Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:21:13.543Z",
+          "status": "open",
+          "note": "Still open at 148ff2b. reconcile stores a pasted key in usage.json. A preview with no local engine is stored voice fallback and final true."
+        },
+        {
+          "at": "2026-10-21T14:49:23.143Z",
+          "status": "open",
+          "note": "At cbc9c70 a raw reconciliation note is refused and the usage file is unchanged. A preview with no local engine is stored final false. Still open: a local engine that throws is stored final true, and a note broken into runs shorter than 12 of the refused class is stored. The 30-second lock takeover and the Han count were not re-measured."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-007",
+      "title": "The local Azure dollar cap resets or rises for the same user",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "At 148ff2b the ledger hash chain refuses a missing usage file while any ledger line exists, a spentMicro below the reserved sum, and a broken prev link. Deleting both usage.json and the ledger starts the next reserve at the new charge, and a second synthesize then calls the mock once. Rewriting the ledger as one valid genesis line and setting spentMicro to 15000 dropped a file from 800010 to a later 30000. setCandidate can set stateFile, which is not an owner-only field, and a full $1 file then left the mock call on an empty directory at 2670 micro-dollars. writeOwnerPrice accepts monthlyBudgetUsd 1000 at mode 0600, and a 100000-character reserve succeeded at 1500000 micro-dollars. The Azure portal spending limit is the control that still applies. This process cannot set it.",
+      "expected": "The $1 monthly guard survives deletion, a new state path, a rewritten ledger, and an edit to the price file.",
+      "actual": "Both files removed, a valid replacement chain, setCandidate stateFile, and price.json monthlyBudgetUsd 1000 each let a later reserve proceed. Eight honest processes stayed at 800010 micro-dollars.",
+      "repro": [
+        "Reserve on UsdBudget, delete usage.json and ledger-YYYY-MM.jsonl, and reserve again",
+        "Overwrite the ledger with one line whose prev is genesis and set spentMicro to match, then reserve",
+        "setCandidate({ stateFile }) on an enabled F0 voice file whose current file is at 999990 micro-dollars and synthesize",
+        "writeOwnerPrice with monthlyBudgetUsd 1000 and begin 100000 characters"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v2/logs/attack.json",
+        "qa/reports/azure-tts-v3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T14:20:00.000Z",
+      "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:21:13.328Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:49:23.183Z",
+          "status": "qa_verified",
+          "note": "At cbc9c70 a budget above $1 without an owner-signed grant is refused, including a hand-written mode 0600 price file, and setCandidate cannot set stateFile. The delete-both reset, the rewritten ledger, and a hand-edited stateFile are QA-AZR-010, rated low given the Azure portal spending limit."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-008",
+      "title": "Azure owner signatures do not expire and the signing key is same-user",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "S0 at 148ff2b requires an Ed25519 signature over at, by, voice, and region, checked with the public key passed to MasterVoice. A signature dated 2020-01-01 still verifies. Writing paidEnabled true plus that record called the mock, paidEnabled false refused, and writing the same record back called the mock again. readKey on service MOONKATTY AI STUDIO.azure-speech-owner and account azure-speech-owner returned PKCS8 material that signApproval turned into a verifying signature. store-owner writes that item with add-generic-password and no -T flag. provider.js does not name the service. setCandidate keyService makes createTTS call security on the owner service with the speech account azure-speech, which is not the owner account. A provider constructed with the owner account does read that item. macOS ACL was not run.",
+      "expected": "An owner approval is bound to an authentication step the episode agent cannot repeat, and a turned-off paidEnabled stays off.",
+      "actual": "Any holder of an old signature for the same voice and region can write it back. Any same-user process that can read the owner Keychain item can mint a new signature. The default provider path does not read that item.",
+      "repro": [
+        "Sign an Ed25519 approval with at 2020-01-01 and verifyApproval against the owner public key",
+        "Put that record in a voice file with paidEnabled true and synthesize against a mock",
+        "Set paidEnabled false, then write true and the same record, and synthesize again",
+        "readKey the owner service and account through a mock security, then signApproval with the returned PKCS8"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v2/REPORT.md",
+        "qa/reports/azure-tts-v2/logs/attack.json",
+        "qa/reports/azure-tts-v3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T14:20:00.000Z",
+      "foundIn": "feat/news-launch-integration 148ff2b, qa/reports/azure-tts-v2/REPORT.md",
+      "verifiedIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:21:13.361Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T14:49:23.214Z",
+          "status": "qa_verified",
+          "note": "At cbc9c70 a signature expires at 31 days, a serial at or below the watermark sends nothing, store-owner sends -T \"\", readKey refuses the owner item and does not spawn, and setCandidate cannot set keyService. factory-render and bin/master-voice load the public key from owner.json. A self-signed replacement and a byte rollback of that file are QA-AZR-009. macOS ACL was not run."
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-009",
+      "title": "An agent-written owner.json replaces the Azure approval key",
+      "severity": "medium",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "loadOwnerConfig verifies state/owner.json with the public key inside that file. An agent-written mode 0600 file, signed by a key the agent generated, loaded as the approval public key at serial 0. An approval from that key does not verify against the owner public key. MasterVoice given the loaded key called the mock once on an S0 voice file. writeOwnerConfig refuses a lower serial. Overwriting the file with an older owner-signed copy returned serial 2, and a signature at serial 3 then verified. Unsigned JSON and mode 0644 throw. A missing file has no public key. readKey does not spawn for the owner item. The portal spending limit still caps the invoice.",
+      "expected": "The approval public key is the owner's key, and the watermark only moves forward.",
+      "actual": "A same-user write of a self-signed owner.json installs a new key. A byte copy of an older signed owner.json lowers the watermark. writeOwnerConfig refuses a decrease and signs whatever public key it is given.",
+      "repro": [
+        "Write a mode 0600 owner.json whose signature verifies under the publicKeyPem in the same file, serial 0",
+        "loadOwnerConfig and sign an S0 approval with that private key at serial 1",
+        "Construct MasterVoice with the loaded public key and synthesize against a mock",
+        "writeOwnerConfig serial 2, then serial 5, overwrite the file with the serial 2 bytes, chmod 0600, and verify serial 3"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v3/REPORT.md",
+        "qa/reports/azure-tts-v3/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:50:00.000Z",
+      "foundIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:49:23.244Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-AZR-010",
+      "title": "Deleting both Azure counter files resets the local dollar guard",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "azure-tts",
+      "summary": "At cbc9c70 a budget above $1 without an owner-signed grant is refused, and setCandidate cannot set stateFile. Deleting usage.json while the ledger remains refuses. Deleting both files starts the next begin at 15000 micro-dollars for 1000 characters. A second synthesize after both files were removed called the mock again and the new file showed 2670. Rewriting the ledger as one valid reserved line and setting spentMicro to 15000 dropped a file from 800010 to 30000. A hand-edited voice JSON stateFile, which setCandidate refuses, selected an empty ledger: the filled file stayed at 999990 and the new file showed 2670. The voice file keyService was ignored. Eight processes stayed at 800010. Rated low because an Azure portal spending limit of $1 is the invoice cap. This repository cannot set that limit. On a real F0 resource the reset does not create an invoice.",
+      "expected": "The local counter survives deletion of both files, a rewritten ledger, and a hand-edited stateFile.",
+      "actual": "Those three same-user writes start a new counter. Honest processes and setCandidate stay inside the file they were given. A portal spending limit of $1 still bounds the invoice.",
+      "repro": [
+        "Reserve on UsdBudget, delete usage.json and the ledger, and reserve 1000 characters",
+        "Set spentMicro to 800010, replace the ledger with one valid reserved line of 0.015000 and set spentMicro to 15000, then reserve again",
+        "Fill a state file to 66666 characters, write a new stateFile into the voice JSON by hand, and synthesize"
+      ],
+      "evidence": [
+        "qa/reports/azure-tts-v3/REPORT.md",
+        "qa/reports/azure-tts-v3/logs/attack.json"
+      ],
+      "foundAt": "2026-10-21T14:50:00.000Z",
+      "foundIn": "feat/news-launch-integration cbc9c70, qa/reports/azure-tts-v3/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T14:49:23.274Z",
+          "status": "open",
+          "note": "added"
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-007",
+      "title": "The external update keyring does not check mode or symlink targets",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "OPS_UPDATE_KEYRING_DIR is loaded with readFileSync. path.basename stops a .. file field. There is no mode check and no realpath containment. A mode 0777 directory with a mode 0666 keyring.json loaded a public key and signatureStatus was READY. A symlink to a public key outside the directory was loaded. keyring.json as a symlink was followed. A symlink to a PKCS8 private PEM was rejected. An external ring can revoke a built-in key and add a different public key. It cannot clear a revocation already in the base ring. With the variable unset, the prod set stays empty and the signature state stays BLOCKED.",
+      "expected": "The external keyring accepts only regular public-key files inside a directory that is not writable by group or other, and a symlink cannot point outside that directory.",
+      "actual": "Mode 0777 is loaded and the signature state becomes READY. A symlink to an outside public key is loaded. A private-key PEM, including through a symlink, is rejected. An absolute or .. file field is not read.",
+      "repro": [
+        "Point OPS_UPDATE_KEYRING_DIR at a mode 0777 directory whose keyring.json names an Ed25519 public key and call loadKeyrings",
+        "Replace the public-key file with a symlink to a public key outside the directory and load again",
+        "Point the same symlink at a PKCS8 private PEM and confirm the prod set stays empty"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v3/REPORT.md",
+        "qa/reports/update-center-v3/logs/attack.json",
+        "qa/reports/update-center-v4/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T17:30:00.000Z",
+      "foundIn": "feat/update-center 3fc9573, qa/reports/update-center-v3/REPORT.md",
+      "verifiedIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:23:44.395Z",
+          "status": "open",
+          "note": "added"
+        },
+        {
+          "at": "2026-10-21T17:49:54.610Z",
+          "status": "qa_verified",
+          "note": "At 5100568 a mode 0777 directory, a symlinked directory, a symlinked keyring.json, a symlinked public key, a mode 0666 file, and a foreign uid are BLOCKED and the key is not loaded. A parent symlink in the /var shape is READY. A swap of that symlink between the check and the second read is QA-UC-009. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-008",
+      "title": "A missing build-info does not fail the release age check",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "readBuildInfoBuiltAt returns null when desktop/build-info.json is missing or the date does not parse. signedVersionProblems then warns and still marks a newer release verified, and prepareDownload allows it. The packaged server starts from app.asar.unpacked. asarUnpack includes lib/** and does not include desktop/**, so the reader looks for app.asar.unpacked/desktop/build-info.json. An asar that contains /desktop/build-info.json was not visible to that copy. An older signed 1.3.0 stayed verified. Deleting a build-info.json that sat beside the module did the same. When the file sits beside the module, the older builtAt is unverified. A dev run shows the warning on purpose. The packaged miss uses the same warning and the same allow.",
+      "expected": "A packaged build whose build-info.json is missing or not readable by the server refuses the release. A dev checkout may say the age check is unavailable.",
+      "actual": "Both the missing file and the asar-only file leave buildAge.available false, add the warning, and leave an older signed release verified. Download is allowed. Version compare and the 5-minute future check still run.",
+      "repro": [
+        "Build an asar that contains desktop/build-info.json and copy only lib/ to app.asar.unpacked",
+        "Require app.asar.unpacked/lib/ops/update-center.js and read readBuildInfoBuiltAt",
+        "Check a signed release whose version is newer than package.json and whose builtAt is older than the asar file"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v4/REPORT.md",
+        "qa/reports/update-center-v4/logs/attack.json",
+        "qa/reports/update-center-v5/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T17:45:00.000Z",
+      "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "verifiedIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:45:00.000Z",
+          "status": "open",
+          "note": "The extracted-asar test passes because lib and desktop land in one directory. The packaged server does not run from that layout. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T18:10:12.749Z",
+          "status": "qa_verified",
+          "note": "Packaged path with a missing, asar-only, or unreadable build-info leaves the release unverified. Env does not select dev mode. A readable file still rejects an older builtAt. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-009",
+      "title": "A parent symlink is checked on one path and read on another",
+      "severity": "medium",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "externalKeyringProblem stats the given path, then realpaths it and checks the files there. loadKeyring reads the original path, so a parent symlink is followed again. Replacing the symlink after the keyring.json check and before that second read loaded an attacker key and signatureStatus was READY. The attacker directory was mode 0755 and a load that starts on it is BLOCKED. nobody cannot replace a symlink in a sticky 1777 directory. nobody can replace one in a mode 0777 directory without the sticky bit. A live race on that directory won 1 of 21077 loads, then 0 of 32815. macOS /var is not a symlink a normal user can replace.",
+      "expected": "After the directory is accepted, the bytes that are loaded are the bytes that were checked. A parent symlink that changes between the check and the read is refused.",
+      "actual": "The second read follows the symlink as it is at read time. A swap in that gap loads the new directory with no mode or owner check. A load that begins on the new directory is blocked.",
+      "repro": [
+        "Point OPS_UPDATE_KEYRING_DIR at link/kr where link points at a mode 0700 keyring you own",
+        "During the keyring.json read inside externalKeyringProblem, retarget link at a mode 0755 directory that holds a different public key",
+        "Read signatureStatus. A fresh load after the swap stays BLOCKED"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v4/REPORT.md",
+        "qa/reports/update-center-v4/logs/attack.json",
+        "qa/reports/update-center-v5/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T17:45:00.000Z",
+      "foundIn": "feat/update-center 5100568, qa/reports/update-center-v4/REPORT.md",
+      "verifiedIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T17:45:00.000Z",
+          "status": "open",
+          "note": "A stable parent symlink in the /var shape is READY. The hole is a symlink another user can replace between the check and the second read. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T18:10:12.785Z",
+          "status": "qa_verified",
+          "note": "Parent-symlink double read is closed. World-writable parent without sticky is BLOCKED. 20-second race: 0 attacker keys in 341623 loads. Same-user path open remains QA-UC-010. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-010",
+      "title": "Keyring files are opened by path after the directory fd is checked",
+      "severity": "low",
+      "status": "open",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "readExternalKeyring opens the directory with O_RDONLY|O_NOFOLLOW|O_DIRECTORY and fstats that fd, then opens keyring.json and each pem with path.join(realpath, name) and O_RDONLY|O_NOFOLLOW. The file open is not openat on the directory fd. A same-user hook swapped a second mode 0700 directory into that path for the file reads and restored the original inode before the trailing lstat. signatureStatus was READY and the attacker key was loaded. A live same-user rename won 488 of 185057 loads in 12 seconds. Leaving the swap in place returns папка была подменена and does not merge the key. nobody retargeting a parent symlink for 20 seconds produced 0 attacker keys in 341623 loads. A process running as the directory owner can already rewrite a mode 0700 keyring.",
+      "expected": "Bytes read for keyring.json and each pem come from the directory inode that was fstat'd.",
+      "actual": "A same-user rename during the path open, restored before the trailing lstat, loads the other directory's public key and the state is READY.",
+      "repro": [
+        "Create two mode 0700 keyrings owned by the same uid, with different prod public keys",
+        "During open of keyring.json, rename the checked directory aside and rename the other directory into its place",
+        "Before the trailing lstat, rename the original directory back",
+        "signatureStatus is READY and the second key is the one in prod"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v5/REPORT.md",
+        "qa/reports/update-center-v5/logs/attack.json",
+        "qa/reports/update-center-v130/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T18:10:02.000Z",
+      "foundIn": "feat/update-center 8b0fbc6, qa/reports/update-center-v5/REPORT.md",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T18:10:02.000Z",
+          "status": "open",
+          "note": "Same-user only. The parent-symlink race in QA-UC-009 loaded 0 attacker keys in 341623 loads. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T19:00:11.629Z",
+          "status": "open",
+          "note": "On 035571f Linux reads keyring.json and the pem through /proc/self/fd/<dirfd>. The rename stress test loaded 97600 fd-relative rings with mixed=0 (path mode in the same run mixed 23 of 97400). HARD_GATE.closed stays true, and a READY key plus OPS_UPDATE_DOWNLOAD_ENABLED=1 still leaves downloadEnabled false. macOS /dev/fd was not run; the code falls back to path mode there. Owner approval is not set."
+        }
+      ]
+    },
+    {
+      "id": "QA-UC-011",
+      "title": "Update Center port puts macOS 12.5.1 back into the ops tree",
+      "severity": "low",
+      "status": "qa_verified",
+      "ownerApproval": false,
+      "area": "update-center",
+      "summary": "news-node.test.js on b813ac4 passed: the iMac profile is macOS Ventura 13.7.1 and the string 12.5.1 is absent from lib, node-agent, docs/ops, scripts/node, deploy, and test/ops, except lines that mark it wrong. On 035571f the same test fails. git ls-files now finds 12.5.1 in docs/ops/UPDATE_CENTER.md, docs/ops/UPDATE_CENTER_MAC_TEST.md, and test/ops/update-center.test.js. lib/ops/nodes.js still says the iMac is Ventura 13.7.1. The scanner drops a line that contains ошибочн, WRONG, wrong, or неверн.",
+      "expected": "The ops tree names the iMac as macOS Ventura 13.7.1. The string 12.5.1 does not appear in the scanned paths unless the line says that version was wrong.",
+      "actual": "test:ops on 035571f is 118 pass and 1 fail. The failure is news-node.test.js, and the actual list is those three new files. The device profile in lib/ops/nodes.js is unchanged.",
+      "repro": [
+        "git checkout 035571ffb4984187d70ca2c440536e5cdac2a5af",
+        "node --test test/ops/news-node.test.js",
+        "The first test fails deepStrictEqual: actual is docs/ops/UPDATE_CENTER.md, docs/ops/UPDATE_CENTER_MAC_TEST.md, test/ops/update-center.test.js"
+      ],
+      "evidence": [
+        "qa/reports/update-center-v130/REPORT.md",
+        "qa/reports/update-center-v130/logs/test-ops.log",
+        "qa/reports/final-v1.3.0-test-r3/REPORT.md"
+      ],
+      "foundAt": "2026-10-21T18:57:30.000Z",
+      "foundIn": "feat/update-center-v130 035571ffb4984187d70ca2c440536e5cdac2a5af",
+      "verifiedIn": null,
+      "blockedOn": null,
+      "history": [
+        {
+          "at": "2026-10-21T18:57:30.000Z",
+          "status": "open",
+          "note": "Regression against b813ac4, where the same test passed. Owner approval is not set."
+        },
+        {
+          "at": "2026-10-21T20:20:58.603Z",
+          "status": "qa_verified",
+          "note": "d1adf4d replaces the three 12.5.1 hits with 13.7.1. On Node v22.23.3, test:ops is 119 pass, 0 fail, and news-node test 22 passes. Owner approval is not set."
+        }
+      ]
+    }
+  ]
+}

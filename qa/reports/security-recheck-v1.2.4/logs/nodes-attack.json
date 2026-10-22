@@ -1,0 +1,48 @@
+{
+  "controls": 29,
+  "findings": [
+    {
+      "sev": "medium",
+      "name": "the shipped panel has no enrollment approval screen and does not show the device-key fingerprint",
+      "detail": "GET /api/ops/nodes/enroll returns pubKeyFingerprint and pubKeyShort. public/app.js renders the TLS certificate fingerprint only. node-agent/enroll.js and the Connect computer screen are not in this tree."
+    },
+    {
+      "sev": "medium",
+      "name": "a captured signed pull is accepted again inside 120 seconds",
+      "detail": "first nj_4afb517c704ff406, replay nj_cbc22819a768bb5a. authNode still uses ±120s and no nonce (lib/ops/nodes.js). ±121s is 401."
+    },
+    {
+      "sev": "low",
+      "name": "an enrolled node can rotate its token without the owner flag",
+      "detail": "POST /api/nodes/rotate called rotateToken while rotatePending was false. The old bearer then got 401 and the new bearer got 200."
+    },
+    {
+      "sev": "low",
+      "name": "the owner can still mint a bearer-only 0.2.0 node",
+      "detail": "registerNode stores no devicePubKey. authNode accepts the bearer with a null signature. The HTTP route now also requires the owner password and the word ВЫДАТЬ, and the id must end in -test."
+    },
+    {
+      "sev": "low",
+      "name": "per-IP counters stay in memory and a front on 127.0.0.1 still shares one bucket",
+      "detail": "X-Forwarded-For is ignored. Two different remoteAddress values get two buckets. The documented listener binds the Tailscale address, so a direct peer is its own bucket. tailscale serve to 127.0.0.1 would collapse peers again. Docs say not to use serve."
+    },
+    {
+      "sev": "low",
+      "name": "two processes on one state file can each hand out a token",
+      "detail": "Both status() calls returned a different token. nodes.json kept one tokenHash. state.js writes with a temp file and rename and has no lock."
+    },
+    {
+      "sev": "low",
+      "name": "a correct bearer token is slower than a wrong one",
+      "detail": "About 38.8× over 200 calls. timingSafeEqual runs on the SHA-256 of the bearer; Ed25519 verify runs only after that hash matches."
+    },
+    {
+      "sev": "info",
+      "name": "no nonce store was added in the port",
+      "detail": "The 120 second window is unchanged."
+    }
+  ],
+  "failed": 0,
+  "root": "/tmp/mk-v124n-BD3p8z",
+  "failedNames": []
+}

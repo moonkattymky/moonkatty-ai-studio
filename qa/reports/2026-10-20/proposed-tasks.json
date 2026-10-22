@@ -1,0 +1,24 @@
+[
+  {
+    "title": "[QA QA-HZ-001] window.MoonBuild does not match the asset build id",
+    "description": "window.MoonBuild is \"v44\" and MoonReliability.BUILD is \"20261017-98a\". index.html sets MoonBuild while asset URLs and reliability.js use the other id.\n\nExpected: The label in window.MoonBuild matches MoonReliability.BUILD\n\nActual: MoonBuild=v44 reliability=20261017-98a\n\nRepro:\n1. Open the play build\n2. Read window.MoonBuild\n3. Read window.MoonReliability.BUILD\n4. Compare with the ?v= query on game.js\n\nBuild: moonkattymky/moonkatty-horizons-play@2df1c76f8a11a6150d4e750439b67fd9be63effa\n\nViewport: desktop",
+    "agentId": "games",
+    "priority": "normal",
+    "status": "queued",
+    "project": "main",
+    "schedule": {
+      "type": "none"
+    },
+    "source": "qa",
+    "createdAt": "2026-10-20T22:51:18.995Z",
+    "qa": {
+      "bugId": "QA-HZ-001",
+      "severity": "minor",
+      "repo": "moonkattymky/moonkatty-horizons-play",
+      "commit": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+      "checkId": "desktop.build-id",
+      "viewport": "desktop",
+      "evidence": []
+    }
+  }
+]

@@ -1,0 +1,21 @@
+M1 savings => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtvuqq8xv6j4"}
+M2 confirm:true => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtvuqu5ofg0r"}
+M3 paid_ads => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtvuqydfzuzd","tier":"owner"}
+M4 critical+confirm => 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjtvur2m0rxk8","tier":"owner"}
+M5 fake_views => 403 {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+F1 approve tampered => 409 {"ok":false,"status":"invalidated","error":"payload не совпадает с подтверждённым","executed":false,"execStatus":"invalidated","result":{"error":"payload не совпадает с хэшем, сохранённым при запросе","code":"payload_mis
+F1 db after: {"status":"invalidated","consumed_at":"2026-10-22T17:41:55.832Z","exec_status":"invalidated"}
+F1 reuse /savings original 300 => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+F1 reuse /savings 999999 => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+F1 re-approve => 409 {"error":"подтверждение уже использовано","code":"consumed"}
+lock chain: ["429:locked"]
+F2 correct during lock => 429 {"error":"Слишком много неверных паролей, вход временно заблокирован","code":"locked"}
+locks before flood: [{"user":"owner|127.0.0.1","fails":5,"locked_until":1792691036364,"next_at":0,"updated_at":"2026-10-22T17:41:56.364Z"}]
+count after flood: 27
+owner lock still in db pre-boot: {"user":"owner|127.0.0.1","fails":5,"locked_until":1792691036364,"next_at":0,"updated_at":"2026-10-22T17:41:56.364Z"}
+F2 still locked after flood+restart => 429 {"error":"Слишком много неверных паролей, вход временно заблокирован","code":"locked"}
+rows after purge/access: 26 owner={"user":"owner|127.0.0.1","fails":5,"locked_until":1792691036364}
+active locks kept: 1
+decoy unlocked count: 25
+after manual trim (unlocked only): locked still 1 owner={"user":"owner|127.0.0.1","fails":5,"locked_until":1792691036364,"next_at":0,"updated_at":"2026-10-22T17:41:56.364Z"}
+F2 lock survives trim => 429 {"error":"Слишком много неверных паролей, вход временно заблокирован","code":"locked"}

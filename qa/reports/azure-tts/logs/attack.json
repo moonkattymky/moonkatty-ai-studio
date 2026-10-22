@@ -1,0 +1,346 @@
+{
+  "summary": {
+    "commit": "baf8cff403c96c17923bb6735cf6f832ad81d700",
+    "controls": 38,
+    "failed": [],
+    "findings": [
+      "clock back to January spends again and drops the February total",
+      "deleting usage.json starts the month at the new charge",
+      "a missing spentMicro is treated as zero and the call is reserved",
+      "a different month string in the file resets the current month",
+      "a dust price rounds to zero micro-dollars",
+      "dust price lets a second half-million characters through with spend still zero",
+      "a dust-price provider still calls the mock",
+      "a lock older than 30 seconds can be taken while the holder is still inside it",
+      "setCandidate plus lock accepts an agent-written approval with no owner session",
+      "the forged approval is enough for the provider to call the mock",
+      "tier F0 calls the mock while paidEnabled is false",
+      "the request headers do not name a pricing tier or SKU",
+      "the SSML body does not name F0 or S0",
+      "a prewritten cache file is returned as Azure with no mock call",
+      "reconcile stores a pasted key in the usage file",
+      "a 5000 character summary drops the disclosure from the dry-run payload",
+      "a preview with no local engine is stored final with voice fallback"
+    ]
+  },
+  "results": [
+    {
+      "name": "one character at $15 per million is 15 micro-dollars",
+      "ok": true,
+      "detail": {
+        "one": 15,
+        "janCost": 800010
+      }
+    },
+    {
+      "name": "January holds the reserved spend",
+      "ok": true,
+      "detail": {
+        "spent": 800010
+      }
+    },
+    {
+      "name": "a forward month starts a new counter",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "clock back to January spends again and drops the February total",
+      "ok": true,
+      "detail": {
+        "spent": 800010,
+        "month": "2026-01"
+      }
+    },
+    {
+      "name": "deleting usage.json starts the month at the new charge",
+      "ok": true,
+      "detail": {
+        "spent": 15000
+      }
+    },
+    {
+      "name": "a truncated usage file is refused",
+      "ok": true,
+      "detail": {
+        "corrupt": "Azure Speech usage state is unreadable. Refusing to run."
+      }
+    },
+    {
+      "name": "a negative spentMicro is refused",
+      "ok": true,
+      "detail": {
+        "neg": "Azure Speech usage state is unreadable. Refusing to run."
+      }
+    },
+    {
+      "name": "a fractional spentMicro is refused",
+      "ok": true,
+      "detail": {
+        "frac": "Azure Speech usage state is unreadable. Refusing to run."
+      }
+    },
+    {
+      "name": "a missing spentMicro is treated as zero and the call is reserved",
+      "ok": true,
+      "detail": {
+        "spent": 15000
+      }
+    },
+    {
+      "name": "a different month string in the file resets the current month",
+      "ok": true,
+      "detail": {
+        "spent": 15000
+      }
+    },
+    {
+      "name": "NaN, infinite, negative, zero, and string prices are refused",
+      "ok": true,
+      "detail": {
+        "rejected": []
+      }
+    },
+    {
+      "name": "a dust price rounds to zero micro-dollars",
+      "ok": true,
+      "detail": {
+        "dust": 0
+      }
+    },
+    {
+      "name": "dust price lets a second half-million characters through with spend still zero",
+      "ok": true,
+      "detail": {
+        "spent": 0
+      }
+    },
+    {
+      "name": "a dust-price provider still calls the mock",
+      "ok": true,
+      "detail": {
+        "fetches": 1,
+        "spent": 0
+      }
+    },
+    {
+      "name": "parallel chunk is about $0.40",
+      "ok": true,
+      "detail": {
+        "cost": 400005
+      }
+    },
+    {
+      "name": "eight processes cannot reserve more than one dollar",
+      "ok": true,
+      "detail": {
+        "ok": 2,
+        "finalSpend": 800010,
+        "rows": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    },
+    {
+      "name": "two overlapping synthesizes stop at the dollar cap",
+      "ok": true,
+      "detail": {
+        "succeeded": 1,
+        "hits": 1,
+        "spent": 1000000,
+        "reasons": [
+          "ok",
+          "Azure Speech monthly budget reached ($1.00 + $0.002730 > $1.00 for 2026-10). No "
+        ]
+      }
+    },
+    {
+      "name": "a lock older than 30 seconds can be taken while the holder is still inside it",
+      "ok": true,
+      "detail": {
+        "entered": true,
+        "flag": "in",
+        "err": null
+      }
+    },
+    {
+      "name": "paidEnabled false does not read the key or call the mock",
+      "ok": true,
+      "detail": {
+        "msg": "Azure Speech S0 calls are refused. paidEnabled and an owner approval record (timestamp and who) are both required. No request was sent.",
+        "fetches": 0,
+        "keys": 0
+      }
+    },
+    {
+      "name": "setCandidate plus lock accepts an agent-written approval with no owner session",
+      "ok": true,
+      "detail": {
+        "status": "locked",
+        "by": "agent"
+      }
+    },
+    {
+      "name": "the forged approval is enough for the provider to call the mock",
+      "ok": true,
+      "detail": {
+        "forgedFetches": 1
+      }
+    },
+    {
+      "name": "tier F0 calls the mock while paidEnabled is false",
+      "ok": true,
+      "detail": {
+        "f0": 1
+      }
+    },
+    {
+      "name": "the request headers do not name a pricing tier or SKU",
+      "ok": true,
+      "detail": {
+        "headers": [
+          "Content-Type",
+          "Ocp-Apim-Subscription-Key",
+          "User-Agent",
+          "X-Client-Request-Id",
+          "X-Microsoft-OutputFormat"
+        ]
+      }
+    },
+    {
+      "name": "the SSML body does not name F0 or S0",
+      "ok": true,
+      "detail": {
+        "sample": "<speak version=\"1.0\" xmlns=\"http://www.w3.org/2001/10/synthesis\" xml:lang=\"en-US"
+      }
+    },
+    {
+      "name": "HD on F0, tier S1, and a missing tier are refused",
+      "ok": true,
+      "detail": {
+        "hd": "Azure Speech voice en-US-Andrew:DragonHDLatestNeural is an HD voice. The F0 allowance on the pricing page is labeled Neural, not Neural HD. Refusing to run.",
+        "s1": "Azure Speech pricing tier is unknown (S1). Refusing to run. Accepted values are F0 and S0.",
+        "missing": "Azure Speech pricing tier is unknown (missing). Refusing to run. Accepted values are F0 and S0."
+      }
+    },
+    {
+      "name": "emoji UTF-16 length is above its Unicode code points",
+      "ok": true,
+      "detail": {
+        "text": 8,
+        "ssml": 181,
+        "utf8": 183,
+        "points": 180
+      }
+    },
+    {
+      "name": "a Han character is one UTF-16 unit",
+      "ok": true,
+      "detail": {
+        "units": 2,
+        "points": 2
+      }
+    },
+    {
+      "name": "three attempts are all reserved, including two HTTP 500s",
+      "ok": true,
+      "detail": {
+        "fetches": 3,
+        "attempts": 3,
+        "spent": 8145,
+        "per": 2715
+      }
+    },
+    {
+      "name": "the ledger has no key and no script after a body that contained the key",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "a prewritten cache file is returned as Azure with no mock call",
+      "ok": true,
+      "detail": {
+        "cached": true,
+        "poisonFetches": 0,
+        "voice": "en-US-AndrewMultilingualNeural",
+        "final": true
+      }
+    },
+    {
+      "name": "readKey returns the secret and its argv has no secret",
+      "ok": true,
+      "detail": {
+        "args": [
+          "find-generic-password",
+          "-s",
+          "MOONKATTY AI STUDIO.azure-speech",
+          "-a",
+          "azure-speech",
+          "-w"
+        ]
+      }
+    },
+    {
+      "name": "storeKey argv is only security -i and the secret is on stdin",
+      "ok": true,
+      "detail": {
+        "args": [
+          "-i"
+        ]
+      }
+    },
+    {
+      "name": "the thrown error and the state files do not contain the key",
+      "ok": true,
+      "detail": {
+        "fetches": 1
+      }
+    },
+    {
+      "name": "ffmpeg argv was not built for the failed request",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "reconcile stores a pasted key in the usage file",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "a 5000 character summary drops the disclosure from the dry-run payload",
+      "ok": true,
+      "detail": {
+        "len": 5000,
+        "tail": "MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM"
+      }
+    },
+    {
+      "name": "a short summary keeps the disclosure in the description",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "a preview with no local engine is stored final with voice fallback",
+      "ok": true,
+      "detail": {
+        "episodeId": "ep",
+        "voice": "fallback",
+        "engine": "kokoro:am_michael",
+        "final": true,
+        "review": "owner-review",
+        "azureStatus": "disabled",
+        "syntheticVoice": false,
+        "disclosure": null,
+        "description": "Markets",
+        "caption": null
+      }
+    }
+  ]
+}

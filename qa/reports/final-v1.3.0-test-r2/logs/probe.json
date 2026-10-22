@@ -1,0 +1,140 @@
+{
+  "failed": 0,
+  "out": [
+    {
+      "name": "fixture dataMode is mock everywhere",
+      "ok": true,
+      "extra": []
+    },
+    {
+      "name": "fixture note says mock and no real revenue",
+      "ok": true,
+      "extra": "SAMPLE: every platform is dataMode=mock. No accounts are connected; no real publishing or revenue."
+    },
+    {
+      "name": "source openPlatformRead is studio2-read-api and publish false",
+      "ok": true,
+      "extra": "studio2-read-api"
+    },
+    {
+      "name": "source fixture money is DEMO or НЕТ ДАННЫХ",
+      "ok": true,
+      "extra": {
+        "realish": [],
+        "nd": [],
+        "demo": true
+      }
+    },
+    {
+      "name": "read-api closure does not load ledger, promotion, adapters, or meta.js",
+      "ok": true,
+      "extra": {
+        "files": [
+          "media-automation/src/platforms/read-api.js",
+          "media-automation/src/platforms/capabilities.js",
+          "media-automation/src/platforms/registry.js",
+          "media-automation/src/experimental.js"
+        ],
+        "hitBanned": [],
+        "adapterHit": []
+      }
+    },
+    {
+      "name": "capabilities.js has no fs, net, http, or child_process",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "registry.js requires only capabilities and experimental",
+      "ok": true,
+      "extra": [
+        "require('./capabilities')",
+        "require('../experimental')"
+      ]
+    },
+    {
+      "name": "requestLiveMode is referenced only by the platforms test",
+      "ok": true,
+      "extra": [
+        "media-automation/test/platforms.test.js"
+      ]
+    },
+    {
+      "name": "default createReadApi does not call a publisher or ledger",
+      "ok": true,
+      "extra": "mock"
+    },
+    {
+      "name": "injected ledger is not the command-center path",
+      "ok": true,
+      "extra": {
+        "liveCalls": 1,
+        "mode": "real"
+      }
+    },
+    {
+      "name": "source server boots",
+      "ok": true,
+      "extra": null
+    },
+    {
+      "name": "health flavor test version 1.3.0-test",
+      "ok": true,
+      "extra": "test 1.3.0-test"
+    },
+    {
+      "name": "setup accepts the fake password",
+      "ok": true,
+      "extra": 200
+    },
+    {
+      "name": "command-center source is studio2-read-api and publish is false",
+      "ok": true,
+      "extra": {
+        "source": "studio2-read-api",
+        "version": "1.0.0",
+        "demo": true,
+        "publish": false,
+        "viewsAreRevenue": false
+      }
+    },
+    {
+      "name": "HTTP fixture money is DEMO",
+      "ok": true,
+      "extra": {
+        "label": {
+          "label": "DEMO USD 12.50",
+          "excludedFromActual": true,
+          "demo": true,
+          "count": 1,
+          "payoutId": "MOCK-PAYOUT-0001"
+        },
+        "httpReal": []
+      }
+    },
+    {
+      "name": "directors do not publish",
+      "ok": true,
+      "extra": {
+        "touched": false,
+        "testDisabled": true
+      }
+    },
+    {
+      "name": "POST published is stored pending_approval",
+      "ok": true,
+      "extra": {
+        "status": 201,
+        "stored": "pending_approval"
+      }
+    },
+    {
+      "name": "TEST publish route stays disabled",
+      "ok": true,
+      "extra": {
+        "status": 403,
+        "code": "publishing_disabled"
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+PASS vm_stat parser sums free+inactive+speculative+purgeable and ignores the trailing dot
+PASS fixture that looks like ~97% via os.freemem is much lower via vm_stat — os 97% vm_stat 51%
+PASS MemAvailable is parsed in bytes
+PASS memory_pressure free percentage
+PASS darwin snapshot uses vm_stat, keeps os.freemem aside, and labels the source
+PASS linux snapshot uses MemAvailable and says so
+PASS available memory is clamped to the total
+PASS when vm_stat fails the label says os.freemem overstates usage
+PASS injected snapshots are not cached across calls
+PASS a caller that supplies readFile does not poison the live cache
+PASS live snapshot is reused inside the cache window
+PASS host memory module has no prod port, prod OpenCode URL, or keychain account literal
+PASS dashboard prefers memAvailable and prints memLabel
+PASS test server started for /api/system — xperimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO TEST: http://127.0.0.1:18690 (pid 1127237, db node:sqlite)
+
+PASS system snapshot requires auth
+PASS live /api/system keeps memFree and adds a labelled available figure — {"source":"meminfo","label":"доступно: MemAvailable","avail":13329604608,"free":13329604608}
+PASS on this Linux host the available figure is not the raw freemem field
+
+17/0

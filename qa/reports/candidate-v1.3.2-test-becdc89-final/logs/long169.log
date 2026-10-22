@@ -1,0 +1,12 @@
+PASS stories available — 1
+PASS draft — {"id":"e5d954b44273da1e","ref":"nv-e5d954b44273da1e","status":"draft","title":"MOONKATTY News","dateLabel":"Oct 22, 2026","stories":[{"id":"4aef3ccbdb85","category":"space","headline":"NASA Conducts R
+PASS approved
+PASS render started — {"id":"e5d954b44273da1e","ref":"nv-e5d954b44273da1e","status":"rendering","title":"Long word 16:9 Supercalifragilisticexpialidociousnesswordthatkeepsgoingandgoing","dateLabel":"Oct 22, 2026","stories"
+....
+PASS 16:9 long-word render succeeded — rendered 
+PASS MP4 1920x1080 — 1920,1080 21.833333
+PASS SRT cues >=0.6s — min=3.891 bad=
+PASS SRT no overlaps — overlaps=0
+PASS long word fragment in SRT
+SRT_MIN_DUR=3.891 cues=2
+9 passed, 0 failed

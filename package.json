@@ -5,7 +5,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "qa": "node qa/interfaces/self-check.mjs && node --test qa/content/test/content.test.mjs && node qa/game-tester/run.mjs",
+    "qa:interfaces": "node qa/interfaces/self-check.mjs",
+    "qa:content": "node --test qa/content/test/content.test.mjs",
+    "qa:horizons": "node qa/game-tester/run.mjs",
+    "qa:bugs": "node qa/bugs/registry.mjs validate",
+    "qa:video": "node qa/content/video-qc.mjs --self-test",
+    "qa:site": "node qa/site/moonkatty.mjs",
+    "qa:api": "node qa/smoke/api.mjs",
+    "qa:regression": "node qa/regression/run.mjs",
+    "qa:dashboard": "node qa/dashboard/build.mjs",
+    "qa:gate": "node qa/release/gate.mjs"
   },
   "keywords": [],
   "author": "",

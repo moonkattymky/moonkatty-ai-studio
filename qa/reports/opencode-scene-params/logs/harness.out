@@ -1,0 +1,117 @@
+opencode no-auth 401
+opencode health {"healthy":true,"version":"1.19.3"}
+setup 200
+ollama 200
+oc-auth 200
+oc-test {"url":"http://127.0.0.1:14221/global/health","at":"2026-10-21T12:32:47.195Z","via":"server","auth":true,"ms":58,"ok":true,"status":200,"code":"ok","detail":"Подключено (Basic Auth) · версия 1.19.3"}
+model 200
+blender {"ok":true,"version":"4.2.9 LTS","engines":["CYCLES","BLENDER_EEVEE_NEXT","BLENDER_WORKBENCH"]}
+task A 201 mvi3eh1fluleg1
+PHASE_A {
+  "status": "waiting_approval",
+  "stage": "verify",
+  "error": null,
+  "paramsBy": "rules",
+  "sceneParams": true,
+  "blend": {
+    "bytes": 913264,
+    "magic": "BLENDER"
+  },
+  "png": {
+    "bytes": 406166,
+    "magic": "89504e47",
+    "w": 640,
+    "h": 480
+  },
+  "build": {
+    "ok": true,
+    "objects": [
+      "Area",
+      "Area.001",
+      "Area.002",
+      "Body",
+      "Camera",
+      "EarL",
+      "EarR",
+      "EyeL",
+      "EyeR",
+      "Floor",
+      "Head",
+      "Tail"
+    ],
+    "materials": [
+      "MK_Eye",
+      "MK_Floor",
+      "MK_Main"
+    ],
+    "blend": "scene.blend",
+    "mode": "build",
+    "blender": "4.2.9 LTS"
+  },
+  "render": {
+    "ok": true,
+    "engine": "CYCLES",
+    "objects": [
+      "Area",
+      "Area.001",
+      "Area.002",
+      "Body",
+      "Camera",
+      "EarL",
+      "EarR",
+      "EyeL",
+      "EyeR",
+      "Floor",
+      "Head",
+      "Tail"
+    ],
+    "files": [
+      "renders/preview.png",
+      "exports/scene.glb"
+    ],
+    "mode": "render",
+    "blender": "4.2.9 LTS"
+  },
+  "events": [
+    "[agent] OpenCode инструмент write: completed",
+    "[agent] Агент завершил работу. Инструменты: write:completed",
+    "[validate] ▶ Проверка параметров",
+    "[validate] Параметры прошли проверку схемы",
+    "[build] ▶ Сборка сцены (.blend)",
+    "[build] Запуск шаблона scene_basic (build), Blender headless -b --python-exit-code",
+    "[build] Сцена сохранена: scene.blend (892 КБ); объекты: Area, Area.001, Area.002, Body, Camera, EarL, EarR, EyeL, EyeR, Floor, Head, Tail; материалы: MK_Eye, MK_Floor, MK_Main",
+    "[render] ▶ Повторное открытие и рендер PNG",
+    "[render] Повторное открытие scene.blend и рендер (CYCLES)",
+    "[render] Рендер готов (CYCLES): 2 файл(ов)",
+    "[verify] ▶ Проверка результата",
+    "[verify] Проверено: PNG 640×480, файлов 3. Результат ждёт утверждения."
+  ]
+}
+task B 201 mvi3eo763qge1x
+PHASE_B {
+  "status": "failed",
+  "stage": "agent",
+  "error": "Агент OpenCode не записал scene_params.json",
+  "paramsBy": "rules",
+  "sceneParams": false,
+  "blend": null,
+  "png": null,
+  "build": null,
+  "render": null,
+  "events": [
+    "[preflight] Blender 4.2.9 LTS (linux/x64), Python 3.11.7, движки: CYCLES, BLENDER_EEVEE_NEXT, BLENDER_WORKBENCH, GLB: да, FBX: да",
+    "[preflight] OpenCode server http://127.0.0.1:14221 — healthy, версия 1.19.3 (Basic Auth, пароль из Keychain)",
+    "[preflight] Рабочая папка: projects3d/p_mvi3eo763qge1x/v001",
+    "[params] ▶ Параметры сцены",
+    "[params] Ollama недоступна (Ollama недоступна: ECONNREFUSED) — параметры по правилам (без ИИ)",
+    "[params] Параметры (rules): объект cat, свет three_point, движок CYCLES 640×480, кадров анимации 0",
+    "[agent] ▶ Агент OpenCode",
+    "[agent] Политика OpenCode проверена: bash/webfetch/external_directory = deny, edit = ask",
+    "[agent] Сессия OpenCode ses_ea18cb0f0ffetYmr9H4bqM7XbR создана (папка проекта)",
+    "[agent] Задание отправлено агенту (модель mock/mock-coder)",
+    "[agent] Агент завершил работу. Инструменты: нет",
+    "[agent] Ошибка: Агент OpenCode не записал scene_params.json"
+  ]
+}
+HARNESS_OK
+EXIT:0

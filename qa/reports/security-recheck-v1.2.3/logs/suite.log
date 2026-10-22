@@ -1,0 +1,426 @@
+===== security =====
+
+> moonkatty-ai-studio@1.2.3-test test:security
+> node scripts/security-test.mjs
+
+PASS setup works (fake creds)
+PASS session cookie HttpOnly + SameSite=Strict
+PASS 401 without auth: /api/tasks
+PASS 401 without auth: /api/agents
+PASS 401 without auth: /api/meta/config
+PASS 401 without auth: /api/backup
+PASS 401 without auth: /api/runtime
+PASS 401 without auth: /api/system
+PASS 401 without auth: /files/x.txt
+PASS 401 POST without auth
+PASS Host header rebinding rejected (421)
+PASS Host header rebinding rejected on login
+PASS cross-origin POST rejected (Origin http://127.0.0.1:3000)
+PASS Sec-Fetch-Site: cross-site rejected
+PASS CSRF: cookie-auth POST without X-Studio-Request rejected
+PASS CSRF: logout without header rejected
+PASS CSP header present and strict script-src
+PASS X-Frame-Options DENY, nosniff
+PASS path traversal blocked: /files/../studio.db — HTTP 404
+PASS path traversal blocked: /files/..%2fstudio.db — HTTP 404
+PASS path traversal blocked: /files/%2e%2e/secret.key — HTTP 404
+PASS path traversal blocked: /files/..%2f..%2fetc%2fpasswd — HTTP 404
+PASS path traversal blocked: /../data/studio.db — HTTP 404
+PASS path traversal blocked: /%2e%2e/server.js — HTTP 404
+PASS path traversal blocked: /files/.hidden — HTTP 404
+PASS upload name sanitized (no traversal) — /files/mvhzsvig4du82i-_._evil.html
+PASS uploaded HTML served as attachment + CSP sandbox
+PASS SQLi id rejected safely: x' OR '1'='1
+PASS SQLi id rejected safely: tasks'; DROP TABLE items; --
+PASS SQLi id rejected safely: 1; DELETE FROM meta
+PASS SQLi collection name rejected
+PASS SQLi payload stored as data, table intact
+PASS codeApproved cannot be set via generic API
+PASS codeApproved cannot be set via PUT
+PASS OpenCode disabled by default → blocked, no shell executed — blocked OpenCode отключён (по умолчанию). Включение — только вручную: STUDIO_OPENCODE=1, см. docs/SECURITY_AUDIT.md
+PASS agent start with unknown id → 400
+PASS integration test refuses non-http URL
+PASS meta secret never returned by API
+PASS meta secret not stored in plaintext
+PASS session token not stored in plaintext
+PASS logs redact tokens/secrets
+PASS backup export has no secrets / plaintext passwords / sessions
+PASS backup export: users = password hashes only, jobs tables included
+PASS app-token file is 0600
+PASS app token accepted from loopback without Origin
+PASS app token rejected with foreign Origin
+PASS wrong app token rejected
+PASS no CORS granted (no Access-Control-Allow-Origin)
+PASS «Выйти» disables app auto-login (no immediate re-login)
+PASS password login re-enables app auto-login
+PASS login rate limited after repeated failures (429)
+PASS server bound to 127.0.0.1 only
+{"passed":52,"failed":[]}
+EXIT:0
+===== runner =====
+
+> moonkatty-ai-studio@1.2.3-test test:runner
+> node scripts/runner-test.mjs
+
+PASS content via (mock) Ollama → waiting_approval with result
+PASS task in_progress while LLM works
+PASS stop aborts and returns task to queue
+PASS OpenCode task blocked until explicit approval
+PASS after approval: runs, or blocked with «OpenCode не найден» when CLI absent — OpenCode отключён (по умолчанию). Включение — только вручную: STUDIO_OPENCODE=1, см. docs/SECURITY_AUDIT.md
+EXIT:0
+===== opencode =====
+
+> moonkatty-ai-studio@1.2.3-test test:opencode
+> node scripts/opencode-auth-test.mjs
+
+PASS GET /api/opencode/auth requires auth (401)
+PASS PUT /api/opencode/auth requires auth (401)
+PASS POST /api/opencode/test requires auth (401)
+PASS PUT without X-Studio-Request rejected (CSRF 403)
+PASS POST test with foreign Origin rejected (403)
+PASS PUT with Sec-Fetch-Site cross-site rejected (403)
+PASS initial state: keychain available (fake), hasPassword=false, default user opencode — {"available":true,"store":"macOS Keychain"}
+PASS URL refused: LAN
+PASS URL refused: remote host
+PASS URL refused: rebinding-style host
+PASS URL refused: file:
+PASS URL refused: userinfo
+PASS URL refused: js
+PASS URL refused: query
+PASS non-loopback refusal has clear RU message
+PASS bad username refused
+PASS password with newline refused (stdin protocol safety)
+PASS password > 256 chars refused
+PASS password of wrong type refused
+PASS unknown fields refused
+PASS generic CRUD cannot set non-loopback OpenCode URL
+PASS generic CRUD strips a password field
+PASS malformed JSON with password → 400, generic error
+PASS settings saved (loopback URL, user)
+PASS no password → 401 handled, RU message — OpenCode требует пароль (HTTP 401): укажите пароль в настройках.
+PASS password saved → hasPassword=true, response has no password
+PASS correct Basic Auth → Подключено — Подключено (Basic Auth) · версия 1.0.0-mock
+PASS status after success = Подключено
+PASS wrong password → 401, RU message, no leak — Неверный логин или пароль OpenCode (HTTP 401). Проверьте OPENCODE_SERVER_PASSWORD и логин (по умолчанию «opencode»).
+PASS wrong username → 401
+PASS 403 → RU message, echoed Authorization scrubbed — Доступ запрещён (HTTP 403): сервер OpenCode отклонил запрос.
+PASS connection refused → RU message — Соединение отклонено: OpenCode не запущен на этом адресе (opencode serve --port 4096).
+PASS timeout → RU message (5 s) — Нет ответа за 5 с (таймаут). 5040ms
+PASS legacy /api/integrations/opencode/test goes through the safe check
+PASS back to working server
+PASS backup export has no password/base64
+PASS no password in ANY data file (SQLite/WAL/backups/tokens; 7 files)
+PASS backup file(s) created and clean
+PASS audit log has OpenCode entries but no password/Authorization
+PASS Keychain calls never carry the password in argv (plain or hex)
+PASS Keychain item uses service "MOONKATTY AI STUDIO" / account opencode-server-password
+PASS UI: password field cleared, not in localStorage/sessionStorage/DOM
+PASS UI: «Проверить подключение» shows result — ✓ Подключено (Basic Auth) · версия 1.0.0-mock
+PASS UI: EN translation of the OpenCode card
+PASS UI: UK translation of the OpenCode card
+PASS no Keychain → feature shown unavailable (Не подключено)
+PASS no Keychain → saving password refused (409), no fallback
+PASS no Keychain → password not written anywhere
+PASS clearPassword removes Keychain item
+PASS no password in any API response body
+PASS no password in server stdout/stderr
+{"passed":51,"failed":[]}
+EXIT:0
+===== policy =====
+
+> moonkatty-ai-studio@1.2.3-test test:policy
+> node scripts/policy-test.mjs
+
+PASS write inside workspace → allow
+PASS write with ../ escape → deny fs.outside
+PASS write through symlink to outside → deny
+PASS absolute outside path → deny
+PASS NUL byte path → deny
+PASS overwrite existing .blend → deny fs.versioned
+PASS agent writing new .png → deny fs.blender-only
+PASS delete inside workspace → confirm
+PASS delete outside → deny
+PASS shell → always deny
+PASS publish → confirm
+PASS generated Blender script → confirm
+PASS vetted template → allow
+PASS OpenCode permission «bash» → deny
+PASS OpenCode permission «webfetch» → deny
+PASS OpenCode permission «websearch» → deny
+PASS OpenCode permission «task» → deny
+PASS OpenCode permission «skill» → deny
+PASS OpenCode permission «question» → deny
+PASS OpenCode permission «external_directory» → deny
+PASS OpenCode permission «doom_loop» → deny
+PASS OpenCode permission «lsp» → deny
+PASS OpenCode edit inside → allow
+PASS OpenCode edit without path → deny
+PASS OpenCode edit outside → deny
+PASS unknown action → deny
+PASS shipped opencode-studio.json passes the config check
+PASS default (empty) OpenCode config is refused
+PASS bash allow is refused
+PASS bash pattern object with one allow is refused
+PASS edit allow (no per-file check) is refused
+PASS "permission":"allow" string is refused
+PASS defaults valid
+PASS schema rejects code in subject
+PASS schema rejects huge samples
+PASS schema rejects unknown key
+PASS schema rejects NaN color
+PASS schema rejects newline title
+PASS schema rejects unknown engine
+PASS schema rejects extra camera key
+PASS schema rejects fractional frames
+PASS schema rejects array instead of object
+PASS fromText: "фиолетовый кот" → cat + purple
+PASS versions v001 → v002, previous .blend backed up
+PASS workspace.file blocks traversal
+PASS invalid project id refused
+
+46/46 passed
+EXIT:0
+===== video =====
+
+> moonkatty-ai-studio@1.2.3-test test:video
+> node scripts/video-render-test.mjs
+
+PASS type registered with defaults gpu_heavy / mac-mini / safeToRetry
+PASS reject: unknown field
+PASS reject: unknown preset
+PASS reject: missing runId
+PASS reject: runId traversal
+PASS reject: runId with slash
+PASS reject: runId with space
+PASS reject: runId too long
+PASS reject: episodeRef traversal
+PASS reject: episodeRef absolute
+PASS reject: episodeRef shell chars
+PASS reject: episodeRef non-string
+PASS reject: episodeRef empty segment
+PASS reject: input array
+PASS reject: runId NUL
+PASS reject resourceClass override
+PASS reject requiresNode override
+PASS reject idempotencyKey not <runId>:<preset>
+PASS no job rows created by rejected requests
+(node:21423) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS blender_template holds the heavy lock — {"holder":"blender:build","waiting":0,"since":1792579977467}
+PASS video_render job fields: key <runId>:<preset>, gpu_heavy, mac-mini, safeToRetry — {"jobId":"job_086a8e20327a997a","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_2026-10-21.a:youtube","safeToRetry":true,"status":"queued","internalStatus":"queued","stage":"video_render","attempt":0,"maxAttempts":2,"error":null,"blocked":false,"arti
+PASS input stored exactly (no extra fields)
+PASS idempotency: same runId+preset → same jobId, existing:true
+PASS idempotency: explicit matching key also dedupes
+PASS different preset → new job
+PASS video_render stays queued while Blender runs (no overlap) — queued
+PASS two video_render jobs waiting behind the lock — {"holder":"blender:build","waiting":2,"since":1792579977467}
+PASS stub: job failed with «Не подключено», no artifacts — {"jobId":"job_086a8e20327a997a","type":"video_render","resourceClass":"gpu_heavy","requiresNode":"mac-mini","idempotencyKey":"run_2026-10-21.a:youtube","safeToRetry":true,"status":"failed","internalStatus":"failed","stage":"video_render","attempt":1,"maxAttempts":2,"error":"video_render: Не подключе
+PASS stub: no output files created
+PASS never more than one heavy job active (video/video/blender/ollama) — +ollama -ollama +video -video +video -video +blender -blender
+PASS plugged executor: job succeeded
+PASS artifact schema: mp4+srt+jpg each {path,size,sha256,kind} — [{"name":"mp4.mp4","path":"/tmp/mk-video-test/media/r2/youtube/mp4.mp4","size":7,"sha256":"1d1a2ad6d7ea54cf98b57e96bcac405b3ae41a88070e0fc931cbf42009e1098c","kind":"mp4"},{"name":"srt.srt","path":"/tmp/mk-video-test/media/r2/youtube/srt.srt","size":35,"sha256":"400775f954a420b7304d96095088d24a7b4ff1
+PASS validateArtifacts accepts good set
+PASS reject path outside workspace
+PASS reject ../ traversal path
+PASS reject symlink escaping workspace
+PASS reject wrong sha256
+PASS reject wrong size
+PASS reject missing cover jpg
+PASS reject duplicate mp4
+PASS reject unknown kind (png)
+PASS reject kind/extension mismatch
+PASS reject unknown artifact field
+PASS executor returning out-of-workspace artifact → job failed, artifacts not stored
+PASS setExecutor(null) restores stub
+
+45/45 passed
+EXIT:0
+===== publish-guard =====
+
+> moonkatty-ai-studio@1.2.3-test test:publish-guard
+> node scripts/publish-guard-test.mjs
+
+(node:21446) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS [prod] POST cannot create published/externalId
+PASS [prod] PUT {"status":"published"} → 403 — HTTP 403
+PASS [prod] PUT {"status":"published","externalId":"123456_789012"} → 403 — HTTP 403
+PASS [prod] PUT {"externalId":"123456_789012"} → 403 — HTTP 403
+PASS [prod] PUT {"publishedAt":"2026-01-01"} → 403 — HTTP 403
+PASS [prod] PUT {"publication":{"platform":"facebook","responseId":"123456", → 403 — HTTP 403
+PASS [prod] restore: every queue item enters pending_approval (incl. rejected-with-externalId)
+PASS [prod] restore: forged externalId/publishedAt/publication dropped, historical_* kept
+PASS [prod] historical_* not writable via CRUD
+PASS [prod] /publish on restored item does not publish — HTTP 400
+PASS [prod] no seal key created without a real publication (Keychain item absent, DB meta absent)
+PASS [test] POST cannot create published/externalId
+PASS [test] PUT {"status":"published"} → 403 — HTTP 403
+PASS [test] PUT {"status":"published","externalId":"123456_789012"} → 403 — HTTP 403
+PASS [test] PUT {"externalId":"123456_789012"} → 403 — HTTP 403
+PASS [test] PUT {"publishedAt":"2026-01-01"} → 403 — HTTP 403
+PASS [test] PUT {"publication":{"platform":"facebook","responseId":"123456", → 403 — HTTP 403
+PASS [test] restore: every queue item enters pending_approval (incl. rejected-with-externalId)
+PASS [test] restore: forged externalId/publishedAt/publication dropped, historical_* kept
+PASS [test] historical_* not writable via CRUD
+PASS [test] /publish → 403 publishing_disabled
+PASS [test] egress: graph.facebook.com blocked (not in allowlist)
+PASS [test] no seal key created without a real publication (Keychain item absent, DB meta absent)
+PASS seal key migrated into Keychain service «MOONKATTY AI STUDIO» / publish-seal-key
+PASS seal key never in argv of `security` (stdin -X only)
+PASS seal key removed from studio.db (meta.publishSealKey absent)
+PASS studio.db contains no copy of the key anywhere
+PASS validly sealed row stays published
+PASS title edit on validly sealed row allowed, stays published
+PASS startup migration demotes legacy published + externalId (no seal) → pending_approval + historical_*
+PASS startup migration demotes legacy published without externalId → pending_approval + historical_*
+PASS startup migration demotes seal made with another key → pending_approval + historical_*
+PASS startup migration demotes seal valid but externalId swapped → pending_approval + historical_*
+PASS title edit on demoted legacy row stays pending_approval
+PASS edit of a directly-written unsealed published row → 403 (no legacy pass)
+PASS edit of a row sealed with a foreign key → 403
+PASS restart demotes rows written behind the server's back
+PASS sealed row still valid after restart (key read from Keychain)
+PASS no Keychain: key still removed from studio.db (never kept as fallback)
+PASS no Keychain: even the formerly valid sealed row is demoted (publishing refused without key)
+PASS v1 DB migrated: published row → pending_approval, historical_externalId kept
+PASS v1 migrated row: title edit does NOT restore published
+PASS v1 migrated row: pre-migration backup written
+PASS markers: baked TEST not overridable: STUDIO_FLAVOR=prod NODE_ENV=test — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: STUDIO_FLAVOR=prod NODE_ENV=production — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: MK_FLAVOR/FLAVOR=prod — test|baked|com.moonkatty.aistudio.test
+PASS markers: baked TEST not overridable: CLI --flavor=prod --prod — test|baked|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js rewritten to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js bytes changed, value kept (SHA-256 mismatch) → FLAVOR null — null|baked-sha256-mismatch|com.moonkatty.aistudio.test
+PASS tamper (source copy): studioFlavor in package.json changed to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.lock.json flavor changed to prod → FLAVOR null — null|markers-disagree|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.baked.js deleted → FLAVOR null — null|markers-missing:baked|com.moonkatty.aistudio.test
+PASS tamper (source copy): flavor.lock.json deleted → FLAVOR null — null|markers-missing:lock|com.moonkatty.aistudio.test
+PASS tamper (source copy): studioFlavor* removed from package.json → FLAVOR null — null|markers-missing:pkg|com.moonkatty.aistudio.test
+PASS tamper (source copy): invalid baked value staging → FLAVOR null — null|baked-invalid|com.moonkatty.aistudio.test
+PASS tamper (source copy): all markers removed (packaged tree has no scripts/) + STUDIO_FLAVOR=prod → FLAVOR null — null|none|com.moonkatty.aistudio.test
+PASS TEST egress allowlist excludes all social APIs — api.github.com,ollama.com,registry.ollama.ai
+PASS meta.js refuses to load in TEST flavor
+PASS meta.js refuses to load with unknown flavor
+PASS bundle: meta.js NOT shipped (absent from app.asar and app.asar.unpacked)
+PASS bundle: markers consistent (baked test, lock, studioFlavor, SHA-256 in package.json + asar lock)
+PASS bundle: Electron flavor-guard (asar lock) accepts the untouched tree
+PASS bundle: untouched + STUDIO_FLAVOR=prod NODE_ENV=production --flavor=prod → still TEST — {"ok":true,"app":"moonkatty-ai-studio","flavor":"test","product":"MOONKATTY AI STUDIO TEST","schemaVersion":4,"mode":"server","version":"1.2.3-test","pid":21844,"uptimeSec":0,"db":"ok","dbDriver":"nod
+PASS bundle tamper: flavor.baked.js → prod → exit 78 — ует, источник: markers-disagree). Пакет должен содержать lib/flavor.baked.js / "studioFlavor"; для разработки: NODE_ENV=test STUDIO_FLAVOR=test|prod.
+
+PASS bundle tamper: … and Electron guard refuses
+PASS bundle tamper: ALL unpacked markers consistently rewritten to prod → server exit 78 (publisher not shipped) — ОТКАЗ: модуль публикации недоступен для prod-сборки (Cannot find module './meta.js'
+Require stack:
+- /tmp/mk-pg-unp-Mi4hpm/server.js)
+
+PASS bundle tamper: … and Electron guard refuses (asar lock still test)
+PASS bundle tamper: flavor.baked.js deleted → exit 78
+PASS bundle tamper: all markers removed + STUDIO_FLAVOR=prod NODE_ENV=production → exit 78
+PASS bundle tamper: all markers removed + STUDIO_FLAVOR=prod NODE_ENV=test → exit 78
+PASS bundle tamper: meta.js planted into TEST tree → server stays TEST, publisher not loaded
+PASS bundle tamper: … Electron guard refuses (publisher present)
+PASS bundle tamper: studioFlavorSha256 changed → exit 78
+{"passed":73,"failed":[]}
+EXIT:0
+===== isolation =====
+
+> moonkatty-ai-studio@1.2.3-test test:isolation
+> node scripts/isolation-test.mjs
+
+PASS TEST flavor: product / bundle id / launchd label
+PASS TEST flavor: Keychain service .test, port ≠ 8787, autostart off, no update checks
+PASS prod flavor unchanged (v1.1.2 identifiers)
+PASS source checkout without markers and without STUDIO_FLAVOR → FLAVOR null (no default, NODE_ENV irrelevant)
+PASS source checkout: NODE_ENV irrelevant (STUDIO_FLAVOR=test honoured with NODE_ENV=production)
+PASS server.js without baked flavor and without STUDIO_FLAVOR refuses to start (exit 78, clear error)
+PASS no hardcoded app name / bundle id / label / Keychain service / port outside studio-config.js
+(node:21968) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS guard: STUDIO_DATA_DIR = production dir → exit 78 — [MOONKATTY AI STUDIO TEST] ОТКАЗ: STUDIO_DATA_DIR «/tmp/mk-iso-test-21968/home/Library/Application Support/MOONKATTY AI STUDIO» находится в данных production-версии (MOONKATTY AI STUDIO). Тестовая сборка не открывает production-данные.
+
+PASS guard: symlink to production dir → refused
+PASS guard: DB_PATH inside production dir → refused
+PASS guard: differently-cased production path (macOS is case-insensitive) → refused on darwin — platform linux
+PASS guard: launchd plist generation for production dir → refused
+PASS test plist: label com.moonkatty.aistudio.test.server, port 8687, test data dir
+PASS health reports flavor=test, product TEST, schemaVersion 4 — {"ok":true,"app":"moonkatty-ai-studio","flavor":"test","product":"MOONKATTY AI STUDIO TEST","schemaVersion":4,"mode":"server","version":"1.2.3-test","pid":22098,"uptimeSec":0,"db":"ok","dbDriver":"nod
+PASS QA-DB-001: automatic pre-migration SQLite backup (v1 → v4) with matching .sha256 — pre-migration-v1-to-v4-2026-10-21T10-53-09-356Z.db
+PASS pre-migration backup is the OLD schema (no jobs table)
+PASS test server used its own data dir (app-token, db in TEST dir)
+PASS OpenCode default URL in TEST build is 127.0.0.1:4097
+PASS restore without confirmation token → rejected, data intact
+PASS restore/prepare returns one-time token + counts
+PASS restore with wrong token → 403
+PASS restore without confirm word → 400
+PASS nothing replaced yet
+PASS restore with token: backup made first, SHA-256 matches file + sidecar
+PASS pre-restore backup contains the data before replacement — 1 vs 1
+PASS data replaced after confirmation
+PASS token is single-use
+PASS classify: private / link-local / metadata / CGNAT / ULA / mapped addresses blocked
+PASS allowlisted host resolving to metadata IP → blocked after DNS
+PASS any one private address among several → blocked (no rebinding race)
+PASS allowlisted host with public IP → allowed
+PASS host not in allowlist → blocked
+PASS local integration on loopback + known port → allowed
+PASS local integration on other port → blocked
+PASS "localhost" resolving to private IP → blocked
+PASS credentials in URL → blocked
+PASS endpoint: metadata URL → 400 blocked, no request
+PASS endpoint: private IP → 400
+PASS endpoint: redirect is not followed (reported as redirect)
+PASS endpoint: Ollama on non-standard port → blocked (fixed port policy)
+PASS master key stored in TEST Keychain service "MOONKATTY AI STUDIO.test"
+PASS master key never in any security argv (stdin -i only) — ["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"]
+["-i"]
+["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"]
+["find-generic-pa
+PASS 2nd chat while 1st holds the lock → 202 busy_queued with holder — {"status":"busy_queued","message":{"id":"mvhzucsymec4cg","role":"director","at":"2026-10-21T10:53:10.354Z","planner":"queued","text":"Студия занята (ollama:director) — запрос поставлен в очередь, отве
+PASS queue bounded: beyond STUDIO_CHAT_MAX_QUEUED → 429 busy queue_full — 202,429
+PASS 1st chat answered by (mock) LLM
+PASS queued chat completed later in background
+PASS Ollama /api/chat never concurrent (max 1) — max 1, calls 3
+PASS lock: chat during Blender → busy error after timeout (holder blender)
+PASS lock: Ollama runs only after Blender and video_render finished (FIFO, no overlap)
+PASS static: every Ollama generation call (/api/chat, /api/generate) is inside withHeavy/tryHeavy
+PASS QA-APR-001: POST with status approved → stored as pending_approval — pending_approval
+PASS POST with status retry → pending_approval, nextRetryAt dropped
+PASS approve without fact-check → 400
+PASS status retry also gated by fact-check → 400
+PASS daily limit enforced on approve
+PASS published via HTTP → 403 (internal publisher only)
+PASS published with blank externalId → 403
+PASS TEST build: manual published record refused
+PASS TEST build: /api/queue/:id/publish → 403
+PASS TEST build: scheduler never calls meta.tick (source check)
+PASS backup: jobs + jobEvents + users (hash only)
+PASS QA-OC-001: sandbox profile has no /private/tmp or /private/var/folders; app temp subdir only — (version 1)
+(allow default)
+(deny file-write*)
+(allow file-write* (subpath "/tmp/mk-iso-test-21968/sbx/opencode-sandbox/t1") (subpath "/tmp/mk-iso-test-21968/sb
+PASS video_render: hasExecutor() false with stub, isStub alias true
+PASS hasExecutor() true after setExecutor; isStub false
+PASS production data dir byte-for-byte unchanged (no migration, no writes)
+{"passed":65,"failed":[]}
+EXIT:0
+===== 3d =====
+
+> moonkatty-ai-studio@1.2.3-test test:3d
+> node scripts/design3d-test.mjs
+
+SKIP: opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+EXIT:2
+===== 3c =====
+
+> moonkatty-ai-studio@1.2.3-test test:3c
+> node scripts/studio3c-test.mjs
+
+SKIP: opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+EXIT:2
+===== e2e-test-build =====
+
+> moonkatty-ai-studio@1.2.3-test test:e2e-test-build
+> node scripts/e2e-test-build.mjs
+
+SKIP: opencode not found at /workspace/tools/oc/node_modules/.bin/opencode
+EXIT:2
+SUITE_DONE

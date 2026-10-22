@@ -1,0 +1,13 @@
+PASS command file execs the shell script beside it
+PASS script source does not stop processes, call the keychain tool, or delete files
+PASS command exits 0 and names the report — report: /tmp/mk-diag-1127320/report.txt
+
+PASS report has vm_stat, swap, memory_pressure, load, processes and free disk
+PASS ports and unauthenticated 4097 are status codes only
+PASS tailscale up is reported without the status payload
+PASS test data dir and backup count are present
+PASS secrets from the environment, backup contents, backup name and keychain are absent
+PASS keychain file was not touched and nothing was stopped
+PASS home gained no files besides the requested report path
+
+10/0

@@ -1,0 +1,161 @@
+TAP version 13
+# Subtest: free-tier thresholds match the published 0.5 million character quota
+ok 1 - free-tier thresholds match the published 0.5 million character quota
+  ---
+  duration_ms: 1.012493
+  type: 'test'
+  ...
+# Subtest: counter reserves before the request, rolls over on the UTC month, and blocks above the cap
+ok 2 - counter reserves before the request, rolls over on the UTC month, and blocks above the cap
+  ---
+  duration_ms: 3.356327
+  type: 'test'
+  ...
+# Subtest: a new UTC month resets the counter, and one request can cross both warnings
+ok 3 - a new UTC month resets the counter, and one request can cross both warnings
+  ---
+  duration_ms: 0.817093
+  type: 'test'
+  ...
+# Subtest: unknown tier, S0 without the owner flag, F0 HD, and a missing paid cap refuse before HTTP
+ok 4 - unknown tier, S0 without the owner flag, F0 HD, and a missing paid cap refuse before HTTP
+  ---
+  duration_ms: 2.598478
+  type: 'test'
+  ...
+# Subtest: S0 dollar budget warns at 70 and 90 percent and blocks above one dollar
+ok 5 - S0 dollar budget warns at 70 and 90 percent and blocks above one dollar
+  ---
+  duration_ms: 1.653002
+  type: 'test'
+  ...
+# Subtest: the character count is committed before HTTP and is kept when HTTP fails
+ok 6 - the character count is committed before HTTP and is kept when HTTP fails
+  ---
+  duration_ms: 2.324378
+  type: 'test'
+  ...
+# Subtest: HTTP error bodies and corrupt usage files cannot echo the key
+ok 7 - HTTP error bodies and corrupt usage files cannot echo the key
+  ---
+  duration_ms: 1.48483
+  type: 'test'
+  ...
+# Subtest: SSML aliases MOONKATTY, wraps prosody and breaks, and can carry a phoneme
+ok 8 - SSML aliases MOONKATTY, wraps prosody and breaks, and can carry a phoneme
+  ---
+  duration_ms: 0.287422
+  type: 'test'
+  ...
+# Subtest: synthesize posts SSML to the regional endpoint and stays inside the mocked fetch
+ok 9 - synthesize posts SSML to the regional endpoint and stays inside the mocked fetch
+  ---
+  duration_ms: 1.42794
+  type: 'test'
+  ...
+# Subtest: SpeechComposer lexicon output is aliased as moon-KAT-ee
+ok 10 - SpeechComposer lexicon output is aliased as moon-KAT-ee
+  ---
+  duration_ms: 1.986731
+  type: 'test'
+  ...
+# Subtest: Keychain read and write keep the secret out of argv and out of errors
+ok 11 - Keychain read and write keep the secret out of argv and out of errors
+  ---
+  duration_ms: 1.104761
+  type: 'test'
+  ...
+# Subtest: Linux without an injected Keychain does not spawn or fetch
+ok 12 - Linux without an injected Keychain does not spawn or fetch
+  ---
+  duration_ms: 0.391113
+  type: 'test'
+  ...
+# Subtest: a disabled provider is not a MasterVoice swap, and the repo candidate stays Kokoro
+ok 13 - a disabled provider is not a MasterVoice swap, and the repo candidate stays Kokoro
+  ---
+  duration_ms: 1.706757
+  type: 'test'
+  ...
+# Subtest: the provider is disabled by default and an empty script does not reserve quota
+ok 14 - the provider is disabled by default and an empty script does not reserve quota
+  ---
+  duration_ms: 0.372319
+  type: 'test'
+  ...
+# Subtest: neural and HD prices default from the 21 October 2026 retail meters and stay editable
+ok 15 - neural and HD prices default from the 21 October 2026 retail meters and stay editable
+  ---
+  duration_ms: 0.150832
+  type: 'test'
+  ...
+# Subtest: reconciliation raises the guard to a higher owner figure and does not lower it
+ok 16 - reconciliation raises the guard to a higher owner figure and does not lower it
+  ---
+  duration_ms: 1.245464
+  type: 'test'
+  ...
+# Subtest: the budget lock blocks a fresh lock, breaks a stale one, and keeps both processes
+ok 17 - the budget lock blocks a fresh lock, breaks a stale one, and keeps both processes
+  ---
+  duration_ms: 2043.01958
+  type: 'test'
+  ...
+# Subtest: every S0 attempt is billed, including a timeout, and the ledger stores no script and no key
+ok 18 - every S0 attempt is billed, including a timeout, and the ledger stores no script and no key
+  ---
+  duration_ms: 3.175416
+  type: 'test'
+  ...
+# Subtest: an identical re-render is cached at zero dollars and does not call the network
+ok 19 - an identical re-render is cached at zero dollars and does not call the network
+  ---
+  duration_ms: 3.295138
+  type: 'test'
+  ...
+# Subtest: a live in-flight hash does not send or charge, and a dead pid does not block
+ok 20 - a live in-flight hash does not send or charge, and a dead pid does not block
+  ---
+  duration_ms: 2.600178
+  type: 'test'
+  ...
+# Subtest: S0 hard-blocks before HTTP when the next attempt would pass the dollar budget
+ok 21 - S0 hard-blocks before HTTP when the next attempt would pass the dollar budget
+  ---
+  duration_ms: 1.213546
+  type: 'test'
+  ...
+# Subtest: an HD voice on S0 uses 22 dollars per million unless the owner overrides it
+ok 22 - an HD voice on S0 uses 22 dollars per million unless the owner overrides it
+  ---
+  duration_ms: 1.127636
+  type: 'test'
+  ...
+# Subtest: the YouTube dry-run payload carries the synthetic voice disclosure
+ok 23 - the YouTube dry-run payload carries the synthetic voice disclosure
+  ---
+  duration_ms: 6.255871
+  type: 'test'
+  ...
+# Subtest: Azure failure falls back to the local engine and a final render is marked for review
+ok 24 - Azure failure falls back to the local engine and a final render is marked for review
+  ---
+  duration_ms: 4.812707
+  type: 'test'
+  ...
+# Subtest: S0 makes no network call unless paidEnabled and an owner approval are both set
+ok 25 - S0 makes no network call unless paidEnabled and an owner approval are both set
+  ---
+  duration_ms: 0.771229
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2152.012714
+EXIT:0

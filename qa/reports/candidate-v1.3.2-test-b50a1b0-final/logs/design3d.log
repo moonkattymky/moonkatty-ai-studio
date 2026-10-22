@@ -1,0 +1,138 @@
+3D entry points found by grep (28):
+  - [design3d executor] server.js:154
+  - [3d task creation/dispatch] server.js:296
+  - [blender call] server.js:318
+  - [jobs route] server.js:437
+  - [jobs route] server.js:442
+  - [design3d executor] server.js:449
+  - [jobs route] server.js:449
+  - [3d route] server.js:451
+  - [3d task creation/dispatch] server.js:456
+  - [blender call] server.js:462
+  - [3d route] server.js:463
+  - [new3dTask] server.js:491
+  - [3d task creation/dispatch] server.js:492
+  - [jobs route] server.js:495
+  - [new3dTask] server.js:506
+  - [3d route] server.js:509
+  - [new3dTask] server.js:513
+  - [3d task creation/dispatch] server.js:549
+  - [blender spawn] lib/blender.js:24
+  - [design3d executor] lib/executors/design3d.js:24
+  - [blender call] lib/executors/design3d.js:28
+  - [blender call] lib/executors/design3d.js:160
+  - [blender call] lib/executors/design3d.js:167
+  - [design3d executor] lib/executors/design3d.js:186
+  - [blender call] lib/services.js:61
+  - [blender call] lib/services.js:66
+  - [blender call] lib/services.js:69
+  - [blender spawn] node-agent/agent.js:35
+    reviewed, not a Blender spawn: node-agent/agent.js:35 — generic execFile helper; node profiles forbid Blender caps (FORBIDDEN regex), never runs Blender
+PASS inventory: only spawn of Blender is lib/blender.js runProc (others reviewed)
+PASS inventory: runProc (every Blender spawn) asserts the gate first
+PASS inventory: blender.runTemplate + detect gated
+PASS inventory: design3d executor run + confirm gated
+PASS services: non-3D jobs (video_render) are not tagged as design3d tasks (else put(tasks) gate would block them)
+PASS inventory: services createJob + blender_template service gated
+PASS inventory: runner dispatch gated (shared gate passed to runner)
+PASS inventory: router-level httpGuard (normalized) covers /api/studio3d|projects3d, agents/design3d/start, jobs confirm|review|retry, jobs + tasks bodies
+PASS inventory: director plan + new3dTask gated
+PASS inventory: no local DESIGN3D_ENABLED literal outside lib/feature-gate.js
+PASS gate throws 403 feature_disabled
+PASS blender.detect → disabled, no probe spawn
+PASS blender.runTemplate → feature_disabled (nothing spawned)
+PASS design3d executor run() → feature_disabled
+PASS design3d executor confirm() → feature_disabled
+PASS jobs {"type":"design3d","input":{"prompt":"cat"}} → 403 feature_disabled
+PASS jobs {"kind":"design3d"} → 403 feature_disabled
+PASS jobs {"type":"design3d"} → 403 feature_disabled
+PASS jobs {"type":"blender_template","input":{"template":"x"}} → 403 feature_disabled
+PASS jobs {"kind":"blender_template"} → 403 feature_disabled
+PASS design3d via app token → 403
+PASS blender_template via app token → 403
+PASS opencode_task gate still 403
+PASS other types not caught by gate (400 unknown type)
+PASS rerender p_none → 403 feature_disabled
+PASS rerender p_x → 403 feature_disabled
+PASS studio3d/run → 403 feature_disabled
+PASS studio3d/run → 403 feature_disabled
+PASS studio3d/run via app token → 403
+PASS studio3d/run created no task
+PASS director chat with 3D plan → 403 feature_disabled
+PASS director chat created no task
+PASS director chat note shows unavailable text
+PASS non-3D director chat not caught by gate
+PASS PUT /api/studio3d/settings → 403 feature_disabled
+PASS POST /api/jobs/:id/confirm → 403 feature_disabled
+PASS POST /api/jobs/:id/review → 403 feature_disabled
+PASS POST /api/projects3d/:pid/:ver/run → 403 feature_disabled
+PASS GET /api/studio3d/status exposes design3d disabled + message for the page
+PASS 3D Studio page renders the 403 banner and disables «Создать 3D-модель»
+PASS version 1.3.2-test in /api/health
+PASS POST /api/projects3d (create) → 403 feature_disabled
+PASS variant POST /api/jobs {"type":"design3d"} → 403 feature_disabled
+PASS variant POST /api/jobs {"type":"blender_template"} → 403 feature_disabled
+PASS variant POST /api/jobs {"kind":"3d"} → 403 feature_disabled
+PASS variant POST /API/jobs {"type":"design3d"} → 403 feature_disabled
+PASS variant POST /API/jobs {"type":"blender_template"} → 403 feature_disabled
+PASS variant POST /API/jobs {"kind":"3d"} → 403 feature_disabled
+PASS variant POST /api/jobs/ {"type":"design3d"} → 403 feature_disabled
+PASS variant POST /api/jobs/ {"type":"blender_template"} → 403 feature_disabled
+PASS variant POST /api/jobs/ {"kind":"3d"} → 403 feature_disabled
+PASS variant POST /Api/Jobs// {"type":"design3d"} → 403 feature_disabled
+PASS variant POST /Api/Jobs// {"type":"blender_template"} → 403 feature_disabled
+PASS variant POST /Api/Jobs// {"kind":"3d"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/confirm {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/confirm/ {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /API/jobs/x/confirm {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/JOBS/x/Confirm/ {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/%63onfirm {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/review {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/review/ {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/jobs/x/Review {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /API/JOBS/X/REVIEW/ {"approve":true,"action":"approve"} → 403 feature_disabled
+PASS variant POST /api/projects3d/p/v1/rerender {"params":{}} → 403 feature_disabled
+PASS variant POST /api/projects3d/p/v1/rerender/ {"params":{}} → 403 feature_disabled
+PASS variant POST /API/projects3d/p/v1/rerender {"params":{}} → 403 feature_disabled
+PASS variant POST /api/Projects3D/p/v1/RUN/ {"params":{}} → 403 feature_disabled
+PASS variant POST /api/projects3d/p/v1/run {"params":{}} → 403 feature_disabled
+PASS variant POST /api/projects3d {"params":{}} → 403 feature_disabled
+PASS variant POST /API/PROJECTS3D/ {"params":{}} → 403 feature_disabled
+PASS variant POST /api/studio3d/run {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant POST /api/studio3d/run/ {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant POST /API/STUDIO3D/run {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant PUT /api/studio3d/settings {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant PUT /api/Studio3d/Settings/ {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant POST /api/studio3d/anything-new {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant PATCH /api/studio3d/settings {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant DELETE /api/studio3d/x {"text":"кот","blenderPath":"/usr/bin/blender"} → 403 feature_disabled
+PASS variant POST /api/tasks {"title":"x","agentId":"design3d"} → 403 feature_disabled
+PASS variant POST /api/tasks/ {"title":"x","agentId":"design3d","status":"queued"} → 403 feature_disabled
+PASS variant POST /API/Tasks {"title":"x","agentId":"design3d"} → 403 feature_disabled
+PASS variant POST /api/tasks {"title":"x","kind":"3d","agentId":"video"} → 403 feature_disabled
+PASS variant POST /api/tasks {"title":"x","kind":"blender_template"} → 403 feature_disabled
+PASS variant POST /api/tasks {"title":"x","agentId":"design3d","kind":"video_render"} → 403 feature_disabled
+PASS variant PUT /api/tasks/mvjx8ksiakrxd6 {"agentId":"design3d"} → 403 feature_disabled
+PASS variant PUT /API/TASKS/mvjx8ksiakrxd6/ {"kind":"3d"} → 403 feature_disabled
+PASS variant POST /api/agents/design3d/start {} → 403 feature_disabled
+PASS variant POST /api/agents/design3d/start/ {} → 403 feature_disabled
+PASS variant POST /API/AGENTS/design3d/START {} → 403 feature_disabled
+PASS variant POST /api/agents/%64esign3d/start {} → 403 feature_disabled
+PASS variant POST /api/world/plan {"goal":"Сделай 3D модель кота"} → 403 feature_disabled
+PASS variant POST /api/world/plan {"goal":"Blender сцена для превью"} → 403 feature_disabled
+PASS variant POST /api/world/plan {"goal":"make a 3d logo"} → 403 feature_disabled
+PASS variant POST /api/world/plan {"goal":"3Д-ролик в блендере"} → 403 feature_disabled
+PASS variant POST /API/World/Plan/ {"goal":"blender render"} → 403 feature_disabled
+PASS variant count ≥ 41 (53)
+PASS app-token variant → 403
+PASS app-token variant → 403
+PASS no task created by any variant
+PASS PUT variants did not retarget existing task
+PASS design3d agent not working
+PASS non-3D task creation not caught (201)
+PASS non-3D world plan not caught by gate
+PASS runner.start gated for design3d
+PASS put(tasks) choke point present (new 3D row → throw, legacy → failed)
+PASS normPath lowercases, strips trailing slashes, decodes
+PASS no 3D job created
+ALL PASS

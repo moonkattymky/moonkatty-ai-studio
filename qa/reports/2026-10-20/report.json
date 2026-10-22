@@ -1,0 +1,1542 @@
+{
+  "date": "2026-10-20",
+  "startedAt": "2026-10-20T22:35:46.218Z",
+  "finishedAt": "2026-10-20T22:51:18.995Z",
+  "seed": 20261020,
+  "game": {
+    "repo": "moonkattymky/moonkatty-horizons-play",
+    "requestedRepo": "moonkattymky/moonkatty-horizons",
+    "branch": "main",
+    "sha": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+    "subject": "build 20261017-98a: leaderboard shows total players",
+    "build": "no package.json — serving the checkout as a static build",
+    "fallback": true,
+    "notes": [
+      "moonkatty-horizons: Cloning into '/workspace/qa/.cache/moonkatty-horizons'...",
+      "moonkatty-horizons-play@2df1c76f8a11 (main)"
+    ],
+    "url": "http://127.0.0.1:43495/"
+  },
+  "browser": "154.0.8037.92 executable=/usr/bin/google-chrome-stable",
+  "graphics": "Chrome SwiftShader via --use-gl=angle --use-angle=swiftshader; game quality forced to low through localStorage moonkatty-new-horizons-v02-quality + mk-qmanual; deviceScaleFactor 1 on every viewport",
+  "videos": [
+    "qa/reports/2026-10-20/video/desktop-opening.webm",
+    "qa/reports/2026-10-20/video/iphone-14.webm",
+    "qa/reports/2026-10-20/video/desktop-throttled.webm"
+  ],
+  "checks": [
+    {
+      "id": "desktop.boot",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "world running in 11870 ms, webgl=true, canvas 1440x900, quality=low, MoonBuild=v44",
+      "expected": "Clicking Start expedition enters a running WebGL world",
+      "actual": "running=true webgl=true error=",
+      "metrics": {
+        "loadMs": 11870
+      },
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-world.png"
+      ],
+      "repro": [
+        "Serve the Horizons checkout",
+        "Open http://127.0.0.1:43495/?nolang&nointro&nosw",
+        "Click #begin",
+        "Skip the chapter cinema if it opens"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Horizons does not enter a running WebGL world"
+    },
+    {
+      "id": "desktop.build-id",
+      "status": "fail",
+      "viewport": "desktop",
+      "detail": "window.MoonBuild is \"v44\" and MoonReliability.BUILD is \"20261017-98a\". index.html sets MoonBuild while asset URLs and reliability.js use the other id.",
+      "expected": "The label in window.MoonBuild matches MoonReliability.BUILD",
+      "actual": "MoonBuild=v44 reliability=20261017-98a",
+      "repro": [
+        "Open the play build",
+        "Read window.MoonBuild",
+        "Read window.MoonReliability.BUILD",
+        "Compare with the ?v= query on game.js"
+      ],
+      "severity": "minor",
+      "bugTitle": "window.MoonBuild does not match the asset build id",
+      "bugId": "QA-HZ-001"
+    },
+    {
+      "id": "desktop.keyboard-move",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "W moved the player 0.33 m in 4 s via in-page-KeyboardEvent (0.083 m/s wall clock). CDP keyboard first moved 0.17 m. Key events: [{\"key\":\"w\",\"code\":\"KeyW\",\"trusted\":true}]. Sim dt is capped at 45 ms, so a slow frame moves about 0.17 m.",
+      "expected": "Holding W changes player xz. On a slow GPU one sim step is about 0.17 m because dt is capped at 45 ms.",
+      "actual": "moved 0.333 m via in-page-KeyboardEvent; events [{\"key\":\"w\",\"code\":\"KeyW\",\"trusted\":true}]",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-after-keyboard.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Hold W for 1.2 seconds with no dialog open"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Player does not walk when W is held"
+    },
+    {
+      "id": "desktop.camera-yaw-360",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "pointer-drag accumulated |Δyaw|=6.701 rad (full turn is 6.283)",
+      "expected": "Dragging across the world canvas rotates the camera through at least 360°",
+      "actual": "6.701 rad over 4 swipes",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-after-camera.png"
+      ],
+      "metrics": {
+        "yawRadians": 6.701,
+        "swipes": [
+          1.675,
+          1.675,
+          1.675,
+          1.675
+        ]
+      },
+      "repro": [
+        "Enter the world",
+        "Pointer-drag horizontally across #world from 82% to 18% width, repeated"
+      ],
+      "severity": "major",
+      "bugTitle": "World drag does not complete a 360° camera turn"
+    },
+    {
+      "id": "desktop.camera-pitch",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "vertical drag moved the camera eye by 4.499 world units (camPitch itself is not exported)",
+      "expected": "A vertical drag changes the follow-camera eye position",
+      "actual": "eye delta 4.499",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-after-camera.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Pointer-drag vertically on #world"
+      ],
+      "severity": "major",
+      "bugTitle": "Vertical world drag does not pitch the camera"
+    },
+    {
+      "id": "desktop.joystick-pointer",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "pointer hold on #joystick for 2.5 s moved 0.44 m (1 pointerdown event(s) reached the stick)",
+      "expected": "Holding the on-screen joystick forward moves the player",
+      "actual": "moved 0.440 m",
+      "repro": [
+        "Enter the world",
+        "Pointer-down on #joystick center and drag upward for 1.2 s"
+      ],
+      "severity": "major",
+      "bugTitle": "On-screen joystick does not move the player"
+    },
+    {
+      "id": "desktop.hud-inside-viewport",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "joystick and action buttons are inside 1440x900",
+      "expected": "Joystick, jump, action, menu, scan, map and cards sit fully inside the viewport",
+      "actual": "[{\"sel\":\"#joystick\",\"present\":true,\"inside\":true,\"x\":16,\"y\":736,\"w\":100,\"h\":100},{\"sel\":\"#fly\",\"present\":true,\"inside\":true,\"x\":1272,\"y\":766,\"w\":70,\"h\":70},{\"sel\":\"#interact\",\"present\":true,\"inside\":true,\"x\":1354,\"y\":766,\"w\":70,\"h\":70},{\"sel\":\"#menu\",\"present\":true,\"inside\":true,\"x\":1386,\"y\":14,\"w\":40,\"h\":44},{\"sel\":\"#scan\",\"present\":true,\"inside\":true,\"x\":14,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#world-map-button\",\"present\":true,\"inside\":true,\"x\":56,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#collection\",\"present\":true,\"inside\":true,\"x\":311.3,\"y\":161.3,\"w\":92.7,\"h\":42}]",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-hud.png"
+      ],
+      "metrics": {
+        "controls": [
+          {
+            "sel": "#joystick",
+            "present": true,
+            "inside": true,
+            "x": 16,
+            "y": 736,
+            "w": 100,
+            "h": 100
+          },
+          {
+            "sel": "#fly",
+            "present": true,
+            "inside": true,
+            "x": 1272,
+            "y": 766,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#interact",
+            "present": true,
+            "inside": true,
+            "x": 1354,
+            "y": 766,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#menu",
+            "present": true,
+            "inside": true,
+            "x": 1386,
+            "y": 14,
+            "w": 40,
+            "h": 44
+          },
+          {
+            "sel": "#scan",
+            "present": true,
+            "inside": true,
+            "x": 14,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#world-map-button",
+            "present": true,
+            "inside": true,
+            "x": 56,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#collection",
+            "present": true,
+            "inside": true,
+            "x": 311.3,
+            "y": 161.3,
+            "w": 92.7,
+            "h": 42
+          }
+        ]
+      },
+      "repro": [
+        "Set viewport 1440x900",
+        "Enter the world",
+        "Measure #joystick, #fly, #interact, #menu, #scan, #world-map-button, #collection"
+      ],
+      "severity": "major",
+      "bugTitle": "HUD controls fall outside the viewport"
+    },
+    {
+      "id": "desktop.menus",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "menu=true (ok) cards=true (ok) map=true (ok)",
+      "expected": "Menu, cards and world map dialogs open from their HUD buttons",
+      "actual": "menu=true cards=true map=true",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-menu.png",
+        "qa/reports/2026-10-20/screenshots/desktop-cards.png",
+        "qa/reports/2026-10-20/screenshots/desktop-map.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Click #menu, #collection, #world-map-button"
+      ],
+      "severity": "major",
+      "bugTitle": "A HUD menu button does not open its dialog"
+    },
+    {
+      "id": "desktop.daily-reward-gate",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "claim with no completed daily steps left crystals/metal unchanged (0/0). Feedback: (empty)",
+      "expected": "Claiming the daily reward before scanner/backpack/jetpack steps does not add crystals or metal",
+      "actual": "{\"before\":{\"crystals\":0,\"metal\":0},\"after\":{\"crystals\":0,\"metal\":0},\"feedback\":\"\"}",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-cards.png"
+      ],
+      "repro": [
+        "Fresh chapter 1 save",
+        "Open cards",
+        "Click #claim-daily"
+      ],
+      "severity": "major",
+      "bugTitle": "Daily reward pays out before the three steps are done"
+    },
+    {
+      "id": "desktop.build-locked",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "Builder stayed closed. Toast: First find the blueprint archive in the second life.",
+      "expected": "Chapter 1 without the artifact does not open the builder",
+      "actual": "builder open=false; toast=First find the blueprint archive in the second life.",
+      "repro": [
+        "Fresh chapter 1",
+        "Click #build"
+      ],
+      "severity": "minor",
+      "bugTitle": "Builder opens before the chapter 1 artifact is found"
+    },
+    {
+      "id": "desktop.jump",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "Space changed altitude 0.000 -> 0.156 after 1 frames / 172 ms (dialogs none, running=true). Jetpack stays locked until the engineer is repaired; Space sets velocity and the next sim frame (dt capped at 45 ms) applies it.",
+      "expected": "Space applies an upward velocity while the jetpack is locked, visible on the next simulation frame",
+      "actual": "alt 0.000 -> 0.156 in 1 frames",
+      "repro": [
+        "Enter chapter 1",
+        "Press Space once",
+        "Read MoonGame.player.alt within 300 ms"
+      ],
+      "severity": "major",
+      "bugTitle": "Space does not jump"
+    },
+    {
+      "id": "desktop.scan-button",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "Scanner toast: Scanner: 14 m radius. Check the marked area.",
+      "expected": "The scan button surfaces a toast",
+      "actual": "Scanner: 14 m radius. Check the marked area.",
+      "repro": [
+        "Enter the world",
+        "Click #scan",
+        "Read #toast"
+      ],
+      "severity": "minor",
+      "bugTitle": "Scanner button gives no feedback"
+    },
+    {
+      "id": "desktop.mission-walk",
+      "status": "not_tested",
+      "viewport": "desktop",
+      "detail": "target recorder, start 14.1 m, end 4.0 m, stuck events 0, quest=recorder, recorder=false",
+      "expected": "Steering at the quest compass reaches the flight recorder and sets state.recorder, or the quest id changes",
+      "actual": "target recorder, start 14.1 m, end 4.0 m, stuck events 0, quest=recorder, recorder=false",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-mission.png"
+      ],
+      "metrics": {
+        "stuckEvents": [],
+        "startDist": 14.084692714445039,
+        "endDist": 3.9775965584523254,
+        "samples": [
+          {
+            "t": 167202,
+            "x": -3.11,
+            "z": 2.24,
+            "dist": 4.64,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 168810,
+            "x": -3.11,
+            "z": 2.24,
+            "dist": 4.64,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 170416,
+            "x": -3.17,
+            "z": 2.09,
+            "dist": 4.48,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 172022,
+            "x": -3.17,
+            "z": 2.09,
+            "dist": 4.48,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 173633,
+            "x": -3.23,
+            "z": 1.93,
+            "dist": 4.31,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 175237,
+            "x": -3.23,
+            "z": 1.93,
+            "dist": 4.31,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 176843,
+            "x": -3.29,
+            "z": 1.78,
+            "dist": 4.14,
+            "blocked": false,
+            "questId": "recorder"
+          },
+          {
+            "t": 178447,
+            "x": -3.35,
+            "z": 1.62,
+            "dist": 3.98,
+            "blocked": false,
+            "questId": "recorder"
+          }
+        ]
+      },
+      "repro": [
+        "Fresh chapter 1 at the default spawn",
+        "Walk toward MoonCore.POINTS.recorder using camera-relative WASD",
+        "Press E when within 3.2 m",
+        "Dismiss the story dialog"
+      ],
+      "severity": "major",
+      "bugTitle": "Player is stuck and cannot approach the first quest target"
+    },
+    {
+      "id": "desktop.story-dialog",
+      "status": "not_tested",
+      "viewport": "desktop",
+      "detail": "The recorder interaction was not reached, so the story dialog and later puzzles (relay, power grid, ring alignment, forge, aurora, gate, stars) were not played"
+    },
+    {
+      "id": "desktop.economy-timer",
+      "status": "not_tested",
+      "viewport": "desktop",
+      "detail": "productionAt stayed 1792536259604. 2 frames in 5526 ms. Core.tick waits for 1 s of sim time and each frame caps dt at 45 ms, so this window held at most 0.09 s of sim time.",
+      "expected": "productionAt advances once about 1 second of simulation time has accumulated",
+      "actual": "1792536259604 -> 1792536259604 over 2 frames",
+      "metrics": {
+        "a": 1792536259604,
+        "b": 1792536259604,
+        "frames": 2,
+        "elapsed": 5526.399999999441
+      },
+      "repro": [
+        "Enter the world",
+        "Count frames for 5 s of wall clock",
+        "Compare state.productionAt"
+      ],
+      "severity": "major",
+      "bugTitle": "Station energy timer does not advance after a second of sim time"
+    },
+    {
+      "id": "desktop.fuel-regen",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "MoonGame.player.fuel set to 40 (existing public object) and read 40.90 after 2 frames / 5846 ms at alt 0.00. Regen is 10 points per sim second; dt cap 45 ms means this window could add at most about 0.90 points. Original fuel was 100.0.",
+      "expected": "On the ground, fuel increases across simulation frames",
+      "actual": "fuel 40.90 after 2 frames",
+      "metrics": {
+        "start": 100,
+        "after": 40.900000000000006,
+        "alt": 0,
+        "frames": 2,
+        "elapsed": 5846.100000000559
+      },
+      "repro": [
+        "Enter the world on the ground",
+        "Set MoonGame.player.fuel = 40",
+        "Let a few frames run",
+        "Read fuel"
+      ],
+      "severity": "minor",
+      "bugTitle": "Jetpack fuel does not regenerate on the ground"
+    },
+    {
+      "id": "desktop.save-load",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "localStorage moonkatty-new-horizons-v02 round-tripped xz within 0.0000 m after reload (saved -3.35,1.62 → -3.35,1.62)",
+      "expected": "MoonGame.save() writes player xz and a reload restores the same state coordinates",
+      "actual": "delta 0.0000 m",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/desktop-reloaded-cover.png"
+      ],
+      "repro": [
+        "Move with W",
+        "Call the existing MoonGame.save()",
+        "Reload and read moonkatty-new-horizons-v02"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Progress does not survive a reload"
+    },
+    {
+      "id": "desktop.input-latency",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "Median 2660.3 ms from synthetic keydown to xz change > 0.04 m (3 samples: 1608.9, 2676.5, 2660.3). This is frame delay inside the page, not hardware input delay.",
+      "expected": "A keydown while running changes position within 8 s, which covers one slow software-GL frame",
+      "actual": "[{\"ms\":1608.9,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"},{\"ms\":2676.5,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"},{\"ms\":2660.3,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"}]",
+      "metrics": {
+        "samplesMs": [
+          1608.9,
+          2676.5,
+          2660.3
+        ],
+        "medianMs": 2660.3
+      },
+      "repro": [
+        "Enter the world",
+        "Dispatch keydown W",
+        "Measure time until player xz moves 0.04 m"
+      ],
+      "severity": "major",
+      "bugTitle": "Keyboard input does not move the player (latency probe)"
+    },
+    {
+      "id": "desktop.fps",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "rAF while holding W: 0.349 fps, avg 2866.5 ms, p95 2866.5 ms, max 2866.5 ms over 1 frames. Software WebGL (SwiftShader) and quality=low.",
+      "metrics": {
+        "frames": 1,
+        "budgetMs": 4000,
+        "elapsedMs": 5562.4,
+        "avgFrameMs": 2866.5,
+        "fps": 0.349,
+        "maxFrameMs": 2866.5,
+        "p95FrameMs": 2866.5,
+        "method": "requestAnimationFrame for a fixed wall-clock budget while the page is in the foreground"
+      },
+      "evidence": []
+    },
+    {
+      "id": "desktop.js-heap",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "usedJSHeapSize 168561486 bytes, total 243779738, limit 4395630592 (Chrome performance.memory, --enable-precise-memory-info)",
+      "metrics": {
+        "available": true,
+        "usedJSHeapSize": 168561486,
+        "totalJSHeapSize": 243779738,
+        "jsHeapSizeLimit": 4395630592
+      }
+    },
+    {
+      "id": "desktop.console-errors",
+      "status": "pass",
+      "viewport": "desktop",
+      "detail": "No pageerror or console error captured (0 failed requests ignored as transport)"
+    },
+    {
+      "id": "iphone-14.boot",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "running in 5782 ms, quality=low, canvas 390x844",
+      "expected": "The world starts on this viewport",
+      "actual": "running=true",
+      "metrics": {
+        "loadMs": 5782
+      },
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-world.png"
+      ],
+      "repro": [
+        "Viewport 390x844",
+        "Open ?nolang&nointro&nosw",
+        "Click #begin"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Horizons does not boot at 390x844"
+    },
+    {
+      "id": "iphone-14.joystick-touch",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "Touch input moved 0.75 m",
+      "expected": "Primary movement control changes position",
+      "actual": "moved 0.749 m",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-move.png"
+      ],
+      "repro": [
+        "Mobile viewport",
+        "Touch-drag the joystick upward for 1.2 s"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Player does not move on iphone-14"
+    },
+    {
+      "id": "iphone-14.joystick-pointer",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "Pointer-drag joystick moved 0.58 m on a touch viewport (1 pointerdown event(s) on #joystick, before the touch probe)",
+      "expected": "Pointer events on the joystick also move the player",
+      "actual": "moved 0.576 m, pointerdowns=1",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-move.png"
+      ],
+      "repro": [
+        "Touch viewport",
+        "Mouse-drag #joystick upward before any CDP touch"
+      ],
+      "severity": "major",
+      "bugTitle": "Pointer joystick is dead on a touch viewport"
+    },
+    {
+      "id": "iphone-14.camera-yaw-360",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "accumulated |Δyaw|=7.488 rad",
+      "expected": "Horizontal drags complete a full camera turn",
+      "actual": "7.488 rad",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-camera.png"
+      ],
+      "repro": [
+        "Drag horizontally across the canvas until yaw has turned 360°"
+      ],
+      "severity": "major",
+      "bugTitle": "Camera does not complete 360° on iphone-14"
+    },
+    {
+      "id": "iphone-14.hud-inside-viewport",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "controls inside 390x844 (deviceScaleFactor 1)",
+      "expected": "HUD controls are fully inside the viewport",
+      "actual": "[{\"sel\":\"#joystick\",\"present\":true,\"inside\":true,\"x\":16,\"y\":682,\"w\":100,\"h\":100},{\"sel\":\"#fly\",\"present\":true,\"inside\":true,\"x\":220,\"y\":712,\"w\":70,\"h\":70},{\"sel\":\"#interact\",\"present\":true,\"inside\":true,\"x\":304,\"y\":712,\"w\":70,\"h\":70},{\"sel\":\"#menu\",\"present\":true,\"inside\":true,\"x\":336,\"y\":14,\"w\":40,\"h\":44},{\"sel\":\"#scan\",\"present\":true,\"inside\":true,\"x\":14,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#world-map-button\",\"present\":true,\"inside\":true,\"x\":56,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#collection\",\"present\":true,\"inside\":true,\"x\":283.3,\"y\":161.3,\"w\":92.7,\"h\":42}]",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-hud.png"
+      ],
+      "metrics": {
+        "controls": [
+          {
+            "sel": "#joystick",
+            "present": true,
+            "inside": true,
+            "x": 16,
+            "y": 682,
+            "w": 100,
+            "h": 100
+          },
+          {
+            "sel": "#fly",
+            "present": true,
+            "inside": true,
+            "x": 220,
+            "y": 712,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#interact",
+            "present": true,
+            "inside": true,
+            "x": 304,
+            "y": 712,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#menu",
+            "present": true,
+            "inside": true,
+            "x": 336,
+            "y": 14,
+            "w": 40,
+            "h": 44
+          },
+          {
+            "sel": "#scan",
+            "present": true,
+            "inside": true,
+            "x": 14,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#world-map-button",
+            "present": true,
+            "inside": true,
+            "x": 56,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#collection",
+            "present": true,
+            "inside": true,
+            "x": 283.3,
+            "y": 161.3,
+            "w": 92.7,
+            "h": 42
+          }
+        ]
+      },
+      "repro": [
+        "Open at 390x844",
+        "Measure HUD control boxes"
+      ],
+      "severity": "major",
+      "bugTitle": "HUD overflow on iphone-14"
+    },
+    {
+      "id": "iphone-14.menus",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "menu=true (ok) cards=true (ok) map=true (ok)",
+      "expected": "Menu, cards and world map dialogs open from their HUD buttons",
+      "actual": "menu=true cards=true map=true",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-menu.png",
+        "qa/reports/2026-10-20/screenshots/iphone-14-cards.png",
+        "qa/reports/2026-10-20/screenshots/iphone-14-map.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Click #menu, #collection, #world-map-button"
+      ],
+      "severity": "major",
+      "bugTitle": "A HUD menu button does not open its dialog"
+    },
+    {
+      "id": "iphone-14.daily-reward-gate",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "claim with no completed daily steps left crystals/metal unchanged (0/0). Feedback: (empty)",
+      "expected": "Claiming the daily reward before scanner/backpack/jetpack steps does not add crystals or metal",
+      "actual": "{\"before\":{\"crystals\":0,\"metal\":0},\"after\":{\"crystals\":0,\"metal\":0},\"feedback\":\"\"}",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/iphone-14-cards.png"
+      ],
+      "repro": [
+        "Fresh chapter 1 save",
+        "Open cards",
+        "Click #claim-daily"
+      ],
+      "severity": "major",
+      "bugTitle": "Daily reward pays out before the three steps are done"
+    },
+    {
+      "id": "iphone-14.build-locked",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "Builder stayed closed. Toast: First find the blueprint archive in the second life.",
+      "expected": "Chapter 1 without the artifact does not open the builder",
+      "actual": "builder open=false; toast=First find the blueprint archive in the second life.",
+      "repro": [
+        "Fresh chapter 1",
+        "Click #build"
+      ],
+      "severity": "minor",
+      "bugTitle": "Builder opens before the chapter 1 artifact is found"
+    },
+    {
+      "id": "iphone-14.jump",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "Space changed altitude 0.000 -> 0.156 after 1 frames / 84 ms (dialogs none, running=true). Jetpack stays locked until the engineer is repaired; Space sets velocity and the next sim frame (dt capped at 45 ms) applies it.",
+      "expected": "Space applies an upward velocity while the jetpack is locked, visible on the next simulation frame",
+      "actual": "alt 0.000 -> 0.156 in 1 frames",
+      "repro": [
+        "Enter chapter 1",
+        "Press Space once",
+        "Read MoonGame.player.alt within 300 ms"
+      ],
+      "severity": "major",
+      "bugTitle": "Space does not jump"
+    },
+    {
+      "id": "iphone-14.scan-button",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "Scanner toast: Scanner: 14 m radius. Check the marked area.",
+      "expected": "The scan button surfaces a toast",
+      "actual": "Scanner: 14 m radius. Check the marked area.",
+      "repro": [
+        "Enter the world",
+        "Click #scan",
+        "Read #toast"
+      ],
+      "severity": "minor",
+      "bugTitle": "Scanner button gives no feedback"
+    },
+    {
+      "id": "iphone-14.console-errors",
+      "status": "pass",
+      "viewport": "iphone-14",
+      "detail": "No pageerror or console error captured (0 failed requests ignored as transport)"
+    },
+    {
+      "id": "pixel-7.boot",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "running in 5814 ms, quality=low, canvas 412x915",
+      "expected": "The world starts on this viewport",
+      "actual": "running=true",
+      "metrics": {
+        "loadMs": 5814
+      },
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-world.png"
+      ],
+      "repro": [
+        "Viewport 412x915",
+        "Open ?nolang&nointro&nosw",
+        "Click #begin"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Horizons does not boot at 412x915"
+    },
+    {
+      "id": "pixel-7.joystick-touch",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "Touch input moved 0.63 m",
+      "expected": "Primary movement control changes position",
+      "actual": "moved 0.632 m",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-move.png"
+      ],
+      "repro": [
+        "Mobile viewport",
+        "Touch-drag the joystick upward for 1.2 s"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Player does not move on pixel-7"
+    },
+    {
+      "id": "pixel-7.joystick-pointer",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "Pointer-drag joystick moved 0.75 m on a touch viewport (1 pointerdown event(s) on #joystick, before the touch probe)",
+      "expected": "Pointer events on the joystick also move the player",
+      "actual": "moved 0.750 m, pointerdowns=1",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-move.png"
+      ],
+      "repro": [
+        "Touch viewport",
+        "Mouse-drag #joystick upward before any CDP touch"
+      ],
+      "severity": "major",
+      "bugTitle": "Pointer joystick is dead on a touch viewport"
+    },
+    {
+      "id": "pixel-7.camera-yaw-360",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "accumulated |Δyaw|=6.592 rad",
+      "expected": "Horizontal drags complete a full camera turn",
+      "actual": "6.592 rad",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-camera.png"
+      ],
+      "repro": [
+        "Drag horizontally across the canvas until yaw has turned 360°"
+      ],
+      "severity": "major",
+      "bugTitle": "Camera does not complete 360° on pixel-7"
+    },
+    {
+      "id": "pixel-7.hud-inside-viewport",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "controls inside 412x915 (deviceScaleFactor 1)",
+      "expected": "HUD controls are fully inside the viewport",
+      "actual": "[{\"sel\":\"#joystick\",\"present\":true,\"inside\":true,\"x\":16,\"y\":753,\"w\":100,\"h\":100},{\"sel\":\"#fly\",\"present\":true,\"inside\":true,\"x\":242,\"y\":783,\"w\":70,\"h\":70},{\"sel\":\"#interact\",\"present\":true,\"inside\":true,\"x\":326,\"y\":783,\"w\":70,\"h\":70},{\"sel\":\"#menu\",\"present\":true,\"inside\":true,\"x\":358,\"y\":14,\"w\":40,\"h\":44},{\"sel\":\"#scan\",\"present\":true,\"inside\":true,\"x\":14,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#world-map-button\",\"present\":true,\"inside\":true,\"x\":56,\"y\":161.3,\"w\":38,\"h\":42},{\"sel\":\"#collection\",\"present\":true,\"inside\":true,\"x\":305.3,\"y\":161.3,\"w\":92.7,\"h\":42}]",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-hud.png"
+      ],
+      "metrics": {
+        "controls": [
+          {
+            "sel": "#joystick",
+            "present": true,
+            "inside": true,
+            "x": 16,
+            "y": 753,
+            "w": 100,
+            "h": 100
+          },
+          {
+            "sel": "#fly",
+            "present": true,
+            "inside": true,
+            "x": 242,
+            "y": 783,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#interact",
+            "present": true,
+            "inside": true,
+            "x": 326,
+            "y": 783,
+            "w": 70,
+            "h": 70
+          },
+          {
+            "sel": "#menu",
+            "present": true,
+            "inside": true,
+            "x": 358,
+            "y": 14,
+            "w": 40,
+            "h": 44
+          },
+          {
+            "sel": "#scan",
+            "present": true,
+            "inside": true,
+            "x": 14,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#world-map-button",
+            "present": true,
+            "inside": true,
+            "x": 56,
+            "y": 161.3,
+            "w": 38,
+            "h": 42
+          },
+          {
+            "sel": "#collection",
+            "present": true,
+            "inside": true,
+            "x": 305.3,
+            "y": 161.3,
+            "w": 92.7,
+            "h": 42
+          }
+        ]
+      },
+      "repro": [
+        "Open at 412x915",
+        "Measure HUD control boxes"
+      ],
+      "severity": "major",
+      "bugTitle": "HUD overflow on pixel-7"
+    },
+    {
+      "id": "pixel-7.menus",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "menu=true (ok) cards=true (ok) map=true (ok)",
+      "expected": "Menu, cards and world map dialogs open from their HUD buttons",
+      "actual": "menu=true cards=true map=true",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-menu.png",
+        "qa/reports/2026-10-20/screenshots/pixel-7-cards.png",
+        "qa/reports/2026-10-20/screenshots/pixel-7-map.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Click #menu, #collection, #world-map-button"
+      ],
+      "severity": "major",
+      "bugTitle": "A HUD menu button does not open its dialog"
+    },
+    {
+      "id": "pixel-7.daily-reward-gate",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "claim with no completed daily steps left crystals/metal unchanged (0/0). Feedback: (empty)",
+      "expected": "Claiming the daily reward before scanner/backpack/jetpack steps does not add crystals or metal",
+      "actual": "{\"before\":{\"crystals\":0,\"metal\":0},\"after\":{\"crystals\":0,\"metal\":0},\"feedback\":\"\"}",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/pixel-7-cards.png"
+      ],
+      "repro": [
+        "Fresh chapter 1 save",
+        "Open cards",
+        "Click #claim-daily"
+      ],
+      "severity": "major",
+      "bugTitle": "Daily reward pays out before the three steps are done"
+    },
+    {
+      "id": "pixel-7.build-locked",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "Builder stayed closed. Toast: First find the blueprint archive in the second life.",
+      "expected": "Chapter 1 without the artifact does not open the builder",
+      "actual": "builder open=false; toast=First find the blueprint archive in the second life.",
+      "repro": [
+        "Fresh chapter 1",
+        "Click #build"
+      ],
+      "severity": "minor",
+      "bugTitle": "Builder opens before the chapter 1 artifact is found"
+    },
+    {
+      "id": "pixel-7.jump",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "Space changed altitude 0.000 -> 0.156 after 1 frames / 62 ms (dialogs none, running=true). Jetpack stays locked until the engineer is repaired; Space sets velocity and the next sim frame (dt capped at 45 ms) applies it.",
+      "expected": "Space applies an upward velocity while the jetpack is locked, visible on the next simulation frame",
+      "actual": "alt 0.000 -> 0.156 in 1 frames",
+      "repro": [
+        "Enter chapter 1",
+        "Press Space once",
+        "Read MoonGame.player.alt within 300 ms"
+      ],
+      "severity": "major",
+      "bugTitle": "Space does not jump"
+    },
+    {
+      "id": "pixel-7.scan-button",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "Scanner toast: Scanner: 14 m radius. Check the marked area.",
+      "expected": "The scan button surfaces a toast",
+      "actual": "Scanner: 14 m radius. Check the marked area.",
+      "repro": [
+        "Enter the world",
+        "Click #scan",
+        "Read #toast"
+      ],
+      "severity": "minor",
+      "bugTitle": "Scanner button gives no feedback"
+    },
+    {
+      "id": "pixel-7.console-errors",
+      "status": "pass",
+      "viewport": "pixel-7",
+      "detail": "No pageerror or console error captured (0 failed requests ignored as transport)"
+    },
+    {
+      "id": "small-phone.boot",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "running in 5646 ms, quality=low, canvas 360x740",
+      "expected": "The world starts on this viewport",
+      "actual": "running=true",
+      "metrics": {
+        "loadMs": 5646
+      },
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-world.png"
+      ],
+      "repro": [
+        "Viewport 360x740",
+        "Open ?nolang&nointro&nosw",
+        "Click #begin"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Horizons does not boot at 360x740"
+    },
+    {
+      "id": "small-phone.joystick-touch",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "Touch input moved 0.91 m",
+      "expected": "Primary movement control changes position",
+      "actual": "moved 0.907 m",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-move.png"
+      ],
+      "repro": [
+        "Mobile viewport",
+        "Touch-drag the joystick upward for 1.2 s"
+      ],
+      "severity": "blocker",
+      "bugTitle": "Player does not move on small-phone"
+    },
+    {
+      "id": "small-phone.joystick-pointer",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "Pointer-drag joystick moved 0.81 m on a touch viewport (1 pointerdown event(s) on #joystick, before the touch probe)",
+      "expected": "Pointer events on the joystick also move the player",
+      "actual": "moved 0.815 m, pointerdowns=1",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-move.png"
+      ],
+      "repro": [
+        "Touch viewport",
+        "Mouse-drag #joystick upward before any CDP touch"
+      ],
+      "severity": "major",
+      "bugTitle": "Pointer joystick is dead on a touch viewport"
+    },
+    {
+      "id": "small-phone.camera-yaw-360",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "accumulated |Δyaw|=6.912 rad",
+      "expected": "Horizontal drags complete a full camera turn",
+      "actual": "6.912 rad",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-camera.png"
+      ],
+      "repro": [
+        "Drag horizontally across the canvas until yaw has turned 360°"
+      ],
+      "severity": "major",
+      "bugTitle": "Camera does not complete 360° on small-phone"
+    },
+    {
+      "id": "small-phone.hud-inside-viewport",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "controls inside 360x740 (deviceScaleFactor 1)",
+      "expected": "HUD controls are fully inside the viewport",
+      "actual": "[{\"sel\":\"#joystick\",\"present\":true,\"inside\":true,\"x\":16,\"y\":578,\"w\":100,\"h\":100},{\"sel\":\"#fly\",\"present\":true,\"inside\":true,\"x\":202,\"y\":614,\"w\":64,\"h\":64},{\"sel\":\"#interact\",\"present\":true,\"inside\":true,\"x\":280,\"y\":614,\"w\":64,\"h\":64},{\"sel\":\"#menu\",\"present\":true,\"inside\":true,\"x\":306,\"y\":14,\"w\":40,\"h\":44},{\"sel\":\"#scan\",\"present\":true,\"inside\":true,\"x\":12,\"y\":159.9,\"w\":34,\"h\":42},{\"sel\":\"#world-map-button\",\"present\":true,\"inside\":true,\"x\":50,\"y\":159.9,\"w\":34,\"h\":42},{\"sel\":\"#collection\",\"present\":true,\"inside\":true,\"x\":260,\"y\":159.9,\"w\":84,\"h\":42}]",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-hud.png"
+      ],
+      "metrics": {
+        "controls": [
+          {
+            "sel": "#joystick",
+            "present": true,
+            "inside": true,
+            "x": 16,
+            "y": 578,
+            "w": 100,
+            "h": 100
+          },
+          {
+            "sel": "#fly",
+            "present": true,
+            "inside": true,
+            "x": 202,
+            "y": 614,
+            "w": 64,
+            "h": 64
+          },
+          {
+            "sel": "#interact",
+            "present": true,
+            "inside": true,
+            "x": 280,
+            "y": 614,
+            "w": 64,
+            "h": 64
+          },
+          {
+            "sel": "#menu",
+            "present": true,
+            "inside": true,
+            "x": 306,
+            "y": 14,
+            "w": 40,
+            "h": 44
+          },
+          {
+            "sel": "#scan",
+            "present": true,
+            "inside": true,
+            "x": 12,
+            "y": 159.9,
+            "w": 34,
+            "h": 42
+          },
+          {
+            "sel": "#world-map-button",
+            "present": true,
+            "inside": true,
+            "x": 50,
+            "y": 159.9,
+            "w": 34,
+            "h": 42
+          },
+          {
+            "sel": "#collection",
+            "present": true,
+            "inside": true,
+            "x": 260,
+            "y": 159.9,
+            "w": 84,
+            "h": 42
+          }
+        ]
+      },
+      "repro": [
+        "Open at 360x740",
+        "Measure HUD control boxes"
+      ],
+      "severity": "major",
+      "bugTitle": "HUD overflow on small-phone"
+    },
+    {
+      "id": "small-phone.menus",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "menu=true (ok) cards=true (ok) map=true (ok)",
+      "expected": "Menu, cards and world map dialogs open from their HUD buttons",
+      "actual": "menu=true cards=true map=true",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-menu.png",
+        "qa/reports/2026-10-20/screenshots/small-phone-cards.png",
+        "qa/reports/2026-10-20/screenshots/small-phone-map.png"
+      ],
+      "repro": [
+        "Enter the world",
+        "Click #menu, #collection, #world-map-button"
+      ],
+      "severity": "major",
+      "bugTitle": "A HUD menu button does not open its dialog"
+    },
+    {
+      "id": "small-phone.daily-reward-gate",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "claim with no completed daily steps left crystals/metal unchanged (0/0). Feedback: (empty)",
+      "expected": "Claiming the daily reward before scanner/backpack/jetpack steps does not add crystals or metal",
+      "actual": "{\"before\":{\"crystals\":0,\"metal\":0},\"after\":{\"crystals\":0,\"metal\":0},\"feedback\":\"\"}",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/small-phone-cards.png"
+      ],
+      "repro": [
+        "Fresh chapter 1 save",
+        "Open cards",
+        "Click #claim-daily"
+      ],
+      "severity": "major",
+      "bugTitle": "Daily reward pays out before the three steps are done"
+    },
+    {
+      "id": "small-phone.build-locked",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "Builder stayed closed. Toast: First find the blueprint archive in the second life.",
+      "expected": "Chapter 1 without the artifact does not open the builder",
+      "actual": "builder open=false; toast=First find the blueprint archive in the second life.",
+      "repro": [
+        "Fresh chapter 1",
+        "Click #build"
+      ],
+      "severity": "minor",
+      "bugTitle": "Builder opens before the chapter 1 artifact is found"
+    },
+    {
+      "id": "small-phone.jump",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "Space changed altitude 0.000 -> 0.156 after 1 frames / 63 ms (dialogs none, running=true). Jetpack stays locked until the engineer is repaired; Space sets velocity and the next sim frame (dt capped at 45 ms) applies it.",
+      "expected": "Space applies an upward velocity while the jetpack is locked, visible on the next simulation frame",
+      "actual": "alt 0.000 -> 0.156 in 1 frames",
+      "repro": [
+        "Enter chapter 1",
+        "Press Space once",
+        "Read MoonGame.player.alt within 300 ms"
+      ],
+      "severity": "major",
+      "bugTitle": "Space does not jump"
+    },
+    {
+      "id": "small-phone.scan-button",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "Scanner toast: Scanner: 14 m radius. Check the marked area.",
+      "expected": "The scan button surfaces a toast",
+      "actual": "Scanner: 14 m radius. Check the marked area.",
+      "repro": [
+        "Enter the world",
+        "Click #scan",
+        "Read #toast"
+      ],
+      "severity": "minor",
+      "bugTitle": "Scanner button gives no feedback"
+    },
+    {
+      "id": "small-phone.console-errors",
+      "status": "pass",
+      "viewport": "small-phone",
+      "detail": "No pageerror or console error captured (0 failed requests ignored as transport)"
+    },
+    {
+      "id": "network.throttled-load",
+      "status": "pass",
+      "viewport": "desktop-throttled",
+      "detail": "Throttled load reached MoonGame and #begin in 8760 ms. {\"moon\":true,\"begin\":true,\"error\":\"\"}",
+      "metrics": {
+        "loadMs": 8760,
+        "latencyMs": 250,
+        "downloadMbit": 2,
+        "uploadMbit": 0.75
+      },
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/throttled-cover.png"
+      ],
+      "expected": "With 250 ms latency and 2 Mbit/s down, the cover and MoonGame still appear",
+      "actual": "Throttled load reached MoonGame and #begin in 8760 ms. {\"moon\":true,\"begin\":true,\"error\":\"\"}",
+      "repro": [
+        "Emulate 250 ms / 2 Mbit/s",
+        "Open ?nolang&nointro&nosw",
+        "Wait for MoonGame and #begin"
+      ],
+      "severity": "major",
+      "bugTitle": "Horizons does not finish loading on a slow network"
+    },
+    {
+      "id": "network.unstable-script",
+      "status": "pass",
+      "viewport": "desktop-unstable",
+      "detail": "Aborting game.js (1 request(s), seed 20261020) showed #boot-fail. Text: 🐱‍🚀 The game did not load Something went wrong while loading. Try again — your progress is safe. Try again",
+      "expected": "A failed world script shows the existing full-screen retry (MoonReliability.bootFail)",
+      "actual": "🐱‍🚀 The game did not load Something went wrong while loading. Try again — your progress is safe. Try again",
+      "evidence": [
+        "qa/reports/2026-10-20/screenshots/unstable-boot-fail.png"
+      ],
+      "repro": [
+        "Block game.js",
+        "Reload the play build",
+        "Look for #boot-fail"
+      ],
+      "severity": "major",
+      "bugTitle": "A failed game.js load does not show the boot retry screen"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "QA-HZ-001",
+      "title": "window.MoonBuild does not match the asset build id",
+      "severity": "minor",
+      "status": "open",
+      "repo": "moonkattymky/moonkatty-horizons-play",
+      "commit": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+      "viewport": "desktop",
+      "checkId": "desktop.build-id",
+      "summary": "window.MoonBuild is \"v44\" and MoonReliability.BUILD is \"20261017-98a\". index.html sets MoonBuild while asset URLs and reliability.js use the other id.",
+      "expected": "The label in window.MoonBuild matches MoonReliability.BUILD",
+      "actual": "MoonBuild=v44 reliability=20261017-98a",
+      "repro": [
+        "Open the play build",
+        "Read window.MoonBuild",
+        "Read window.MoonReliability.BUILD",
+        "Compare with the ?v= query on game.js"
+      ],
+      "evidence": [],
+      "console": [],
+      "metrics": {},
+      "foundAt": "2026-10-20T22:51:18.995Z",
+      "seed": 20261020,
+      "source": "qa"
+    }
+  ],
+  "metrics": {
+    "loadMs": {
+      "desktop": 11870,
+      "iphone-14": 5782,
+      "pixel-7": 5814,
+      "small-phone": 5646
+    },
+    "fps": {
+      "frames": 1,
+      "budgetMs": 4000,
+      "elapsedMs": 5562.4,
+      "avgFrameMs": 2866.5,
+      "fps": 0.349,
+      "maxFrameMs": 2866.5,
+      "p95FrameMs": 2866.5,
+      "method": "requestAnimationFrame for a fixed wall-clock budget while the page is in the foreground"
+    },
+    "heap": {
+      "available": true,
+      "usedJSHeapSize": 168561486,
+      "totalJSHeapSize": 243779738,
+      "jsHeapSizeLimit": 4395630592
+    },
+    "inputLatencyMs": {
+      "samplesMs": [
+        1608.9,
+        2676.5,
+        2660.3
+      ],
+      "medianMs": 2660.3
+    },
+    "network": {
+      "throttledLoadMs": 8760
+    }
+  },
+  "steps": [
+    {
+      "viewport": "desktop",
+      "steps": [
+        "GET http://127.0.0.1:43495/?nolang&nointro&nosw",
+        "clicked #begin, skipped chapter cinema via MoonCinema.skip()",
+        "W 4000 ms via in-page-KeyboardEvent, moved 0.333 m, cdp 0.166 m, events [{\"key\":\"w\",\"code\":\"KeyW\",\"trusted\":true}]",
+        "camera swipes yaw deltas rad [1.675, 1.675, 1.675, 1.675] accumulated 6.701; vertical drag eye delta 4.49935701339098",
+        "pointer joystick up 1200 ms, moved 0.440 m",
+        "#menu open=true dialogs=chapters ",
+        "#cards open=true dialogs=cards ",
+        "claim daily feedback=\"\" crystals 0->0",
+        "map open=true dialogs=world-map ",
+        "scan toast=\"Scanner: 14 m radius. Check the marked area.\"",
+        "build dialog=false toast=\"First find the blueprint archive in the second life.\"",
+        "space jump alt 0.000 -> 0.156 after 1 frames / 172 ms",
+        "waited 80417 ms for the jump to land (alt 0.00)",
+        "steer toward recorder at -5,-2 from dist 14.1 for 180 s (slow frames, dt cap 45 ms)",
+        "fuel forced 40 -> 40.90 over 2 frames (alt 0.00)",
+        "save/load local delta 0.000 m",
+        "input latency samples [{\"ms\":1608.9,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"},{\"ms\":2676.5,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"},{\"ms\":2660.3,\"moved\":0.167,\"method\":\"synthetic KeyboardEvent keydown until player xz changes by > 0.04 m\"}]",
+        "fps 0.349 heap 168561486"
+      ]
+    },
+    {
+      "viewport": "iphone-14",
+      "steps": [
+        "GET http://127.0.0.1:43495/?nolang&nointro&nosw",
+        "clicked #begin, skipped chapter cinema via MoonCinema.skip()",
+        "pointer joystick before touch moved 0.576 m, pointerdowns 1",
+        "touch joystick moved 0.749 m",
+        "camera swipes yaw deltas rad [1.248, 1.248, 1.248, 1.248, 1.248, 1.248] accumulated 7.488; vertical drag eye delta 2.258064618064676",
+        "#menu open=true dialogs=chapters ",
+        "#cards open=true dialogs=cards ",
+        "claim daily feedback=\"\" crystals 0->0",
+        "map open=true dialogs=world-map ",
+        "scan toast=\"Scanner: 14 m radius. Check the marked area.\"",
+        "build dialog=false toast=\"First find the blueprint archive in the second life.\"",
+        "space jump alt 0.000 -> 0.156 after 1 frames / 84 ms"
+      ]
+    },
+    {
+      "viewport": "pixel-7",
+      "steps": [
+        "GET http://127.0.0.1:43495/?nolang&nointro&nosw",
+        "clicked #begin, skipped chapter cinema via MoonCinema.skip()",
+        "pointer joystick before touch moved 0.750 m, pointerdowns 1",
+        "touch joystick moved 0.632 m",
+        "camera swipes yaw deltas rad [1.318, 1.318, 1.318, 1.318, 1.318] accumulated 6.592; vertical drag eye delta 2.4536948598441013",
+        "#menu open=true dialogs=chapters ",
+        "#cards open=true dialogs=cards ",
+        "claim daily feedback=\"\" crystals 0->0",
+        "map open=true dialogs=world-map ",
+        "scan toast=\"Scanner: 14 m radius. Check the marked area.\"",
+        "build dialog=false toast=\"First find the blueprint archive in the second life.\"",
+        "space jump alt 0.000 -> 0.156 after 1 frames / 62 ms"
+      ]
+    },
+    {
+      "viewport": "small-phone",
+      "steps": [
+        "GET http://127.0.0.1:43495/?nolang&nointro&nosw",
+        "clicked #begin, skipped chapter cinema via MoonCinema.skip()",
+        "pointer joystick before touch moved 0.815 m, pointerdowns 1",
+        "touch joystick moved 0.907 m",
+        "camera swipes yaw deltas rad [1.152, 1.152, 1.152, 1.152, 1.152, 1.152] accumulated 6.912; vertical drag eye delta 1.3816061620258109",
+        "#menu open=true dialogs=chapters ",
+        "#cards open=true dialogs=cards ",
+        "claim daily feedback=\"\" crystals 0->0",
+        "map open=true dialogs=world-map ",
+        "scan toast=\"Scanner: 14 m radius. Check the marked area.\"",
+        "build dialog=false toast=\"First find the blueprint archive in the second life.\"",
+        "space jump alt 0.000 -> 0.156 after 1 frames / 63 ms"
+      ]
+    },
+    {
+      "viewport": "network",
+      "steps": [
+        "CDP network: 250 ms latency, 2.0 Mbit/s down, 0.75 Mbit/s up",
+        "abort every request whose URL matches game.js (seeded failure of the world script)"
+      ]
+    }
+  ],
+  "notTestedNotes": [
+    "Physical Telegram WebView, iOS and Android devices are not in this VM. See qa/TELEGRAM_DEVICE_CHECKLIST.md.",
+    "moonkatty-horizons (master) was not cloneable in this run if game.fallback is true. The playable static build was served instead of a from-source compile.",
+    "Chapter 1 is the only mission the walker attempts. Later puzzles are named in the story-dialog check when the recorder is not reached.",
+    "camPitch is not on window.MoonGame. Pitch is inferred from renderer.eye movement.",
+    "Input latency is an in-page synthetic KeyboardEvent, not a hardware scan-code delay.",
+    "FPS is requestAnimationFrame on a software GL driver, not a phone GPU."
+  ],
+  "studio": {
+    "dashboardCard": {
+      "source": "qa",
+      "kind": "horizons-playtest",
+      "generatedAt": "2026-10-20T22:51:18.995Z",
+      "game": {
+        "repo": "moonkattymky/moonkatty-horizons-play",
+        "requestedRepo": "moonkattymky/moonkatty-horizons",
+        "branch": "main",
+        "sha": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+        "subject": "build 20261017-98a: leaderboard shows total players",
+        "build": "no package.json — serving the checkout as a static build",
+        "fallback": true,
+        "notes": [
+          "moonkatty-horizons: Cloning into '/workspace/qa/.cache/moonkatty-horizons'...",
+          "moonkatty-horizons-play@2df1c76f8a11 (main)"
+        ],
+        "url": "http://127.0.0.1:43495/"
+      },
+      "seed": 20261020,
+      "counts": {
+        "pass": 52,
+        "fail": 1,
+        "not_tested": 3
+      },
+      "openBugCount": 1,
+      "openBugs": [
+        {
+          "id": "QA-HZ-001",
+          "title": "window.MoonBuild does not match the asset build id",
+          "severity": "minor",
+          "viewport": "desktop",
+          "checkId": "desktop.build-id"
+        }
+      ],
+      "metrics": {
+        "loadMs": {
+          "desktop": 11870,
+          "iphone-14": 5782,
+          "pixel-7": 5814,
+          "small-phone": 5646
+        },
+        "fps": {
+          "frames": 1,
+          "budgetMs": 4000,
+          "elapsedMs": 5562.4,
+          "avgFrameMs": 2866.5,
+          "fps": 0.349,
+          "maxFrameMs": 2866.5,
+          "p95FrameMs": 2866.5,
+          "method": "requestAnimationFrame for a fixed wall-clock budget while the page is in the foreground"
+        },
+        "heap": {
+          "available": true,
+          "usedJSHeapSize": 168561486,
+          "totalJSHeapSize": 243779738,
+          "jsHeapSizeLimit": 4395630592
+        },
+        "inputLatencyMs": {
+          "samplesMs": [
+            1608.9,
+            2676.5,
+            2660.3
+          ],
+          "medianMs": 2660.3
+        },
+        "network": {
+          "throttledLoadMs": 8760
+        }
+      },
+      "note": "Counts are check results from this run. There is no quality score."
+    },
+    "proposedTasks": [
+      {
+        "title": "[QA QA-HZ-001] window.MoonBuild does not match the asset build id",
+        "description": "window.MoonBuild is \"v44\" and MoonReliability.BUILD is \"20261017-98a\". index.html sets MoonBuild while asset URLs and reliability.js use the other id.\n\nExpected: The label in window.MoonBuild matches MoonReliability.BUILD\n\nActual: MoonBuild=v44 reliability=20261017-98a\n\nRepro:\n1. Open the play build\n2. Read window.MoonBuild\n3. Read window.MoonReliability.BUILD\n4. Compare with the ?v= query on game.js\n\nBuild: moonkattymky/moonkatty-horizons-play@2df1c76f8a11a6150d4e750439b67fd9be63effa\n\nViewport: desktop",
+        "agentId": "games",
+        "priority": "normal",
+        "status": "queued",
+        "project": "main",
+        "schedule": {
+          "type": "none"
+        },
+        "source": "qa",
+        "createdAt": "2026-10-20T22:51:18.995Z",
+        "qa": {
+          "bugId": "QA-HZ-001",
+          "severity": "minor",
+          "repo": "moonkattymky/moonkatty-horizons-play",
+          "commit": "2df1c76f8a11a6150d4e750439b67fd9be63effa",
+          "checkId": "desktop.build-id",
+          "viewport": "desktop",
+          "evidence": []
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+CONTROL PASS panel nodes view has no enrollment approval screen
+CONTROL PASS panel shows the TLS certificate fingerprint
+CONTROL PASS agent.js has no --code or --enroll argv
+CONTROL PASS client() refuses tailscale mode unless the host ends in .ts.net
+CONTROL PASS client(tlsMode tailscale, 127.0.0.1) throws before connect — NODE_TLS_MODE=tailscale: COORDINATOR_URL должен быть https://<mac-mini>.<tailnet>.ts.net (tailscale serve, без funnel)
+CONTROL PASS isTailscaleOrLoopback rejects public, LAN, and 0.0.0.0
+CONTROL PASS isTailscaleOrLoopback allows 127/8, ::1, 100.64/10, fd7a:115c:a1e0::/48
+CONTROL PASS listen() refuses 0.0.0.0, public, and LAN before bind — 0.0.0.0:refused | 8.8.8.8:refused | 10.1.2.3:refused | 192.168.1.9:refused | :::refused
+CONTROL PASS no nodes.json is written before the first enrollment save
+CONTROL PASS 0.2.1 enroll issues one token bound to the device key — enrolled
+CONTROL PASS issued token is not stored; sha256 is; enroll key is absent
+CONTROL PASS enrollment API view includes the device public-key fingerprint — {"pubKeyShort":"14C0-1523-99CD-2F78","fp":"14c0152399cd2f78"}
+FINDING medium the shipped panel has no enrollment approval screen and does not show the device-key fingerprint — GET /api/ops/nodes/enroll returns pubKeyFingerprint and pubKeyShort. public/app.js renders the TLS certificate fingerprint only. node-agent/enroll.js and the Connect computer screen are not in this tree.
+CONTROL PASS replay of one signed pull inside 120s is still accepted — {"first":"nj_4afb517c704ff406","replay":"nj_cbc22819a768bb5a","replayStatus":200,"future":401,"past":401}
+FINDING medium a captured signed pull is accepted again inside 120 seconds — first nj_4afb517c704ff406, replay nj_cbc22819a768bb5a. authNode still uses ±120s and no nonce (lib/ops/nodes.js). ±121s is 401.
+CONTROL PASS enrolled node rotates without rotatePending — {"pendingBefore":false,"rot":200,"oldPing":401,"newPing":200}
+FINDING low an enrolled node can rotate its token without the owner flag — POST /api/nodes/rotate called rotateToken while rotatePending was false. The old bearer then got 401 and the new bearer got 200.
+CONTROL PASS registerNode still mints a bearer-only 0.2.0 token — macbook-test
+FINDING low the owner can still mint a bearer-only 0.2.0 node — registerNode stores no devicePubKey. authNode accepts the bearer with a null signature. The HTTP route now also requires the owner password and the word ВЫДАТЬ, and the id must end in -test.
+CONTROL PASS a public source is 403 and X-Forwarded-For does not choose the bucket — keys=100.64.0.9,127.0.0.1,100.64.0.77 denied=403
+FINDING low per-IP counters stay in memory and a front on 127.0.0.1 still shares one bucket — X-Forwarded-For is ignored. Two different remoteAddress values get two buckets. The documented listener binds the Tailscale address, so a direct peer is its own bucket. tailscale serve to 127.0.0.1 would collapse peers again. Docs say not to use serve.
+CONTROL PASS two processes on one nodes.json can each return an enrollment token — {"a":"enrolled","b":"enrolled","distinct":true,"storedMatchesOne":1}
+FINDING low two processes on one state file can each hand out a token — Both status() calls returned a different token. nodes.json kept one tokenHash. state.js writes with a temp file and rename and has no lock.
+CONTROL PASS a new process starts with an empty in-memory IP map
+CONTROL PASS node-agent argv does not contain the token or a one-time code — /exec-daemon/node /tmp/mk-v124/node-agent/agent.js --info 
+CONTROL PASS timing sample recorded — wrong 3416 ns, right 132605 ns, ratio 38.82
+FINDING low a correct bearer token is slower than a wrong one — About 38.8× over 200 calls. timingSafeEqual runs on the SHA-256 of the bearer; Ed25519 verify runs only after that hash matches.
+CONTROL PASS panel HOST=0.0.0.0 exits 78 — status=78
+CONTROL PASS node listener is off by default — {"enabled":false,"listening":[],"portClosed":true}
+CONTROL PASS settings reject 0.0.0.0, public, and LAN binds — 0.0.0.0:400 8.8.8.8:400 10.0.0.1:400 192.168.1.1:400 172.16.0.1:400 tailscale=200
+CONTROL PASS a disabled manager returns 409 before the password check — {"noPw":409,"disabled":"409:nodes_disabled"}
+CONTROL PASS enabled listener binds 127.0.0.1 only and records the public bind as an error — {"listening":["127.0.0.1:19103"],"errors":["адрес привязки не Tailscale: 8.8.8.8"],"requested":"19103"}
+CONTROL PASS enabled register without the password or with a wrong password is refused — {"noPw":403,"badPw":"403:password_required"}
+CONTROL PASS HTTP register with password and ВЫДАТЬ returns a bearer that pings with no signature — HTTP 200 ping 200
+CONTROL PASS enroll confirm requires the owner password and the word ПОДТВЕРДИТЬ — {"enr":200,"posted":200,"deny":400,"okc":200,"short":"14C0-1523-99CD-2F78","plain":403}
+CONTROL PASS owner rotate of a 0.2.0 node returns a new token once — HTTP 200
+FINDING info no nonce store was added in the port — The 120 second window is unchanged.
+{"controls":29,"failed":0,"findings":[{"sev":"medium","name":"the shipped panel has no enrollment approval screen and does not show the device-key fingerprint","detail":"GET /api/ops/nodes/enroll returns pubKeyFingerprint and pubKeyShort. public/app.js renders the TLS certificate fingerprint only. node-agent/enroll.js and the Connect computer screen are not in this tree."},{"sev":"medium","name":"a captured signed pull is accepted again inside 120 seconds","detail":"first nj_4afb517c704ff406, replay nj_cbc22819a768bb5a. authNode still uses ±120s and no nonce (lib/ops/nodes.js). ±121s is 401."},{"sev":"low","name":"an enrolled node can rotate its token without the owner flag","detail":"POST /api/nodes/rotate called rotateToken while rotatePending was false. The old bearer then got 401 and the new bearer got 200."},{"sev":"low","name":"the owner can still mint a bearer-only 0.2.0 node","detail":"registerNode stores no devicePubKey. authNode accepts the bearer with a null signature. The HTTP route now also requires the owner password and the word ВЫДАТЬ, and the id must end in -test."},{"sev":"low","name":"per-IP counters stay in memory and a front on 127.0.0.1 still shares one bucket","detail":"X-Forwarded-For is ignored. Two different remoteAddress values get two buckets. The documented listener binds the Tailscale address, so a direct peer is its own bucket. tailscale serve to 127.0.0.1 would collapse peers again. Docs say not to use serve."},{"sev":"low","name":"two processes on one state file can each hand out a token","detail":"Both status() calls returned a different token. nodes.json kept one tokenHash. state.js writes with a temp file and rename and has no lock."},{"sev":"low","name":"a correct bearer token is slower than a wrong one","detail":"About 38.8× over 200 calls. timingSafeEqual runs on the SHA-256 of the bearer; Ed25519 verify runs only after that hash matches."},{"sev":"info","name":"no nonce store was added in the port","detail":"The 120 second window is unchanged."}],"root":"/tmp/mk-v124n-BD3p8z","failedNames":[]}

@@ -1,0 +1,10 @@
+PASS login ok
+FAIL sess world/action confirm:true → 403 needs_owner — 403 {"error":"Запрещено","code":"forbidden","tier":"unknown"}
+PASS sess world/savings confirm:true → 403 — 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjywvm2q160e2"}
+PASS sess opencode_task → 403 — 403 feature_disabled
+FAIL app world/action confirm:true → 403 needs_owner — 403 {"error":"Запрещено","code":"forbidden","tier":"unknown"}
+PASS app world/savings confirm:true → 403 — 403 {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjywvmb9ngu59"}
+PASS app opencode_task → 403 — 403 feature_disabled
+PASS GET /api/world/approvals — 200 [{"id":"mvjywvmb9ngu59","at":"2026-10-22T20:02:40.787Z","action":"critical_settings","tier":"owner","status":"pending","
+FAIL needs_owner created approvalId — {"error":"Запрещено","code":"forbidden","tier":"unknown"}
+6p 3f

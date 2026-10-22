@@ -1,0 +1,6 @@
+agent(app) creates 403 id
+N1 app token + fake cookie approves agent request => 200 {"ok":true,"status":"approved","executed":true,"execStatus":"executed","result":{"executed":true,"status":"executed","applied":{"item":"Mac Studio","target_usd"
+savings in db: {"item":"Mac Studio","target_usd":4242}
+expired approve => {"error":"срок подтверждения истёк","code":"expired"}
+legacy approved LEG1 use => {"error":"Нужно подтверждение владельца","code":"needs_owner","approvalId":"mvjsls74hywhk4","reason":"expired"}
+legacy pending LEG2 approve => {"error":"срок подтверждения истёк","code":"expired"}

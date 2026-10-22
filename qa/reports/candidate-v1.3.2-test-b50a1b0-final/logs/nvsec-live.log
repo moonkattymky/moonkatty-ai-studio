@@ -1,0 +1,23 @@
+PASS login
+PASS 401 without auth GET /api/newsvideo/status — 401
+PASS 401 without auth POST /api/newsvideo/search — 401
+PASS 401 without auth GET /api/newsvideo/stories — 401
+PASS 401 without auth GET /api/newsvideo/drafts — 401
+PASS 401 without auth POST /api/newsvideo/drafts — 401
+PASS 401 without auth GET /api/newsvideo/drafts/abcdef0123456789 — 401
+PASS 401 without auth PUT /api/newsvideo/drafts/abcdef0123456789 — 401
+PASS 401 without auth POST /api/newsvideo/drafts/abcdef0123456789/approve — 401
+PASS 401 without auth POST /api/newsvideo/drafts/abcdef0123456789/render — 401
+PASS 401 without auth GET /api/newsvideo/drafts/abcdef0123456789/file?kind=mp4 — 401
+PASS 403 cross-origin POST /api/newsvideo/search — 403
+PASS 403 cross-origin POST /api/newsvideo/drafts — 403
+PASS 403 cross-origin PUT /api/newsvideo/drafts/abcdef0123456789 — 403
+PASS 403 cross-origin POST /api/newsvideo/drafts/abcdef0123456789/approve — 403
+PASS 403 cross-origin POST /api/newsvideo/drafts/abcdef0123456789/render — 403
+PASS bogus draft id → 400/404
+PASS traversal in file id → 400/404
+PASS kind injection → 400/404
+PASS search ignores client-supplied URLs (fixed allowlist)
+PASS status leaks no secrets
+
+21 passed, 0 failed

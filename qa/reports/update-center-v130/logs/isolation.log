@@ -1,0 +1,79 @@
+
+> moonkatty-ai-studio@1.3.0-test test:isolation
+> node scripts/isolation-test.mjs
+
+PASS TEST flavor: product / bundle id / launchd label
+PASS TEST flavor: Keychain service .test, port ≠ 8787, autostart off, no update checks
+PASS prod flavor unchanged (v1.1.2 identifiers)
+PASS source checkout without markers and without STUDIO_FLAVOR → FLAVOR null (no default, NODE_ENV irrelevant)
+PASS source checkout: NODE_ENV irrelevant (STUDIO_FLAVOR=test honoured with NODE_ENV=production)
+PASS server.js without baked flavor and without STUDIO_FLAVOR refuses to start (exit 78, clear error)
+PASS no hardcoded app name / bundle id / label / Keychain service / port outside studio-config.js
+(node:75665) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS guard: STUDIO_DATA_DIR = production dir → exit 78 — [MOONKATTY AI STUDIO TEST] ОТКАЗ: STUDIO_DATA_DIR «/tmp/mk-iso-test-75665/home/Library/Application Support/MOONKATTY AI STUDIO» находится в данных production-версии (MOONKATTY AI STUDIO). Тестовая сборка не открывает production-данные.
+
+PASS guard: symlink to production dir → refused
+PASS guard: DB_PATH inside production dir → refused
+PASS guard: differently-cased production path (macOS is case-insensitive) → refused on darwin — platform linux
+PASS guard: launchd plist generation for production dir → refused
+PASS test plist: label com.moonkatty.aistudio.test.server, port 8687, test data dir
+PASS health reports flavor=test, product TEST, schemaVersion 6 — {"ok":true,"app":"moonkatty-ai-studio","flavor":"test","product":"MOONKATTY AI STUDIO TEST","schemaVersion":6,"mode":"server","version":"1.3.0-test","pid":75777,"uptimeSec":0,"db":"ok","dbDriver":"nod
+PASS QA-DB-001: automatic pre-migration SQLite backup (v1 → v6) with matching .sha256 — pre-migration-v1-to-v6-2026-10-21T18-57-53-355Z.db
+PASS pre-migration backup is the OLD schema (no jobs table)
+PASS test server used its own data dir (app-token, db in TEST dir)
+PASS OpenCode default URL in TEST build is 127.0.0.1:4097
+PASS restore without confirmation token → rejected, data intact
+PASS restore/prepare returns one-time token + counts
+PASS restore with wrong token → 403
+PASS restore without confirm word → 400
+PASS nothing replaced yet
+PASS restore with token: backup made first, SHA-256 matches file + sidecar
+PASS pre-restore backup contains the data before replacement — 1 vs 1
+PASS data replaced after confirmation
+PASS token is single-use
+PASS classify: private / link-local / metadata / CGNAT / ULA / mapped addresses blocked
+PASS allowlisted host resolving to metadata IP → blocked after DNS
+PASS any one private address among several → blocked (no rebinding race)
+PASS allowlisted host with public IP → allowed
+PASS host not in allowlist → blocked
+PASS local integration on loopback + known port → allowed
+PASS local integration on other port → blocked
+PASS "localhost" resolving to private IP → blocked
+PASS credentials in URL → blocked
+PASS endpoint: metadata URL → 400 blocked, no request
+PASS endpoint: private IP → 400
+PASS endpoint: redirect is not followed (reported as redirect)
+PASS endpoint: Ollama on non-standard port → blocked (fixed port policy)
+PASS master key stored in TEST Keychain service "MOONKATTY AI STUDIO.test"
+PASS master key never in any security argv (stdin -i only) — ["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"]
+["-i"]
+["find-generic-password","-s","MOONKATTY AI STUDIO.test","-a","studio-master-key","-w"]
+["find-generic-pa
+PASS 2nd chat while 1st holds the lock → 202 busy_queued with holder — {"status":"busy_queued","message":{"id":"mvih5q6qxdyiq9","role":"director","at":"2026-10-21T18:57:54.386Z","planner":"queued","text":"Студия занята (ollama:director) — запрос поставлен в очередь, отве
+PASS queue bounded: beyond STUDIO_CHAT_MAX_QUEUED → 429 busy queue_full — 202,429
+PASS 1st chat answered by (mock) LLM
+PASS queued chat completed later in background
+PASS Ollama /api/chat never concurrent (max 1) — max 1, calls 3
+PASS lock: chat during Blender → busy error after timeout (holder blender)
+PASS lock: Ollama runs only after Blender and video_render finished (FIFO, no overlap)
+PASS static: every Ollama generation call (/api/chat, /api/generate) is inside withHeavy/tryHeavy
+PASS QA-APR-001: POST with status approved → stored as pending_approval — pending_approval
+PASS POST with status retry → pending_approval, nextRetryAt dropped
+PASS approve without fact-check → 400
+PASS status retry also gated by fact-check → 400
+PASS daily limit enforced on approve
+PASS published via HTTP → 403 (internal publisher only)
+PASS published with blank externalId → 403
+PASS TEST build: manual published record refused
+PASS TEST build: /api/queue/:id/publish → 403
+PASS TEST build: scheduler never calls meta.tick (source check)
+PASS backup: jobs + jobEvents + users (hash only)
+PASS QA-OC-001: sandbox profile has no /private/tmp or /private/var/folders; app temp subdir only — (version 1)
+(allow default)
+(deny file-write*)
+(allow file-write* (subpath "/tmp/mk-iso-test-75665/sbx/opencode-sandbox/t1") (subpath "/tmp/mk-iso-test-75665/sb
+PASS video_render: hasExecutor() false with stub, isStub alias true
+PASS hasExecutor() true after setExecutor; isStub false
+PASS production data dir byte-for-byte unchanged (no migration, no writes)
+{"passed":65,"failed":[]}

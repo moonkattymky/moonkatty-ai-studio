@@ -1,0 +1,222 @@
+TAP version 13
+# Subtest: Update Center API: off by default, auth required, real verified backup, no install without download
+ok 1 - Update Center API: off by default, auth required, real verified backup, no install without download
+  ---
+  duration_ms: 713.046521
+  type: 'test'
+  ...
+# Subtest: pinned key in repo is a valid Ed25519 SPKI key
+ok 2 - pinned key in repo is a valid Ed25519 SPKI key
+  ---
+  duration_ms: 2.626787
+  type: 'test'
+  ...
+# Subtest: versions: compare, downgrade detection
+ok 3 - versions: compare, downgrade detection
+  ---
+  duration_ms: 0.484363
+  type: 'test'
+  ...
+# Subtest: security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+ok 4 - security: non-allowlisted URLs / http / foreign repos are refused (no SSRF)
+  ---
+  duration_ms: 0.998571
+  type: 'test'
+  ...
+# Subtest: security: redirect to a foreign host is refused
+ok 5 - security: redirect to a foreign host is refused
+  ---
+  duration_ms: 2.483766
+  type: 'test'
+  ...
+# Subtest: check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+ok 6 - check: signed release verified; changelog, known issues, compat, gate (same bundleId blocked w/o backup+approval)
+  ---
+  duration_ms: 4.726918
+  type: 'test'
+  ...
+# Subtest: security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+ok 7 - security: bad signature, wrong key, missing signature, missing manifest → unverified, download refused
+  ---
+  duration_ms: 5.059076
+  type: 'test'
+  ...
+# Subtest: security: tampered manifest (signature over other bytes) is rejected
+ok 8 - security: tampered manifest (signature over other bytes) is rejected
+  ---
+  duration_ms: 0.773297
+  type: 'test'
+  ...
+# Subtest: security: downgrade attack (validly signed older version) is blocked
+ok 9 - security: downgrade attack (validly signed older version) is blocked
+  ---
+  duration_ms: 3.474664
+  type: 'test'
+  ...
+# Subtest: download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+ok 10 - download: hash mismatch (signed manifest vs bytes) → file deleted, failed
+  ---
+  duration_ms: 13.942408
+  type: 'test'
+  ...
+# Subtest: download: oversized body (more than signed size) is aborted
+ok 11 - download: oversized body (more than signed size) is aborted
+  ---
+  duration_ms: 5.399705
+  type: 'test'
+  ...
+# Subtest: download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+ok 12 - download: interrupted → partial kept + state "interrupted" (atomic) → resume with Range → verified
+  ---
+  duration_ms: 13.309199
+  type: 'test'
+  ...
+# Subtest: download: server ignores Range → restarts clean, still verified
+ok 13 - download: server ignores Range → restarts clean, still verified
+  ---
+  duration_ms: 3.068219
+  type: 'test'
+  ...
+# Subtest: crash during download: restart marks it interrupted; cleanTemp removes partial files
+ok 14 - crash during download: restart marks it interrupted; cleanTemp removes partial files
+  ---
+  duration_ms: 2.734569
+  type: 'test'
+  ...
+# Subtest: network error on check is reported, not thrown as crash
+ok 15 - network error on check is reported, not thrown as crash
+  ---
+  duration_ms: 0.826979
+  type: 'test'
+  ...
+# Subtest: security: archive path traversal / absolute paths / truncated / garbage are rejected
+ok 16 - security: archive path traversal / absolute paths / truncated / garbage are rejected
+  ---
+  duration_ms: 2.727621
+  type: 'test'
+  ...
+# (node:35094) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: download: signed+hashed but traversal archive is rejected after hash check
+ok 17 - download: signed+hashed but traversal archive is rejected after hash check
+  ---
+  duration_ms: 4.416333
+  type: 'test'
+  ...
+# Subtest: rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+ok 18 - rule: v1.2.1 over working v1.1.2 (same bundleId/data dir/launchd) needs verified backup + compat + owner approval
+  ---
+  duration_ms: 0.329204
+  type: 'test'
+  ...
+# Subtest: rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+ok 19 - rule: isolated test build (v1.2.2-test) may go side-by-side; partial identity overlap is refused
+  ---
+  duration_ms: 0.305952
+  type: 'test'
+  ...
+# Subtest: compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+ok 20 - compat: schema checks tolerate missing dbSchemaVersion (→ manual only) and refuse schema downgrade
+  ---
+  duration_ms: 0.085916
+  type: 'test'
+  ...
+# Subtest: manifest validation rejects path-like asset names and bad identity
+ok 21 - manifest validation rejects path-like asset names and bad identity
+  ---
+  duration_ms: 0.178339
+  type: 'test'
+  ...
+# Subtest: pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+ok 22 - pre-install backup is real: checksum + test restore into temp; plan only after it; live data untouched
+  ---
+  duration_ms: 16.210709
+  type: 'test'
+  ...
+# Subtest: auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+ok 23 - auto-install is disabled unless ALL readiness flags; rollback default is dry-run and never deletes
+  ---
+  duration_ms: 2.430225
+  type: 'test'
+  ...
+# Subtest: rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+ok 24 - rollback (non-dry-run, mocked macOS exec): restores previous app and checks /health
+  ---
+  duration_ms: 0.613682
+  type: 'test'
+  ...
+# Subtest: MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+ok 25 - MOONKATTY NODE: per-device compat first; delivery disabled by default; job only after passing check
+  ---
+  duration_ms: 2.91201
+  type: 'test'
+  ...
+# Subtest: code never bypasses macOS security
+ok 26 - code never bypasses macOS security
+  ---
+  duration_ms: 0.677857
+  type: 'test'
+  ...
+# Subtest: manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+ok 27 - manifest format = docs/RELEASE_MANIFEST.md (f2440e1): real-shaped prod and test manifests validate; strict fields enforced
+  ---
+  duration_ms: 0.440459
+  type: 'test'
+  ...
+# Subtest: rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+ok 28 - rule: minUpgradeFrom=null (fresh install only) never replaces; isolated flag must match identity
+  ---
+  duration_ms: 0.327067
+  type: 'test'
+  ...
+# Subtest: schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+ok 29 - schema: version read from DB (meta.schemaVersion), fallback by tables for old DBs; compat v1.1.2(1)→v1.2.1(3), test build isolated
+  ---
+  duration_ms: 15.345
+  type: 'test'
+  ...
+# Subtest: test-build archive: app name taken from manifest.appName
+ok 30 - test-build archive: app name taken from manifest.appName
+  ---
+  duration_ms: 0.323558
+  type: 'test'
+  ...
+# Subtest: unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+ok 31 - unsigned real-format v1.2.2-test (manifest present, .sig absent or stub-key mismatch) → "not verified", no download
+  ---
+  duration_ms: 2.690761
+  type: 'test'
+  ...
+# Subtest: origin verification: remote, ref, on origin, clean tree
+ok 32 - origin verification: remote, ref, on origin, clean tree
+  ---
+  duration_ms: 5.612821
+  type: 'test'
+  ...
+# Subtest: artifact SHA-256 required and must match (direct or SHA256SUMS)
+ok 33 - artifact SHA-256 required and must match (direct or SHA256SUMS)
+  ---
+  duration_ms: 9.428999
+  type: 'test'
+  ...
+# Subtest: signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+ok 34 - signature: codesign must pass; Gatekeeper rejection is reported, never bypassed
+  ---
+  duration_ms: 0.871355
+  type: 'test'
+  ...
+# Subtest: schema compatibility + plan refuses on failed checks
+ok 35 - schema compatibility + plan refuses on failed checks
+  ---
+  duration_ms: 8.779442
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 760.214373

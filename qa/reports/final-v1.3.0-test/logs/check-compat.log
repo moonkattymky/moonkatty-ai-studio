@@ -1,0 +1,28 @@
+TAP version 13
+# Subtest: check-compat по умолчанию ждёт integ/v1.3.0-test и помечает отсутствие как BLOCKED
+not ok 1 - check-compat по умолчанию ждёт integ/v1.3.0-test и помечает отсутствие как BLOCKED
+  ---
+  duration_ms: 9.021889
+  type: 'test'
+  location: '/tmp/mk-v130/studio-intelligence/test/check-compat.test.js:10:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected exception.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    TestContext.<anonymous> (/tmp/mk-v130/studio-intelligence/test/check-compat.test.js:11:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 54.059025
+COMPAT:1

@@ -1,0 +1,53 @@
+(node:505445) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS render_segment ffmpeg -> succeeded, real mp4 2s 720x1280 + audio — {"st":"succeeded","err":null,"d":"2.000000","w":720,"h":1280}
+PASS host3d.renderSegment returns real videoPath
+PASS render_segment invalid durationSec rejected
+PASS opencode_task empty prompt rejected
+PASS opencode missing -> failed "opencode not installed" — opencode not installed: команда opencode не найдена (установите OpenCode или задайте OPENCODE_BIN). Задание не выполнялось.
+PASS ffmpeg missing -> failed "ffmpeg not installed" — ffmpeg not installed: render_segment невозможен (установите ffmpeg или задайте FFMPEG_BIN)
+PASS blender missing (engine=blender) -> failed honestly — Blender не найден. Установите Blender 4.2+ (blender.org) или укажите путь в настройках.
+PASS opencode_task timeout -> failed timeout, child killed — timeout после 1 с
+PASS opencode_task holds the global heavy lock while running — {"holder":"opencode_task:job_e2eb4c2de1584fa4","waiting":0,"since":1792690207900}
+PASS opencode_task cancel -> cancelled — cancelled null
+PASS opencode shim really ran with "--" before prompt — opencode shim run -- x
+ENV:USER,HOME,TMPDIR,LOGNAME,TERM,PATH,LANG,LC_ALL,PWD,
+SECRETVAL:
+/tmp/mk-tr-out-T2sxLg/bin/opencode: 6: cannot create /tmp/mk-tr-out-T2sxLg/escape.txt: Read-only file system
+W
+PASS env allowlist: no STUDIO_SECRET_KEY / tokens in child env — opencode shim run -- x
+ENV:USER,HOME,TMPDIR,LOGNAME,TERM,PATH,LANG,LC_ALL,PWD,
+SECRETVAL:
+/tmp/mk-tr-out-T2sxLg/bin/opencode: 6: cannot create /tmp/mk-tr-out-T2sxLg/escape.txt: Read-only file system
+WROTE_INSIDE
+
+PASS sandbox: data dir hidden (secret not readable) — opencode shim run -- x
+ENV:USER,HOME,TMPDIR,LOGNAME,TERM,PATH,LANG,LC_ALL,PWD,
+SECRETVAL:
+/tmp/mk-tr-out-T2sxLg/bin/opencode: 6: cannot create /tmp/mk-tr-out-T2sxLg/escape.txt: Read-only file system
+WROTE_INSIDE
+
+PASS sandbox: no writes outside workDir — opencode shim run -- x
+ENV:USER,HOME,TMPDIR,LOGNAME,TERM,PATH,LANG,LC_ALL,PWD,
+SECRETVAL:
+/tmp/mk-tr-out-T2sxLg/bin/opencode: 6: cannot create /tmp/mk-tr-out-T2sxLg/escape.txt: Read-only file system
+WROTE_INSIDE
+
+PASS sandbox: workDir writable — opencode shim run -- x
+ENV:USER,HOME,TMPDIR,LOGNAME,TERM,PATH,LANG,LC_ALL,PWD,
+SECRETVAL:
+/tmp/mk-tr-out-T2sxLg/bin/opencode: 6: cannot create /tmp/mk-tr-out-T2sxLg/escape.txt: Read-only file system
+WROTE_INSIDE
+
+PASS render_segment without approval -> rejected
+PASS render_segment with forged approvalId -> rejected
+PASS opencode_task without approval -> rejected
+PASS opencode_task with forged approvalId -> rejected
+PASS prompt starting with "-" rejected
+PASS audioPath outside media / missing / symlink-out / ../ -> one uniform error (no existence oracle) — render_segment: audioPath: недопустимый путь (только файл внутри media/) | render_segment: audioPath: недопустимый путь (только файл внутри media/) | render_segment: audioPath: недопустимый путь (только файл внутри media/) | render_segment: audioPath: недопустимый путь (только файл внутри media/)
+PASS audioPath inside media accepted (realpath)
+PASS TEST flavor: real runners disabled -> failed honestly — render_segment: отключено в TEST-сборке (реальные инструменты не запускаются)
+PASS no sandbox available -> sandboxed() null (opencode refused) — null
+PASS resume: render_segment re-run -> succeeded — succeeded null
+PASS resume: opencode_task (not safeToRetry) -> failed — Прервано перезапуском; задание помечено safeToRetry=false
+ALL PASS
