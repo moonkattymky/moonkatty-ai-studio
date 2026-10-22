@@ -1,0 +1,68 @@
+PASS QC: присланные 100 баллов не принимаются — blocked_factcheck 100
+PASS QC: новость с фактчеком может пройти — pass 100
+PASS QC: пустые доказательства дают низкий балл — 0
+PASS QC: лимит повторов останавливает доработку — blocked_regen_cap
+PASS A growth math uses real points only — {"daily":{"subscribers":10,"from":120,"to":130,"real":true},"weekly":{"subscribers":20,"from":110,"to":130,"real":true},"monthly":{"subscribers":30,"from":100,"to":130,"real":true}}
+PASS A unconnected audience is НЕТ ДАННЫХ and YouTube stays separate
+BLOCKED 1 macOS Apple Silicon launch — этот прогон на linux/x64, .app не запускался
+PASS 3 Ollama — локальный /api/tags ответил
+PASS server boots — (node:509027) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+MOONKATTY AI STUDIO TEST: http://127.0.0.1:8913 (pid 509027, db node:sqlite)
+
+PASS health flavor test schema 6 version — {"ok":true,"app":"moonkatty-ai-studio","flavor":"test","product":"MOONKATTY AI STUDIO TEST","schemaVersion":6,"mode":"server","version":"1.3.1-test","pid":509027,"uptimeSec":0,"db"
+PASS auth setup for loopback app token — {"ok":true,"user":"igor"}
+PASS 2 dashboard ships Revenue Command Center
+PASS 2 command center empty money is НЕТ ДАННЫХ — "НЕТ ДАННЫХ"
+PASS platforms are existing channels or НЕТ ДАННЫХ — 9
+FAIL 3 runtime reports ollama without inventing a model — Модель qwen3:8b не установлена (ollama pull qwen3:8b)
+PASS 4 agents include CEO, creative, revenue, growth and the old set
+PASS 5 mission loaded and matches files — 1bfb455135837c1a24d30173d037e361cf065c7d7fdc952fdd1cb341db34d409
+PASS 6 CEO plan creates tasks — План 2026-10-22. Задачи у существующих агентов. NEWS не смешивается с основным каналом. Публикация и соцсети этим планом не вызываются.
+PASS 6 CEO plan is idempotent for the day
+PASS 7 QC API blocks news without fact-check — blocked_factcheck
+PASS views are not revenue
+PASS 8 unconfirmed payout is stored but not counted
+PASS 8 unconfirmed does not become month revenue
+PASS R2 reach is not revenue
+PASS 8 CSV import accepted — {"ok":true,"imported":3,"duplicates":0}
+PASS R5 accrued import accepted
+PASS R3 duplicate payout is idempotent — {"ok":true,"imported":0,"duplicates":1}
+PASS R3 conflicting payout is rejected
+PASS 8 confirmed payout is the only revenue — {"month":{"usd":80.5,"label":"$80.50"},"yt":{"usd":80.5,"label":"$80.50"},"fb":"НЕТ ДАННЫХ","demo":{"label":"DEMO $5.00","excludedFromActual":true}}
+PASS R1 three states stay apart
+PASS R6 demo is outside the real total
+PASS R7 unconnected or empty sources are НЕТ ДАННЫХ — {"ig":"НЕТ ДАННЫХ","web":"НЕТ ДАННЫХ"}
+PASS fixture revenue stays DEMO
+PASS 8 forecast is not the month figure
+PASS 8 opex and pretax from real rows — {"day":{"usd":60.5,"label":"$60.50"},"month":{"usd":60.5,"label":"$60.50"},"year":{"usd":60.5,"label":"$60.50"}}
+PASS growth import
+PASS 8 CAC from ad spend and new players — {"usd":5,"label":"$5.00"}
+PASS 9 tasks persisted
+PASS proposal is a draft
+PASS 10 server restarts
+PASS 10 mission, tasks and revenue survive restart
+PASS R4 payout record stores the required fields
+PASS R8 backup restore keeps the confirmed payout — {"ok":true,"backup":{"file":"pre-restore-2026-10-22T17-31-06-025Z.db","sha256":"e0029b6696e46b63179852c9b8a45632fbbe528f534c8de35d0e33b899c70814","size":413696}}
+PASS A two YouTube channels stay separate and DEMO
+PASS A real progress, retention, CTR and formats are НЕТ ДАННЫХ
+PASS A revenue link uses confirmed payouts only
+PASS A organic recommendation forbids bought followers
+PASS A directors read audience and do not publish
+PASS A experiment waits for real data
+PASS A bought-follower experiment is rejected
+PASS 5 mission still on every agent after restart
+PASS 11 auto allowed — {"ok":true,"executed":true,"tier":"auto"}
+PASS 11 owner gate does not execute — {"error":"Подтверждение только из проверенной сессии владельца (не app token)","code":"owner_session_required"}
+PASS 11 forbidden denied
+PASS forbid botting — {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+PASS forbid bought_followers — {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+PASS forbid platform_evasion — {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+PASS forbid fake_followers — {"error":"Запрещено","code":"forbidden","tier":"forbidden"}
+PASS 11 journal has the three decisions
+PASS 12 bad import and unknown action are rejected — CSV: нужны колонки date,stream,kind,amount_usd
+PASS 12 published still rejected
+PASS 13 config and world code contain no secret material
+PASS 15 install guide has rollback, test port and bundle id
+PASS social modules not modified by this test process
+FAILED 1
