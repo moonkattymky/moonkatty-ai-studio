@@ -64,3 +64,23 @@ test('faults: node drop (safeToRetry requeued / unsafe → needs_approval), dupl
   assert.ok(/завершено nj_[a-f0-9]+ 409|нет связи/.test(an.out.join('')), 'stale completion after network loss rejected (409) or agent saw loss'); an.kill(); px.close();
   const st = await admin(c, '/status'); assert.ok(st.alerts.some(a => /требует решения/.test(a.title)));
 });
+
+test('QA-NODE-001 residual (r3): real coordinator process killed and restarted fast — captured signed requests (ts=now and ts=now+25 s) are refused, fresh ones pass', { skip: !STUDIO && 'studio coordinator only (COORD_HELPER=studio)', timeout: 90000 }, async () => {
+  const crypto = require('crypto'), https = require('https'); const c = await startCoord(); const im = await admin(c, '/register', { id: 'imac', role: 'imac' });
+  const kc = JSON.parse(fs.readFileSync(im.kcFile, 'utf8')); const dev = JSON.parse(fs.readFileSync(path.join(im.home, '.moonkatty-node', 'device.json'), 'utf8'));
+  const token = kc['moonkatty-node-imac|node-token']; const key = crypto.createPrivateKey({ key: Buffer.from(kc['moonkatty-node-device|' + dev.deviceId], 'base64'), format: 'der', type: 'pkcs8' }); assert.ok(token && key);
+  const P = '/api/nodes/hello'; const body = Buffer.from(JSON.stringify({ info: { agentVersion: '0.2.2', hostname: 'imac' } }));
+  const mk = ts => { const nonce = crypto.randomBytes(18).toString('base64url'); return { ts, nonce, sig: crypto.sign(null, Buffer.from(`POST\n${P}\n${ts}\n${nonce}\n${crypto.createHash('sha256').update(body).digest('hex')}`), key).toString('base64') }; };
+  const send = r => new Promise((res, rej) => { const q = https.request({ host: '127.0.0.1', port: c.port, path: P, method: 'POST', ca: fs.readFileSync(c.cert), checkServerIdentity: () => undefined,
+    headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json', 'x-node-ts': String(r.ts), 'x-node-nonce': r.nonce, 'x-node-sig': r.sig } }, x => { let d = ''; x.on('data', z => d += z); x.on('end', () => { let j = {}; try { j = JSON.parse(d); } catch {} res({ status: x.statusCode, code: j.code }); }); }); q.on('error', rej); q.end(body); });
+  const now = mk(Date.now()), fut = mk(Date.now() + 25e3);
+  assert.equal((await send(now)).status, 200); assert.equal((await send(fut)).status, 200);
+  assert.deepEqual(await send(now), { status: 401, code: 'E_REPLAY' }, 'replay before restart');
+  const rs = await admin(c, '/restart'); assert.ok(rs.restartedMs < 20000, JSON.stringify(rs)); assert.equal(rs.fingerprint, c.fingerprint);
+  const floorFile = fs.readdirSync(c.dir, { recursive: true }).find(f => String(f).endsWith('replay-floor.json')); assert.ok(floorFile, 'floor persisted'); assert.equal(fs.statSync(path.join(c.dir, floorFile)).mode & 0o777, 0o600);
+  assert.deepEqual(await send(now), { status: 401, code: 'E_REPLAY' }, 'ts=now replay after fast restart'); assert.deepEqual(await send(fut), { status: 401, code: 'E_REPLAY' }, '+25 s skew replay after fast restart');
+  // per-node high-water mark: this node was last seen at +25 s, so its fresh requests must be above that (a skewed node keeps its skew);
+  // a request below it is refused until the node clock passes it (≤ 30 s, documented availability cost, fail closed)
+  const ok = await until(async () => (await send(mk(Date.now() + 26e3))).status === 200, 10000); assert.ok(ok, 'fresh signed request (same +skew clock) passes after restart');
+  assert.deepEqual(await send(mk(Date.now() + 1e3)), { status: 401, code: 'E_REPLAY' }, 'below the node high-water mark → refused');
+});
