@@ -48,6 +48,7 @@ async function enroll({ url, fingerprint, code, tlsMode, home = path.join(os.hom
   const t0 = Date.now(); for (;;) { if (Date.now() - t0 > maxWaitMs) throw new Error('владелец не подтвердил за 30 минут — создайте новый код');
     await new Promise(z => setTimeout(z, pollMs || r.body.pollMs || 3000)); const ts = Date.now(); const nonce = crypto.randomBytes(18).toString('base64url'); const secret = await kc.get('moonkatty-node-enroll', r.body.requestId);
     const s = await post(url, '/enroll/status', { requestId: r.body.requestId, requestSecret: secret, ts, nonce, sig: sign(dev.key, `status:${r.body.requestId}:${ts}:${nonce}`) }, o);
+    if (s.status === 429 && s.body.code === 'E_RATE_LIMIT') { emit({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId, backoff: true }); await new Promise(z => setTimeout(z, 5000)); continue; } // QA-NODE-004: back off, keep polling
     if (s.status !== 200) throw Object.assign(new Error(`${s.body.code || 'HTTP ' + s.status}: ${s.body.error || ''}`), { code: s.body.code });
     if (s.body.status === 'pending') { emit({ step: 'pending', requestId: r.body.requestId, nodeId: r.body.nodeId }); continue; }
     if (s.body.status === 'rejected') { await kc.del('moonkatty-node-enroll', r.body.requestId); throw Object.assign(new Error('владелец отклонил подключение'), { code: 'E_REJECTED' }); }
