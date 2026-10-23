@@ -294,6 +294,15 @@ VIEWS.agents = () => {
   ${tab === 'queue' ? `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-task-new="">+ Новая задача</button><span class="sp"></span><select id="qf" style="width:auto">${opts([['', 'Все статусы'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])], SUB.qf || '')}</select></div>
     <div class="card">${taskTable(DB.tasks.filter(t => !SUB.qf || t.status === SUB.qf))}</div>` :
   `<div class="devbox" style="margin-bottom:16px">${MODE === 'server' ? '«Старт» включает фоновый исполнитель на сервере: агент берёт задачи из очереди и выполняет реальные действия (отчёты, проверка очереди публикаций, черновики ответов, черновики через Ollama qwen3:8b, OpenCode — с подтверждением). Если действие невозможно (например, Ollama недоступна), задача получает статус «Заблокировано» с причиной. Сервер продолжает работу при закрытом окне.' : 'Браузерный режим: фоновое выполнение задач агентами требует сервер на Mac; «Старт» только отмечает взятую задачу.'}</div>
+  <div id="agentTask" class="card" style="margin-bottom:14px"><h3>Задача агенту</h3>
+    <p class="small mut">Песочница без сети и без shell. Модель присылает только diff, затем запускается node --test на ваших тестах. OpenCode не используется. Слияние в main не выполняется — результат уходит в очередь владельца.</p>
+    <label>Задача</label><textarea id="atPrompt" rows="2">Сделай так, чтобы hello.js экспортировал число 2. Тест не меняй.</textarea>
+    <label>hello.js</label><textarea id="atFile" rows="2">module.exports = 1;</textarea>
+    <label>hello.test.js</label><textarea id="atTest" rows="4">const test = require('node:test');
+const assert = require('node:assert/strict');
+test('exports 2', () => { assert.equal(require('./hello.js'), 2); });</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn sm primary" id="atRun" ${MODE === 'server' ? '' : 'disabled'}>Выполнить в песочнице</button><button class="btn sm" id="atCancel" disabled>Отмена</button></div>
+    <pre id="atOut" class="small" style="white-space:pre-wrap;margin-top:8px">${MODE === 'server' ? '' : 'Нужен сервер. В браузере задача не запускается.'}</pre></div>
   <div class="grid g3">${DB.agents.map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId); const mine = DB.tasks.filter(t => t.agentId === a.id);
     const hist = mine.filter(t => t.status === 'done').sort((x, y) => (y.completedAt || '').localeCompare(x.completedAt || '')).slice(0, 3);
     return `<div class="card"><div class="agent-head">${avatar(a)}<div class="sp"><b>${esc(a.name)}</b><div class="small mut">${esc(a.role)}</div></div>${agentStatus(a)}</div>
@@ -311,6 +320,25 @@ VIEWS.agents = () => {
 };
 BIND.agents = v => {
   const qf = v.querySelector('#qf'); if (qf) qf.onchange = () => { SUB.qf = qf.value; render(); };
+  const atRun = v.querySelector('#atRun');
+  if (atRun && MODE === 'server') {
+    let atId = null;
+    const show = t => { const o = v.querySelector('#atOut'); if (o) o.textContent = t; };
+    atRun.onclick = async () => {
+      atRun.disabled = true; const c = v.querySelector('#atCancel'); if (c) c.disabled = false;
+      show('Задача выполняется в песочнице…');
+      try {
+        const start = await api('POST', '/api/agent-tasks', { prompt: v.querySelector('#atPrompt').value, files: [{ path: 'hello.js', text: v.querySelector('#atFile').value }], tests: [{ path: 'hello.test.js', text: v.querySelector('#atTest').value }] });
+        atId = start.id;
+        let row = start;
+        for (let i = 0; i < 80 && (!row.status || row.status === 'running'); i++) { await new Promise(r => setTimeout(r, 500)); row = await api('GET', '/api/agent-tasks/' + atId); }
+        const tail = row.approvalId ? `\n\nЗапрос одобрения ${row.approvalId} добавлен в очередь владельца. Слияние в main не выполняется.` : '';
+        show((row.status || '') + (row.code ? ' (' + row.code + ')' : '') + (row.error ? '\n' + row.error : '') + (row.diff ? '\n\n' + row.diff : '') + (row.tests ? '\n\nТесты: ' + (row.tests.ok ? 'прошли' : 'не прошли') + '\n' + (row.tests.output || '') : '') + tail);
+      } catch (e) { show(e.message); }
+      finally { atRun.disabled = false; if (c) c.disabled = true; atId = null; }
+    };
+    const c = v.querySelector('#atCancel'); if (c) c.onclick = () => { if (atId) api('POST', '/api/agent-tasks/' + atId + '/cancel').catch(() => {}); };
+  }
   v.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.toggle); act(() => api('PUT', '/api/agents/' + a.id, { enabled: !a.enabled, status: 'idle' }), a.enabled ? 'Агент выключен' : 'Агент включён'); });
   if (MODE === 'server') {
     v.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => act(() => api('POST', `/api/agents/${b.dataset.stop}/stop`), 'Агент остановлен'));

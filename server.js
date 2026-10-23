@@ -199,6 +199,7 @@ app.use('/api', (req, res, next) => {
   req.user = s.user; next();
 });
 require('./lib/publish-desk.js').mountPublishDesk(app, { dataDir: path.dirname(DB_PATH), log, keystore: require('./lib/keystore.js'), isTest: !!CFG.IS_TEST, fetchFn: globalThis.fetch });
+require('./lib/agent-task.js').mountAgentTasks(app, { dataDir: path.join(path.dirname(DB_PATH), 'agent-tasks'), log, requestOwner: (req, action, detail, params) => world.requestOwner(req, action, detail, params) });
 app.post('/api/auth/password', (req, res) => {
   const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
   if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });

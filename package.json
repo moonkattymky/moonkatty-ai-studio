@@ -42,7 +42,8 @@
     "test:server-identity": "node scripts/server-identity-test.mjs",
     "test:single-instance": "node scripts/single-instance-test.mjs",
     "test:publish-desk": "node scripts/publish-desk-test.mjs",
-    "test:freeze-motion": "node --test media-automation/test/freeze-motion.test.js"
+    "test:freeze-motion": "node --test media-automation/test/freeze-motion.test.js",
+    "test:agent-task": "node scripts/ollama-proxy-test.mjs && node scripts/agent-task-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
