@@ -110,7 +110,8 @@ class VideoFactory {
     // 6) final mux with burned subtitles
     const out = path.join(outDir, `${basename}.mp4`);
     const style = `FontName=DejaVu Sans,FontSize=${W > H ? 20 : 13},PrimaryColour=&H00FFFFFF,OutlineColour=&H80000000,BorderStyle=3,Outline=2,MarginV=${W > H ? 40 : 110}`;
-    await this._ff(['-i', silent, '-i', norm, '-filter_complex', `[0:v]subtitles='${path.basename(srt)}':force_style='${style}'[v]`, '-map', '[v]', '-map', '1:a',
+    const { escapeFilterValue } = require('./burn');
+    await this._ff(['-i', silent, '-i', norm, '-filter_complex', `[0:v]subtitles=filename=${escapeFilterValue(path.basename(srt))}:force_style='${style}'[v]`, '-map', '[v]', '-map', '1:a',
       '-c:v', P.vcodec, '-crf', String(P.crf), '-pix_fmt', P.pixfmt, '-r', String(P.fps), '-c:a', 'aac', '-b:a', P.abitrate, '-ar', '48000', '-t', total.toFixed(3), '-movflags', '+faststart', out], outDir);
     // 7) thumbnail
     const thumb = path.join(outDir, `${basename}.jpg`); const tt = path.join(work, 'thumb.txt'); fs.writeFileSync(tt, wrap(script.title, wrapN));

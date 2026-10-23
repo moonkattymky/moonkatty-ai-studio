@@ -28,11 +28,20 @@ class MacSayTTS {
     const args = ['-v', this.voice, '-o', outAiff]; if (this.rate) args.push('-r', String(this.rate));
     args.push('--', String(text)); await this.runFn('say', args); return outAiff;
   }
-  async synthesize(text, outWav) {
+  async synthesize(text, outWav, opts = {}) {
     const aiff = outWav.replace(/\.wav$/i, '') + '.aiff';
-    await this.exportAiff(text, aiff); await toWav(aiff, outWav, this.runFn);
+    try { await this.exportAiff(text, aiff); }
+    catch (e) {
+      if (opts._retried) throw e;
+      let voices = []; try { voices = await this.listVoices(); } catch { throw e; }
+      const alt = voices.find(v => /^en[-_]/i.test(v.lang) && v.id !== this.voice) || voices.find(v => v.id !== this.voice);
+      if (!alt) throw e;
+      this.voice = alt.id; this.name = 'macos-say:' + alt.id;
+      return this.synthesize(text, outWav, { _retried: true });
+    }
+    await toWav(aiff, outWav, this.runFn);
     if (!this.keepAiff) fs.rmSync(aiff, { force: true });
-    return { file: outWav, durationSec: await probeDuration(outWav, this.runFn) };
+    return { file: outWav, durationSec: await probeDuration(outWav, this.runFn), voice: this.voice };
   }
   async exportM4a(text, outM4a) {
     const aiff = outM4a.replace(/\.m4a$/i, '') + '.aiff'; await this.exportAiff(text, aiff);

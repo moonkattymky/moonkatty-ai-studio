@@ -28,8 +28,13 @@ const call = async (m, p, b) => { const r = await fetch(B + p, { method: m, head
 try {
   const s = await call('POST', '/api/newsvideo/search'); const rs = s.j.candidates.find(c => /RS-25/.test(c.headline));
   let d = (await call('POST', '/api/newsvideo/drafts', { storyIds: [rs.id] })).j; const cur = (await call('GET', `/api/newsvideo/drafts/${d.id}`)).j;
+  const pending = (await call('POST', '/api/newsvideo/drafts', { storyIds: [rs.id] })).j;
   d = (await call('POST', `/api/newsvideo/drafts/${d.id}/approve`, { factChecked: true, contentHash: cur.contentHash })).j; t('setup: draft approved', d.status === 'approved', d.status);
   setEnv(EMPTY, '');
+  const pend = (await call('GET', `/api/newsvideo/drafts/${pending.id}`)).j;
+  const ap = await call('POST', `/api/newsvideo/drafts/${pending.id}/approve`, { factChecked: true, contentHash: pend.contentHash });
+  t('approve (missing ffmpeg): 424 video_deps_missing, not 500 ENOENT', ap.s === 424 && ap.j.code === 'video_deps_missing' && !/ENOENT|spawn ffmpeg/.test(String(ap.j.error)), ap.s + ' ' + JSON.stringify(ap.j).slice(0, 240));
+  t('approve (missing ffmpeg): draft stays unapproved', (await call('GET', `/api/newsvideo/drafts/${pending.id}`)).j.status === 'draft');
   const st = (await call('GET', '/api/newsvideo/status')).j; t('status (missing): ffmpeg/ffprobe/rsvg false, renderReady false', st.ffmpeg === false && st.ffprobe === false && st.rsvg === false && st.renderReady === false);
   t('status (missing): message + hint', st.videoDeps && !st.videoDeps.ok && /Рендер видео не готов/.test(st.videoDeps.message) && st.videoDeps.hint === 'brew install ffmpeg librsvg');
   const r = await call('POST', `/api/newsvideo/drafts/${d.id}/render`, { preset: 'youtube' });
