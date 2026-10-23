@@ -8,8 +8,7 @@ const svc = require('./service.js');
 const CFG = require('../lib/studio-config.js'); // all names/ids/paths/labels/ports (prod vs isolated TEST build)
 const PRODUCT = CFG.product;
 const REPO = 'moonkattymky/moonkatty-ai-studio'; // pinned: update checks never use a configurable repo
-const EXTERNAL_HOSTS = new Set(['www.facebook.com', 'facebook.com', 'business.facebook.com', 'developers.facebook.com', 'www.instagram.com', 'instagram.com',
-  'github.com', 'moonkatty.com', 'www.moonkatty.com', 't.me', 'ollama.com', 'tailscale.com', 'opencode.ai', 'nodejs.org', 'support.apple.com']);
+const { externalHref } = require('./external-hosts.js');
 app.setName(PRODUCT);
 app.commandLine.appendSwitch('lang', 'ru');
 app.enableSandbox();
@@ -22,11 +21,18 @@ try { CFG.assertTestPath(app.getPath('userData'), 'userData'); } catch (e) { dia
 if (app.isPackaged) { const g = require('./flavor-guard.js').check(path.join(process.resourcesPath, 'app.asar.unpacked'));
   if (!g.ok || g.flavor !== CFG.FLAVOR) { dialog.showErrorBox(PRODUCT, 'ОТКАЗ: целостность сборки нарушена (' + (g.reason || 'flavor ' + CFG.FLAVOR) + ')'); app.exit(78); process.exit(78); } }
 else if (!CFG.FLAVOR) { dialog.showErrorBox(PRODUCT, 'ОТКАЗ: сборка не определена'); app.exit(78); process.exit(78); }
-if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 const ROOT = path.join(__dirname, '..');
 const BUILD = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'build-info.json'), 'utf8')); } catch { return { commit: 'dev', builtAt: null }; } })();
 const dataDir = () => app.getPath('userData');
+const single = require('./single-instance.js');
+const identity = require('../lib/server-identity.js');
+const MINE = { version: app.getVersion(), commit: BUILD.commit && BUILD.commit !== 'dev' ? BUILD.commit : null };
+const lockOther = single.readInstance(dataDir());
+const gotLock = app.requestSingleInstanceLock({ version: MINE.version, commit: MINE.commit });
+const lockDecision = single.onLockResult({ gotLock, mine: MINE, other: lockOther, flavor: CFG.FLAVOR });
+if (lockDecision.action === 'quit') { dialog.showErrorBox(PRODUCT, lockDecision.message); app.quit(); process.exit(0); }
+single.writeInstance(dataDir(), { ...MINE, pid: process.pid });
 const logDir = () => process.platform === 'darwin' ? path.join(app.getPath('home'), 'Library', 'Logs', PRODUCT) : path.join(dataDir(), 'logs');
 const cfgFile = () => path.join(dataDir(), 'desktop.json');
 const DEF = { port: CFG.defaultPort, autoStartServer: CFG.autoStartServer, startAtLogin: false, checkUpdates: CFG.checkUpdates }; // TEST: 8687, no autostart, no update checks
@@ -49,9 +55,8 @@ let win = null;
 const isPanel = url => { try { return new URL(url).origin === panelOrigin(cfg()); } catch { return false; } };
 const isStartup = url => String(url).split('#')[0] === STARTUP_URL;
 function openExternalSafe(url) {
-  let u; try { u = new URL(url); } catch { return false; }
-  if (u.protocol !== 'https:' || !EXTERNAL_HOSTS.has(u.hostname) || u.username || u.password) return false;
-  shell.openExternal(u.href); return true;
+  const href = externalHref(url); if (!href) return false;
+  shell.openExternal(href); return true;
 }
 
 function createWindow() {
@@ -89,7 +94,7 @@ async function ollama() {
 async function status() {
   const c = cfg(); const h = await svc.health(c.port);
   return { port: c.port, cfg: { autoStartServer: c.autoStartServer, startAtLogin: c.startAtLogin }, version: app.getVersion(), commit: BUILD.commit, platform: process.platform + '/' + process.arch,
-    server: h ? (h.foreign ? { ok: false, detail: `Порт ${c.port} занят другим приложением` } : h.stale ? { ok: false, stale: true, detail: `На порту ${c.port} работает другая версия сервера (v${h.version}${h.commit ? ', ' + String(h.commit).slice(0, 7) : ''}, pid ${h.pid}), а это приложение v${svc.EXPECT.version}. Нажмите «Запустить сервер» — старый сервер TEST будет перезапущен этой версией.` } : { ok: true, detail: `pid ${h.pid}, работает ${h.uptimeSec} с, v${h.version}` }) : { ok: false, detail: 'Не запущен' },
+    server: h ? (h.foreign ? { ok: false, detail: `Порт ${c.port} занят другим приложением` } : h.stale ? { ok: false, stale: true, detail: `На порту ${c.port} работает другая версия сервера (v${h.version}${h.commit ? ', ' + String(h.commit).slice(0, 7) : ''}, pid ${h.pid}), а это приложение v${svc.EXPECT.version}. ⌘Q закрывает только окно и не освобождает порт. Нажмите «Запустить сервер» — старый сервер TEST будет перезапущен этой версией.` } : { ok: true, detail: `pid ${h.pid}, работает ${h.uptimeSec} с, v${h.version}` }) : { ok: false, detail: 'Не запущен' },
     db: h && !h.foreign && !h.stale ? { ok: h.db === 'ok', detail: `${h.dbDriver}, ${path.join(dataDir(), 'studio.db')}` } : { ok: false, detail: 'Нет данных — сервер не запущен' },
     keys: h && h.keySource ? { ok: true, detail: h.keySource === 'keychain' ? 'macOS Keychain' : h.keySource } : null,
     ollama: await ollama(), launchd: await svc.launchdStatus() };
@@ -100,7 +105,8 @@ const handle = (ch, fn) => ipcMain.handle(ch, (e, ...a) => { if (!fromStartup(e)
 handle('status', () => status());
 handle('start-server', async () => { const c = cfg(); const h = await svc.health(c.port); if (h && !h.foreign && !h.stale) return { ok: true, already: true };
   if (h && h.foreign) return { ok: false, error: `Порт ${c.port} занят другим приложением` };
-  if (h && h.stale && process.platform !== 'darwin') { // dev/test path: stop exactly that PID (our own flavor's server, reported by its /api/health)
+  if (h && h.stale && process.platform !== 'darwin') { // dev/test path: SIGTERM only if the health PID is the one written to server.pid
+    if (!identity.pidMatchesServerFile(dataDir(), h.pid)) return { ok: false, error: `PID ${h.pid} из /api/health не совпадает с server.pid в каталоге данных. Процесс не остановлен.` };
     try { process.kill(h.pid, 'SIGTERM'); } catch (e) { return { ok: false, error: `Не удалось остановить старый сервер v${h.version} (pid ${h.pid}): ${e.message}` }; }
     for (let i = 0; i < 20 && await svc.health(c.port); i++) await new Promise(r => setTimeout(r, 250)); }
   const r = await svc.installAndStart({ ...svcOpts(c), restart: !!(h && h.stale) }); if (h && h.stale && r.method === 'launchd') r.restartedStale = h.version; const ok = await svc.waitHealthy(c.port); const now = ok ? null : await svc.health(c.port);
@@ -149,7 +155,7 @@ function menu() {
       { label: 'Запускать сервер при входе в систему', type: 'checkbox', checked: c.startAtLogin, enabled: process.platform === 'darwin', click: async i => { const n = { ...cfg(), startAtLogin: i.checked }; saveCfg(n); const r = await svc.setStartAtLogin(svcOpts(n)); if (r && r.ok === false) dialog.showMessageBox({ type: 'warning', message: 'Не удалось изменить автозапуск', detail: r.out || '' }); } },
       { label: 'Запускать сервер при открытии приложения', type: 'checkbox', checked: c.autoStartServer, click: i => saveCfg({ ...cfg(), autoStartServer: i.checked }) },
       { type: 'separator' },
-      { label: 'Остановить фоновый сервер', click: async () => { const { response } = await dialog.showMessageBox({ type: 'warning', buttons: ['Остановить', 'Отмена'], message: 'Остановить фоновый сервер?', detail: 'Расписания и агенты перестанут работать до следующего запуска.' }); if (response === 0) { await svc.stop(cfg().port); startup(); } } },
+      { label: 'Остановить фоновый сервер', click: async () => { const { response } = await dialog.showMessageBox({ type: 'warning', buttons: ['Остановить', 'Отмена'], message: 'Остановить фоновый сервер?', detail: 'Расписания и агенты перестанут работать до следующего запуска.' }); if (response === 0) { await svc.stop(cfg().port, dataDir()); startup(); } } },
       { label: 'Открыть папку данных', click: () => shell.openPath(dataDir()) }, { label: 'Открыть журналы', click: () => shell.openPath(logDir()) }] },
     { label: 'Правка', submenu: [{ role: 'undo', label: 'Отменить' }, { role: 'redo', label: 'Повторить' }, { type: 'separator' }, { role: 'cut', label: 'Вырезать' }, { role: 'copy', label: 'Копировать' }, { role: 'paste', label: 'Вставить' }, { role: 'selectAll', label: 'Выбрать всё' }] },
     { label: 'Вид', submenu: [{ role: 'reload', label: 'Обновить' }, { role: 'resetZoom', label: 'Фактический размер' }, { role: 'zoomIn', label: 'Увеличить' }, { role: 'zoomOut', label: 'Уменьшить' }, { type: 'separator' }, { role: 'togglefullscreen', label: 'Полный экран' }, ...(app.isPackaged ? [] : [{ role: 'toggleDevTools', label: 'Инструменты разработчика' }])] },

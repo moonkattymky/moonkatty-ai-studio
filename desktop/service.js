@@ -3,6 +3,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os'), { spawn, execFile } = require('child_process');
 const CFG = require('../lib/studio-config.js');
+const identity = require('../lib/server-identity.js');
 const LABEL = CFG.launchdLabel; // TEST build: com.moonkatty.aistudio.test.server
 // Start at login ON → plist in ~/Library/LaunchAgents (launchd loads it at login).
 // OFF → plist in the data folder: loaded by the app only for this session (KeepAlive implies RunAtLoad).
@@ -45,8 +46,9 @@ const uid = () => process.getuid ? process.getuid() : 0;
 const EXPECT = (() => { let commit = null; try { commit = JSON.parse(fs.readFileSync(path.join(__dirname, 'build-info.json'), 'utf8')).commit || null; } catch {}
   return { version: require('../package.json').version, commit: commit && commit !== 'dev' ? commit : null }; })();
 async function health(port) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2500) }); const j = await r.json();
-  if (!(j.app === 'moonkatty-ai-studio' && (j.flavor || 'prod') === CFG.flavor)) return { foreign: true };
-  if (j.version !== EXPECT.version || (EXPECT.commit && j.commit && j.commit !== EXPECT.commit)) return { stale: true, version: j.version || '?', commit: j.commit || null, pid: j.pid };
+  const c = identity.classify(j, EXPECT, CFG.flavor);
+  if (c.kind === 'foreign') return { foreign: true };
+  if (c.kind === 'stale') return { stale: true, version: c.version, commit: c.commit, pid: c.pid };
   return j; } catch (e) { return null; } }
 async function waitHealthy(port, ms = 20000) { const end = Date.now() + ms; while (Date.now() < end) { const h = await health(port); if (h && !h.foreign && !h.stale) return h; await new Promise(r => setTimeout(r, 500)); } return null; }
 async function installAndStart(o) {
@@ -63,9 +65,11 @@ async function installAndStart(o) {
   const k = await run('/bin/launchctl', ['kickstart', ...(o.restart ? ['-k'] : []), `gui/${uid()}/${LABEL}`]); // -k: kill the running (stale) job and start this build's server
   return { method: 'launchd', plist: f, bootstrap: b.out.trim(), kickstart: k.ok ? 'ok' : k.out.trim() };
 }
-async function stop(port) {
+async function stop(port, dataDir) {
   if (process.platform === 'darwin') { const r = await run('/bin/launchctl', ['bootout', `gui/${uid()}/${LABEL}`]); return { method: 'launchd', ok: r.ok, out: r.out.trim() }; }
-  const h = await health(port); if (h && h.pid) { try { process.kill(h.pid, 'SIGTERM'); return { method: 'signal', ok: true }; } catch (e) { return { ok: false, out: e.message }; } }
+  const h = await health(port); if (h && h.pid) {
+    if (!dataDir || !identity.pidMatchesServerFile(dataDir, h.pid)) return { ok: false, out: `PID ${h.pid} из /api/health не совпадает с server.pid — процесс не остановлен` };
+    try { process.kill(h.pid, 'SIGTERM'); return { method: 'signal', ok: true }; } catch (e) { return { ok: false, out: e.message }; } }
   return { ok: false, out: 'Сервер не запущен' };
 }
 async function setStartAtLogin(o) { if (process.platform !== 'darwin') return { ok: false, out: 'Только macOS' }; return installAndStart(o); }

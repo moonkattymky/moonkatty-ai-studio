@@ -1,6 +1,6 @@
 {
   "name": "moonkatty-ai-studio",
-  "version": "1.3.3-test",
+  "version": "1.3.4-test",
   "description": "MOONKATTY AI STUDIO — control panel (web + macOS desktop)",
   "main": "desktop/main.js",
   "scripts": {
@@ -35,7 +35,12 @@
     "test:opencode-task-disabled": "node scripts/opencode-task-disabled-test.mjs",
     "test:design3d-disabled": "node scripts/design3d-disabled-test.mjs",
     "test:video-deps": "node scripts/video-deps-test.mjs",
-    "test:subtitle-mindur": "node scripts/subtitle-mindur-test.mjs"
+    "test:subtitle-mindur": "node scripts/subtitle-mindur-test.mjs",
+    "test:subtitle-burn": "node scripts/subtitle-burn-test.mjs",
+    "test:say-fallback": "node scripts/tts-say-fallback-test.mjs",
+    "test:external-hosts": "node scripts/external-hosts-test.mjs",
+    "test:server-identity": "node scripts/server-identity-test.mjs",
+    "test:single-instance": "node scripts/single-instance-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
