@@ -301,7 +301,8 @@ VIEWS.agents = () => {
     <label>hello.test.js</label><textarea id="atTest" rows="4">const test = require('node:test');
 const assert = require('node:assert/strict');
 test('exports 2', () => { assert.equal(require('./hello.js'), 2); });</textarea>
-    <div class="row" style="margin-top:8px"><button class="btn sm primary" id="atRun" ${MODE === 'server' ? '' : 'disabled'}>Выполнить в песочнице</button><button class="btn sm" id="atCancel" disabled>Отмена</button></div>
+    <div class="row" style="margin-top:8px"><select id="atLang" style="width:auto" aria-label="Язык диктовки"><option value="ru">RU</option><option value="en">EN</option></select><button class="btn sm" id="atMic" ${MODE === 'server' ? '' : 'disabled'}>Микрофон</button><button class="btn sm primary" id="atRun" ${MODE === 'server' ? '' : 'disabled'}>Выполнить в песочнице</button><button class="btn sm" id="atCancel" disabled>Отмена</button></div>
+    <p class="small mut">Диктовка RU/EN только локально (whisper.cpp). Текст попадает в поле выше. Он не отправляется, пока вы сами не нажмёте «Выполнить». Отказ в микрофоне ничего не запускает.</p>
     <pre id="atOut" class="small" style="white-space:pre-wrap;margin-top:8px">${MODE === 'server' ? '' : 'Нужен сервер. В браузере задача не запускается.'}</pre></div>
   <div class="grid g3">${DB.agents.map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId); const mine = DB.tasks.filter(t => t.agentId === a.id);
     const hist = mine.filter(t => t.status === 'done').sort((x, y) => (y.completedAt || '').localeCompare(x.completedAt || '')).slice(0, 3);
@@ -338,6 +339,33 @@ BIND.agents = v => {
       finally { atRun.disabled = false; if (c) c.disabled = true; atId = null; }
     };
     const c = v.querySelector('#atCancel'); if (c) c.onclick = () => { if (atId) api('POST', '/api/agent-tasks/' + atId + '/cancel').catch(() => {}); };
+    const mic = v.querySelector('#atMic');
+    if (mic) mic.onclick = async () => {
+      const prompt = v.querySelector('#atPrompt');
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { show('Микрофон недоступен в этом окне. Введите текст вручную.'); return; }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let audioBase64 = '';
+        if (typeof MediaRecorder !== 'undefined') {
+          const rec = new MediaRecorder(stream); const parts = [];
+          rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+          const stopped = new Promise(res => { rec.onstop = res; });
+          rec.start(); show('Слушаю 3 секунды…'); await new Promise(r => setTimeout(r, 3000)); rec.stop(); await stopped;
+          const bytes = new Uint8Array(await new Blob(parts).arrayBuffer());
+          let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+          audioBase64 = btoa(s);
+        }
+        stream.getTracks().forEach(t => t.stop());
+        const lang = (v.querySelector('#atLang') || {}).value === 'en' ? 'en' : 'ru';
+        const r = await api('POST', '/api/voice/transcribe', { permission: 'granted', lang, audioBase64 });
+        if (r && r.autoSend) { show('Ответ распознавания отклонён: автоотправка запрещена.'); return; }
+        if (r && r.text && prompt) { prompt.value = r.text; show('Текст вставлен в поле. Проверьте и поправьте его. Отправка — только кнопкой «Выполнить».'); return; }
+        show('Распознанный текст пуст. Ничего не отправлено.');
+      } catch (e) {
+        const denied = e && (e.name === 'NotAllowedError' || e.code === 'mic_denied');
+        show(denied ? 'Микрофон запрещён. Введите текст вручную. Ничего не отправлено.' : (e.message || 'Распознавание недоступно'));
+      }
+    };
   }
   v.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.toggle); act(() => api('PUT', '/api/agents/' + a.id, { enabled: !a.enabled, status: 'idle' }), a.enabled ? 'Агент выключен' : 'Агент включён'); });
   if (MODE === 'server') {

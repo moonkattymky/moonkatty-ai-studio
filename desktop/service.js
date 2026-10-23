@@ -16,6 +16,9 @@ function serverEnv({ dataDir, port, runAsNode, enableOpenCode, allowedHosts }) {
     PATH: [path.join(os.homedir(), '.opencode', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':') };
   if (runAsNode) env.ELECTRON_RUN_AS_NODE = '1'; // dev only; packaged builds use the bundled Node binary (RunAsNode fuse off)
   if (enableOpenCode) env.STUDIO_OPENCODE = '1';
+  // TEST app only: Update Center is in the build (signature check, backup, install after the owner password, rollback plan).
+  // Prod launchd does not set the flag. OpenCode stays off unless enableOpenCode was passed explicitly.
+  if (CFG.flavor === 'test') { env.STUDIO_OPS_UPDATE = '1'; env.STUDIO_OPS_BACKUP = '1'; }
   if (allowedHosts && allowedHosts.length) env.STUDIO_ALLOWED_HOSTS = allowedHosts.join(',');
   return env;
 }

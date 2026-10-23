@@ -43,7 +43,9 @@
     "test:single-instance": "node scripts/single-instance-test.mjs",
     "test:publish-desk": "node scripts/publish-desk-test.mjs",
     "test:freeze-motion": "node --test media-automation/test/freeze-motion.test.js",
-    "test:agent-task": "node scripts/ollama-proxy-test.mjs && node scripts/agent-task-test.mjs"
+    "test:agent-task": "node scripts/ollama-proxy-test.mjs && node scripts/agent-task-test.mjs",
+    "test:doctor": "node --test --test-concurrency=1 test/ops/doctor.test.js",
+    "test:voice": "node scripts/voice-input-test.mjs"
   },
   "keywords": [],
   "author": "MOONKATTY",
@@ -139,7 +141,8 @@
       "extendInfo": {
         "LSApplicationCategoryType": "public.app-category.productivity",
         "CFBundleDevelopmentRegion": "ru",
-        "NSHumanReadableCopyright": "MOONKATTY"
+        "NSHumanReadableCopyright": "MOONKATTY",
+        "NSMicrophoneUsageDescription": "Микрофон нужен, чтобы надиктовать текст в поле ввода. Текст показывается и правится до отправки. Сам он не выполняется."
       }
     },
     "dmg": {

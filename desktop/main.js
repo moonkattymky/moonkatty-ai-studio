@@ -167,8 +167,9 @@ function menu() {
 app.on('second-instance', () => { if (!win) createWindow(); else { if (win.isMinimized()) win.restore(); win.focus(); } });
 app.whenReady().then(async () => {
   if (await require('./location-check.js').checkLocation({ app, dialog, product: PRODUCT, flavor: CFG.FLAVOR })) return; // v1.3.1-test: App Translocation → offer moveToApplicationsFolder (relaunches)
-  session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(false)); // camera, mic, notifications, geolocation… all denied
-  session.defaultSession.setPermissionCheckHandler(() => false);
+  const MIC = new Set(['media', 'microphone', 'audioCapture']); // voice input only; camera, notifications and geolocation stay denied
+  session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(MIC.has(perm)));
+  session.defaultSession.setPermissionCheckHandler((_wc, perm) => MIC.has(perm));
   session.defaultSession.on('will-download', (e, item) => { if (!isPanel(item.getURL())) e.preventDefault(); }); // only panel backups/exports
   app.setAboutPanelOptions({ applicationName: PRODUCT, applicationVersion: app.getVersion(), version: `commit ${String(BUILD.commit).slice(0, 12)}`, copyright: 'MOONKATTY', credits: BUILD.builtAt ? 'Сборка: ' + BUILD.builtAt : 'Сборка из исходников (dev)' });
   if (process.platform === 'darwin' && app.dock) app.dock.setIcon(nativeImage.createFromPath(path.join(ROOT, 'build', 'icon.png')));
