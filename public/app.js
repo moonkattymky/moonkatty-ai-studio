@@ -699,8 +699,8 @@ function postForm(p) {
 }
 VIEWS.social = () => {
   const posts = [...DB.posts].sort((a, b) => (a.scheduledAt || 'z').localeCompare(b.scheduledAt || 'z'));
-  return `<div class="grid g2"><div class="card"><h3>Каналы</h3>${DB.channels.map(c => `<div class="list-item"><b class="sp">${esc(c.name)} <span class="small mut">${esc(c.handle)}</span></b><span class="badge">Не подключено</span></div>`).join('')}
-    <div id="pubDesk" class="small mut">Telegram и YouTube: проверка…</div></div>
+  return `<div class="grid g2"><div class="card"><h3>Каналы</h3>${DB.channels.map(c => `<div class="list-item"><b class="sp">${esc(c.name)} <span class="small mut">${esc(c.handle)}</span></b><span class="badge">Не подключено</span><button class="btn sm" disabled>Подключить</button></div>`).join('')}
+    <p class="small mut">Подключение API платформ и автопубликация — ${DEV()}</p></div>
   <div class="card"><h3>Процесс утверждения</h3><p class="small mut" style="margin-top:0">Черновик → На утверждении → Утверждено / Отклонено → Опубликовано. Публикация пока выполняется вручную; после неё отметьте пост «Опубликовано».</p>
     <div class="row">${Object.keys(PST).map(k => `${postBadge(k)} <b>${DB.posts.filter(p => p.status === k).length}</b>`).join(' ')}</div></div></div>
   <div class="card" style="margin-top:16px"><h3>Публикации <button class="btn sm primary" id="newPost">+ Пост</button></h3>
@@ -709,15 +709,7 @@ VIEWS.social = () => {
       ${p.status === 'approved' ? `<button class="btn sm" disabled title="в разработке">Автопубликация</button><button class="btn sm" data-pst="${p.id}|published">Отметить опубликованным</button>` : ''}
       <button class="btn sm" data-pedit="${p.id}">Изм.</button><button class="btn sm danger" data-pdel="${p.id}">✕</button></div></td></tr>`).join('')}</table></div>` : '<div class="empty">Постов нет</div>'}</div>`;
 };
-BIND.social = v => {
-  const desk = v.querySelector('#pubDesk');
-  const paint = j => { if (!desk) return; const t = j && j.telegram || { status: 'Не подключено', blocker: 'нет данных' }; const y = j && j.youtube || { status: 'Не подключено' };
-    desk.innerHTML = `<b>Telegram</b> <span class="badge">${esc(t.status || 'Не подключено')}</span> ${esc(t.blocker || (t.connected ? '' : ''))}<br><b>YouTube</b> <span class="badge">${esc(y.status || 'Не подключено')}</span> ${esc(y.blocker || '')}<br>${esc(j && j.reason || '')}<div class="row" style="margin-top:8px"><button class="btn sm" id="tgCheck" type="button">Проверить бота Telegram</button><button class="btn sm" id="ytClient" type="button">Сохранить OAuth-клиент YouTube</button></div>`;
-    const tg = v.querySelector('#tgCheck'); if (tg) tg.onclick = () => modal('<h2>Токен бота Telegram</h2><p class="small mut">Это токен от @BotFather, не пароль аккаунта. Без macOS Keychain он не сохраняется.</p><label>Токен</label><input name="token" autocomplete="off"><label>Канал (необязательно)</label><input name="channel" placeholder="@channel">', fd => api('POST', '/api/publish/telegram', fd).then(r => { toast(r.connected ? 'Подключено' : 'Не подключено'); paint({ ...j, telegram: r }); }).catch(e => toast(e.message, true)));
-    const yt = v.querySelector('#ytClient'); if (yt) yt.onclick = () => modal('<h2>OAuth-клиент YouTube</h2><p class="small mut">Пароль Google не нужен. Канал останется «Не подключено», пока владелец не войдёт в браузере на Mac.</p><label>client_id</label><input name="client_id" autocomplete="off"><label>client_secret (необязательно)</label><input name="client_secret" type="password" autocomplete="off">', fd => api('POST', '/api/publish/youtube/client', fd).then(r => { toast(r.status || 'Не подключено', !r.connected); }).catch(e => toast(e.message, true))); };
-  if (MODE === 'browser') paint({ telegram: { status: 'Не подключено', blocker: 'Браузерный режим: Keychain недоступна, токен не сохраняется.' }, youtube: { status: 'Не подключено', blocker: 'Браузерный режим: Keychain недоступна.' }, reason: '' });
-  else api('GET', '/api/publish/connectors').then(paint).catch(e => paint({ telegram: { status: 'Не подключено', blocker: e.message }, youtube: { status: 'Не подключено' }, reason: '' }));
-  v.querySelector('#newPost').onclick = () => postForm();
+BIND.social = v => { v.querySelector('#newPost').onclick = () => postForm();
   v.querySelectorAll('[data-pst]').forEach(b => b.onclick = () => { const [id, s] = b.dataset.pst.split('|'); act(() => api('PUT', '/api/posts/' + id, { status: s, [s + 'At']: C.now() }), 'Статус: ' + PST[s][0]); });
   v.querySelectorAll('[data-pedit]').forEach(b => b.onclick = () => postForm(DB.posts.find(p => p.id === b.dataset.pedit)));
   v.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => confirmDo('Удалить пост?', () => act(() => api('DELETE', '/api/posts/' + b.dataset.pdel), 'Удалено'))); };
