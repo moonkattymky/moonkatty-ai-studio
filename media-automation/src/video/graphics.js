@@ -53,11 +53,18 @@ function cardSvg({ W, H, heading, lines }) {
   <text x="0" y="${Math.round(s * 1.6)}" font-family="${HEAD}" font-weight="700" font-size="${Math.round(s * 1.6)}" fill="${PALETTE.gold}">${X(heading)}</text>
   ${body.map((l, i) => `<text x="0" y="${Math.round(s * (3.2 + i * 1.45))}" font-family="${BODY}" font-size="${s}" fill="${/^(Sources|Images|Music|Voice)/.test(l) ? '#c4b5fd' : '#f3f4f6'}">${X(l)}</text>`).join('\n  ')}</svg>`;
 }
-/** Starfield background (deep blue -> purple gradient + stars), generated once. */
+/**
+ * Starfield background (deep blue -> purple gradient + stars), generated once.
+ * Uniform grain (alls=14, same strength as the news card) is part of the picture:
+ * the factory drift is only (iw-W)/(6*duration) px/s, and a smooth gradient at that
+ * speed stays under freezedetect n=-60dB once a card covers the middle. The noise
+ * is static (allf=u), so a held frame is still frozen; only the existing pan moves it.
+ */
 async function makeStarfield(out, { size = 2600, runFn = run } = {}) {
   if (fs.existsSync(out)) return out;
   await runFn('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', `gradients=s=${size}x${size}:c0=0x0b0b2a:c1=0x2a1460:c2=0x141a4a:x0=0:y0=0:x1=${size}:y1=${size}:nb_colors=3:d=1`,
-    '-f', 'lavfi', '-i', `nullsrc=s=${size}x${size},geq=lum='255*gt(random(1),0.9988)':cb=128:cr=128`, '-filter_complex', '[1:v]format=gray,gblur=sigma=0.7,format=rgb24[s];[0:v]format=rgb24[g];[g][s]blend=all_mode=screen,format=rgb24', '-frames:v', '1', out]);
+    '-f', 'lavfi', '-i', `nullsrc=s=${size}x${size},geq=lum='255*gt(random(1),0.9988)':cb=128:cr=128`,
+    '-filter_complex', '[1:v]format=gray,gblur=sigma=0.7,format=rgb24[s];[0:v]format=rgb24,noise=alls=14:allf=u[g];[g][s]blend=all_mode=screen,format=rgb24', '-frames:v', '1', out]);
   return out;
 }
 async function logoPng(svgFile, out, width, runFn = run) { if (!fs.existsSync(out)) await runFn('rsvg-convert', ['-w', String(width), '-o', out, svgFile]); return out; }

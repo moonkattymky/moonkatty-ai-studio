@@ -41,7 +41,8 @@
     "test:external-hosts": "node scripts/external-hosts-test.mjs",
     "test:server-identity": "node scripts/server-identity-test.mjs",
     "test:single-instance": "node scripts/single-instance-test.mjs",
-    "test:publish-desk": "node scripts/publish-desk-test.mjs"
+    "test:publish-desk": "node scripts/publish-desk-test.mjs",
+    "test:freeze-motion": "node --test media-automation/test/freeze-motion.test.js"
   },
   "keywords": [],
   "author": "MOONKATTY",

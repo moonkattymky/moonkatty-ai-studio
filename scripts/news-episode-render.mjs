@@ -17,7 +17,12 @@ if (binDir) process.env.PATH = binDir + path.delimiter + process.env.PATH;
 const tag = process.env.RENDER_TAG || (binDir ? 'custom' : 'system');
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'nv-ep-'));
 const card = path.join(root, 'card.png');
-spawnSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'gradients=s=2400x1400:c0=0x0b1030:c1=0x3a1c71:x0=0:y0=0:x1=2400:y1=1400:d=1', '-frames:v', '1', card], { stdio: 'inherit' });
+// Same texture as lib/news-video.js card(): a plain gradient Ken Burns / blur-fill
+// stays under freezedetect n=-60dB. Grain is static; the factory pan is what moves it.
+spawnSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'gradients=s=2400x1400:c0=0x0b1030:c1=0x3a1c71:x0=0:y0=0:x1=2400:y1=1400:d=1',
+  '-f', 'lavfi', '-i', "nullsrc=s=2400x1400,geq=lum='255*gt(random(1),0.996)+40*pow(sin(hypot(X-1700,Y-500)/38),8)':cb=128:cr=128",
+  '-filter_complex', '[1:v]format=gray,gblur=sigma=1.2,format=rgb24[s];[0:v]format=rgb24,noise=alls=14:allf=u[g];[g][s]blend=all_mode=screen,format=rgb24',
+  '-frames:v', '1', card], { stdio: 'inherit' });
 if (!fs.existsSync(card)) { console.error('card png missing'); process.exit(1); }
 const tts = await detectTTS();
 console.log('tts', tts.name, 'ffmpeg', spawnSync('ffmpeg', ['-version']).stdout.toString().split('\n')[0]);
