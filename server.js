@@ -198,6 +198,7 @@ app.use('/api', (req, res, next) => {
   const s = getSession(req); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
   req.user = s.user; next();
 });
+require('./lib/publish-desk.js').mountPublishDesk(app, { dataDir: path.dirname(DB_PATH), log, keystore: require('./lib/keystore.js'), isTest: !!CFG.IS_TEST, fetchFn: globalThis.fetch });
 app.post('/api/auth/password', (req, res) => {
   const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
   if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });
