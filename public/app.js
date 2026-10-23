@@ -294,6 +294,16 @@ VIEWS.agents = () => {
   ${tab === 'queue' ? `<div class="row" style="margin-bottom:12px"><button class="btn primary" data-task-new="">+ Новая задача</button><span class="sp"></span><select id="qf" style="width:auto">${opts([['', 'Все статусы'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])], SUB.qf || '')}</select></div>
     <div class="card">${taskTable(DB.tasks.filter(t => !SUB.qf || t.status === SUB.qf))}</div>` :
   `<div class="devbox" style="margin-bottom:16px">${MODE === 'server' ? '«Старт» включает фоновый исполнитель на сервере: агент берёт задачи из очереди и выполняет реальные действия (отчёты, проверка очереди публикаций, черновики ответов, черновики через Ollama qwen3:8b, OpenCode — с подтверждением). Если действие невозможно (например, Ollama недоступна), задача получает статус «Заблокировано» с причиной. Сервер продолжает работу при закрытом окне.' : 'Браузерный режим: фоновое выполнение задач агентами требует сервер на Mac; «Старт» только отмечает взятую задачу.'}</div>
+  <div id="agentTask" class="card" style="margin-bottom:14px"><h3>Задача агенту</h3>
+    <p class="small mut">Песочница без сети и без shell. Модель присылает только diff, затем запускается node --test на ваших тестах. OpenCode не используется. Слияние в main не выполняется — результат уходит в очередь владельца.</p>
+    <label>Задача</label><textarea id="atPrompt" rows="2">Сделай так, чтобы hello.js экспортировал число 2. Тест не меняй.</textarea>
+    <label>hello.js</label><textarea id="atFile" rows="2">module.exports = 1;</textarea>
+    <label>hello.test.js</label><textarea id="atTest" rows="4">const test = require('node:test');
+const assert = require('node:assert/strict');
+test('exports 2', () => { assert.equal(require('./hello.js'), 2); });</textarea>
+    <div class="row" style="margin-top:8px"><select id="atLang" style="width:auto" aria-label="Язык диктовки"><option value="ru">RU</option><option value="en">EN</option></select><button class="btn sm" id="atMic" ${MODE === 'server' ? '' : 'disabled'}>Микрофон</button><button class="btn sm primary" id="atRun" ${MODE === 'server' ? '' : 'disabled'}>Выполнить в песочнице</button><button class="btn sm" id="atCancel" disabled>Отмена</button></div>
+    <p class="small mut">Диктовка RU/EN только локально (whisper.cpp). Текст попадает в поле выше. Он не отправляется, пока вы сами не нажмёте «Выполнить». Отказ в микрофоне ничего не запускает.</p>
+    <pre id="atOut" class="small" style="white-space:pre-wrap;margin-top:8px">${MODE === 'server' ? '' : 'Нужен сервер. В браузере задача не запускается.'}</pre></div>
   <div class="grid g3">${DB.agents.map(a => { const ct = DB.tasks.find(t => t.id === a.currentTaskId); const mine = DB.tasks.filter(t => t.agentId === a.id);
     const hist = mine.filter(t => t.status === 'done').sort((x, y) => (y.completedAt || '').localeCompare(x.completedAt || '')).slice(0, 3);
     return `<div class="card"><div class="agent-head">${avatar(a)}<div class="sp"><b>${esc(a.name)}</b><div class="small mut">${esc(a.role)}</div></div>${agentStatus(a)}</div>
@@ -311,6 +321,52 @@ VIEWS.agents = () => {
 };
 BIND.agents = v => {
   const qf = v.querySelector('#qf'); if (qf) qf.onchange = () => { SUB.qf = qf.value; render(); };
+  const atRun = v.querySelector('#atRun');
+  if (atRun && MODE === 'server') {
+    let atId = null;
+    const show = t => { const o = v.querySelector('#atOut'); if (o) o.textContent = t; };
+    atRun.onclick = async () => {
+      atRun.disabled = true; const c = v.querySelector('#atCancel'); if (c) c.disabled = false;
+      show('Задача выполняется в песочнице…');
+      try {
+        const start = await api('POST', '/api/agent-tasks', { prompt: v.querySelector('#atPrompt').value, files: [{ path: 'hello.js', text: v.querySelector('#atFile').value }], tests: [{ path: 'hello.test.js', text: v.querySelector('#atTest').value }] });
+        atId = start.id;
+        let row = start;
+        for (let i = 0; i < 80 && (!row.status || row.status === 'running'); i++) { await new Promise(r => setTimeout(r, 500)); row = await api('GET', '/api/agent-tasks/' + atId); }
+        const tail = row.approvalId ? `\n\nЗапрос одобрения ${row.approvalId} добавлен в очередь владельца. Слияние в main не выполняется.` : '';
+        show((row.status || '') + (row.code ? ' (' + row.code + ')' : '') + (row.error ? '\n' + row.error : '') + (row.diff ? '\n\n' + row.diff : '') + (row.tests ? '\n\nТесты: ' + (row.tests.ok ? 'прошли' : 'не прошли') + '\n' + (row.tests.output || '') : '') + tail);
+      } catch (e) { show(e.message); }
+      finally { atRun.disabled = false; if (c) c.disabled = true; atId = null; }
+    };
+    const c = v.querySelector('#atCancel'); if (c) c.onclick = () => { if (atId) api('POST', '/api/agent-tasks/' + atId + '/cancel').catch(() => {}); };
+    const mic = v.querySelector('#atMic');
+    if (mic) mic.onclick = async () => {
+      const prompt = v.querySelector('#atPrompt');
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { show('Микрофон недоступен в этом окне. Введите текст вручную.'); return; }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let audioBase64 = '';
+        if (typeof MediaRecorder !== 'undefined') {
+          const rec = new MediaRecorder(stream); const parts = [];
+          rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+          const stopped = new Promise(res => { rec.onstop = res; });
+          rec.start(); show('Слушаю 3 секунды…'); await new Promise(r => setTimeout(r, 3000)); rec.stop(); await stopped;
+          const bytes = new Uint8Array(await new Blob(parts).arrayBuffer());
+          let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+          audioBase64 = btoa(s);
+        }
+        stream.getTracks().forEach(t => t.stop());
+        const lang = (v.querySelector('#atLang') || {}).value === 'en' ? 'en' : 'ru';
+        const r = await api('POST', '/api/voice/transcribe', { permission: 'granted', lang, audioBase64 });
+        if (r && r.autoSend) { show('Ответ распознавания отклонён: автоотправка запрещена.'); return; }
+        if (r && r.text && prompt) { prompt.value = r.text; show('Текст вставлен в поле. Проверьте и поправьте его. Отправка — только кнопкой «Выполнить».'); return; }
+        show('Распознанный текст пуст. Ничего не отправлено.');
+      } catch (e) {
+        const denied = e && (e.name === 'NotAllowedError' || e.code === 'mic_denied');
+        show(denied ? 'Микрофон запрещён. Введите текст вручную. Ничего не отправлено.' : (e.message || 'Распознавание недоступно'));
+      }
+    };
+  }
   v.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => { const a = DB.agents.find(x => x.id === b.dataset.toggle); act(() => api('PUT', '/api/agents/' + a.id, { enabled: !a.enabled, status: 'idle' }), a.enabled ? 'Агент выключен' : 'Агент включён'); });
   if (MODE === 'server') {
     v.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => act(() => api('POST', `/api/agents/${b.dataset.stop}/stop`), 'Агент остановлен'));
@@ -404,29 +460,31 @@ function nvSentences(s) { const fc = s.factCheck; if (!fc) return `<div class="s
 function nvDraftCard(d, compact) {
   const last = d.renders[d.renders.length - 1]; const ok = d.renders.some(r => r.status === 'succeeded');
   const checked = d.factCheck && d.factCheck.checked; const flagged = d.stories.reduce((a, s) => a + ((s.factCheck && s.factCheck.flagged) || 0), 0);
-  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}"><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="row"><span class="badge ${checked ? 'b-ok' : 'b-warn'} b-none" data-nv-fcbadge>${checked ? 'факты проверены владельцем' : 'требует проверки фактов'}</span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></span></h3>
-    ${checked ? '' : `<div class="devbox small" style="margin-bottom:6px" data-nv-fcwarn>Текст написан автоматически (${esc([...new Set(d.stories.map(s => s.provider))].join(', '))}) и <b>может содержать выдуманные факты</b>. Сверьте каждое предложение с источниками [1], [2]…${flagged ? ` Подозрительных предложений: <b>${flagged}</b>.` : ''}</div>`}
+  const demo = d.kind === 'demo';
+  return `<div class="card" style="margin-bottom:10px" data-nv-draft="${esc(d.id)}" ${demo ? 'data-nv-demo-card' : ''}><h3><span>${esc(d.title)} · ${esc(d.dateLabel)} <small>${esc(d.ref)}</small></span><span class="row"><span class="badge ${demo ? 'b-warn' : checked ? 'b-ok' : 'b-warn'} b-none" data-nv-fcbadge>${demo ? 'ДЕМО · факты не проверялись' : checked ? 'факты проверены владельцем' : 'требует проверки фактов'}</span><span class="badge ${NVS[d.status][1]}" data-nv-status>${NVS[d.status][0]}</span></span></h3>
+    ${demo ? '<div class="devbox small" style="margin-bottom:6px" data-nv-demo>Тестовые данные для проверки видео. Проверка фактов не выполнялась и не может быть подтверждена. Утвердить как новость нельзя. Публикация отключена.</div>' : checked ? '' : `<div class="devbox small" style="margin-bottom:6px" data-nv-fcwarn>Текст написан автоматически (${esc([...new Set(d.stories.map(s => s.provider))].join(', '))}) и <b>может содержать выдуманные факты</b>. Сверьте каждое предложение с источниками [1], [2]…${flagged ? ` Подозрительных предложений: <b>${flagged}</b>.` : ''}</div>`}
     ${d.staleRender ? '<div class="small" style="color:#f59e0b" data-nv-stale>Последнее видео сделано по старой версии текста — утвердите и отрендерите заново.</div>' : ''}
     ${compact ? '' : d.stories.map(s => `<div class="list-item" style="display:block"><b>${esc(s.headline)}</b> <span class="badge b-none ${CRED[s.credibility.level]}">${esc(s.credibility.status)} · ${s.credibility.score}</span> <span class="small mut">${esc(s.provider)}${s.fallbackReason ? ' (' + esc(s.fallbackReason) + ')' : ''}${s.edited ? ' · правка владельца' : ''}</span>
       ${nvSentences(s)}<div class="small mut">Источники: ${s.sources.map(x => `<a href="${safeUrl(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a>${x.published ? ' ' + esc(String(x.published).slice(0, 16)) : ''}`).join(' · ')}</div></div>`).join('')}
     ${last ? `<div class="small mut">Рендер ${esc(last.preset)} ${esc(last.runId)}: ${esc(last.status)}${last.attempt ? ' (попытка ' + last.attempt + ')' : ''}</div>${last.error ? `<div class="small" style="color:#ef4444" data-nv-error>${esc(last.error)}</div>` : ''}` : ''}
     ${ok ? `<video controls preload="metadata" data-nv-video src="${nvFile(d, 'mp4')}" style="width:100%;max-height:340px;border-radius:8px;margin-top:6px"></video>` : ''}
-    <div class="row" style="margin-top:8px">${['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
-      ${d.status === 'draft' && !compact ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-nv-fc="${esc(d.id)}" ${NV.fc.has(d.id) ? 'checked' : ''} style="width:auto">Факты проверены по источникам</label><button class="btn sm primary" data-nv-approve="${esc(d.id)}" ${NV.fc.has(d.id) ? '' : 'disabled title="Сначала отметьте проверку фактов"'}>Утвердить сценарий</button>` : ''}
-      ${d.status === 'draft' && compact ? '<span class="small mut">Проверка фактов и утверждение — в разделе «Новости»</span>' : ''}
-      ${['approved', 'rendered', 'render_failed'].includes(d.status) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>Рендер 9:16</button>` : ''}
+    <div class="row" style="margin-top:8px">${!demo && ['draft', 'approved', 'render_failed', 'rendered'].includes(d.status) ? `<button class="btn sm" data-nv-edit="${esc(d.id)}">Править</button>` : ''}
+      ${!demo && d.status === 'draft' && !compact ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-nv-fc="${esc(d.id)}" ${NV.fc.has(d.id) ? 'checked' : ''} style="width:auto">Факты проверены по источникам</label><button class="btn sm primary" data-nv-approve="${esc(d.id)}" ${NV.fc.has(d.id) ? '' : 'disabled title="Сначала отметьте проверку фактов"'}>Утвердить сценарий</button>` : ''}
+      ${!demo && d.status === 'draft' && compact ? '<span class="small mut">Проверка фактов и утверждение — в разделе «Новости»</span>' : ''}
+      ${(demo ? ['demo', 'rendered', 'render_failed'].includes(d.status) : ['approved', 'rendered', 'render_failed'].includes(d.status)) ? `<button class="btn sm primary" data-nv-render="${esc(d.id)}|youtube"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>${demo ? 'Демо ' : ''}Рендер 16:9</button><button class="btn sm" data-nv-render="${esc(d.id)}|shorts"${nvReady() ? '' : ' disabled title="Рендер не готов: нет ffmpeg/ffprobe/rsvg-convert или TTS"'}>${demo ? 'Демо ' : ''}Рендер 9:16</button>` : ''}
       ${d.status === 'render_failed' && last ? `<button class="btn sm" data-nv-retry="${esc(last.jobId)}">Повторить</button>` : ''}
       ${ok ? `<a class="btn sm" data-nv-export href="${nvFile(d, 'mp4', 1)}">Экспорт MP4</a><a class="btn sm" href="${nvFile(d, 'srt', 1)}">SRT</a>` : ''}</div></div>`;
 }
 function nvPanel() {
   if (MODE === 'browser') return '<div class="devbox" style="margin-bottom:14px">Автопоиск и рендер доступны только в серверном режиме.</div>';
   const run = NV.runs[0];
-  return `<div class="card" style="margin-bottom:14px" id="nvPanel"><h3><span>NEWS → VIDEO</span><span class="row"><button class="btn primary" id="nvSearch" ${NV.busy ? 'disabled' : ''}>${NV.busy === 'search' ? 'Поиск…' : 'Автопоиск новостей'}</button></span></h3>
+  return `<div class="card" style="margin-bottom:14px" id="nvPanel"><h3><span>NEWS → VIDEO</span><span class="row"><button class="btn primary" id="nvSearch" ${NV.busy ? 'disabled' : ''}>${NV.busy === 'search' ? 'Поиск…' : 'Автопоиск новостей'}</button><button class="btn" id="nvDemoYt" ${NV.busy ? 'disabled' : ''}>Демо 16:9</button><button class="btn" id="nvDemoSh" ${NV.busy ? 'disabled' : ''}>Демо 9:16</button></span></h3>
+    <p class="small mut">Демо-ролики — фиксированные тестовые данные. Они не проходят проверку фактов и не утверждаются как новость.</p>
     ${nvEnv()}${NV.err ? `<div class="small" style="color:#ef4444">${esc(NV.err)}</div>` : ''}
     ${run ? `<div class="small mut" id="nvRun">Последний поиск ${fmt(run.at)}: ${esc(run.status)}, получено ${run.fetched || 0}, новых ${run.new || 0}${(run.errors || []).length ? ', ошибки: ' + run.errors.map(e => esc(e.source + ': ' + e.error)).join('; ') : ''}</div>` : '<div class="small mut">Поиск ещё не запускался. Источники: ' + (NV.st ? NV.st.sources.map(s => esc(s.name)).join(', ') : '') + '</div>'}
     ${NV.cands.length ? `<div style="max-height:320px;overflow:auto;margin-top:8px" id="nvCands">${NV.cands.map(c => `<label class="list-item" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-nv-pick="${esc(c.id)}" ${NV.sel.has(c.id) ? 'checked' : ''} style="width:auto">
       <span class="sp"><b>${esc(c.headline)}</b> <span class="badge b-none ${CRED[c.credibility.level]}" title="${esc(c.credibility.reasons.join(', '))}">${esc(c.credibility.status)} · ${c.credibility.score}</span>${c.credibility.dateIssues.length ? ` <span class="badge b-warn b-none">${esc(c.credibility.dateIssues.map(d => d.issue).join(','))}</span>` : ''}
-      <div class="small mut">${esc(String(c.published).slice(0, 16))} · ${c.sources.map(s => esc(s.name)).join(', ')} · ${esc(c.category || '')}</div></span></label>`).join('')}</div>
+      <div class="small mut">${esc(String(c.published).slice(0, 16))} · ${c.sources.map(s => `<a href="${safeUrl(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name)}</a>`).join(', ')} · ${esc(c.category || '')}</div></span></label>`).join('')}</div>
       <div class="row" style="margin-top:8px"><span class="small mut">Выбрано: ${NV.sel.size} (1–6)</span><button class="btn" id="nvDraft" ${NV.sel.size && !NV.busy ? '' : 'disabled'}>${NV.busy === 'draft' ? 'Генерация…' : 'Создать сценарий выпуска'}</button>${NV.busy === 'draft' ? '<button class="btn sm danger" id="nvCancel">Отменить</button>' : ''}</div>` : ''}
     <h3 style="margin-top:14px">Сценарии и рендеры</h3>${NV.drafts.length ? NV.drafts.map(d => nvDraftCard(d)).join('') : '<div class="empty">Сценариев пока нет</div>'}</div>`;
 }
@@ -441,6 +499,8 @@ function nvBind(v) {
   if (MODE === 'browser') return; if (!NV.loaded) { nvLoad(true).then(render); return; }
   const q = s => v.querySelectorAll(s);
   const sb = v.querySelector('#nvSearch'); if (sb) sb.onclick = () => nvDo('search', async () => { const r = await api('POST', '/api/newsvideo/search'); NV.cands = r.candidates; NV.runs = [r.run, ...NV.runs]; const m = nvSearchMsg(r.run); toast(m.text, m.err); });
+  const demoBtn = (id, preset) => { const b = v.querySelector(id); if (b) b.onclick = () => nvDo('demo', () => api('POST', '/api/newsvideo/demo', { preset }), 'Демо поставлено в очередь. Это не новость: факты не проверялись.'); };
+  demoBtn('#nvDemoYt', 'youtube'); demoBtn('#nvDemoSh', 'shorts');
   q('[data-nv-pick]').forEach(c => c.onchange = () => { c.checked ? NV.sel.add(c.dataset.nvPick) : NV.sel.delete(c.dataset.nvPick); render(); });
   const db = v.querySelector('#nvDraft'); if (db) db.onclick = () => nvDo('draft', async () => { await api('POST', '/api/newsvideo/drafts', { storyIds: [...NV.sel] }); NV.sel.clear(); }, 'Сценарий создан — проверьте и утвердите');
   const cb = v.querySelector('#nvCancel'); if (cb) cb.onclick = () => api('POST', '/api/newsvideo/drafts/cancel').then(() => toast('Отмена отправлена'), e => toast('Ошибка: ' + e.message, true));

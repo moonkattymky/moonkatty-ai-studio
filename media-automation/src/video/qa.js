@@ -8,12 +8,32 @@ async function measureLoudness(file, runFn = run) {
   return { integratedLufs: I, truePeakDb: TP };
 }
 /** Final MP4 QA via ffprobe. Returns { ok, checks:[{name, ok, actual, expected}] , info }. */
+/**
+ * Pair freezedetect log lines. ffmpeg emits freeze_end only when motion resumes.
+ * A span that stays frozen through the last frame has freeze_start and no freeze_end;
+ * dropping it would hide a hold that runs to EOF. Threshold is unchanged (n=-60dB, d=2.5s).
+ */
+function parseFreezes(stderr) {
+  const freezes = [];
+  let open = null;
+  for (const m of String(stderr).matchAll(/freeze_(start|end): ([\d.]+)/g)) {
+    if (m[1] === 'start') {
+      if (open) freezes.push(open);
+      open = { start: +m[2], end: null };
+    } else if (open) {
+      open.end = +m[2];
+      freezes.push(open);
+      open = null;
+    }
+  }
+  if (open) freezes.push(open);
+  return freezes;
+}
 /** Black / frozen frame detection via ffmpeg blackdetect + freezedetect. */
 async function detectVisualIssues(file, { blackMin = 0.5, freezeMin = 2.5, runFn = run } = {}) {
   const { stderr } = await runFn('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-vf', `blackdetect=d=${blackMin}:pix_th=0.08,freezedetect=n=-60dB:d=${freezeMin}`, '-an', '-f', 'null', '-']);
   const black = [...stderr.matchAll(/black_start:([\d.]+) black_end:([\d.]+)/g)].map(m => ({ start: +m[1], end: +m[2] }));
-  const freezes = [...stderr.matchAll(/freeze_start: ([\d.]+)[\s\S]*?freeze_end: ([\d.]+)/g)].map(m => ({ start: +m[1], end: +m[2] }));
-  return { black, freezes };
+  return { black, freezes: parseFreezes(stderr) };
 }
 async function qaVideo(file, { width, height, fps = 30, durationSec, durationTol = 0.6, vcodec = 'h264', acodec = 'aac', targetLufs = -16, lufsTol = 1.5, runFn = run, visual = false, avSyncTol = 0.1 } = {}) {
   const { stdout } = await runFn('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file]);
@@ -33,4 +53,4 @@ async function qaVideo(file, { width, height, fps = 30, durationSec, durationTol
   if (a) { const L = await measureLoudness(file, runFn); c('loudness_lufs', Math.abs(L.integratedLufs - targetLufs) <= lufsTol, L.integratedLufs, targetLufs); c('true_peak', L.truePeakDb <= -0.5, L.truePeakDb, '<= -0.5 dBFS'); }
   return { ok: checks.every(x => x.ok), checks, info: { durationSec: dur, fps: realFps } };
 }
-module.exports = { qaVideo, measureLoudness, detectVisualIssues };
+module.exports = { qaVideo, measureLoudness, detectVisualIssues, parseFreezes };

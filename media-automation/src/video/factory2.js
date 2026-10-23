@@ -3,7 +3,7 @@
 const cuesVoice = () => { try { const c = require('../../config/master-voice.json'); return { voiceProfileId: c.id, modelSha256: c.model.sha256, voicesSha256: c.voicesSha256 }; } catch { return { voiceProfileId: 'MOONKATTY_NEWS_MASTER_VOICE', modelSha256: null, voicesSha256: null }; } };
 const fs = require('fs'); const path = require('path');
 const { run, probeDuration } = require('./exec'); const { getPreset } = require('./presets');
-const { buildSrt } = require('./subtitles'); const { parseSrt, validateSrt } = require('./srtcheck'); const { buildAss } = require('./ass');
+const { buildSrt } = require('./subtitles'); const { parseSrt, validateSrt } = require('./srtcheck'); const { buildAss } = require('./ass'); const { burnSubtitles } = require('./burn');
 const { validateMusic } = require('./music'); const { qaVideo } = require('./qa'); const { stripMarkup } = require('./speech');
 const G = require('./graphics'); const { applyLexicon, loadLexicon } = require('./speech'); const { buildCues, checkCues } = require('../anchor/cues'); const crypto = require('crypto'); const { layoutFor } = require('../media/library'); const { StubHost3D } = require('../host3d');
 const ASSETS = path.join(__dirname, '..', '..', 'assets');
@@ -49,7 +49,7 @@ class NewsVideoFactory {
   }
 
   async render(ep, { preset = 'youtube', outDir, music, basename = 'episode' } = {}) {
-    if (!ep?.stories?.length) throw new Error('episode needs stories'); const P = typeof preset === 'string' ? getPreset(preset) : preset; const m = validateMusic(music);
+    if (!ep?.stories?.length) throw new Error('episode needs stories'); if (ep.demo && !ep.formatTitle) ep.formatTitle = 'ДЕМО · ТЕСТОВЫЕ ДАННЫЕ · ФАКТЫ НЕ ПРОВЕРЯЛИСЬ'; const P = typeof preset === 'string' ? getPreset(preset) : preset; const m = validateMusic(music);
     const W = P.width, H = P.height, fps = P.fps, T = this.T, V = H > W;
     const work = path.join(this.workRoot || outDir, `${basename}.work`); fs.mkdirSync(work, { recursive: true });
     const stars = await G.makeStarfield(path.join(this.workRoot || outDir, 'starfield.png'));
@@ -116,7 +116,7 @@ class NewsVideoFactory {
         if (seg3d?.videoPath) s.host3d = seg3d.videoPath; // overlay integration happens when Studio delivers alpha video
       } else if (s.kind === 'credits') {
         const lines = ['Sources:', ...(ep.sources || []).map(x => `• ${x.name} — ${hostOf(x.url)}`), 'Images:', ...(ep.rights || []).map(r => '• ' + r)];
-        if (m) lines.push('Music:', `• ${m.title} — ${m.artist} (${m.license})`); lines.push('Voice:', `• Synthetic voice (${this.tts.name}). Script AI-assisted, fact-checked against sources.`);
+        if (m) lines.push('Music:', `• ${m.title} — ${m.artist} (${m.license})`); lines.push('Voice:', ep.demo ? `• Synthetic voice (${this.tts.name}). DEMO test data. Facts were NOT checked. Do not publish.` : `• Synthetic voice (${this.tts.name}). Script AI-assisted, fact-checked against sources.`);
         const card = await png('credits', G.cardSvg({ W, H, heading: 'Sources & Credits', lines }));
         ov.push({ file: card, x: Math.round(W * 0.05), y: Math.round(H * 0.08), start: 0.1, fadeIn: 0.5 });
         await this._clip({ out, L, W, H, fps, bg: { type: 'stars', file: stars }, overlays: ov });
@@ -146,10 +146,10 @@ class NewsVideoFactory {
     const loud = await exactLoudness(norm0, norm, lufs, this.runFn, work); // gain trim + true-peak limiter, iterated to |ΔI| <= 0.1 LU
     // ---- final
     const out = path.join(outDir, `${basename}.mp4`);
-    await this._ff(['-i', joined, '-i', norm, '-filter_complex', `[0:v]ass='${path.basename(ass)}',scale=out_range=tv,format=yuv420p[v]`, '-map', '[v]', '-map', '1:a', '-c:v', 'libx264', '-preset', 'medium', '-crf', String(P.crf), '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(fps), '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-t', total.toFixed(3), '-movflags', '+faststart', out], work);
+    const burned = await burnSubtitles({ runFn: this.runFn, video: joined, audio: norm, out, cues, W, H, work, crf: P.crf, fps, duration: total, srtPath: srt, demo: !!ep.demo, vcodec: 'libx264', presetName: 'medium', profile: 'high', abitrate: '192k' });
     const thumb = path.join(outDir, `${basename}.jpg`); await this._ff(['-ss', (segs[1].start + 1.6).toFixed(2), '-i', out, '-frames:v', '1', '-q:v', '2', thumb]);
     const qa = await qaVideo(out, { width: W, height: H, fps, durationSec: total, targetLufs: lufs, runFn: this.runFn, visual: true });
-    const manifest = { voiceOverride: this.voiceOverride, comparisonRender: !!this.voiceOverride, loudness: loud, cuesFile, title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
+    const manifest = { voiceOverride: this.voiceOverride, comparisonRender: !!this.voiceOverride, subtitleMethod: burned.method, demo: !!ep.demo, loudness: loud, cuesFile, title: ep.title, preset: P.name, platform: P.platform, width: W, height: H, fps, loudnessLufs: lufs, durationSec: await probeDuration(out, this.runFn), files: { video: out, subtitles: srt, thumbnail: thumb, anchorAudio: anchor },
       tts: this.tts.name, transitions: used, segments: segs.map(s => ({ kind: s.kind, storyId: s.story?.id, assetId: s.story?.asset.id, layout: s.layout?.mode, start: +s.start.toFixed(3), duration: +s.duration.toFixed(3) })),
       sources: ep.sources, rights: ep.rights, music: m && { title: m.title, artist: m.artist, license: m.license }, subtitles: check, qa, createdAt: new Date().toISOString() };
     fs.writeFileSync(path.join(outDir, `${basename}.json`), JSON.stringify(manifest, null, 2)); if (!process.env.MA_KEEP_WORK) fs.rmSync(work, { recursive: true, force: true });

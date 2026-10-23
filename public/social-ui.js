@@ -37,13 +37,24 @@ VIEWS.social = () => {
   const tabs = [['pages', 'Страницы FB / IG'], ['queue', `Единая очередь (${DB.queue.length})`], ['analytics', 'Аналитика'], ['community', 'Community'], ['posts', 'Посты (вручную)'],
     ...DB.workspaces.map(w => ['ws:' + w.id, w.title])];
   const sel = tabs.find(t => t[0] === tab) ? tab : 'pages';
-  return `<div class="tabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === sel ? 'active' : ''}">${esc(l)}</button>`).join('')}</div>
+  return `<div id="pubDesk" class="card" style="margin-bottom:14px"><h3>Telegram и YouTube</h3><p class="small mut">Проверка…</p></div>
+    <div class="tabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === sel ? 'active' : ''}">${esc(l)}</button>`).join('')}</div>
     <div class="row" style="margin:-6px 0 14px"><span class="small mut sp">${MODE === 'server' ? 'Подключение через официальный Meta OAuth (Facebook Login for Business, Graph API).' : 'Браузерный демо-режим: OAuth и публикация требуют сервер на Mac.'}</span>
       <button class="btn sm" id="demoLoad">Загрузить демо-данные</button><button class="btn sm danger" id="demoDel">Удалить демо-данные</button></div>
     ${sel === 'pages' ? viewPages() : sel === 'queue' ? viewQueue() : sel === 'analytics' ? viewAnalytics() : sel === 'community' ? viewCommunity() : sel === 'posts' ? LEGACY_SOCIAL() : viewWorkspace(wsById(sel.slice(3)))}`;
 };
+function paintPublishDesk(v, j) {
+  const desk = v.querySelector('#pubDesk'); if (!desk) return;
+  const t = j && j.telegram || { status: 'Не подключено', blocker: 'нет данных' };
+  const y = j && j.youtube || { status: 'Не подключено', blocker: '' };
+  desk.innerHTML = `<h3>Telegram и YouTube</h3><p class="small"><b>Telegram</b> <span class="badge">${esc(t.status || 'Не подключено')}</span> ${esc(t.blocker || '')}</p><p class="small"><b>YouTube</b> <span class="badge">${esc(y.status || 'Не подключено')}</span> ${esc(y.blocker || '')}</p><p class="small mut">${esc(j && j.reason || '')}</p><div class="row"><button class="btn sm" id="tgCheck" type="button">Проверить бота Telegram</button><button class="btn sm" id="ytClient" type="button">Сохранить OAuth-клиент YouTube</button></div>`;
+  const tg = v.querySelector('#tgCheck'); if (tg) tg.onclick = () => modal('<h2>Токен бота Telegram</h2><p class="small mut">Это токен от @BotFather, не пароль аккаунта. Без macOS Keychain он не сохраняется.</p><label>Токен</label><input name="token" autocomplete="off"><label>Канал (необязательно)</label><input name="channel" placeholder="@channel">', fd => api('POST', '/api/publish/telegram', fd).then(r => { toast(r.connected ? 'Подключено' : 'Не подключено', !r.connected); paintPublishDesk(v, { ...j, telegram: { ...t, ...r, blocker: r.blocker || '' } }); }).catch(e => toast(e.message, true)));
+  const yt = v.querySelector('#ytClient'); if (yt) yt.onclick = () => modal('<h2>OAuth-клиент YouTube</h2><p class="small mut">Пароль Google не нужен. Канал останется «Не подключено», пока владелец не войдёт в браузере на Mac.</p><label>client_id</label><input name="client_id" autocomplete="off"><label>client_secret (необязательно)</label><input name="client_secret" type="password" autocomplete="off">', fd => api('POST', '/api/publish/youtube/client', fd).then(r => { toast(r.status || 'Не подключено', !r.connected); paintPublishDesk(v, { ...j, youtube: { ...y, ...r } }); }).catch(e => toast(e.message, true)));
+}
 BIND.social = v => {
   const tab = SUB.social || 'pages';
+  if (MODE === 'browser') paintPublishDesk(v, { telegram: { status: 'Не подключено', blocker: 'Браузерный режим: Keychain недоступна, токен не сохраняется.' }, youtube: { status: 'Не подключено', blocker: 'Браузерный режим: Keychain недоступна.' }, reason: '' });
+  else api('GET', '/api/publish/connectors').then(j => paintPublishDesk(v, j)).catch(e => paintPublishDesk(v, { telegram: { status: 'Не подключено', blocker: e.message }, youtube: { status: 'Не подключено', blocker: '' }, reason: '' }));
   v.querySelector('#demoLoad').onclick = loadDemo;
   v.querySelector('#demoDel').onclick = () => confirmDo('Удалить все демо-данные?', () => act(() => api('POST', '/api/demo/remove'), 'Демо-данные удалены'));
   v.querySelectorAll('[data-open-ws]').forEach(b => b.onclick = () => { SUB.social = 'ws:' + b.dataset.openWs; render(); });

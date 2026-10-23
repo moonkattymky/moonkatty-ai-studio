@@ -107,5 +107,16 @@ try {
   t('QA-NV-009: second run → 0 new, all duplicates', run2.new === 0 && run2.duplicates === run2.fetched, JSON.stringify({ new: run2.new, dup: run2.duplicates, fetched: run2.fetched }));
   fs.rmSync(dir2, { recursive: true, force: true });
   const nv2 = NVmod({ app: express(), dataDir: dir, services, runner, log() {}, fetchFn, now: () => now }); t('drafts persisted across restart', !!nv2.getDraft(d.id) && nv2.getDraft(d.id).history.length >= 5);
+  const injected = await call('PUT', `/api/newsvideo/drafts/${d2.id}`, { title: 'Still a real draft', kind: 'demo', factChecked: true });
+  t('real draft cannot be switched to demo', injected.s === 200 && injected.j.kind !== 'demo' && injected.j.factCheck.required === true && injected.j.factCheck.checked === false, injected.j.kind);
+  const demo = await call('POST', '/api/newsvideo/demo', { preset: 'shorts', text: 'Pretend this is a real NASA result with 9999 engines.' });
+  t('demo render queued from fixed fixture', demo.s === 200 && demo.j.kind === 'demo' && demo.j.status === 'rendering' && demo.j.factCheck.demo === true && demo.j.factCheck.checked === false && demo.j.factCheck.required === false, demo.j.error || demo.s);
+  t('request body cannot replace demo script', demo.j.stories[0].text.includes('fictional demonstration') && !/9999/.test(JSON.stringify(demo.j.stories[0])));
+  const dep = path.join(dir, demo.j.episodeFile); const depj = JSON.parse(fs.readFileSync(dep));
+  t('demo episode is synthetic and not fact-checked', depj.demo === true && depj.factChecked === false && depj.synthetic === true && /ФАКТЫ НЕ ПРОВЕРЯЛИСЬ/.test(depj.formatTitle));
+  const ad = await call('POST', `/api/newsvideo/drafts/${demo.j.id}/approve`, { factChecked: true, contentHash: demo.j.contentHash });
+  t('demo cannot be approved', ad.s === 422 && ad.j.code === 'demo_not_approvable', ad.j.error);
+  const ed = await call('PUT', `/api/newsvideo/drafts/${demo.j.id}`, { title: 'Now it is real' });
+  t('demo cannot be edited into a release', ed.s === 422 && ed.j.code === 'demo_not_editable');
 } catch (e) { fail++; console.error(e); } finally { srv.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

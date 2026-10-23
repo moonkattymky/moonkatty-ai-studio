@@ -81,7 +81,7 @@ try {
     const st = (await api('GET', '/api/studio3d/status')).j; t('GET /api/studio3d/status exposes design3d disabled + message for the page', st && st.design3d && st.design3d.enabled === false && st.design3d.message === MSG && st.blender && st.blender.code === 'feature_disabled');
     const ui = fs.readFileSync(path.join(ROOT, 'public/app.js'), 'utf8'); t('3D Studio page renders the 403 banner and disables «Создать 3D-модель»', /id=\"s3disabled\"|id="s3disabled"/.test(ui) && /403 feature_disabled/.test(ui) && /id="s3run"\$\{off3d \?/.test(ui)); }
   // version
-  { const h = await (await fetch(B + '/api/health')).json(); t('version 1.3.2-test in /api/health', h.version === '1.3.2-test', h.version); }
+  { const h = await (await fetch(B + '/api/health')).json(); const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version; t('version matches package.json in /api/health', h.version === pkg, h.version); }
   // 3) Studio 4 (7f0129f FAIL): case / trailing-slash / encoded variants + every task/agent creation path → 403 feature_disabled, nothing created
   t('POST /api/projects3d (create) → 403 feature_disabled', gated(pr.r, pr.j), pr.r.status);
   const tasks0 = (await api('GET', '/api/tasks')).j; const before = tasks0.length; const non3d = tasks0.find(x => x.agentId && x.agentId !== 'design3d');

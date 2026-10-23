@@ -1,0 +1,28 @@
+// Studio 4 F-1: a second TEST copy must show a dialog, not quit with no message.
+import { createRequire } from 'module';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+const require = createRequire(import.meta.url);
+const s = require('../desktop/single-instance.js');
+let pass = 0, fail = 0;
+const t = (n, c, x = '') => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + n + (x ? ' — ' + x : '')); };
+const mine = { version: '1.3.4-test', commit: 'abc' };
+const other = s.onLockResult({ gotLock: false, mine, other: { version: '1.3.0-test', commit: 'old' }, flavor: 'test' });
+t('F-1: other TEST version names vX and tells the user to quit', other.action === 'quit' && other.message === 'Открыта другая версия TEST (v1.3.0-test). Закройте её (⌘Q) и запустите снова.', other.message);
+const unknown = s.onLockResult({ gotLock: false, mine, other: null, flavor: 'test' });
+t('F-1: unknown open copy still shows a dialog with v?', unknown.action === 'quit' && /Открыта другая версия TEST \(v\?\)/.test(unknown.message) && !/vundefined/.test(unknown.message), unknown.message);
+const same = s.onLockResult({ gotLock: false, mine, other: { version: '1.3.4-test', commit: 'abc' }, flavor: 'test' });
+t('same build does not quit silently', same.action === 'quit' && /уже открыта/.test(same.message) && /⌘Q закрывает только окно/.test(same.message), same.message);
+t('lock holder continues', s.onLockResult({ gotLock: true, mine, other: null, flavor: 'test' }).action === 'continue');
+t('different commit is another version', s.onLockResult({ gotLock: false, mine, other: { version: '1.3.4-test', commit: 'zzz' }, flavor: 'test' }).message.includes('v1.3.4-test'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'inst-'));
+t('missing instance file is null', s.readInstance(dir) === null);
+s.writeInstance(dir, { version: '1.3.0-test', commit: 'old', pid: 5 });
+t('instance file roundtrip', s.readInstance(dir).version === '1.3.0-test' && s.readInstance(dir).pid === 5);
+const src = fs.readFileSync(new URL('../desktop/main.js', import.meta.url), 'utf8');
+t('main.js no longer quits the lock with an empty message', !/requestSingleInstanceLock\(\)\s*\)\s*\{\s*app\.quit\(\)/.test(src) && src.includes('showErrorBox(PRODUCT, lockDecision.message)'));
+t('main.js passes version in additionalData', /requestSingleInstanceLock\(\{ version: MINE\.version/.test(src));
+fs.rmSync(dir, { recursive: true, force: true });
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

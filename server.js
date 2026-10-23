@@ -198,6 +198,8 @@ app.use('/api', (req, res, next) => {
   const s = getSession(req); if (!s || s.exp < Date.now()) { const au = appTokenUser(req); if (au) { req.user = au; return next(); } return res.status(401).json({ error: 'auth required' }); }
   req.user = s.user; next();
 });
+require('./lib/publish-desk.js').mountPublishDesk(app, { dataDir: path.dirname(DB_PATH), log, keystore: require('./lib/keystore.js'), isTest: !!CFG.IS_TEST, fetchFn: globalThis.fetch });
+require('./lib/agent-task.js').mountAgentTasks(app, { dataDir: path.join(path.dirname(DB_PATH), 'agent-tasks'), log, requestOwner: (req, action, detail, params) => world.requestOwner(req, action, detail, params) });
 app.post('/api/auth/password', (req, res) => {
   const u = getUsers(); const { oldPassword, newPassword } = req.body || {};
   if (!checkPw(String(oldPassword || ''), u[req.user])) return res.status(400).json({ error: 'Старый пароль неверен' });
@@ -213,6 +215,14 @@ meta.mountProtected();
 // v1.3.0-test: Update Center (download + verify + manual install plan; auto-install off) — only with STUDIO_OPS_UPDATE=1.
 require('./lib/ops/update-center-mount.js').mountUpdateCenter(app, { CFG, dataDir: path.dirname(DB_PATH), db, openDb, log, version: require('./package.json').version, env: process.env, dbSchemaVersion: DB_SCHEMA_VERSION, port: PORT,
   checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); } });
+// SYSTEM DOCTOR (PR #9): fixed checks, no sudo, approvals unchanged. Mounted after Update Center.
+{ const doctor = require('./lib/ops/doctor/mount.js').mountDoctor(app, {
+  CFG, db, openDb, log, sec, heavy, runner, blender, port: PORT, core, hostMem,
+  dataDir: path.dirname(DB_PATH), dbPath: DB_PATH, backupDir: BACKUP_DIR,
+  checkPassword: (user, pw) => { const h = getUsers()[user]; return !!h && checkPw(pw, h); },
+  listLogs: () => list('logs') });
+  doctor.arm(); }
+require('./lib/voice-input.js').mountVoice(app, { log });
 
 // ---- Backup / restore ----
 // QA-DB-001: the export also carries the jobs engine tables and the users (scrypt password HASHES only — never passwords/sessions).
@@ -313,7 +323,9 @@ app.post('/api/director/chat', async (req, res) => {
   const fp = finishPlan(text, user, first.plan, first.llmError); if (fp.disabled) return res.status(403).json({ error: DESIGN3D_DISABLED_MSG, code: 'feature_disabled', feature: 'design3d', message: fp.message, tasks: [] }); res.json(fp);
 });
 
-const BUILD_COMMIT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'desktop', 'build-info.json'), 'utf8')).commit || null; } catch { return null; } })(); // v1.3.3-test: identity for the desktop shell
+const BUILD_COMMIT = (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'desktop', 'build-info.json'), 'utf8')).commit || null; } catch { return null; } })(); // identity for the desktop shell
+const IDENTITY = require('./lib/server-identity.js');
+const EXPECT_ID = IDENTITY.expectFrom(require('./package.json').version, BUILD_COMMIT);
 app.get('/api/health', (req, res) => { let dbOk = true; try { db.prepare('SELECT 1').get(); } catch { dbOk = false; }
   res.json({ ok: dbOk, app: 'moonkatty-ai-studio', flavor: CFG.flavor, product: CFG.product, schemaVersion: DB_SCHEMA_VERSION, mode: 'server', version: require('./package.json').version, commit: BUILD_COMMIT, pid: process.pid, uptimeSec: Math.round(process.uptime()), db: dbOk ? 'ok' : 'error', dbDriver: db.driver || 'better-sqlite3', keySource: metaCtx.keySource, startedAt: STARTED_AT, lastTick: q.meta.get('lastTick')?.v || null }); });
 app.get('/api/runtime', async (req, res) => res.json({ ollama: await runner.ollamaStatus(), blender: await blender.detect((get('integrations', 'blender') || {}).path), opencode: { path: runner.opencodePath(), enabled: runner.opencodeEnabled() }, heavy: heavy.status(), busy: [...runner.busy.entries()].map(([a, b]) => ({ agentId: a, taskId: b.taskId })), brand: BRAND, dataDir: DATA_DIR }));
@@ -614,8 +626,8 @@ const srv = app.listen(PORT, HOST, err => { if (err) return; startBackground(); 
 srv.on('error', async e => {
   if (e.code !== 'EADDRINUSE') throw e;
   let h = null; try { h = await (await fetch(`http://127.0.0.1:${PORT}/api/health`, { signal: AbortSignal.timeout(3000) })).json(); } catch {}
-  const ours = !!h && h.app === 'moonkatty-ai-studio' && (h.flavor || 'prod') === CFG.flavor, same = ours && h.version === require('./package.json').version; // v1.3.3-test: same version only
-  console.error(same ? `Сервер уже запущен на порту ${PORT} — второй экземпляр не нужен` : ours ? `Порт ${PORT} занят другой версией сервера (v${h.version}, pid ${h.pid}); эта версия v${require('./package.json').version} не запущена` : `Порт ${PORT} занят другим процессом`); process.exit(same ? 0 : 3);
+  const conflict = IDENTITY.portConflict(PORT, h, EXPECT_ID, CFG.flavor); // same rules as the shell, including commit; missing version prints v?
+  console.error(conflict.message); process.exit(conflict.exitCode);
 });
 const shutdown = sig => { console.log('Остановка по ' + sig); srv.close(); try { if (fs.readFileSync(PID_FILE, 'utf8') === String(process.pid)) fs.unlinkSync(PID_FILE); } catch {} try { db.close(); } catch {} process.exit(0); };
 process.on('SIGTERM', () => shutdown('SIGTERM')); process.on('SIGINT', () => shutdown('SIGINT'));
