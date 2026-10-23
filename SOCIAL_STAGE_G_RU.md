@@ -77,4 +77,6 @@
 
 ## Хеш и PR
 
-Хеш коммита отчёта и ссылка на draft PR дописываются следующим коммитом сразу после push, либо указаны в сообщении к PR, если второй коммит не успел лечь.
+- Ветка: `cursor/social-stage-g-wip-d94e`
+- Коммит отчёта: `d9a23071b336ad990f1af2e4541a8d7fef9c20ba`
+- Draft PR в `cursor/handover-v1334-test-fb63`: https://github.com/moonkattymky/moonkatty-ai-studio/pull/12
